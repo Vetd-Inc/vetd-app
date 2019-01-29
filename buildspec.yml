@@ -5,7 +5,6 @@ phases:
     commands:
       # Upgrade AWS CLI to the latest version; Install Leiningen; Install Clojure CLI tools
       - cd $HOME
-      - pip install --upgrade awscli
       - wget https://raw.github.com/technomancy/leiningen/stable/bin/lein; chmod +x lein; mv lein /bin;
       - LEIN_ROOT=true lein
       - mkdir clj_tools_install; cd clj_tools_install
