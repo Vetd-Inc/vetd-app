@@ -7,6 +7,7 @@
             com.vetd.app.db)
   (:gen-class))
 
+(println "ENV: ")
 (env/print-vetd-env)
 
 (defn -main
