@@ -6,7 +6,6 @@
 (defn get-vetd-env []
   (env/env :vetd-env)) 
 
-
 (def prod?
   (-> env/env
       :vetd-env
