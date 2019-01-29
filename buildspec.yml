@@ -1,0 +1,31 @@
+version: 0.2
+
+phases:
+  install:
+    commands:
+      # Upgrade AWS CLI to the latest version; Install Leiningen; Install Clojure CLI tools
+      - cd $HOME
+      - pip install --upgrade awscli
+      - wget https://raw.github.com/technomancy/leiningen/stable/bin/lein; chmod +x lein; mv lein /bin;
+      - LEIN_ROOT=true lein
+      - mkdir clj_tools_install; cd clj_tools_install
+      - curl -O https://download.clojure.org/install/linux-install-1.10.0.411.sh; chmod +x linux-install-1.10.0.411.sh; ./linux-install-1.10.0.411.sh
+      - cd $CODEBUILD_SRC_DIR
+  pre_build:
+    commands:
+      - echo "\nContents of the base directory:\n"
+      - ls -al
+      - echo
+  build:
+    commands:
+      - echo Entering build phase...
+      - echo Build started on `date`
+      - LEIN_ROOT=true lein uberjar
+      - mv target/vetd-app.jar ./deploy
+      - docker build -t $IMAGE_REPO_NAME:$IMAGE_TAG ./deploy
+      - docker tag $IMAGE_REPO_NAME:$IMAGE_TAG $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME:$IMAGE_TAG      
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - echo Pushing the Docker image...
+      - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME:$IMAGE_TAG
