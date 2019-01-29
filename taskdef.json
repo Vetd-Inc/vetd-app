@@ -1,5 +1,4 @@
 {
-  "ipcMode": null,
   "executionRoleArn": "arn:aws:iam::744151627940:role/ecsTaskExecutionRole",
   "containerDefinitions": [
     {
@@ -147,6 +146,5 @@
   "networkMode": "awsvpc",
   "cpu": "1024",
   "revision": 3,
-  "status": "ACTIVE",
   "volumes": []
 }
