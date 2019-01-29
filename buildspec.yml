@@ -23,11 +23,11 @@ phases:
       - echo Build started on `date`
       - echo '{:vetd-env "BUILD"}' > .lein-env
       - LEIN_ROOT=true lein uberjar
-      - mv target/vetd-app.jar ./deploy
-      - docker build -t $IMAGE_REPO_NAME:$IMAGE_TAG ./deploy
-      - docker tag $IMAGE_REPO_NAME:$IMAGE_TAG $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME:$IMAGE_TAG      
+      - mv ./target/vetd-app.jar ./deploy
+      - docker build -t vetd/vetd-app:latest ./deploy
+      - docker tag vetd/vetd-app 744151627940.dkr.ecr.us-east-1.amazonaws.com/vetd-app:latest
   post_build:
     commands:
       - echo Build completed on `date`
       - echo Pushing the Docker image...
-      - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME:$IMAGE_TAG
+      - docker push 744151627940.dkr.ecr.us-east-1.amazonaws.com/vetd-app:latest
