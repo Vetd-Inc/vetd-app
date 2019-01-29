@@ -8,12 +8,7 @@
   (:gen-class))
 
 
-(log/info "VETD_ENV is:")
-(log/info (env/get-vetd-env))
-
-
 (defn -main
   "I don't do a whole lot ... yet."
   [& args]
-  (when-not env/building?
-    (svr/start-server)))
+  (svr/start-server))

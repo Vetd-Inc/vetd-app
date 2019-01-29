@@ -24,7 +24,7 @@
 ;; for running migrations locally
 #_ (def pg-db env/pg-db-prod)
 
-(j/query pg-db ["select 1"])
+#_(j/query pg-db ["select 1"])
 
 #_(j/db-do-commands pg-db
                   [(j/create-table-ddl :test1
