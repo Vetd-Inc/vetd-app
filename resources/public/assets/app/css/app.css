@@ -1,0 +1,80 @@
+body{
+    font-family: 'Roboto', san-serif;
+    font-size: 14px;
+    letter-spacing: 0.7px;
+    color: #444;
+}
+
+#app{
+    height: 100%;
+    width: 100%;
+}
+
+#signup-form{
+    border: solid 1px #999;
+    width: 330px;
+    padding: 20px;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 50px;
+}
+
+#signup-form input{
+    margin: 10px;
+}
+
+
+#login-form{
+    width: 330px;
+    padding: 20px;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 50px;
+}
+
+#login-form input{
+    margin: 10px;
+}
+
+#login-form button{
+    margin: 10px;
+}
+
+.search-results {
+    margin: 20px;
+    padding: 10px;
+}
+
+.vendor-search-results {}
+
+.product-search-result {
+    border: solid 1px #444;
+    margin: 20px;
+    padding: 10px;
+}
+
+.product-search-result:hover {
+    border: solid 1px #69c;
+}
+
+.product-search-result .vendor-name {
+    font-size: 17px;
+}
+
+
+
+.product-search-result .org-name {
+    font-size: 17px;    
+}
+
+.product-search-result .vendor-name:hover,
+.product-search-result .org-name:hover {
+    color: #d80;
+    cursor: pointer;
+}
+
+
+.product-search-result .header {
+    border-bottom: solid 1px #ccc;
+    margin-bottom: 15px;
+}
