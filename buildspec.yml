@@ -23,7 +23,7 @@ phases:
       - echo Build started on `date`
       - echo '{:vetd-env "BUILD"}' > .lein-env
       - LEIN_ROOT=true lein uberjar
-      - mv ./target/vetd-app.jar ./deploy
+      - mv ./target/uberjar/vetd-app.jar ./deploy
       - docker build -t vetd/vetd-app:latest ./deploy
       - docker tag vetd/vetd-app 744151627940.dkr.ecr.us-east-1.amazonaws.com/vetd-app:latest
   post_build:
