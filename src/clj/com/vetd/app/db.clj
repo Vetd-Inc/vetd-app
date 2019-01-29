@@ -10,8 +10,7 @@
             [honeysql.core :as hs]
             [honeysql.format :as hsfmt]
             [clojure.walk :as w]
-            clojure.edn)
-  (:import io.crate.client.jdbc.CrateDriver))
+            clojure.edn))
 
 
 
@@ -19,11 +18,6 @@
 
 ;; TODO use Migratus?
 ;; https://github.com/yogthos/migratus
-
-#_(def cn
-  {:connection nil #_ (j/get-connection {:connection-uri "crate://localhost:5432/"
-                                 :user "crate"
-                                 :password ""})})
 
 (def pg-db env/pg-db)
 

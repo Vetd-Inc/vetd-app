@@ -45,9 +45,7 @@
 
                  ;; TODO remove dev stuff?
                  [expound "0.7.1"]
-                 [binaryage/devtools "0.9.10"]
-
-                 [self/crate-jdbc "2.5.1"]]
+                 [binaryage/devtools "0.9.10"]]
 
   :repl-options {:timeout 120000}
   
