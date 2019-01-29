@@ -1,11 +1,16 @@
 (ns com.vetd.app.core
-  (:require [com.vetd.app.server :as svr]
+  (:require[com.vetd.app.server :as svr]
+           [com.vetd.app.env :as env]
+            
             [cheshire.core :as json]
             [clj-http.client :as http]
             com.vetd.app.db)
   (:gen-class))
 
+(env/print-vetd-env)
+
 (defn -main
   "I don't do a whole lot ... yet."
   [& args]
-  (svr/start-server))
+  (when-not env/building?
+    (svr/start-server)))

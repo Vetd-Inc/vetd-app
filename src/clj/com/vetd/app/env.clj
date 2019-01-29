@@ -3,11 +3,21 @@
             [com.vetd.app.util :as ut]
             [environ.core :as env]))
 
+(defn print-vetd-env []
+  (-> env/env
+      :vetd-env
+      println)) 
+
 
 (def prod?
   (-> env/env
       :vetd-env
       (= "PROD")))
+
+(def building?
+  (-> env/env
+      :vetd-env
+      (= "BUILD")))
 
 (def pg-db-prod {:dbtype "postgresql"
                  :dbname "vetd1"

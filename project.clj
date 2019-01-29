@@ -81,8 +81,6 @@
                  {:externs-validation :off :non-standard-jsdoc :off}
                  :externs ["react/externs/react.js"
                            "cytoscape.ext.js"]}}}}
-             
-             
              :aot :all
              :uberjar-name "vetd-app.jar"
              :source-paths ["env/prod/clj"]
