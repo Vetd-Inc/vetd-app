@@ -16,6 +16,8 @@ phases:
     commands:
       - echo "\nContents of the base directory:\n"
       - ls -al
+      - echo "buildspec.yml:"
+      - cat buildspec.yml
       - echo
   build:
     commands:
