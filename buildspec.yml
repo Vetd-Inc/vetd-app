@@ -31,3 +31,7 @@ phases:
       - echo Build completed on `date`
       - echo Pushing the Docker image...
       - docker push 744151627940.dkr.ecr.us-east-1.amazonaws.com/vetd-app:latest
+artifacts:
+  files:
+    - taskdef.json
+    - appspec.yml
