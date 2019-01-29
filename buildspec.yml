@@ -21,6 +21,7 @@ phases:
     commands:
       - echo Entering build phase...
       - echo Build started on `date`
+      - export VETD_ENV=BUILD
       - LEIN_ROOT=true lein uberjar
       - mv target/vetd-app.jar ./deploy
       - docker build -t $IMAGE_REPO_NAME:$IMAGE_TAG ./deploy
