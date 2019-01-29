@@ -3,10 +3,8 @@
             [com.vetd.app.util :as ut]
             [environ.core :as env]))
 
-(defn print-vetd-env []
-  (-> env/env
-      :vetd-env
-      println)) 
+(defn get-vetd-env []
+  (env/env :vetd-env)) 
 
 
 (def prod?
