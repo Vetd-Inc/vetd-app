@@ -87,11 +87,6 @@
     
     :else v))
 
-(defn ->pprint
-  [x]
-  (clojure.pprint/pprint x)
-  x)
-
 (defn ->gql-str
   [v]
   (->> v
@@ -267,7 +262,7 @@
 ;; ws from client
 (defmethod com/handle-ws-inbound :graphql
   [{:keys [sub-id query subscription? stop] :as msg} ws-id resp-fn]
-  (clojure.pprint/pprint query)
+#_  (clojure.pprint/pprint query)
   (let [qual-sub-id (keyword (name ws-id)
                              (str sub-id))]
     (if-not stop
@@ -307,33 +302,3 @@
                         (catch Exception e2 "")))
       (throw e))))
 
-
-
-
-#_(clojure.pprint/pprint  (sync-query [[:orgs [:oname [:memberships [:id [:user [:id :uname]]]]]]]))
-
-
-
-
-#_(com/handle-ws-inbound
- {:cmd :graphql
-  :sub-id "abc"
-  :query {:queries [[:orgs [:oname [:memberships [:id [:user [:id :uname]]]]]]]}}
- "ws123"
- clojure.pprint/pprint)
-
-#_(com/handle-ws-inbound
- {:cmd :graphql
-  :sub-id 123
-  :query {:queries [[:orgs [:oname]]]}
-  :subscription? true}
- :ws123
- clojure.pprint/pprint)
-
-
-#_(com/handle-ws-inbound
- {:cmd :graphql
-  :sub-id 123
-  :stop true}
- :ws123
- clojure.pprint/pprint)
