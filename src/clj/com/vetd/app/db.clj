@@ -113,26 +113,6 @@ CREATE TABLE IF NOT EXISTS %s (
       (hs-query return-ex?)
       path/process-results))
 
-(defn upsert-schema-rec
-  [tbl schema]
-  (->  {:delete-from tbl
-        :where [:= :id "schema"]}
-       hs/format
-       exe!)
-  (->> schema
-       :columns
-       sch/schema->prototype
-       (insert! tbl))
-  (->  {:delete-from tbl
-        :where [:= :id "schema"]}
-       hs/format
-       exe!))
-
-(defn upsert-schema-recs
-  [schema]
-  (doseq [[k v] schema]
-    (upsert-schema-rec k v)))
-
 (defn drop-round-prod-view []
   (j/db-do-commands
    pg-db
@@ -176,10 +156,6 @@ r.id, r.created, r.idstr, r.buyer_id, r.status
                                           {:entities #(format "\"%s\"" %)})))
   (create-round-prod-view))
 
-(defn migrate []
-  (create-all sch/tables2)
-  (upsert-schema-recs sch/tables2))
-
 #_ (migrate)
 
 
@@ -199,62 +175,3 @@ r.id, r.created, r.idstr, r.buyer_id, r.status
 
 
 #_ (create-table3 :cart_items)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
