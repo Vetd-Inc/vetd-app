@@ -13,6 +13,7 @@
                  [org.clojure/java.jdbc "0.7.5"]
                  [org.postgresql/postgresql "42.2.2"]
                  [honeysql "0.9.3"]
+                 [migratus "1.2.0"]
                  [district0x/graphql-query "1.0.5"]
                  [district0x/district-graphql-utils "1.0.5"]
 
@@ -40,6 +41,7 @@
 
                  [org.clojure/tools.reader "1.2.2"]
                  [com.taoensso/timbre "4.10.0"]
+                 [com.fzakaria/slf4j-timbre "0.3.12"] ;; req'd by migratus
 
                  [buddy/buddy-hashers "1.3.0"]
 
