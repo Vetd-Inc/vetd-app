@@ -32,7 +32,6 @@
 (rf/reg-event-db
  :route-home
  (fn [db [_ query-params]]
-   (println "route-home")
    (assoc db
           :page :home
           :search-query (:q query-params "") ;; to make :default-value work

@@ -10,6 +10,33 @@ body{
     width: 100%;
 }
 
+.cart-menu{
+    margin: 0 10px 0 10px;
+    padding: 5px;
+    border: solid 1px #666;
+}
+
+.in-cart {
+    margin: 5px;
+}
+
+
+.in-cart span{
+    border: solid 2px #3b3;
+    background-color: #2e2;
+    padding: 10px;
+    font-size: 20px;
+    color: #333;
+}
+
+
+.product-short-desc {
+    font-size: 15px;
+    font-family: 'RobotoSlap', serif;
+    margin: 10px 0 20px 0;
+    padding: 5px;
+}
+
 #signup-form{
     border: solid 1px #999;
     width: 330px;
@@ -78,3 +105,4 @@ body{
     border-bottom: solid 1px #ccc;
     margin-bottom: 15px;
 }
+

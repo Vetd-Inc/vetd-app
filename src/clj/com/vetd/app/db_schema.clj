@@ -33,24 +33,28 @@
                            :user_id :bigint}}
    :preposals {:columns {:id :bigint
                          :idstr :text
-                         :req_id :int
-                         :buyer_id :int
-                         :product_id :int
+                         :req_id :bigint
+                         :buyer_id :bigint
+                         :product_id :bigint
                          :pitch :text}}
    :preposal_reqs {:columns {:id :bigint
                              :idstr :text
-                             :buyer_id :int
-                             :buyer_user_id :int
-                             :product_id :int}}
+                             :buyer_id :bigint
+                             :buyer_user_id :bigint
+                             :product_id :bigint}}
    ;; TODO add completed timestamp to rounds
    :rounds {:columns {:id :bigint
                       :idstr :text
-                      :buyer_id :int
+                      :buyer_id :bigint
                       :status :text}}
    :round_product {:columns {:id :bigint
                              :idstr :text
-                             :round_id :int
-                             :product_id :int}}})
+                             :round_id :bigint
+                             :product_id :bigint}}
+   :cart_items {:columns {:id :bigint
+                          :idstr :text
+                          :buyer_id :bigint
+                          :product_id :bigint}}})
 
 
 (defn convert-kw
@@ -60,8 +64,6 @@
         (clojure.string/replace #"_qm$" "?")
         (clojure.string/replace #"_" "-")
         keyword)))
-
-
 
 
 (defn mk-sql-field->clj-kw [tbls]
@@ -85,57 +87,25 @@
   (w/prewalk-replace clj-kw->sql-field v))
 
 
-(def views {})
-
-(def paths
-  {[[:users :orgs] [:orgs :users]]
-   {:path [:users/id :memberships/user-id
-           :memberships/org-id :orgs/id]
-    :cardinality :one->many
-    #_ :where }
-
-   [[:orgs :products] [:products :orgs]]
-   {:path [:orgs/id :products/vendor-id]
-    :cardinality :one->many}
-   
-   [[:preposals :buyers] [:orgs :preposals-in]]
-   {:path [:preposals/buyer-id :orgs/id]
-    :cardinality :many->one}
-
-   [[:preposals :products] [:products :preposals]]
-   {:path [:preposals/product-id :products/id]
-    :cardinality :many->one}
-
-   [[:preposal_reqs :preposals] [:preposals :preposal_reqs]]
-   {:path [:preposal_reqs/id :preposals/req-id]
-    :cardinality :many->one}
-
-   [[:preposal_reqs :products] [:products :preposal-reqs]]
-   {:path [:preposal_reqs/product-id :products/id]
-    :cardinality :many->one}
-
-   [[:preposal_reqs :buyers] [:orgs :preposal-reqs-out]]
-   {:path [:preposal_reqs/buyer-id :orgs/id]
-    :cardinality :many->one}
-   
-   [[:sessions :users] [:users :sessions]]
-   {:path [:sessions/user-id :users/id]
-    :cardinality :many->one}})
 
 
-(defn schema->prototype
-  [m]
-  (assoc
-   (ut/traverse-values
-    #(case %
-       :string "s"
-       :int 0
-       :double 0.0
-       :bool true
-       :timestamp 0
-       :object {:_x 0})
-    m)
-   :id "schema"))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

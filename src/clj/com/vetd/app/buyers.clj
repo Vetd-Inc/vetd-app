@@ -2,6 +2,7 @@
   (:require [com.vetd.app.db :as db]
             [com.vetd.app.hasura :as ha]
             [com.vetd.app.common :as com]
+            [com.vetd.app.auth :as auth]
             [com.vetd.app.util :as ut]
             [taoensso.timbre :as log]))
 
@@ -23,23 +24,6 @@
        :vendor-ids vids})
       {:product-ids []
        :vendor-ids []}))
-
-#_(defn search-prods-vendors
-  [q buyer-id]
-  ;; TODO pids => product-ids
-  (let [{:keys [pids vids]} (search-prods-vendors->ids q)]
-    (->  [[:orgs {:id vids}
-           [:id :oname :idstr :short-desc
-            [:products {:id pids}
-             [:id :pname :idstr :short-desc
-              [:preposals {:buyer-id buyer-id}
-               [:created :idstr]]
-              [:reqs {:buyer-id buyer-id}
-               [:created]]
-              [:rounds {:buyer-id buyer-id}
-               [:id :created :idstr]]]]]]]
-         ha/sync-query
-         :orgs)))
 
 (defn select-rounds-by-ids
   [b-id v-ids]
@@ -71,6 +55,18 @@
             {}
             paths)))
 
+(defn insert-cart-item
+  [buyer-id prod-id]
+  (let [[id idstr] (auth/mk-id&str)]
+    (-> (db/insert! :cart_items
+                    {:id id
+                     :idstr idstr
+                     :buyer_id buyer-id                 
+                     :product_id prod-id
+                     :created (ut/now-ts)
+                     :updated (ut/now-ts)})
+        first)))
+
 ;; TODO there could be multiple preposals/rounds per buyer-vendor pair
 
 ;; TODO use session-id to verify permissions!!!!!!!!!!!!
@@ -81,3 +77,7 @@
 (defmethod com/handle-ws-inbound :request-preposal
   [{:keys [buyer-id vendor-id]} ws-id sub-fn]
   (insert-preposal-req buyer-id vendor-id))
+
+(defmethod com/handle-ws-inbound :add-to-cart
+  [{:keys [buyer-id prod-id]} ws-id sub-fn]
+  (insert-cart-item buyer-id prod-id))

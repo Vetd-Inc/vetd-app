@@ -58,14 +58,14 @@
      {})))
 
 (rf/reg-event-fx
- :request-preposal
- (fn [{:keys [db ws]} [_ vendor-id]]
+ :add-to-cart
+ (fn [{:keys [db]} [_ prod-id]]
    (let [qid (get-next-query-id)]
-     {:ws-send {:ws (:ws db)
-                :payload {:cmd :request-preposal
+     {:ws-send {:payload {:cmd :add-to-cart
                           :return nil
                           :buyer-id (:org-id db)
-                          :vendor-id vendor-id}}})))
+                          :prod-id prod-id}}})))
+
 
 ;; TODO link to request preposal <==================
 
@@ -76,25 +76,9 @@
    [:div pitch]
    [:div (str created)]])
 
-(defn search-result
-  [{:keys [product preposal preposal_req round]}]
-  [:div
-   [:div "Product: " (:pname product)
-    "Vendor: " (:org-name product)]
-   (cond
-       preposal [:div]
-       preposal_req [:div "Preposal requested: " (-> preposal_req :created str)]
-       :else [rc/button
-              :on-click #(rf/dispatch [:request-preposal (:id product)])
-              :label "Request Preposal"])
-   (when preposal
-     [rndr-preposal preposal])
-   [:div "Profile: " (:long-desc product)]
-   (if round
-     [:div "Round: " (str round)]
-     [rc/button
-      :on-click #()
-      :label "Kickoff Vetd Round"])])
+(defn c-round-search-result
+  [{:keys [id created status]}]
+  [:div "Active Round " (str [status created])])
 
 (defn c-preposal-search-result
   [{:keys [created]}]
@@ -105,21 +89,27 @@
   [:div "Preposal Requested " (str created)])
 
 (defn c-product-search-result
-  [{:keys [pname short-desc preposals reqs logo]} org-name]
+  [{:keys [id pname short-desc preposals logo rounds cart_items]} org-name ]
   [:div {:class :product-search-result}
    [:div {:class :header}
     [:img {:src (str "https://s3.amazonaws.com/vetd-logos/" logo)}]
     [:span.vendor-name pname] " by "
     [:span.org-name org-name]]
    [:div {:class :product-short-desc} short-desc]
-#_   (if (not-empty preposals)
-     (for [p preposals]
-       [c-preposal-search-result p])
-     [:div "REQUEST A PREPOSAL"])
-#_   (if (not-empty reqs)
-     (for [r reqs]
-       [c-preposal-req-search-result r])
-     [:div])])
+   (cond (not-empty rounds) (for [r rounds]
+                              [c-round-search-result r])
+         (empty? cart_items) [rc/button
+                              :on-click #(rf/dispatch [:add-to-cart id])
+                              :label "Add to Round (or Cart?)"]
+         :else [:div.in-cart [:span "In Cart"]])
+   #_   (if (not-empty preposals)
+          (for [p preposals]
+            [c-preposal-search-result p])
+          [:div "REQUEST A PREPOSAL"])
+   #_   (if (not-empty reqs)
+          (for [r reqs]
+            [c-preposal-req-search-result r])
+          [:div])])
 
 (defn c-vendor-search-results
   [v]
@@ -137,7 +127,12 @@
                               [[:orgs {:id vendor-ids}
                                 [:id :oname :idstr :short-desc
                                  [:products {:id product-ids}
-                                  [:id :pname :idstr :short-desc :logo ]]]]]}])
+                                  [:id :pname :idstr :short-desc :logo
+                                   [:rounds {:buyer-id org-id
+                                             :status "active"}
+                                    [:id :created :status]]
+                                   [:cart_items {:buyer-id org-id}
+                                    [:id]]]]]]]}])
              [])]
     (def rs1 rs)
     #_ (println rs1)

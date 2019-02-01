@@ -73,6 +73,8 @@
                       :_where {:yy {:> 555}}
                       :_order :hihih})
 
+;; TODO _ => - in table names????????????
+
 (defn process-sub-gql
   [v]
   (cond
@@ -241,8 +243,8 @@
       :ws
       send-queue))
 
-(defmethod handle-from-graphql :connection-error [{:keys [payload]}]
-  (log/error payload))
+(defmethod handle-from-graphql :connection-error [data]
+  (log/error data))
 
 (defmethod handle-from-graphql :data [{:keys [id payload]}]
   
@@ -262,7 +264,7 @@
 ;; ws from client
 (defmethod com/handle-ws-inbound :graphql
   [{:keys [sub-id query subscription? stop] :as msg} ws-id resp-fn]
-#_  (clojure.pprint/pprint query)
+  (clojure.pprint/pprint query)
   (let [qual-sub-id (keyword (name ws-id)
                              (str sub-id))]
     (if-not stop
@@ -301,4 +303,8 @@
       (log/error e (try (some-> e .getData :body slurp)
                         (catch Exception e2 "")))
       (throw e))))
+
+
+#_(send-terminate)
+
 

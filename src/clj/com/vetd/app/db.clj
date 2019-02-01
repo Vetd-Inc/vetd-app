@@ -181,3 +181,80 @@ r.id, r.created, r.idstr, r.buyer_id, r.status
   (upsert-schema-recs sch/tables2))
 
 #_ (migrate)
+
+
+(defn create-table3 [table-kw]
+  (j/db-do-commands pg-db
+                    [(j/create-table-ddl table-kw
+                                         (concat [[:created :timestamptz]
+                                                  [:updated :timestamptz]
+                                                  [:deleted :timestamptz]]
+                                                 (for [[c ctype] (-> sch/tables2 table-kw :columns)]
+                                                   [c ctype]))
+                                         {:entities #(format "\"%s\"" %)})]))
+
+#_ (create-table3 :rounds)
+
+#_ (create-table3 :round_product)
+
+
+#_ (create-table3 :cart_items)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
