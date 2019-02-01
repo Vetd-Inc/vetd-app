@@ -69,7 +69,7 @@
             ws))))
 
 (defn mk-ws-url []
-  (str "wss://" #_(if (-> js/window .-location .-protocol (= "https:"))
+  (str "ws://" #_(if (-> js/window .-location .-protocol (= "https:"))
          "wss://"
          "ws://")
        (.-host js/location) "/ws"))

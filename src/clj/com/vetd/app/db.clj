@@ -9,9 +9,9 @@
             [taoensso.timbre :as log]
             [honeysql.core :as hs]
             [honeysql.format :as hsfmt]
+            [migratus.core :as mig]
             [clojure.walk :as w]
             clojure.edn))
-
 
 
 
