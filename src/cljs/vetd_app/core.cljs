@@ -62,9 +62,8 @@
   [membs]
   (if-let [{{:keys [id buyer? vendor?]} :org} (first membs)]
     (str (if buyer?
-           "/buyer-dash/" ;; TODO => "buyer-dash" ?????
-           "/vendor-dash/")
-         id
+           "/b/search" ;; TODO => "buyer-dash" ?????
+           "/v/home")
          "/")
     "/"))
 
@@ -129,12 +128,12 @@
   (do #_(.log js/console "nav home")
       (rf/dispatch [:route-home query-params])))
 
-(sec/defroute buyers-path "/buyer-dash/:id/" [id query-params]
-  (rf/dispatch [:route-buyers id query-params]))
+(sec/defroute buyers-path "/b/search/" [query-params]
+  (rf/dispatch [:route-b-search query-params]))
 
-(sec/defroute vendors-path "/vendor-dash/:id/" [id query-params]
+(sec/defroute vendors-path "/v/home/" [query-params]
   (do (.log js/console "nav vendors")
-      (rf/dispatch [:route-vendors id query-params])))
+      (rf/dispatch [:route-v-home query-params])))
 
 (sec/defroute login-path "/login" [query-params]
   (do #_(.log js/console "nav home")

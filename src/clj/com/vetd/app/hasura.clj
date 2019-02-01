@@ -82,6 +82,8 @@
          (some-> v second map?))
     (let [[_ m] v]
       (assoc v 1 (process-sub-gql-map m)))
+
+    (instance? java.lang.Long v) (str v)
     
     :else v))
 
@@ -159,11 +161,13 @@
   [id data]
 #_  (println id)
 #_  (clojure.pprint/pprint data)
-  (-> data
-      (json/parse-string keyword)
-      (update :payload :data)
-      (update :payload process-result)
-      handle-from-graphql))
+  (let [data' (json/parse-string data keyword)]
+    (when-let [errors (-> data' :payload :errors)]
+      (log/error errors))
+    (-> data'        
+        (update :payload :data)
+        (update :payload process-result)
+        handle-from-graphql)))
 
 (declare ensure-ws-setup)
 
@@ -234,7 +238,7 @@
 
 (defmethod handle-from-graphql :connection-keep-alive [_]
 
-  (println "KA"))
+  #_(println "KA"))
 
 (defmethod handle-from-graphql :connection-ack [_]
   (swap! cn& assoc :state :ackd)
@@ -246,6 +250,7 @@
   (log/error payload))
 
 (defmethod handle-from-graphql :data [{:keys [id payload]}]
+  
   (respond-to-client id {:mtype :data
                          :payload payload}))
 
@@ -286,15 +291,6 @@
 (defn sync-query
   [queries]
   (try
-    #_    (-> @(ah/post "http://localhost:8080/v1alpha1/graphql"
-                        {:body (json/generate-string
-                                {:query (->gql-str {:queries queries})})})
-              :body
-              slurp
-              (json/parse-string keyword)
-              :data
-              sch/walk-sql-field->clj-kw)
-
     (let [r (-> @(ah/post env/hasura-http-url
                           {:body (json/generate-string
                                   {:query (->gql-str {:queries queries})})})

@@ -16,8 +16,8 @@
           :query query}}))
 
 (rf/reg-event-db
- :route-buyers
- (fn [db [_ id query-params]]
+ :route-b-search
+ (fn [db [_ query-params]]
    (assoc db
           :page :buyers
           :query-params query-params)))
@@ -105,17 +105,18 @@
   [:div "Preposal Requested " (str created)])
 
 (defn c-product-search-result
-  [{:keys [pname short-desc preposals reqs]} org-name]
+  [{:keys [pname short-desc preposals reqs logo]} org-name]
   [:div {:class :product-search-result}
-   [:div {:class :header} 
+   [:div {:class :header}
+    [:img {:src (str "https://s3.amazonaws.com/vetd-logos/" logo)}]
     [:span.vendor-name pname] " by "
     [:span.org-name org-name]]
    [:div {:class :product-short-desc} short-desc]
-   (if (not-empty preposals)
+#_   (if (not-empty preposals)
      (for [p preposals]
        [c-preposal-search-result p])
      [:div "REQUEST A PREPOSAL"])
-   (if (not-empty reqs)
+#_   (if (not-empty reqs)
      (for [r reqs]
        [c-preposal-req-search-result r])
      [:div])])
@@ -136,13 +137,7 @@
                               [[:orgs {:id vendor-ids}
                                 [:id :oname :idstr :short-desc
                                  [:products {:id product-ids}
-                                  [:id :pname :idstr :short-desc
-                                   [:preposals {:buyer-id org-id}
-                                    [:created :idstr]]
-                                   [:reqs {:buyer-id org-id}
-                                    [:created]]
-                                   [:rounds {:buyer-id org-id}
-                                    [:id :created :idstr]]]]]]]}])
+                                  [:id :pname :idstr :short-desc :logo ]]]]]}])
              [])]
     (def rs1 rs)
     #_ (println rs1)

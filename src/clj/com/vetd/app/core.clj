@@ -8,7 +8,10 @@
   (:gen-class))
 
 
+(log/set-level! :info)
+
 (defn -main
   "I don't do a whole lot ... yet."
   [& args]
+  (log/set-level! :info)
   (svr/start-server))

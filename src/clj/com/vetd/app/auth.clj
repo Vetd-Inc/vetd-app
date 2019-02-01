@@ -8,7 +8,7 @@
             [honeysql.core :as hs]))
 
 
-;; max 9,999
+;; max is 100k (not 10k) to avoid conflicts during bursts (which shouldn't really happen)
 (def last-id (atom (rand-int 10000)))
 
 (def ts2019-01-01 1546300800000)
@@ -60,7 +60,8 @@
                (+ r d))))))
 
 (defn mk-id []
-  (let [sub-id (swap! last-id #(-> % inc (mod 10000)))]
+  ;; max is 100k (not 10k) to avoid conflicts during bursts (which shouldn't really happen)
+  (let [sub-id (swap! last-id #(-> % inc (mod 100000)))] 
     (-> (ms-since-vetd-epoch)
         (long-floor-div 100)
         (* 10000)
@@ -272,12 +273,15 @@
 
 (defn login
   [{:keys [email pwd]}]
-  (if-let [{:keys [id] :as user} (valid-creds? email pwd)]
-    {:logged-in? true
-     :session-token (-> id insert-select-session :token)
-     :user (dissoc user :pwd)
-     :memberships (select-memb-org-by-user-id id)}
-    {:logged-in? false}))
+  (or (when-let [{:keys [id] :as user} (valid-creds? email pwd)]
+        (let [memberships (-> id select-memb-org-by-user-id not-empty)]
+          (when (->> memberships (keep :org) not-empty)
+            {:logged-in? true
+             :session-token (-> id insert-select-session :token)
+             :user (dissoc user :pwd)
+             :memberships memberships})))
+      {:logged-in? false
+       :login-failed? true}))
 
 (defmethod com/handle-ws-inbound :create-acct
   [m ws-id sub-fn]

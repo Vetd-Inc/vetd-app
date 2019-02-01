@@ -13,7 +13,8 @@
                             :join [[:orgs :o] [:= :o.id :p.vendor_id]]
                             :where [:or
                                     [(keyword "~*") :p.pname (str ".*?" q ".*")]
-                                    [(keyword "~*") :o.oname (str ".*?" q ".*")]]})
+                                    [(keyword "~*") :o.oname (str ".*?" q ".*")]]
+                            :limit 30})
           pids (map :pid ids)
           vids (->> ids
                     (map :vid)
@@ -23,7 +24,7 @@
       {:product-ids []
        :vendor-ids []}))
 
-(defn search-prods-vendors
+#_(defn search-prods-vendors
   [q buyer-id]
   ;; TODO pids => product-ids
   (let [{:keys [pids vids]} (search-prods-vendors->ids q)]
@@ -39,22 +40,6 @@
                [:id :created :idstr]]]]]]]
          ha/sync-query
          :orgs)))
-
-#_ (clojure.pprint/pprint 
- (search-prods-vendors "Orig" 100000))
-
-#_(defn select-prep-reqs-by-ids
-  [b-id v-ids]
-  (db/p-query [:preposal_reqs [:id]
-               {:buyer-id b-id
-                :vendor-id v-ids}]))
-
-#_(defn select-preps-by-ids
-  [b-id v-ids]
-  (db/p-query [:preposals
-               [:pitch :created]
-               {:buyer-id b-id
-                :vendor-id v-ids}]))
 
 (defn select-rounds-by-ids
   [b-id v-ids]

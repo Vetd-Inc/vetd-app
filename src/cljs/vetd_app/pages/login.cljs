@@ -7,6 +7,9 @@
             [re-com.core :as rc]))
 
 
+(rf/reg-sub
+ :login-failed?
+ (fn [{:keys [login-failed?]} _] login-failed?))
 
 (rf/reg-event-db
  :route-login
@@ -32,22 +35,29 @@
  :ws/login
  (fn [{:keys [db]} [_ {:keys [logged-in? user session-token memberships] :as results}]]
    (def res1 results)
-   {:db (assoc db
-               :logged-in? logged-in?
-               :user user
-               :session-token session-token
-               :memberships memberships
-               ;; TODO support users with multi-orgs
-               :org-id (-> memberships first :org-id))
-    :local-store {:session-token session-token}
-    :dispatch-later [{:ms 100 :dispatch [:nav-home]}]}))
-
+   (if logged-in?
+     {:db (assoc db
+                 :login-failed? false
+                 :logged-in? logged-in?
+                 :user user
+                 :session-token session-token
+                 :memberships memberships
+                 ;; TODO support users with multi-orgs
+                 :org-id (-> memberships first :org-id))
+      :local-store {:session-token session-token}
+      :dispatch-later [{:ms 100 :dispatch [:nav-home]}]}
+     {:db (assoc db
+                 :logged-in? logged-in?
+                 :login-failed? true)})))
 
 (defn login-page []
   (let [email (r/atom "")
-        pwd (r/atom "")]
+        pwd (r/atom "")
+        login-failed? (rf/subscribe [:login-failed?])]
     (fn []
       [:div {:id :login-form}
+       [:div (when @login-failed?
+               "LOGIN FAILED")]
        [rc/input-text
         :model email
         :on-change #(reset! email %)

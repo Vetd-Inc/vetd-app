@@ -35,6 +35,7 @@
 (rf/reg-event-fx
  :ws-inbound
  (fn [cofx [_ data]]
+   (def d1 data)
    (if (map? data)
      (let [{:keys [return response]} data]
        (let [handler (or (and (keyword? return) return)
@@ -69,7 +70,7 @@
             ws))))
 
 (defn mk-ws-url []
-  (str "ws://" #_(if (-> js/window .-location .-protocol (= "https:"))
+  (str (if (-> js/window .-location .-protocol (= "https:"))
          "wss://"
          "ws://")
        (.-host js/location) "/ws"))
