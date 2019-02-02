@@ -17,6 +17,21 @@ body{
     width: 200px;
 }
 
+.logo:hover {
+    animation-timing-function: linear;
+    animation: 1s infinite party;
+}
+
+@keyframes party {
+  0% {
+      filter: hue-rotate(0);
+  }
+  100% {
+      filter: hue-rotate(360deg);
+  }
+}
+
+
 #full-header .logo{
     margin-top: 39px;
     margin-left: -42px;   /* fix centering?? I don't know -- Bill */
