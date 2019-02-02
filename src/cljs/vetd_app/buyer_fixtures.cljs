@@ -21,7 +21,7 @@
                               :justify-content :center
                               :f/dir :row}}}
        [[{:id :left-header
-          :style {:f/grow 1}} [:div#logo]]
+          :style {:f/grow 1}} [:div.logo]]
         [{:id :right-header
           :style {:f/grow 0
                   :padding "10px 20px 0 0"}}

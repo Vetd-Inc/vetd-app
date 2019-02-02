@@ -12,6 +12,7 @@
             [vetd-app.pages.login :as p-login]
             [vetd-app.buyer-fixtures :as b-fix]
             [vetd-app.vendor-fixtures :as v-fix]
+            [vetd-app.public-fixtures :as pub-fix]            
             vetd-app.localstore
             [reagent.core :as r]
             [re-frame.core :as rf]
@@ -104,7 +105,9 @@
 
 (def headers
   {:buyers #'b-fix/header
-   :vendors #'v-fix/header})
+   :vendors #'v-fix/header
+   :login #'pub-fix/header
+   :signup #'pub-fix/header})
 
 (defn page []
   [:div#page

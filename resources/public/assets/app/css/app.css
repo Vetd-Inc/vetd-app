@@ -10,6 +10,47 @@ body{
     width: 100%;
 }
 
+.logo {
+    background-image: url(https://s3.amazonaws.com/vetd-logos/vetd.svg);
+    background-size: 200px 85px;
+    height: 85px;
+    width: 200px;
+}
+
+#full-header .logo{
+    margin-top: 39px;
+    margin-left: -42px;   /* fix centering?? I don't know -- Bill */
+}
+
+#full-header {
+    text-align :center;
+}
+
+#left-header .logo{
+    margin: 12px;
+}
+
+.loading-logo {
+  background-image: url(https://s3.amazonaws.com/vetd-logos/vetd.svg);
+  background-size: 200px 85px;
+  height: 85px;
+  width: 200px;
+  margin: 10% auto;
+  animation: 2s infinite pulse;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.5);
+  }
+  50% {
+    transform: scale(3);
+  }
+  100% {
+    transform: scale(0.5);
+  }
+}
+
 .cart-menu{
     margin: 0 10px 0 10px;
     padding: 5px;
