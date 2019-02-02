@@ -25,8 +25,7 @@
         [{:id :right-header
           :style {:f/grow 0
                   :padding "10px 20px 0 0"}}
-         [:span {:class :cart-menu} "CART " (when (coll? @cart-items&)
-                                             (-> @cart-items& :cart_items count))]
+         "2:53pm"
          [rc/button
           :label "Logout"
           :on-click #(rf/dispatch [:logout])]]]])))
