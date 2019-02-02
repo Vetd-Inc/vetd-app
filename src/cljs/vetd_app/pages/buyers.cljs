@@ -89,7 +89,7 @@
   [:div "Preposal Requested " (str created)])
 
 (defn c-product-search-result
-  [{:keys [id pname short-desc preposals logo rounds cart_items]} org-name ]
+  [{:keys [id pname short-desc preposals logo rounds cart_items categories]} org-name ]
   [:div {:class :product-search-result}
    [:div {:class :header}
     [:div.org-logo
@@ -97,12 +97,13 @@
       [:img {:src (str "https://s3.amazonaws.com/vetd-logos/" logo)}]]]
     [:span.vendor-name pname] " by "
     [:span.org-name org-name]]
+   [:div "Categories: " (str (mapv :cname categories))]
    [:div {:class :product-short-desc} short-desc]
    (cond (not-empty rounds) (for [r rounds]
                               [c-round-search-result r])
          (empty? cart_items) [rc/button
-                              :on-click #(rf/dispatch [:add-to-cart id])
-                              :label "Add to Round (or Cart?)"]
+                              :on-click #(rf/dispatch [:start-round :product id])
+                              :label "Start Round"]
          :else [:div.in-cart [:span "In Cart"]])
    #_   (if (not-empty preposals)
           (for [p preposals]
@@ -134,7 +135,8 @@
                                              :status "active"}
                                     [:id :created :status]]
                                    [:cart_items {:buyer-id org-id}
-                                    [:id]]]]]]]}])
+                                    [:id]]
+                                   [:categories [:id :idstr :cname]]]]]]]}])
              [])]
     (def rs1 rs)
     #_ (println rs1)

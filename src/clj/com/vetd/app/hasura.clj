@@ -152,7 +152,7 @@
   (ws-send ws {:type (gql-msg-types-kw->str :connection-init)}))
 
 (defn ws-on-closed []
-  (println "CLOSED"))
+  (log/info "hasura ws CLOSED"))
 
 (defn ws-ib-handler
   [id data]
@@ -169,7 +169,7 @@
 (declare ensure-ws-setup)
 
 (defn mk-ws []
-  (println "MK-WS")
+  (log/info "hasura mk-ws")  
   (let [ws @(ah/websocket-client env/hasura-ws-url
                                  {:sub-protocols "graphql-ws"})]
     (ms/on-closed ws ws-on-closed)
@@ -264,7 +264,7 @@
 ;; ws from client
 (defmethod com/handle-ws-inbound :graphql
   [{:keys [sub-id query subscription? stop] :as msg} ws-id resp-fn]
-  (clojure.pprint/pprint query)
+#_  (clojure.pprint/pprint query)
   (let [qual-sub-id (keyword (name ws-id)
                              (str sub-id))]
     (if-not stop
