@@ -57,7 +57,7 @@
                  results)}
      {})))
 
-(rf/reg-event-fx
+#_(rf/reg-event-fx
  :add-to-cart
  (fn [{:keys [db]} [_ prod-id]]
    (let [qid (get-next-query-id)]
@@ -89,7 +89,7 @@
   [:div "Preposal Requested " (str created)])
 
 (defn c-product-search-result
-  [{:keys [id pname short-desc preposals logo rounds cart_items categories]} org-name ]
+  [{:keys [id pname short-desc preposals logo rounds categories]} org-name ]
   [:div {:class :product-search-result}
    [:div {:class :header}
     [:div.org-logo
@@ -101,10 +101,9 @@
    [:div {:class :product-short-desc} short-desc]
    (cond (not-empty rounds) (for [r rounds]
                               [c-round-search-result r])
-         (empty? cart_items) [rc/button
-                              :on-click #(rf/dispatch [:start-round :product id])
-                              :label "Start Round"]
-         :else [:div.in-cart [:span "In Cart"]])
+         :else [rc/button
+                :on-click #(rf/dispatch [:start-round :product id])
+                :label "Start Round"])
    #_   (if (not-empty preposals)
           (for [p preposals]
             [c-preposal-search-result p])
@@ -141,8 +140,6 @@
                                       [:rounds {:buyer-id org-id
                                                 :status "active"}
                                        [:id :created :status]]
-                                      [:cart_items {:buyer-id org-id}
-                                       [:id]]
                                       [:categories [:id :idstr :cname]]]]]]]}])
                 [])]
     [:div {:class :search-results}
