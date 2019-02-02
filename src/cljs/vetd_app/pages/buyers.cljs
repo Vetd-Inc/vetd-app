@@ -92,7 +92,9 @@
   [{:keys [id pname short-desc preposals logo rounds cart_items]} org-name ]
   [:div {:class :product-search-result}
    [:div {:class :header}
-    [:img {:src (str "https://s3.amazonaws.com/vetd-logos/" logo)}]
+    [:div.org-logo
+     [:div
+      [:img {:src (str "https://s3.amazonaws.com/vetd-logos/" logo)}]]]
     [:span.vendor-name pname] " by "
     [:span.org-name org-name]]
    [:div {:class :product-short-desc} short-desc]

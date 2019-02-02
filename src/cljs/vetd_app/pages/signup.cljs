@@ -21,12 +21,13 @@
 
 (rf/reg-event-fx
  :create-acct
- (fn [{:keys [db]} [_ [uname email org-name pwd b-or-v]]]
+ (fn [{:keys [db]} [_ [uname email org-name org-url pwd b-or-v]]]
    {:ws-send {:ws (:ws db)
               :payload {:cmd :create-acct
                         :return :ws/create-acct
                         :uname uname
                         :org-name org-name
+                        :org-url org-url
                         :email email
                         :pwd pwd
                         :b-or-v? (= b-or-v :buyer)}}}))
@@ -45,6 +46,7 @@
   (let [uname (r/atom "")
         email (r/atom "")
         org-name (r/atom "")
+        org-url (r/atom "")        
         pwd (r/atom "")
         cpwd (r/atom "")
         b-or-v (r/atom :buyer)]
@@ -62,6 +64,10 @@
         :model org-name
         :on-change #(reset! org-name %)
         :placeholder "Organization Name"]
+       [rc/input-text
+        :model org-url
+        :on-change #(reset! org-url %)
+        :placeholder "Organization Website URL"]
        [rc/input-password
         :model pwd
         :on-change #(reset! pwd %)
@@ -81,5 +87,62 @@
                  :label "Vendor"}]
          :on-change #(reset! b-or-v %)]]
        [rc/button
-        :on-click #(rf/dispatch [:create-acct [@uname @email @org-name @pwd @b-or-v]])
+        :on-click #(rf/dispatch [:create-acct [@uname @email @org-name @org-url @pwd @b-or-v]])
         :label "Create Account"]])))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

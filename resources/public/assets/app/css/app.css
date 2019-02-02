@@ -39,6 +39,14 @@ body{
   animation: 2s infinite pulse;
 }
 
+.org-logo{
+    height: 150px;
+    width: 150px;
+    border: solid 1px #666;
+}
+
+
+
 @keyframes pulse {
   0% {
     transform: scale(0.5);

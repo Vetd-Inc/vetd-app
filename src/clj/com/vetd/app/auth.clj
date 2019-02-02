@@ -94,27 +94,24 @@
       vals
       ffirst))
 
-(defn insert-org [org-name buyer? vendor?]
+(defn insert-org [org-name org-url buyer? vendor?]
   (let [[id idstr] (mk-id&str)]
-    [id
-     (db/insert! :orgs
-                 {:id id
-                  :idstr idstr
-                  :org_name org-name
-                  :is-buyer buyer?
-                  :is-vendor vendor?})]))
-
-(defn insert-select-org
-  [org-name buyer? vendor?]
-  (let [[uuid [n]] (insert-org org-name buyer? vendor?)]
-    (when (pos-int? n)
-      (select-org-by-id uuid))))
+    (-> (db/insert! :orgs
+                    {:id id
+                     :idstr idstr
+                     :oname org-name
+                     :url org-url
+                     :buyer_qm buyer?
+                     :vendor_qm vendor?
+                     :created (ut/now-ts)
+                     :updated (ut/now-ts)})
+        first)))
 
 (defn create-or-find-org
-  [org-name buyer? vendor?]
+  [org-name org-url buyer? vendor?]
   (if (select-org-by-name org-name)
     [false nil]
-    [true (insert-select-org org-name buyer? vendor?)]))
+    [true (insert-org org-name org-url buyer? vendor?)]))
 
 (defn select-user-by-email
   [email & fields]
@@ -136,18 +133,14 @@
 
 (defn insert-user
   [uname email pwd]
-  (let [uuid (ut/uuid-str)]  
-    [uuid
-     (db/insert! :users {:id uuid
-                         :uname uname
-                         :email email
-                         :pwd (bhsh/derive pwd)})]))
-
-(defn insert-select-user
-  [uname email pwd]
-  (let [[uuid [n]] (insert-user uname email pwd)]
-    (when (pos-int? n)
-      (select-user-by-id uuid))))
+  (let [[id idstr] (mk-id&str)]  
+    (-> (db/insert! :users
+                    {:id id
+                     :idstr idstr
+                     :uname uname
+                     :email email
+                     :pwd (bhsh/derive pwd)})
+        first)))
 
 #_(insert-select-user "John Test" "jtest@gmail.com" "hello")
 
@@ -189,32 +182,27 @@
 
 (defn insert-memb
   [user-id org-id]
-  (let [uuid (ut/uuid-str)]
-    [uuid
-     (db/insert! :memberships
-                 {:id uuid
-                  :user_id user-id
-                  :org_id org-id})]))
-
-(defn insert-select-memb
-  [user-id org-id]
-  (let [[id [n]] (insert-memb user-id org-id)]
-    (when (pos-int? n)
-      (select-memb-by-id id))))
+  (let [[id idstr] (mk-id&str)]
+    (-> (db/insert! :memberships
+                    {:id id
+                     :idstr idstr
+                     :user_id user-id
+                     :org_id org-id})
+        first)))
 
 (defn create-or-find-memb
   [user-id org-id]
   (if (select-memb-by-ids user-id org-id)
     [false nil]
-    [true (insert-select-memb user-id org-id)]))
+    [true (insert-memb user-id org-id)]))
 
 (defn create-account
-  [{:keys [uname org-name email pwd b-or-v?]}]
+  [{:keys [uname org-name org-url email pwd b-or-v?]}]
   (try
     (if (select-user-by-email email)
       {:email-used? true}
-      (let [user (insert-select-user uname email pwd)
-            [org-created? org] (create-or-find-org org-name
+      (let [user (insert-user uname email pwd)
+            [org-created? org] (create-or-find-org org-name org-url
                                                    (true? b-or-v?)
                                                    (false? b-or-v?))
             [memb-created? memb] (create-or-find-memb (:id user)
@@ -255,21 +243,13 @@
 
 (defn insert-session
   [user-id]
-  (let [id (mk-id)]
-    [id
-     (db/insert! :sessions
-                 {:id id
-                  :token (mk-session-token)
-                  :user_id user-id
-                  :created (ut/now-ts)})]))
-
-(defn insert-select-session
-  [user-id]
-  (let [[id [n]] (insert-session user-id)]
-    n
-    ;; wat?
-#_    (when (pos-int? n)
-      (select-session-by-id id))))
+  (let [[id idstr] (mk-id&str)]
+    (-> (db/insert! :sessions
+                    {:id id
+                     :token (mk-session-token)
+                     :user_id user-id
+                     :created (ut/now-ts)})
+        first)))
 
 (defn login
   [{:keys [email pwd]}]
@@ -277,7 +257,7 @@
         (let [memberships (-> id select-memb-org-by-user-id not-empty)]
           (when (->> memberships (keep :org) not-empty)
             {:logged-in? true
-             :session-token (-> id insert-select-session :token)
+             :session-token (-> id insert-session :token)
              :user (dissoc user :pwd)
              :memberships memberships})))
       {:logged-in? false
@@ -302,3 +282,25 @@
 
 
 ;; TODO logout!!!!!!!!!!!!!!!
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
