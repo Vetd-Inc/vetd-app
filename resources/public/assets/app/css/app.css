@@ -148,14 +148,17 @@ body{
     border: solid 1px #69c;
 }
 
-.product-search-result .vendor-name {
+.product-search-result .product-name {
     font-size: 17px;
 }
 
-
-
 .product-search-result .org-name {
     font-size: 17px;    
+}
+
+.category-search-result .category-name {
+    font-size: 17px;
+    padding: 10px;
 }
 
 .product-search-result .vendor-name:hover,
@@ -170,3 +173,8 @@ body{
     margin-bottom: 15px;
 }
 
+.category-search-result {
+    border: solid 1px #444;
+    margin: 20px;
+    padding: 10px;
+}

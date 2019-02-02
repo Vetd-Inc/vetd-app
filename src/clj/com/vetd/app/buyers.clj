@@ -25,6 +25,14 @@
       {:product-ids []
        :vendor-ids []}))
 
+(defn search-categories
+  [q]
+  (if (not-empty q)
+    (db/hs-query {:select [[:c.*]]
+                  :from [[:categories :c]]
+                  :where [(keyword "~*") :c.cname (str ".*?" q ".*")]
+                  :limit 5})))
+
 (defn select-rounds-by-ids
   [b-id v-ids]
   (db/hs-query {:select [:*]
@@ -72,7 +80,10 @@
 ;; TODO use session-id to verify permissions!!!!!!!!!!!!
 (defmethod com/handle-ws-inbound :search
   [{:keys [buyer-id query]} ws-id sub-fn]
-  (search-prods-vendors->ids query))
+  (-> query
+      search-prods-vendors->ids
+      (assoc :categories
+             (search-categories query))))
 
 (defmethod com/handle-ws-inbound :request-preposal
   [{:keys [buyer-id vendor-id]} ws-id sub-fn]

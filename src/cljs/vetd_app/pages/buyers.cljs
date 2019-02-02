@@ -95,7 +95,7 @@
     [:div.org-logo
      [:div
       [:img {:src (str "https://s3.amazonaws.com/vetd-logos/" logo)}]]]
-    [:span.vendor-name pname] " by "
+    [:span.product-name pname] " by "
     [:span.org-name org-name]]
    [:div "Categories: " (str (mapv :cname categories))]
    [:div {:class :product-short-desc} short-desc]
@@ -121,29 +121,39 @@
      ^{:key (:id p)}
      [c-product-search-result p (:oname v)])])
 
+(defn c-category-search-results
+  [{:keys [cname id idstr]}]
+  [:div {:class :category-search-result}
+   [rc/button :on-click #(rf/dispatch [:start-round :product id])
+    :label "Start Round"]
+   [:span.category-name cname]])
+
 (defn c-search-results []
   (let [org-id @(rf/subscribe [:org-id])
-        {:keys [product-ids vendor-ids] :as ids} @(rf/subscribe [:search-result-ids])
-        rs (if (not-empty ids)
-             @(rf/subscribe [:gql/sub
-                             {:queries
-                              [[:orgs {:id vendor-ids}
-                                [:id :oname :idstr :short-desc
-                                 [:products {:id product-ids}
-                                  [:id :pname :idstr :short-desc :logo
-                                   [:rounds {:buyer-id org-id
-                                             :status "active"}
-                                    [:id :created :status]]
-                                   [:cart_items {:buyer-id org-id}
-                                    [:id]]
-                                   [:categories [:id :idstr :cname]]]]]]]}])
-             [])]
-    (def rs1 rs)
-    #_ (println rs1)
+        {:keys [product-ids vendor-ids categories] :as ids} @(rf/subscribe [:search-result-ids])
+        prods (if (not-empty (concat product-ids vendor-ids))
+                @(rf/subscribe [:gql/sub
+                                {:queries
+                                 [[:orgs {:id vendor-ids}
+                                   [:id :oname :idstr :short-desc
+                                    [:products {:id product-ids}
+                                     [:id :pname :idstr :short-desc :logo
+                                      [:rounds {:buyer-id org-id
+                                                :status "active"}
+                                       [:id :created :status]]
+                                      [:cart_items {:buyer-id org-id}
+                                       [:id]]
+                                      [:categories [:id :idstr :cname]]]]]]]}])
+                [])]
     [:div {:class :search-results}
-     (for [v (:orgs rs)]
-       ^{:key (:id v)}
-       [c-vendor-search-results v])]))
+     [:div {:class :categories}
+      (for [c categories]
+        ^{:key (:id c)}
+        [c-category-search-results c])]
+     [:div {:class :orgs}
+      (for [v (:orgs prods)]
+        ^{:key (:id v)}
+        [c-vendor-search-results v])]]))
 
 (defn buyers-page []
   (let [ ;;search-type (r/atom :all)
