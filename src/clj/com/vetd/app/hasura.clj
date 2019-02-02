@@ -251,8 +251,8 @@
   (respond-to-client id {:mtype :data
                          :payload payload}))
 
-(defmethod handle-from-graphql :error [{:keys [id payload]}]
-  (log/error payload)
+(defmethod handle-from-graphql :error [{:keys [id payload] :as resp}]
+  (log/error resp)
   (respond-to-client id {:mtype :error
                          :payload payload}))
 

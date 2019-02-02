@@ -57,14 +57,15 @@
                  results)}
      {})))
 
-#_(rf/reg-event-fx
- :add-to-cart
- (fn [{:keys [db]} [_ prod-id]]
+(rf/reg-event-fx
+ :start-round
+ (fn [{:keys [db]} [_ etype eid]]
    (let [qid (get-next-query-id)]
-     {:ws-send {:payload {:cmd :add-to-cart
+     {:ws-send {:payload {:cmd :start-round
                           :return nil
+                          :etype etype
                           :buyer-id (:org-id db)
-                          :prod-id prod-id}}})))
+                          :eid eid}}})))
 
 
 ;; TODO link to request preposal <==================
@@ -121,15 +122,17 @@
      [c-product-search-result p (:oname v)])])
 
 (defn c-category-search-results
-  [{:keys [cname id idstr]}]
+  [{:keys [cname id idstr rounds] :as cat}]
   [:div {:class :category-search-result}
-   [rc/button :on-click #(rf/dispatch [:start-round :product id])
-    :label "Start Round"]
+   (if (empty? rounds)
+     [rc/button :on-click #(rf/dispatch [:start-round :category id])
+      :label "Start Round"]
+     "[In active round]")
    [:span.category-name cname]])
 
 (defn c-search-results []
   (let [org-id @(rf/subscribe [:org-id])
-        {:keys [product-ids vendor-ids categories] :as ids} @(rf/subscribe [:search-result-ids])
+        {:keys [product-ids vendor-ids category-ids] :as ids} @(rf/subscribe [:search-result-ids])
         prods (if (not-empty (concat product-ids vendor-ids))
                 @(rf/subscribe [:gql/sub
                                 {:queries
@@ -141,10 +144,19 @@
                                                 :status "active"}
                                        [:id :created :status]]
                                       [:categories [:id :idstr :cname]]]]]]]}])
-                [])]
+                [])
+        categories (if (not-empty category-ids)
+                     @(rf/subscribe [:gql/sub
+                                     {:queries
+                                      [[:categories {:id category-ids}
+                                        [:id :idstr :cname
+                                         [:rounds {:buyer-id org-id
+                                                   :status "active"}
+                                          [:id :created :status]]]]]}])
+                     [])]
     [:div {:class :search-results}
      [:div {:class :categories}
-      (for [c categories]
+      (for [c (:categories categories)]
         ^{:key (:id c)}
         [c-category-search-results c])]
      [:div {:class :orgs}

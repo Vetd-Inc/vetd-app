@@ -51,6 +51,10 @@
                              :idstr :text
                              :round_id :bigint
                              :product_id :bigint}}
+   :round_category {:columns {:id :bigint
+                              :idstr :text
+                              :round_id :bigint
+                              :category_id :bigint}}
    :cart_items {:columns {:id :bigint
                           :idstr :text
                           :buyer_id :bigint
@@ -85,31 +89,4 @@
 
 (defn walk-clj-kw->sql-field [v]
   (w/prewalk-replace clj-kw->sql-field v))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
