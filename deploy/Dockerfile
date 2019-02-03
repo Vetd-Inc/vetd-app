@@ -3,7 +3,7 @@
 FROM alpine:3.8
 
 RUN mkdir /opt; cd /opt; \
-wget https://s3.amazonaws.com/vetd-build-assets/openjdk-12-ea%2B25_linux-x64-musl_bin.tar.gz /
+wget https://s3.amazonaws.com/vetd-build-assets/openjdk-12-ea%2B25_linux-x64-musl_bin.tar.gz \
 && tar zxf openjdk-12-ea+25_linux-x64-musl_bin.tar.gz \
 && ln -s jdk-12 java \
 && rm -f openjdk-12-ea+25_linux-x64-musl_bin.tar.gz
