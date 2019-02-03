@@ -3,8 +3,11 @@ version: 0.2
 phases:
   install:
     commands:
-      # Upgrade AWS CLI to the latest version; Install Leiningen; Install Clojure CLI tools
       - cd $HOME
+      - echo "\nSetup .m2\n"
+      - wget https://s3.amazonaws.com/vetd-build-assets/vetd-app-m2.tar.gz
+      - tar -xvf vetd-app-m2.tar.gz
+      - echo "\nUpgrade AWS CLI to the latest version; Install Leiningen; Install Clojure CLI tools\n"
       - wget https://raw.github.com/technomancy/leiningen/stable/bin/lein; chmod +x lein; mv lein /bin;
       - LEIN_ROOT=true lein
       - mkdir clj_tools_install; cd clj_tools_install
