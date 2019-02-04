@@ -117,7 +117,7 @@
                     :columns {:id [:bigint :NOT :NULL]
                               :idstr [:text]
                               :created [:timestamp :with :time :zone]
-                              :udpated [:timestamp :with :time :zone]
+                              :updated [:timestamp :with :time :zone]
                               :deleted [:timestamp :with :time :zone]
                               :oname [:text]
                               :buyer_qm [:boolean]
@@ -127,11 +127,25 @@
                     :owner :vetd
                     :grants {:hasura [:SELECT]}}]
     [:create-table {:schema :vetd
+                    :name :products
+                    :columns {:id [:bigint :NOT :NULL]
+                              :idstr [:text]
+                              :created [:timestamp :with :time :zone]
+                              :updated [:timestamp :with :time :zone]
+                              :deleted [:timestamp :with :time :zone]
+                              :pname [:text]
+                              :vendor_id [:bigint]
+                              :short_desc [:text]
+                              :long_desc [:text]
+                              :logo [:text]}
+                    :owner :vetd
+                    :grants {:hasura [:SELECT]}}]
+    [:create-table {:schema :vetd
                     :name :users
                     :columns {:id [:bigint :NOT :NULL]
                               :idstr [:text]
                               :created [:timestamp :with :time :zone]
-                              :udpated [:timestamp :with :time :zone]
+                              :updated [:timestamp :with :time :zone]
                               :deleted [:timestamp :with :time :zone]
                               :uname [:text]
                               :email [:text]
@@ -142,7 +156,7 @@
                     :name :sessions
                     :columns {:id [:bigint :NOT :NULL]
                               :created [:timestamp :with :time :zone]
-                              :udpated [:timestamp :with :time :zone]
+                              :updated [:timestamp :with :time :zone]
                               :deleted [:timestamp :with :time :zone]
                               :token [:text]
                               :user_id [:bigint]}
@@ -154,7 +168,7 @@
                               :idstr [:text]
                               :cname [:text]
                               :created [:timestamp :with :time :zone]
-                              :udpated [:timestamp :with :time :zone]
+                              :updated [:timestamp :with :time :zone]
                               :deleted [:timestamp :with :time :zone]}
                     :owner :vetd
                     :grants {:hasura [:SELECT]}}]
@@ -164,7 +178,7 @@
                     :columns {:id [:bigint :NOT :NULL]
                               :idstr [:text]
                               :created [:timestamp :with :time :zone]
-                              :udpated [:timestamp :with :time :zone]
+                              :updated [:timestamp :with :time :zone]
                               :deleted [:timestamp :with :time :zone]
                               :prod_id [:bigint]
                               :cat_id  [:bigint]}
@@ -186,7 +200,7 @@
                     :columns {:id [:bigint :NOT :NULL]
                               :idstr [:text]
                               :created [:timestamp :with :time :zone]
-                              :udpated [:timestamp :with :time :zone]
+                              :updated [:timestamp :with :time :zone]
                               :deleted [:timestamp :with :time :zone]
                               :org_id [:bigint]
                               :user_id [:bigint]}
@@ -197,7 +211,7 @@
                     :columns {:id [:bigint :NOT :NULL]
                               :idstr [:text]
                               :created [:timestamp :with :time :zone]
-                              :udpated [:timestamp :with :time :zone]
+                              :updated [:timestamp :with :time :zone]
                               :deleted [:timestamp :with :time :zone]
                               :buyer_id [:bigint]
                               :status [:text]}
@@ -208,7 +222,7 @@
                     :columns {:id [:bigint :NOT :NULL]
                               :idstr [:text]
                               :created [:timestamp :with :time :zone]
-                              :udpated [:timestamp :with :time :zone]
+                              :updated [:timestamp :with :time :zone]
                               :deleted [:timestamp :with :time :zone]
                               :round_id [:bigint]
                               :category_id [:bigint]}
@@ -219,7 +233,7 @@
                     :columns {:id [:bigint :NOT :NULL]
                               :idstr [:text]
                               :created [:timestamp :with :time :zone]
-                              :udpated [:timestamp :with :time :zone]
+                              :updated [:timestamp :with :time :zone]
                               :deleted [:timestamp :with :time :zone]
                               :round_id [:bigint]
                               :product_id [:bigint]}

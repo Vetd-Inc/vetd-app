@@ -22,6 +22,10 @@
                :db (assoc env/pg-db
                         :dbname "vetd1")})
 
+#_
+(mig/rollback {:store :database
+               :db (assoc env/pg-db
+                          :dbname "vetd1")})
 
 (def pg-db env/pg-db)
 
