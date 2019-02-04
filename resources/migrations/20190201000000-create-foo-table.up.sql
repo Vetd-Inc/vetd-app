@@ -1,1 +1,0 @@
-CREATE TABLE IF NOT EXISTS vetd.foo(id BIGINT);

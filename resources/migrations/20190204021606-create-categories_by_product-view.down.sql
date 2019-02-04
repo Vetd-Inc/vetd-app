@@ -1,1 +1,0 @@
-DROP VIEW IF EXISTS vetd.categories_by_product;

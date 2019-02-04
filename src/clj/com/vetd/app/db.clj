@@ -22,6 +22,7 @@
                :db (assoc env/pg-db
                         :dbname "vetd1")})
 
+
 #_
 (mig/rollback {:store :database
                :db (assoc env/pg-db
@@ -85,13 +86,19 @@ CREATE TABLE IF NOT EXISTS %s (
 
 #_ (create-table-if "test2")
 
-(defn exe! [cmd]
+(defn exe! [cmd & [db]]
   (try
-    (j/execute! pg-db cmd)
+    (j/execute! (or db pg-db) cmd)
     (catch Exception e
       (clojure.pprint/pprint cmd)
       (log/error e)
       (throw e))))
+
+(defn hs-exe! [hsql & [db]]
+  (-> hsql
+      (hs/format :allow-dashed-names? true
+                 :quoting :ansi)
+      (exe! db)))
 
 (defn insert!
   [table row]

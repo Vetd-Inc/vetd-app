@@ -1,5 +1,6 @@
 (ns com.vetd.app.db-copier
-  (:require [clojure.java.jdbc :as j]
+  (:require [com.vetd.app.env :as env]
+   [clojure.java.jdbc :as j]
             [clojure.java.io :as io]
             [clojure.string :as st]
             [taoensso.timbre :as log]
@@ -19,14 +20,15 @@
   [data copier] ;; TODO hints
   (try
     (do
-      (.writeToCopy copier data 0 (count data))
+      (doseq [d data]
+        (.writeToCopy copier d 0 (count d)))
       (.endCopy copier))
     true
     (catch Exception e
       (log/error e "copy-from FAILed")
       false)))
 
-(defn copy-from-slurp [source copier]
+#_(defn copy-from-slurp [source copier]
   (copy-from (slurp-bytes source)
              copier))
 
@@ -39,6 +41,39 @@
                    (or delim "\\t")
                    (or qt "\""))))
 
+(defn mk-copier-from-stmt [s conn]
+  (.copyIn (CopyManager. conn) s))
+
+#_(defn lines->ba [sv]
+  (let [size (->> sv
+                  (map count)
+                  (reduce +))
+        ba (byte-array (+ size (count sv)))
+        bb (ByteBuffer/wrap ba)]
+    (doseq [s sv]
+      (.put bb (.getBytes s))
+      (.put bb (byte 10)))
+    ba))
+
+(defn lines->ba-vec [sv]
+  (map (fn [s]
+         (let [size (-> s count inc)
+               ba (byte-array size)
+               bb (ByteBuffer/wrap ba)]
+           (.put bb (.getBytes s))
+           (.put bb (byte 10))
+           ba))
+       sv))
+
+(defn copy-from-sql-dump [in conn]
+  (let [[copy-stmt & data] (->> in
+                               slurp
+                               st/split-lines)]
+    (copy-from (lines->ba-vec data)
+               (mk-copier-from-stmt copy-stmt conn))))
+
+#_(copy-from-sql-dump "/home/bill/repos/vetd-app/resources/migrations/data/categories.sql"
+                    conn111)
 
 (defn not-found-copy-start?
   [state s]
@@ -47,7 +82,7 @@
           
           (= (take 4 s) (seq "COPY"))
           (do (reset! state :found)
-              true)
+              false #_true)
 
           :else true)))
 
@@ -62,7 +97,7 @@
           
           :else false)))
 
-(defn pg-dump->copy-data-lines
+(defn parse-pg-dump-str
   [pg-dump]
   (let [copy-start (atom nil)
         copy-end (atom nil)]
@@ -70,4 +105,18 @@
          st/split-lines
          (drop-while (partial not-found-copy-start? copy-start))
          (take-while (partial not-found-copy-end? copy-end)))))
+
+(defn prep-pg-dump-file
+  [in out]
+  (->> in
+       slurp
+       parse-pg-dump-str
+       (st/join "\n")
+       (spit out)))
+
+#_(prep-pg-dump-file "/home/bill/categories.sql" "/home/bill/repos/vetd-app/resources/migrations/data/categories.sql")
+
+#_(prep-pg-dump-file "/home/bill/orgs.sql" "/home/bill/repos/vetd-app/resources/migrations/data/orgs.sql")
+
+#_(prep-pg-dump-file "/home/bill/products.sql" "/home/bill/repos/vetd-app/resources/migrations/data/productes.sql")
 

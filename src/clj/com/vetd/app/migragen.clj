@@ -1,15 +1,16 @@
 (ns com.vetd.app.migragen
   (:require [com.vetd.app.common :as com]
             [com.vetd.app.util :as ut]
+            [com.vetd.app.db-copier :as cp]
+            [com.vetd.app.env :as env]
+            [com.vetd.app.db :as db]            
             [clojure.java.jdbc :as j]
             [taoensso.timbre :as log]
             [honeysql.core :as hny]
             [clojure.java.io :as io]
-            clojure.edn))
+            clojure.edn
+            clojure.pprint))
 
-
-
-(defmulti mk-sql (fn [[op]] op))
 
 (defn drop-table-if-exists [schema table]
   (format "DROP TABLE IF EXISTS %s.%s;"
@@ -21,12 +22,15 @@
           schema
           view))
 
+(defmulti mk-sql (fn [[op]] op))
+
 (defmethod mk-sql :create-table
   [[_ {:keys [schema columns owner grants] table :name}]]
   (let [schema' (name schema)
         table' (name table)
         owner' (name owner)]
     {:name-part (format "create-%s-table" table')
+     :ext "sql"     
      :up (->> (concat [(drop-table-if-exists schema'
                                              table')
                        (j/create-table-ddl (format "%s.%s"
@@ -56,6 +60,7 @@
         view' (name view)
         owner' (name owner)]
     {:name-part (format "create-%s-view" view')
+     :ext "sql"
      :up (->> (concat [(drop-view-if-exists schema'
                                             view')
                        (format "CREATE VIEW %s.%s AS %s;"
@@ -74,12 +79,25 @@
      :down [(drop-view-if-exists schema'
                                  view')]}))
 
+(defmethod mk-sql :copy-from
+  [[_ {name-kw :name :as m}]]
+  {:name-part (format "copy-from-%s" (name name-kw))
+   :ext "edn"
+   :both
+   [(with-out-str
+      (clojure.pprint/with-pprint-dispatch clojure.pprint/code-dispatch
+        (-> m (dissoc :name) clojure.pprint/pprint)))]})
+
 (defn mk-migration-file-name
-  [path idx [yr mo da hr mi] name-part up-down]
-  (format "%s/%04d%02d%02d%02d%02d%02d-%s.%s.sql"
+  [path ext idx [yr mo da hr mi] name-part up-down]
+  (format "%s/%04d%02d%02d%02d%02d%02d-%s%s.%s"
           path
           yr mo da hr mi idx
-          name-part up-down))
+          name-part
+          (if up-down
+            (str "." up-down)
+            "")
+          ext))
 
 (defn mk-migration-file-contents
   [sqls]
@@ -88,180 +106,37 @@
 
 (defn mk-migration-file
   [path idx [dtime stmt]]
-  (let [{:keys [name-part up down]} (mk-sql stmt)]
-    (spit (mk-migration-file-name path idx dtime name-part "up")
-          (mk-migration-file-contents up))
-    (spit (mk-migration-file-name path idx dtime name-part "down")
-          (mk-migration-file-contents down))))
+  (let [{:keys [name-part ext up down both]} (mk-sql stmt)]
+    (when up
+      (spit (mk-migration-file-name path ext idx dtime name-part "up")
+            (mk-migration-file-contents up)))
+    (when down
+      (spit (mk-migration-file-name path ext idx dtime name-part "down")
+            (mk-migration-file-contents down)))
+    (when both
+      (spit (mk-migration-file-name path ext idx dtime name-part nil)
+            (mk-migration-file-contents both)))))
 
 (defn mk-migration-files
   [migrations-def dest-path]
-  (map-indexed (partial mk-migration-file dest-path)
-   (for [[dtime & stmts] migrations-def
-         s stmts]
-     [dtime s])))
+  (map-indexed (partial mk-migration-file
+                        (-> dest-path
+                            io/resource
+                            .getPath))
+               (for [[dtime & stmts] migrations-def
+                     s stmts]
+                 [dtime s])))
 
+(defn mk-copy-from-up-fn [filename]
+  (fn [{:keys [db]}]
+    (cp/copy-from-sql-dump
+     (-> (str "migrations/" filename )
+         io/resource
+         .getPath)
+     (j/get-connection db))))
 
-#_ (mk-migration-files migrations
-                       "/home/bill/tmp1")
+(defn mk-exe-honeysql-fn [hsql]
+  (fn [{:keys [db]}]
+    (db/hs-exe! hsql
+                db)))
 
-#_ (mk-migration-files migrations
-                       (-> "migrations"
-                           io/resource
-                           .getPath))
-
-(def migrations
-  [[[2019 2 4 02 16]
-    [:create-table {:schema :vetd
-                    :name :orgs
-                    :columns {:id [:bigint :NOT :NULL]
-                              :idstr [:text]
-                              :created [:timestamp :with :time :zone]
-                              :updated [:timestamp :with :time :zone]
-                              :deleted [:timestamp :with :time :zone]
-                              :oname [:text]
-                              :buyer_qm [:boolean]
-                              :vendor_qm [:boolean]
-                              :short_desc [:text]
-                              :long_desc [:text]}
-                    :owner :vetd
-                    :grants {:hasura [:SELECT]}}]
-    [:create-table {:schema :vetd
-                    :name :products
-                    :columns {:id [:bigint :NOT :NULL]
-                              :idstr [:text]
-                              :created [:timestamp :with :time :zone]
-                              :updated [:timestamp :with :time :zone]
-                              :deleted [:timestamp :with :time :zone]
-                              :pname [:text]
-                              :vendor_id [:bigint]
-                              :short_desc [:text]
-                              :long_desc [:text]
-                              :logo [:text]}
-                    :owner :vetd
-                    :grants {:hasura [:SELECT]}}]
-    [:create-table {:schema :vetd
-                    :name :users
-                    :columns {:id [:bigint :NOT :NULL]
-                              :idstr [:text]
-                              :created [:timestamp :with :time :zone]
-                              :updated [:timestamp :with :time :zone]
-                              :deleted [:timestamp :with :time :zone]
-                              :uname [:text]
-                              :email [:text]
-                              :pwd [:text]}
-                    :owner :vetd
-                    :grants {:hasura [:SELECT :INSERT]}}]
-    [:create-table {:schema :vetd
-                    :name :sessions
-                    :columns {:id [:bigint :NOT :NULL]
-                              :created [:timestamp :with :time :zone]
-                              :updated [:timestamp :with :time :zone]
-                              :deleted [:timestamp :with :time :zone]
-                              :token [:text]
-                              :user_id [:bigint]}
-                    :owner :vetd
-                    :grants {:hasura [:SELECT :INSERT]}}]
-    [:create-table {:schema :vetd
-                    :name :categories
-                    :columns {:id [:bigint :NOT :NULL]
-                              :idstr [:text]
-                              :cname [:text]
-                              :created [:timestamp :with :time :zone]
-                              :updated [:timestamp :with :time :zone]
-                              :deleted [:timestamp :with :time :zone]}
-                    :owner :vetd
-                    :grants {:hasura [:SELECT]}}]
-
-    [:create-table {:schema :vetd
-                    :name :product_categories
-                    :columns {:id [:bigint :NOT :NULL]
-                              :idstr [:text]
-                              :created [:timestamp :with :time :zone]
-                              :updated [:timestamp :with :time :zone]
-                              :deleted [:timestamp :with :time :zone]
-                              :prod_id [:bigint]
-                              :cat_id  [:bigint]}
-                    :owner :vetd
-                    :grants {:hasura [:SELECT]}}]
-    [:create-view {:schema :vetd
-                   :name :categories_by_product
-                   :honey {:select [[:pc.id :pcid]
-                                    :pc.prod_id
-                                    :c.id
-                                    :c.idstr
-                                    :c.cname]
-                           :from [[:product_categories :pc]]
-                           :join [[:categories :c]
-                                  [:= :c.id :pc.cat_id]]}
-                   :owner :vetd}]
-    [:create-table {:schema :vetd
-                    :name :memberships
-                    :columns {:id [:bigint :NOT :NULL]
-                              :idstr [:text]
-                              :created [:timestamp :with :time :zone]
-                              :updated [:timestamp :with :time :zone]
-                              :deleted [:timestamp :with :time :zone]
-                              :org_id [:bigint]
-                              :user_id [:bigint]}
-                    :owner :vetd
-                    :grants {:hasura [:SELECT]}}]
-    [:create-table {:schema :vetd
-                    :name :rounds
-                    :columns {:id [:bigint :NOT :NULL]
-                              :idstr [:text]
-                              :created [:timestamp :with :time :zone]
-                              :updated [:timestamp :with :time :zone]
-                              :deleted [:timestamp :with :time :zone]
-                              :buyer_id [:bigint]
-                              :status [:text]}
-                    :owner :vetd
-                    :grants {:hasura [:SELECT]}}]
-    [:create-table {:schema :vetd
-                    :name :round_category
-                    :columns {:id [:bigint :NOT :NULL]
-                              :idstr [:text]
-                              :created [:timestamp :with :time :zone]
-                              :updated [:timestamp :with :time :zone]
-                              :deleted [:timestamp :with :time :zone]
-                              :round_id [:bigint]
-                              :category_id [:bigint]}
-                    :owner :vetd
-                    :grants {:hasura [:SELECT]}}]
-    [:create-table {:schema :vetd
-                    :name :round_product
-                    :columns {:id [:bigint :NOT :NULL]
-                              :idstr [:text]
-                              :created [:timestamp :with :time :zone]
-                              :updated [:timestamp :with :time :zone]
-                              :deleted [:timestamp :with :time :zone]
-                              :round_id [:bigint]
-                              :product_id [:bigint]}
-                    :owner :vetd
-                    :grants {:hasura [:SELECT]}}]
-    [:create-view {:schema :vetd
-                   :name :rounds_by_category
-                   :honey {:select [[:rc.id :rcid]
-                                    :rc.category_id
-                                    :r.id
-                                    :r.idstr                                    
-                                    :r.created
-                                    :r.buyer_id
-                                    :r.status]
-                           :from [[:round_category :rc]]
-                           :join [[:rounds :r]
-                                  [:= :r.id :rc.round_id]]}
-                   :owner :vetd}]
-    [:create-view {:schema :vetd
-                   :name :rounds_by_product
-                   :honey {:select [[:rp.id :rcid]
-                                    :rp.product_id
-                                    :r.id
-                                    :r.idstr                                    
-                                    :r.created
-                                    :r.buyer_id
-                                    :r.status]
-                           :from [[:round_product :rp]]
-                           :join [[:rounds :r]
-                                  [:= :r.id :rp.round_id]]}
-                   :owner :vetd}]]])

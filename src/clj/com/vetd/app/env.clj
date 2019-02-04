@@ -20,12 +20,12 @@
                  :dbname "vetd1"
                  :host "vetd-db.chwslkxwld9a.us-east-1.rds.amazonaws.com"
                  :port 5432
-                 :user "hasura"
+                 :user "hasura" ;; use vetd user not hasura user?????????
                  ;; change pwd and move to prod env
                  :password "Hasura1"})
 
 (def pg-db-dev {:dbtype "postgresql"
-                :dbname "vetd"
+                :dbname "vetd1"
                 :host "localhost"
                 :port 5433 #_ 5434
                 :user "vetd"
