@@ -3,7 +3,7 @@
             [com.vetd.app.util :as ut]
             [com.vetd.app.env :as env]
             [com.vetd.app.db-schema :as sch]
-            [com.vetd.app.path :as path]
+            [migratus.core :as mig]
             [clojure.java.jdbc :as j]
             [clojure.core.async :as a]
             [taoensso.timbre :as log]
@@ -13,11 +13,15 @@
             clojure.edn))
 
 
+#_(mig/migrate
+ {:store :database
+  :db (assoc env/pg-db
+             :dbname "vetd1")})
 
+#_ (mig/reset {:store :database
+               :db (assoc env/pg-db
+                        :dbname "vetd1")})
 
-
-;; TODO use Migratus?
-;; https://github.com/yogthos/migratus
 
 (def pg-db env/pg-db)
 
