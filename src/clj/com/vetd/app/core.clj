@@ -18,4 +18,5 @@
   (log/set-level! :info)
   (mig/migrate{:store :database
                :db env/pg-db})
+  (log/set-level! :info)  
   (svr/start-server))

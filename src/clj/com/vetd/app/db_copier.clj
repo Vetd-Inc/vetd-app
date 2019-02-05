@@ -57,23 +57,23 @@
 
 (defn lines->ba-vec [sv]
   (map (fn [s]
-         (let [size (-> s count inc)
+         (let [bs (.getBytes s)
+               size (-> bs count inc)
                ba (byte-array size)
                bb (ByteBuffer/wrap ba)]
-           (.put bb (.getBytes s))
+           (.put bb bs)
            (.put bb (byte 10))
            ba))
        sv))
 
 (defn copy-from-sql-dump [in conn]
-  (let [[copy-stmt & data] (->> in
-                               slurp
-                               st/split-lines)]
-    (copy-from (lines->ba-vec data)
-               (mk-copier-from-stmt copy-stmt conn))))
-
-#_(copy-from-sql-dump "/home/bill/repos/vetd-app/resources/migrations/data/categories.sql"
-                    conn111)
+  (time
+   (let [[copy-stmt & data] (->> in
+                                 slurp
+                                 st/split-lines)]
+     (doseq [ba-vec (partition-all 1000 (lines->ba-vec data))]
+       (copy-from ba-vec
+                  (mk-copier-from-stmt copy-stmt conn))))))
 
 (defn not-found-copy-start?
   [state s]

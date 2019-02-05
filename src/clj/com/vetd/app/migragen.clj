@@ -8,6 +8,7 @@
             [taoensso.timbre :as log]
             [honeysql.core :as hny]
             [clojure.java.io :as io]
+            [cheshire.core :as json]
             clojure.edn
             clojure.pprint))
 
@@ -140,3 +141,47 @@
     (db/hs-exe! hsql
                 db)))
 
+(defn mk-hasura-rel
+  [schema [rel-name {:keys [rem-tbl col-map]}]]
+  {:using
+   {:manual_configuration
+    {:remote_table {:schema schema :name rem-tbl}
+     :column_mapping col-map}}
+   :name rel-name
+   :comment nil})
+
+(defn mk-hasura-table
+  [schema [table {:keys [obj-rel arr-rel ins-per sel-per upd-per del-per evt-trg]}]]
+  {:table {:schema schema :name table}
+   :object_relationships (mapv (partial mk-hasura-rel schema) obj-rel)
+   :array_relationships (mapv (partial mk-hasura-rel schema) arr-rel)
+   :insert_permissions (or ins-per [])
+   :select_permissions (or sel-per [])
+   :update_permissions (or upd-per [])
+   :delete_permissions (or del-per [])
+   :event_triggers (or evt-trg [])})
+
+(defn mk-hasura-schema
+  [[schema tables]]
+  (mapv (partial mk-hasura-table schema)
+        tables))
+
+(defn proc-hasura-meta-cfg [cfg]
+  (spit (-> "hasura" io/resource .getPath (str "/metadata-gen.json"))
+        (-> cfg
+            (update :tables (partial mapv mk-hasura-schema))
+            (update :tables #(->> % (apply concat) vec))
+            (json/generate-string))))
+
+
+
+(-> "/home/bill/repos/vetd-app/resources/hasura-metadata.json"
+    slurp
+    json/parse-string
+    clojure.pprint/pprint )
+
+
+(-> "/home/bill/repos/vetd-app/resources/hasura/metadata-gen.json"
+    slurp
+    json/parse-string
+    clojure.pprint/pprint )

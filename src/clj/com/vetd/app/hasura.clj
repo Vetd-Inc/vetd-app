@@ -7,7 +7,7 @@
             [manifold.stream :as ms]
             [manifold.deferred :as md]            
             [clojure.java.jdbc :as j]
-            [clojure.core.async :as a]
+            [clojure.string :as st]            
             [taoensso.timbre :as log]
             [honeysql.core :as hs]
             [honeysql.format :as hsfmt]
@@ -89,12 +89,107 @@
     
     :else v))
 
-(defn ->gql-str
+
+
+(declare walk-gql-query)
+
+(defn walk-gql-query->sub-kw
+  [field args sub]
+  (sch/walk-clj-kw->sql-field sub))
+
+(defn walk-gql-query->sub-coll
+  [field args sub]
+  (walk-gql-query false sub))
+
+(defn walk-gql-query->sub*
+  [field args sub]
+  (if (keyword? sub)
+    (walk-gql-query->sub-kw field args sub)
+    (walk-gql-query->sub-coll field args sub)))
+
+(defn walk-gql-query->sub
+  [field args sub]
+  (mapv (partial walk-gql-query->sub* field args)
+        sub))
+
+(defn walk-gql-query->args
+  [field args sub]
+  (-> (for [[k v] args]
+        [k (if (->> k name (take-last 2) (= [\i \d]))
+             (if (coll? v)
+               (mapv str v)
+               (str v))
+             v)])
+      (into {})
+      process-sub-gql-map
+      sch/walk-clj-kw->sql-field))
+
+(defn walk-gql-query->entity
+  [field args sub]
+  (->> field
+       sch/walk-clj-kw->sql-field
+       name
+       ;; HACK enforce default schema
+       (str "vetd_")
+       keyword))
+
+(defn walk-gql-query->field
+  [field args sub]
+  (sch/walk-clj-kw->sql-field field))
+
+(defn walk-gql-query
+  [root? [field a b]]
+  (let [[args sub] (if (map? a)
+                     [a b] [nil a])
+        field' (if root?
+                 (walk-gql-query->entity field args sub)
+                 (walk-gql-query->field field args sub))
+        subs'  (walk-gql-query->sub field args sub)]
+    (if args
+      [field'
+       (walk-gql-query->args field args subs)
+       subs']
+      [field' subs'])))
+
+(defn walk-gql
+  [{:keys [queries]}]
+  {:queries (mapv (partial walk-gql-query true) queries)})
+
+#_(defn ->gql-str
   [v]
   (->> v
        (w/postwalk process-sub-gql)
        sch/walk-clj-kw->sql-field  ;; will I regret this??????
        dgql/graphql-query))
+
+(defn ->gql-str
+  [v]
+  (->> v
+       walk-gql
+       dgql/graphql-query))
+
+#_(clojure.pprint/pprint 
+ (walk-gql {:queries
+            [[:orgs {:id #{4 5 6}}
+              [:id :oname :idstr :short-desc
+               [:products {:id #{1 2 3}}
+                [:id :pname :idstr :short-desc :logo
+                 [:rounds {:buyer-id 123
+                           :status "active"}
+                  [:id :created :status]]
+                 [:categories [:id :idstr :cname]]]]]]]}))
+
+#_(println
+ (dgql/graphql-query
+  (walk-gql {:queries
+             [[:orgs {:id #{4 5 6}}
+               [:id :oname :idstr :short-desc
+                [:products {:id #{1 2 3}}
+                 [:id :pname :idstr :short-desc :logo :buyer?
+                  [:rounds {:buyer-id 123
+                            :status "active"}
+                   [:id :created :status]]
+                  [:categories [:id :idstr :cname]]]]]]]})))
 
 #_(->gql-str {:queries [[:sessions
                          {:id 5
@@ -102,7 +197,7 @@
                                    :deleted {:_is_null false}}}
                          [:user_id]]]})
 
-(defn walk-ids->long*
+#_(defn walk-ids->long*
   [m]
   (if (map? m)
     (into {}
@@ -113,15 +208,74 @@
     m))
 
 ;; HACK -- Hasura returns bigints as string
-(defn walk-ids->long [v]
+#_(defn walk-ids->long [v]
   (w/prewalk walk-ids->long* v))
 
 
-(defn process-result
+#_(defn process-result
   [r]
   (-> r
       sch/walk-sql-field->clj-kw
       walk-ids->long))
+
+(defn walk-result-sub-kw [field sub v]
+  (sch/walk-sql-field->clj-kw sub))
+
+(declare walk-result-sub-val-pair)
+
+(defn walk-result-sub-map [field sub coll]
+  (->> (for [[k v] coll]
+         (walk-result-sub-val-pair sub k v))
+       (into {})))
+
+(defn walk-result-sub-vec [field sub coll]
+  (mapv (partial walk-result-sub-map field sub)
+        coll))
+
+(defn walk-result-sub-val [field sub v]
+  ;; HACK -- Hasura returns bigints as string
+  (if (->> sub name (take-last 2) (= [\i \d]))
+    (ut/->long v)
+    v))
+
+(defn walk-result-sub-val-pair
+  [field sub v]
+  [(walk-result-sub-kw field sub v)
+   (cond (map? v) (walk-result-sub-map field sub v)
+         (sequential? v) (walk-result-sub-vec field sub v)
+         :else (walk-result-sub-val field sub v))])
+
+(defn walk-result-recs
+  [field rec]
+  (->> (for [[k v] rec]
+         (walk-result-sub-val-pair field k v))
+       (into {})))
+
+(defn walk-result->entity-kw
+  [field recs]
+  (-> field
+      name
+      (st/replace #"^vetd_" "")
+      keyword))
+
+(defn walk-result->field
+  [field recs]
+  field)
+
+
+(defn walk-result-field-recs-pair
+  [root? field recs]
+  [(if root?
+     (walk-result->entity-kw field recs)
+     (walk-result->field field recs))
+   (mapv (partial walk-result-recs field)
+         recs)])
+
+(defn walk-result
+  [r]
+  (->> (for [[k v] r]
+         (walk-result-field-recs-pair true k v))
+       (into {})))
 
 (defmulti handle-from-graphql (fn [{gtype :type}] (gql-msg-types-str->kw gtype)))
 
@@ -163,7 +317,7 @@
       (log/error errors))
     (-> data'        
         (update :payload :data)
-        (update :payload process-result)
+        (update :payload walk-result #_process-result)
         handle-from-graphql)))
 
 (declare ensure-ws-setup)
@@ -285,6 +439,7 @@
                    :id qual-sub-id})))
     nil))
 
+
 (defn sync-query
   [queries]
   (try
@@ -297,7 +452,7 @@
       (-> r
           (json/parse-string keyword)
           :data
-          process-result))
+          walk-result #_process-result))
     (catch Exception e
       (def e1 e)
       (log/error e (try (some-> e .getData :body slurp)
@@ -305,6 +460,12 @@
       (throw e))))
 
 
+#_(clojure.pprint/pprint  (sync-query [[:categories {:_limit 10} [:id [:rounds [:id]]]]]))
+
 #_(send-terminate)
 
-
+#_
+(clojure.pprint/pprint 
+ (json/parse-string
+  (slurp (clojure.java.io/resource "hasura-metadata.json"))
+  keyword))

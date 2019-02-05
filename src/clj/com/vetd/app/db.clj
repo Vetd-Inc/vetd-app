@@ -19,14 +19,12 @@
              :dbname "vetd1")})
 
 #_ (mig/reset {:store :database
-               :db (assoc env/pg-db
-                        :dbname "vetd1")})
+               :db env/pg-db})
 
 
 #_
 (mig/rollback {:store :database
-               :db (assoc env/pg-db
-                          :dbname "vetd1")})
+               :db env/pg-db})
 
 (def pg-db env/pg-db)
 

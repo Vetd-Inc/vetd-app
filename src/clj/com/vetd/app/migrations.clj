@@ -218,6 +218,50 @@
                   :up-fn mig-2019-02-04-copy-from-products-up
                   :down-fn mig-2019-02-04-copy-from-products-down}]]])
 
+(def hasura-meta-cfg
+  {:remote_schemas []
+   :query_templates []
+   :tables {:vetd
+            {:round_category {}
+             :sessions {}
+             :categories {:arr-rel
+                          {:rounds
+                           {:rem-tbl :rounds_by_category
+                            :col-map {:id "category_id"}}}}
+             :rounds_by_product {}
+             :orgs {:arr-rel
+                    {:memberships
+                     {:rem-tbl :memberships
+                      :col-map {:id "org_id"}}
+                     :products
+                     {:rem-tbl :products
+                      :col-map {:id "vendor_id"}}}}
+             :rounds {}
+             :rounds_by_category {}
+             :users {}
+             :products {:obj-rel
+                        {:vendor {:rem-tbl :orgs
+                                  :col-map {:vendor_id "id"}}}
+                        :arr-rel
+                        {:rounds
+                         {:rem-tbl :rounds_by_product
+                          :col-map {:id "product_id"}}
+                         :categories
+                         {:rem-tbl :categories_by_product
+                          :col-map {:id "prod_id"}}}}
+             :categories_by_product {}
+             :round_product {:obj-rel
+                             {:round {:rem-tbl :rounds
+                                      :col-map {:round_id "id"}}}}
+             :memberships {:obj-rel
+                           {:org {:rem-tbl :orgs
+                                  :col-map {:org_id "id"}}
+                            :user {:rem-tbl :users
+                                   :col-map {:user_id "id"}}}}}}})
 
 #_(mig/mk-migration-files migrations
-                        "migrations")
+                          "migrations")
+
+#_
+(mig/proc-hasura-meta-cfg
+ hasura-meta-cfg)

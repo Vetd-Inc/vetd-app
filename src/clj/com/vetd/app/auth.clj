@@ -109,8 +109,8 @@
 
 (defn create-or-find-org
   [org-name org-url buyer? vendor?]
-  (if (select-org-by-name org-name)
-    [false nil]
+  (if-let [org (select-org-by-name org-name)]
+    [false org]
     [true (insert-org org-name org-url buyer? vendor?)]))
 
 (defn select-user-by-email

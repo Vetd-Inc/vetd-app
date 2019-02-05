@@ -25,7 +25,6 @@
         [{:id :right-header
           :style {:f/grow 0
                   :padding "10px 20px 0 0"}}
-         "2:53pm"
          [rc/button
           :label "Logout"
           :on-click #(rf/dispatch [:logout])]]]])))
