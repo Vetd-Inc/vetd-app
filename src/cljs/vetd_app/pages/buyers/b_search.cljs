@@ -88,6 +88,7 @@
   [{:keys [created]}]
   [:div "Preposal Requested " (str created)])
 
+#_
 (defn c-product-search-result
   [{:keys [id pname short-desc preposals logo rounds categories]} org-name ]
   [:div {:class :product-search-result}
@@ -103,15 +104,26 @@
                               [c-round-search-result r])
          :else [rc/button
                 :on-click #(rf/dispatch [:start-round :product id])
-                :label "Start Round"])
-   #_   (if (not-empty preposals)
-          (for [p preposals]
-            [c-preposal-search-result p])
-          [:div "REQUEST A PREPOSAL"])
-   #_   (if (not-empty reqs)
-          (for [r reqs]
-            [c-preposal-req-search-result r])
-          [:div])])
+                :label "Start Round"])])
+
+(defn c-product-search-result
+  [{:keys [id pname short-desc preposals logo rounds categories]} org-name ]
+  [ut/flx {:p {:class [:product-search-result]
+               :style {:f/dir :row}}}
+   [{:class [:prod-logo]}
+    [:img {:src (str "https://s3.amazonaws.com/vetd-logos/" logo)}]]
+   [{:class [:content]}
+    [:div {:class :header}
+     [:span.product-name pname] " by "
+     [:span.org-name org-name]
+     [:div "Categories: " (str (mapv :cname categories))]]
+    [:div {:class :body}
+     [:div {:class :product-short-desc} short-desc]
+     (cond (not-empty rounds) (for [r rounds]
+                                [c-round-search-result r])
+           :else [rc/button
+                  :on-click #(rf/dispatch [:start-round :product id])
+                  :label "Start Round"])]]])
 
 (defn c-vendor-search-results
   [v]
@@ -158,14 +170,17 @@
       (for [c (:categories categories)]
         ^{:key (:id c)}
         [c-category-search-results c])]
+     (when (and (-> categories :categories not-empty)
+                (-> prods :orgs not-empty))
+       [:div {:style {:height "30px"
+                      :border-top "solid 1px #444"}}])
      [:div {:class :orgs}
       (for [v (:orgs prods)]
         ^{:key (:id v)}
         [c-vendor-search-results v])]]))
 
 (defn c-page []
-  (let [ ;;search-type (r/atom :all)
-        search-query (r/atom "")]
+  (let [search-query (r/atom "")]
     (fn []
       [rc/v-box
        :style {:align-items :center}
@@ -177,18 +192,6 @@
                                  (dispatch-search-DB %)
                                  (reset! search-query %))
                    :change-on-blur? false
-                   :placeholder "Search vendor data"]
-                  #_[rc/horizontal-bar-tabs
-                    :model search-type
-                    :tabs [{:id :all
-                            :label "All Vendor Data"}
-                           {:id :preposals
-                            :label "Preposals"}
-                           {:id :profiles
-                            :label "Profiles"}
-                           {:id :contacts
-                            :label "Sales Contacts"}]
-                    :on-change #(do
-                                  (dispatch-search-DB @search-query %)
-                                  (reset! search-type %))]
+                   :placeholder "Search products and categories"]
+
                   [c-search-results]]])))

@@ -144,12 +144,17 @@ body{
   animation: 2s infinite pulse;
 }
 
-.org-logo{
-    height: 150px;
-    width: 150px;
-    border: solid 1px #666;
+.prod-logo{
+    width: 95px;
+    margin-right: 20px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-start;
 }
 
+.prod-logo img {
+    width: 75px;
+}
 
 
 @keyframes pulse {
@@ -163,26 +168,6 @@ body{
     transform: scale(0.5);
   }
 }
-
-.cart-menu{
-    margin: 0 10px 0 10px;
-    padding: 5px;
-    border: solid 1px #666;
-}
-
-.in-cart {
-    margin: 5px;
-}
-
-
-.in-cart span{
-    border: solid 2px #3b3;
-    background-color: #2e2;
-    padding: 10px;
-    font-size: 20px;
-    color: #333;
-}
-
 
 .product-short-desc {
     font-size: 15px;
@@ -224,18 +209,15 @@ body{
 .search-results {
     margin: 20px;
     padding: 10px;
+    width: 75%;
 }
 
 .vendor-search-results {}
 
 .product-search-result {
-    border: solid 1px #444;
     margin: 20px;
     padding: 10px;
-}
-
-.product-search-result:hover {
-    border: solid 1px #69c;
+    width: 75%;
 }
 
 .product-search-result .product-name {
@@ -264,7 +246,7 @@ body{
 }
 
 .category-search-result {
-    border: solid 1px #444;
+    border-top: solid 1px #444;
     margin: 20px;
     padding: 10px;
 }
