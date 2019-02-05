@@ -175,12 +175,12 @@
 
 
 
-(-> "/home/bill/repos/vetd-app/resources/hasura-metadata.json"
+#_(-> "/home/bill/repos/vetd-app/resources/hasura-metadata.json"
     slurp
     json/parse-string
     clojure.pprint/pprint )
 
-
+#_
 (-> "/home/bill/repos/vetd-app/resources/hasura/metadata-gen.json"
     slurp
     json/parse-string
