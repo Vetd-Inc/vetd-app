@@ -1,4 +1,4 @@
-(ns vetd-app.pages.buyers
+(ns vetd-app.pages.buyers.b-search
   (:require [vetd-app.util :as ut]
             [reagent.core :as r]
             [re-frame.core :as rf]
@@ -9,11 +9,16 @@
 (defn get-next-query-id []
   (swap! last-query-id inc))
 
+(rf/reg-event-fx
+ :nav-b-search
+ (fn [_ _]
+   {:nav {:path "/b/search/"}}))
+
 (rf/reg-event-db
  :route-b-search
  (fn [db [_ query-params]]
    (assoc db
-          :page :buyers
+          :page :b-search
           :query-params query-params)))
 
 (def dispatch-search-DB
@@ -158,7 +163,7 @@
         ^{:key (:id v)}
         [c-vendor-search-results v])]]))
 
-(defn buyers-page []
+(defn c-page []
   (let [ ;;search-type (r/atom :all)
         search-query (r/atom "")]
     (fn []

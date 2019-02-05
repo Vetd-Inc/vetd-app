@@ -10,6 +10,8 @@
    {:local-store {:session-token nil}
     :dispatch [:nav-login]}))
 
+
+
 (defn header []
   (let [user-name& (rf/subscribe [:user-name])
         org-name& (rf/subscribe [:org-name])]
@@ -23,11 +25,23 @@
          :label "Logout"
          :on-click #(rf/dispatch [:logout])]]])))
 
+(defn tab [current& label target disp]
+  [{}
+   [:a {:class (into [:tab]
+                     (when (= @current& target)
+                       [:selected]))
+        :on-click #(rf/dispatch disp)}
+    label]])
+
 (defn sidebar []
-  [ut/flx {:p {:id :sidebar}}
-   [{} "Search by"]
-   [{} "Preposals"]
-   [{} "Products & Categories"]])
+  (let [page& (rf/subscribe [:page])]
+    (fn []
+      [ut/flx {:p {:id :sidebar
+                   :style {:flex-basis "256px"
+                           :flex-grow 0}}}
+       (tab page& "Home" :b-home [:nav-home])
+       [{:class [:tab]} [:a "Preposals"]]
+       (tab page& "Products & Categories" :b-search [:nav-b-search])])))
 
 (defn container [body]
   [ut/flx {:p {:id :container
@@ -35,7 +49,10 @@
    [{:style {:width "100%"}}
     [header]]
    [{:style {:height "100%"
+             :width "100%"             
              :display :flex
              :f/dir :row}}
     [sidebar]
-    [:div {:style {:margin "10px"}} body]]])
+    [:div {:style {:flex-grow 1
+                   :margin "10px"}}
+     body]]])

@@ -6,7 +6,7 @@
             [vetd-app.nav :as nav]
             [vetd-app.blocker :as bl]                        
             [vetd-app.pages.home :as p-home]
-            [vetd-app.pages.buyers :as p-buyers]
+            [vetd-app.pages.buyers.b-search :as p-b-search]
             [vetd-app.pages.buyers.b-home :as p-bhome]
             [vetd-app.pages.vendors :as p-vendors]            
             [vetd-app.pages.signup :as p-signup]
@@ -60,7 +60,7 @@
 (rf/reg-sub
  :org-id
  :<- [:active-org] 
- (fn [{:keys [org-id]}] org-id))
+ (fn [{:keys [id]}] id))
 
 (rf/reg-sub
  :org-name
@@ -104,6 +104,13 @@
    {:nav {:path (-> db :memberships memberships->home-url)}}))
 
 (rf/reg-event-fx
+ :nav-if-public
+ (fn [{:keys [db]} _]
+   (if ((conj public-pages :home) (:page db))
+     {:nav {:path (-> db :memberships memberships->home-url)}}
+     {})))
+
+(rf/reg-event-fx
  :ws-get-session-user
  [(rf/inject-cofx :local-store [:session-token])] 
  (fn [{:keys [db local-store]} [_ [email pwd]]]
@@ -122,7 +129,7 @@
                  :memberships memberships
                  ;; TODO support users with multi-orgs                 
                  :active-memb-id (some-> memberships first :id))
-      :dispatch-later [{:ms 100 :dispatch [:nav-home]}]}
+      :dispatch-later [{:ms 100 :dispatch [:nav-if-public]}]}
      {:db (dissoc db :user)
       :dispatch [:nav-login]})))
 
@@ -131,16 +138,13 @@
    :signup #'p-signup/signup-page
    :login #'p-login/login-page
    :b-home #'p-bhome/c-page
+   :b-search #'p-b-search/c-page   
    :vendors #'p-vendors/vendors-page})
 
-(def headers
-  {:b-home #'b-fix/header
-   :vendors #'v-fix/header
-   :login #'pub-fix/header
-   :signup #'pub-fix/header})
 
 (def containers
   {:b-home #'b-fix/container
+   :b-search #'b-fix/container   
    :login #'pub-fix/container
    :signup #'pub-fix/container})
 
