@@ -113,10 +113,12 @@
    [{:class [:prod-logo]}
     [:img {:src (str "https://s3.amazonaws.com/vetd-logos/" logo)}]]
    [{:class [:content]}
-    [:div {:class :header}
-     [:span.product-name pname] " by "
-     [:span.org-name org-name]
-     [:div "Categories: " (str (mapv :cname categories))]]
+    [ut/flx {:p {:class :header
+                 :style {:flex-direction :row}}}
+     [{:class [:product-name]} pname]
+     [{} " by "]
+     [{:class [:org-name]} org-name]
+     [{} (str (mapv :cname categories))]]
     [:div {:class :body}
      [:div {:class :product-short-desc} short-desc]
      (cond (not-empty rounds) (for [r rounds]

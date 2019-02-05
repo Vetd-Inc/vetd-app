@@ -27,7 +27,7 @@
 (def pg-db-dev {:dbtype "postgresql"
                 :dbname "vetd1"
                 :host "localhost"
-                :port 5433 #_ 5434
+                :port #_5433  5434
                 :user "vetd"
                 :password "vetd"})
 

@@ -13,7 +13,7 @@ body, *{
 
 .btn-default{
     color: white;
-    background-color: black;
+    background-color: #444;
     font-weight: bold;
 }
 
