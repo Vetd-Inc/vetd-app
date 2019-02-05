@@ -59,6 +59,8 @@
   :test-paths ["test/clj"]
   :resource-paths ["resources" "target/cljsbuild"]
 
+  :figwheel {:css-dirs ["resources/public/assets/app/css/app.css"]}
+
   :plugins [[lein-cljsbuild "1.1.7"]]
 
   :clean-targets

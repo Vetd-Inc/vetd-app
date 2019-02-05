@@ -11,20 +11,31 @@
     :dispatch [:nav-login]}))
 
 (defn header []
-  (let [org-id& (rf/subscribe [:org-id])
-        cart-items& (rf/subscribe [:gql/sub
-                                  {:queries
-                                   [[:cart_items {:buyer-id @org-id&}
-                                     [:id]]]}])]
+  (let [user-name& (rf/subscribe [:user-name])
+        org-name& (rf/subscribe [:org-name])]
     (fn []
-      [ut/flexer {:p {:style {:align-items :stretch
-                              :justify-content :center
-                              :f/dir :row}}}
-       [[{:id :left-header
-          :style {:f/grow 1}} [:div.logo]]
-        [{:id :right-header
-          :style {:f/grow 0
-                  :padding "10px 20px 0 0"}}
-         [rc/button
-          :label "Logout"
-          :on-click #(rf/dispatch [:logout])]]]])))
+      [ut/flx {:p {:id :header}}
+       [{:id :header-left} [:div.logo]]
+       [{:id :header-middle} [:div.org-name @org-name&]]
+       [{:id :header-right}
+        [:div.user-name @user-name&]
+        [rc/button
+         :label "Logout"
+         :on-click #(rf/dispatch [:logout])]]])))
+
+(defn sidebar []
+  [ut/flx {:p {:id :sidebar}}
+   [{} "Search by"]
+   [{} "Preposals"]
+   [{} "Products & Categories"]])
+
+(defn container [body]
+  [ut/flx {:p {:id :container
+               :class [:buyer]}}
+   [{:style {:width "100%"}}
+    [header]]
+   [{:style {:height "100%"
+             :display :flex
+             :f/dir :row}}
+    [sidebar]
+    [:div {:style {:margin "10px"}} body]]])

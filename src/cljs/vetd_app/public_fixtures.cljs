@@ -18,51 +18,8 @@
        [[{:class [:logo]}]]])))
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+(defn container [body]
+  [ut/flx {:p {:id :container
+               :class [:buyer]}}
+   [{:style {:width "100%"}} [header]]
+   [{:style {:width "100%"}} body]])

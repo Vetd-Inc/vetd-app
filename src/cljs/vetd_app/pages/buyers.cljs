@@ -9,12 +9,6 @@
 (defn get-next-query-id []
   (swap! last-query-id inc))
 
-(rf/reg-event-fx
- :nav-buyers
- (fn [{:keys [db]} [_ query]]
-   {:nav {:path (:org-id db)
-          :query query}}))
-
 (rf/reg-event-db
  :route-b-search
  (fn [db [_ query-params]]

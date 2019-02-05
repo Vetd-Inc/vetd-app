@@ -82,6 +82,27 @@
                       (flexer-merge-attrs c attrs))]
                body)))]))
 
+(defn find-map-heads [v]
+  (cond (-> v sequential? not) v
+        (-> v first map?) [v]
+        (-> v first sequential?) (->> v
+                                      (mapcat find-map-heads)
+                                      vec)
+        :else (throw
+               (js/Error. (str "find-map-heads -- what is this? " v)))))
+
+(defn flx
+  [{:keys [p c]} & children]
+  (def c1 children)
+  (let [chs (find-map-heads children)]
+    ;; `into` avoids unique key warnings
+    (into [:div (flexer-xfrm-attrs
+                 (assoc-in p [:style :display] :flex))]
+          (for [ch chs]
+            (let [[attrs & body] ch]
+              (into [:div (flexer-xfrm-attrs
+                           (flexer-merge-attrs c attrs))]
+                    body))))))
 
 
 (defn- map-signals

@@ -7,6 +7,7 @@
             [vetd-app.blocker :as bl]                        
             [vetd-app.pages.home :as p-home]
             [vetd-app.pages.buyers :as p-buyers]
+            [vetd-app.pages.buyers.b-home :as p-bhome]
             [vetd-app.pages.vendors :as p-vendors]            
             [vetd-app.pages.signup :as p-signup]
             [vetd-app.pages.login :as p-login]
@@ -49,20 +50,49 @@
      :login)))
 
 (rf/reg-sub
+ :active-org
+ (fn [{:keys [active-memb-id memberships]} _]
+   (->> memberships
+        (filter #(-> % :id (= active-memb-id)))
+        first
+        :org)))
+
+(rf/reg-sub
  :org-id
- (fn [{:keys [org-id]} _]
-   org-id))
+ :<- [:active-org] 
+ (fn [{:keys [org-id]}] org-id))
+
+(rf/reg-sub
+ :org-name
+ :<- [:active-org] 
+ (fn [{:keys [oname]}] oname))
+
+(rf/reg-sub
+ :user
+ (fn [{:keys [user]}] user))
+
+(rf/reg-sub
+ :user-id
+ :<- [:user] 
+ (fn [{:keys [user-id]}] user-id))
+
+(rf/reg-sub
+ :user-name
+ :<- [:user] 
+ (fn [{:keys [uname]}] uname))
+
+
 
 (rf/reg-fx
  :nav
  (fn nav-fx [{:keys [path query]}]
    (acct/navigate! path query)))
 
-(defn memberships->org-url
+(defn memberships->home-url
   [membs]
   (if-let [{{:keys [id buyer? vendor?]} :org} (first membs)]
     (str (if buyer?
-           "/b/search" ;; TODO => "buyer-dash" ?????
+           "/b/home"
            "/v/home")
          "/")
     "/"))
@@ -71,7 +101,7 @@
 (rf/reg-event-fx
  :nav-home
  (fn [{:keys [db]} _]
-   {:nav {:path (-> db :memberships memberships->org-url)}}))
+   {:nav {:path (-> db :memberships memberships->home-url)}}))
 
 (rf/reg-event-fx
  :ws-get-session-user
@@ -90,8 +120,8 @@
                  :user user
                  :logged-in? logged-in?
                  :memberships memberships
-                 ;; TODO support users with multi-orgs
-                 :org-id (-> memberships first :org-id))
+                 ;; TODO support users with multi-orgs                 
+                 :active-memb-id (some-> memberships first :id))
       :dispatch-later [{:ms 100 :dispatch [:nav-home]}]}
      {:db (dissoc db :user)
       :dispatch [:nav-login]})))
@@ -100,22 +130,34 @@
   {:home #'p-home/home-page
    :signup #'p-signup/signup-page
    :login #'p-login/login-page
-   :buyers #'p-buyers/buyers-page
+   :b-home #'p-bhome/c-page
    :vendors #'p-vendors/vendors-page})
 
 (def headers
-  {:buyers #'b-fix/header
+  {:b-home #'b-fix/header
    :vendors #'v-fix/header
    :login #'pub-fix/header
    :signup #'pub-fix/header})
 
-(defn page []
+(def containers
+  {:b-home #'b-fix/container
+   :login #'pub-fix/container
+   :signup #'pub-fix/container})
+
+#_(defn page []
   [:div#page
    [(headers @(rf/subscribe [:page])
              (constantly [:div]))]
    [(pages @(rf/subscribe [:page])
            (constantly [:div "none"]))]
    #_[bl/blocker]])
+
+(defn page []
+  (let [page @(rf/subscribe [:page])]
+    [:div#page
+     [(containers page (constantly [:div "no container"]))
+      [(pages page  (constantly [:div "none"]))]]
+     #_[bl/blocker]]))
 
 (defn mount-components []
   (.log js/console "mount-components STARTED")
@@ -130,10 +172,13 @@
   (do #_(.log js/console "nav home")
       (rf/dispatch [:route-home query-params])))
 
-(sec/defroute buyers-path "/b/search/" [query-params]
+(sec/defroute buyers-search "/b/search/" [query-params]
   (rf/dispatch [:route-b-search query-params]))
 
-(sec/defroute vendors-path "/v/home/" [query-params]
+(sec/defroute buyers-home "/b/home/" [query-params]
+  (rf/dispatch [:route-b-home query-params]))
+
+(sec/defroute vendors-home "/v/home/" [query-params]
   (do (.log js/console "nav vendors")
       (rf/dispatch [:route-v-home query-params])))
 

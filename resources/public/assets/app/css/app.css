@@ -1,5 +1,5 @@
 body{
-    font-family: 'Roboto', san-serif;
+    font-family: 'Raleway', san-serif;
     font-size: 14px;
     letter-spacing: 0.7px;
     color: #444;
@@ -10,11 +10,16 @@ body{
     width: 100%;
 }
 
+#page {
+    height: 100%;
+    width: 100%;
+}
+
 .logo {
     background-image: url(https://s3.amazonaws.com/vetd-logos/vetd.svg);
-    background-size: 200px 85px;
-    height: 85px;
-    width: 200px;
+    background-size: 141px 60px;
+    height: 60px;
+    width: 141px;
 }
 
 .logo:hover {
@@ -41,8 +46,66 @@ body{
     text-align :center;
 }
 
-#left-header .logo{
-    margin: 12px;
+#container {
+    height: 100%;
+    margin: 0;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-start;
+    flex-direction: column;
+}
+
+#header{
+    height: 105px;
+    font-size: 17px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    flex-direction: row;
+}
+
+#header-left{
+    flex-grow: 0;
+    margin: 20px;
+}
+
+#header-middle{
+    flex-grow: 1;    
+    margin: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    flex-direction: row;
+}
+
+#header-right{
+    flex-grow: 0;    
+    margin: 12px 30px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-direction: row;
+}
+
+#header-right .user-name {
+    margin: 20px;
+}
+
+#sidebar {
+    height: 100%;
+    width: 256px;
+    border-right: solid 1px #999;
+    margin: 0;
+    padding: 20px 20px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-start;
+    flex-direction: column;
+}
+
+#sidebar div{
+    margin: 5px 0;
 }
 
 .loading-logo {
@@ -96,7 +159,7 @@ body{
 
 .product-short-desc {
     font-size: 15px;
-    font-family: 'RobotoSlap', serif;
+    font-family: 'Raleway', serif;
     margin: 10px 0 20px 0;
     padding: 5px;
 }
