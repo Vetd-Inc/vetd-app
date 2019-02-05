@@ -39,10 +39,10 @@
 
 (def hasura-ws-url
   (if prod?
-    "ws://172.31.1.6:8080/v1alpha1/graphql"
+    "ws://172.31.0.60:8080/v1alpha1/graphql"
     "ws://localhost:8080/v1alpha1/graphql"))
 
 (def hasura-http-url
   (if prod?
-    "http://172.31.1.6:8080/v1alpha1/graphql"
+    "http://172.31.0.60:8080/v1alpha1/graphql"
     "http://localhost:8080/v1alpha1/graphql"))
