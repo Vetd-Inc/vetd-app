@@ -135,11 +135,15 @@
 (defn c-category-search-results
   [{:keys [cname id idstr rounds] :as cat}]
   [:div {:class :category-search-result}
-   (if (empty? rounds)
-     [rc/button :on-click #(rf/dispatch [:start-round :category id])
-      :label "Start Round"]
-     "[In active round]")
-   [:span.category-name cname]])
+   [:div.category-name cname]
+   [:div {:style {:flex-grow 1
+                  :display :flex
+                  :align-items :center
+                  :justify-content :flex-end}}
+    (if (empty? rounds)
+      [rc/button :on-click #(rf/dispatch [:start-round :category id])
+       :label "Start Round for Category"]
+      "[In active round]")]])
 
 (defn c-search-results []
   (let [org-id @(rf/subscribe [:org-id])

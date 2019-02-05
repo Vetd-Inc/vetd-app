@@ -4,11 +4,17 @@ Green #60D1AB
 
 */
 
-body{
+body, *{
     font-family: 'Raleway', san-serif;
     font-size: 14px;
-    letter-spacing: 0.7px;
+    letter-spacing: 0.8px;
     color: #444;
+}
+
+.btn-default{
+    color: white;
+    background-color: black;
+    font-weight: bold;
 }
 
 #app{
@@ -100,7 +106,9 @@ body{
 
 #sidebar {
     height: 100%;
-    width: 256px;
+    flex-basis: 260px;
+    flex-grow: 0;
+    flex-shrink: 0;    
     border-right: solid 1px #999;
     margin: 0;
     padding: 20px 20px;
@@ -249,4 +257,7 @@ body{
     border-top: solid 1px #444;
     margin: 20px;
     padding: 10px;
+    display: flex;
+    align-items: stretch;
+    justify-content: stretch;
 }

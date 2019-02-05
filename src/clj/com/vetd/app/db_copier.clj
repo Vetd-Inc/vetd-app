@@ -120,3 +120,4 @@
 
 #_(prep-pg-dump-file "/home/bill/products.sql" "/home/bill/repos/vetd-app/resources/migrations/data/productes.sql")
 
+#_(prep-pg-dump-file "/home/bill/Downloads/product-categories.sql" "/home/bill/repos/vetd-app/resources/migrations/data/product-categories.sql")

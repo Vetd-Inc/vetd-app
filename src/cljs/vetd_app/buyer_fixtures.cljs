@@ -36,9 +36,7 @@
 (defn sidebar []
   (let [page& (rf/subscribe [:page])]
     (fn []
-      [ut/flx {:p {:id :sidebar
-                   :style {:flex-basis "256px"
-                           :flex-grow 0}}}
+      [ut/flx {:p {:id :sidebar}}
        (tab page& "Home" :b-home [:nav-home])
        [{:class [:tab]} [:a "Preposals"]]
        (tab page& "Products & Categories" :b-search [:nav-b-search])])))

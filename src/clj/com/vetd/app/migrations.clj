@@ -34,6 +34,15 @@
    {:delete-from :products
     :where [:between :id 272814695125 272814743922]}))
 
+(def mig-2019-02-05-copy-from-product-categories-up
+  (mig/mk-copy-from-up-fn "data/product-categories.sql"))
+
+(def mig-2019-02-05-copy-from-product-categories-down
+  (mig/mk-exe-honeysql-fn
+   {:delete-from :product_categories
+    :where [:between :id 273266515726 273266499717]}))
+
+
 (def migrations
   [[[2019 2 4 00 00]
     [:create-table {:schema :vetd
@@ -216,7 +225,13 @@
     [:copy-from '{:name :products
                   :ns com.vetd.app.migrations
                   :up-fn mig-2019-02-04-copy-from-products-up
-                  :down-fn mig-2019-02-04-copy-from-products-down}]]])
+                  :down-fn mig-2019-02-04-copy-from-products-down}]]
+
+   [[2019 2 4 00 00]
+    [:copy-from '{:name :product_categories
+                  :ns com.vetd.app.migrations
+                  :up-fn mig-2019-02-05-copy-from-product-categories-up
+                  :down-fn mig-2019-02-05-copy-from-product-categories-down}]]])
 
 (def hasura-meta-cfg
   {:remote_schemas []
@@ -265,3 +280,12 @@
 #_
 (mig/proc-hasura-meta-cfg
  hasura-meta-cfg)
+
+
+
+
+
+
+
+
+
