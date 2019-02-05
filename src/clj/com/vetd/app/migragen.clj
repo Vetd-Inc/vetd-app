@@ -133,7 +133,7 @@
     (cp/copy-from-sql-dump
      (-> (str "migrations/" filename )
          io/resource
-         .getPath)
+#_         .getPath)
      (j/get-connection db))))
 
 (defn mk-exe-honeysql-fn [hsql]
