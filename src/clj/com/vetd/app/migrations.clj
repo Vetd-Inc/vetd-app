@@ -242,12 +242,13 @@
                               :updated [:timestamp :with :time :zone]
                               :deleted [:timestamp :with :time :zone]
                               :title [:text]
+                              :dtype [:text] ;;preposal, profile etc???
                               :descr [:text]
                               :notes [:text]                              
-                              :from_org [:bigint]
-                              :from_user [:bigint]
-                              :to_org [:bigint]
-                              :to_user [:bigint]}
+                              :from_org_id [:bigint]
+                              :from_user_id [:bigint]
+                              :to_org_id [:bigint]
+                              :to_user_id [:bigint]}
                     :owner :vetd
                     :grants {:hasura [:SELECT]}}]
 
@@ -262,7 +263,7 @@
                               :resp_id [:bigint]}
                     :owner :vetd
                     :grants {:hasura [:SELECT]}}]
-    
+
     [:create-table {:schema :vetd
                     :name :req_template
                     :columns {:id [:bigint :NOT :NULL]
@@ -270,7 +271,9 @@
                               :created [:timestamp :with :time :zone]
                               :updated [:timestamp :with :time :zone]
                               :deleted [:timestamp :with :time :zone]
-                              :title [:text]}
+                              :title [:text]
+                              ;; preposal, profile etc????
+                              :rtype [:text]}
                     :owner :vetd
                     :grants {:hasura [:SELECT]}}]
 
@@ -281,6 +284,7 @@
                               :created [:timestamp :with :time :zone]
                               :updated [:timestamp :with :time :zone]
                               :deleted [:timestamp :with :time :zone]
+                              :req_template_id [:bigint]
                               :prompt_id [:bigint]
                               :sort [:integer]}
                     :owner :vetd
@@ -296,15 +300,28 @@
                               :req_template_id [:bigint]
                               :title [:text]
                               :descr [:text]                              
-                              :notes [:text]                                                            
-                              :from_org [:bigint]
-                              :from_user [:bigint]
-                              :to_org [:bigint]
-                              :to_user [:bigint]
+                              :notes [:text]
+                              :from_org_id [:bigint]
+                              :from_user_id [:bigint]
+                              :to_org_id [:bigint]
+                              :to_user_id [:bigint]
                               :status [:text]}
                     :owner :vetd
                     :grants {:hasura [:SELECT]}}]
 
+    [:create-table {:schema :vetd
+                    :name :req_prompt
+                    :columns {:id [:bigint :NOT :NULL]
+                              :idstr [:text]
+                              :created [:timestamp :with :time :zone]
+                              :updated [:timestamp :with :time :zone]
+                              :deleted [:timestamp :with :time :zone]
+                              :req_id [:bigint]
+                              :prompt_id [:bigint]
+                              :sort [:integer]}
+                    :owner :vetd
+                    :grants {:hasura [:SELECT]}}]
+    
     [:create-table {:schema :vetd
                     :name :prompts
                     :columns {:id [:bigint :NOT :NULL]
@@ -381,49 +398,41 @@
                               :deleted [:timestamp :with :time :zone]
                               :value [:text]}
                     :owner :vetd
-                    :grants {:hasura [:SELECT]}}]]])
+                    :grants {:hasura [:SELECT]}}]
 
-#_
-(def hasura-meta-cfg
-  {:remote_schemas []
-   :query_templates []
-   :tables {:vetd
-            {:round_category {}
-             :sessions {}
-             :categories {:arr-rel
-                          {:rounds
-                           {:rem-tbl :rounds_by_category
-                            :col-map {:id "category_id"}}}}
-             :rounds_by_product {}
-             :orgs {:arr-rel
-                    {:memberships
-                     {:rem-tbl :memberships
-                      :col-map {:id "org_id"}}
-                     :products
-                     {:rem-tbl :products
-                      :col-map {:id "vendor_id"}}}}
-             :rounds {}
-             :rounds_by_category {}
-             :users {}
-             :products {:obj-rel
-                        {:vendor {:rem-tbl :orgs
-                                  :col-map {:vendor_id "id"}}}
-                        :arr-rel
-                        {:rounds
-                         {:rem-tbl :rounds_by_product
-                          :col-map {:id "product_id"}}
-                         :categories
-                         {:rem-tbl :categories_by_product
-                          :col-map {:id "prod_id"}}}}
-             :categories_by_product {}
-             :round_product {:obj-rel
-                             {:round {:rem-tbl :rounds
-                                      :col-map {:round_id "id"}}}}
-             :memberships {:obj-rel
-                           {:org {:rem-tbl :orgs
-                                  :col-map {:org_id "id"}}
-                            :user {:rem-tbl :users
-                                   :col-map {:user_id "id"}}}}}}})
+    [:create-view {:schema :vetd
+                   :name :responses_by_doc
+                   :honey {:select [[:dr.id :drid]
+                                    :dr.doc_id
+                                    :r.id
+                                    :r.idstr                                    
+                                    :r.created
+                                    :r.updated
+                                    :r.deleted
+                                    :r.prompt_id
+                                    :r.user_id
+                                    :r.org_id]
+                           :from [[:doc_resp :dr]]
+                           :join [[:responses :r]
+                                  [:= :r.id :dr.resp_id]]}
+                   :owner :vetd}]
+
+    [:create-view {:schema :vetd
+                   :name :prompts_by_req
+                   :honey {:select [[:rp.id :rpid]
+                                    :rp.req_id
+                                    :p.id
+                                    :p.idstr                                    
+                                    :p.created
+                                    :p.updated
+                                    :p.deleted
+                                    :p.prompt
+                                    :p.descr]
+                           :from [[:req_prompt :rp]]
+                           :join [[:prompts :p]
+                                  [:= :p.id :rp.prompt_id]]}
+                   :owner :vetd}]]])
+
 
 (def hasura-meta-cfg2
   {:remote_schemas []
@@ -433,36 +442,150 @@
            :fields [:rounds]
            :cols [:id :category_id]
            :rel :one-many}
+
           {:tables [:vetd :orgs
                     :vetd :memberships]
            :fields [:memberships :org]
            :cols [:id :org_id]
            :rel :one-many}
+
           {:tables [:vetd :orgs
                     :vetd :products]
            :fields [:products :vendor]
            :cols [:id :vendor_id]
            :rel :one-many}
+
           {:tables [:vetd :products
                     :vetd :rounds_by_product]
            :fields [:rounds]
            :cols [:id :product_id]
            :rel :many-many}
+
           {:tables [:vetd :products
                     :vetd :categories_by_product]
            :fields [:categories]
            :cols [:id :prod_id]
            :rel :many-many}
+
           {:tables [:vetd :users
                     :vetd :memberships]
            :fields [:memberships :user]
            :cols [:id :user_id]
            :rel :one-many}
+
           {:tables [:vetd :users
                     :vetd :sessions]
            :fields [:sessions :user]
            :cols [:id :user_id]
-           :rel :one-many}]})
+           :rel :one-many}
+
+          {:tables [:vetd :docs
+                    :vetd :responses_by_doc]
+           :fields [:responses]
+           :cols [:id :doc_id]
+           :rel :many-many}
+
+          {:tables [:vetd :docs
+                    :vetd :orgs]
+           :fields [:from-org :docs-out]
+           :cols [:from_org_id :id]
+           :rel :many-one}
+
+          {:tables [:vetd :docs
+                    :vetd :orgs]
+           :fields [:to-org :docs-in]
+           :cols [:to_org_id :id]
+           :rel :many-one}
+
+          {:tables [:vetd :docs
+                    :vetd :users]
+           :fields [:from-user :docs-out]
+           :cols [:from_user_id :id]
+           :rel :many-one}
+
+          {:tables [:vetd :docs
+                    :vetd :users]
+           :fields [:to-user :docs-in]
+           :cols [:to_user_id :id]
+           :rel :many-one}
+
+          {:tables [:vetd :reqs
+                    :vetd :orgs]
+           :fields [:from-org :reqs-out]
+           :cols [:from_org_id :id]
+           :rel :many-one}
+
+          {:tables [:vetd :reqs
+                    :vetd :orgs]
+           :fields [:to-org :reqs-in]
+           :cols [:to_org_id :id]
+           :rel :many-one}
+
+          {:tables [:vetd :reqs
+                    :vetd :users]
+           :fields [:from-user :reqs-out]
+           :cols [:from_user_id :id]
+           :rel :many-one}
+
+          {:tables [:vetd :reqs
+                    :vetd :users]
+           :fields [:to-user :reqs-in]
+           :cols [:to_user_id :id]
+           :rel :many-one}
+
+          {:tables [:vetd :reqs
+                    :vetd :prompts_by_req]
+           :fields [:prompts]
+           :cols [:id :req_id]
+           :rel :one-many}
+
+          {:tables [:vetd :prompts
+                    :vetd :prompt_fields]
+           :fields [:fields :prompt]
+           :cols [:id :prompt_id]
+           :rel :one-many}
+
+          {:tables [:vetd :responses
+                    :vetd :prompts]
+           :fields [:prompt :responses]
+           :cols [:prompt_id :id]
+           :rel :many-one}
+
+          {:tables [:vetd :responses
+                    :vetd :users]
+           :fields [:prompt :users]
+           :cols [:prompt_id :id]
+           :rel :many-one}
+
+          {:tables [:vetd :responses
+                    :vetd :prompts]
+           :fields [:prompt :responses]
+           :cols [:prompt_id :id]
+           :rel :many-one}
+
+          {:tables [:vetd :responses
+                    :vetd :users]
+           :fields [:user :responses]
+           :cols [:user_id :id]
+           :rel :many-one}
+          
+          {:tables [:vetd :responses
+                    :vetd :orgs]
+           :fields [:org :responses]
+           :cols [:org_id :id]
+           :rel :many-one}
+
+          {:tables [:vetd :responses
+                    :vetd :resp_fields]
+           :fields [:fields :response]
+           :cols [:id :resp_id]
+           :rel :one-many}
+
+          {:tables [:vetd :resp_fields
+                    :vetd :prompt_fields]
+           :fields [:prompt-field :resp-field]
+           :cols [:pf_id :id]
+           :rel :many-one}]})
 
 #_(mig/mk-migration-files migrations
                           "migrations")
@@ -474,3 +597,4 @@
 #_
 (mig/proc-hasura-meta-cfg2
  hasura-meta-cfg2)
+

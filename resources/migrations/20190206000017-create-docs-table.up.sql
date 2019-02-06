@@ -1,6 +1,6 @@
 DROP TABLE IF EXISTS vetd.docs;
 --;;
-CREATE TABLE vetd.docs (deleted timestamp with time zone, to_user bigint, updated timestamp with time zone, created timestamp with time zone, to_org bigint, idstr text, from_user bigint, title text, id bigint NOT NULL, notes text, descr text, from_org bigint)
+CREATE TABLE vetd.docs (deleted timestamp with time zone, dtype text, updated timestamp with time zone, created timestamp with time zone, idstr text, title text, from_user_id bigint, to_org_id bigint, id bigint NOT NULL, notes text, from_org_id bigint, descr text, to_user_id bigint)
 --;;
 ALTER TABLE vetd.docs OWNER TO vetd
 --;;
