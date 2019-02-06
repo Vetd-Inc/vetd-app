@@ -227,12 +227,163 @@
                   :up-fn mig-2019-02-04-copy-from-products-up
                   :down-fn mig-2019-02-04-copy-from-products-down}]]
 
-   [[2019 2 4 00 00]
+   [[2019 2 5 00 00]
     [:copy-from '{:name :product_categories
                   :ns com.vetd.app.migrations
                   :up-fn mig-2019-02-05-copy-from-product-categories-up
-                  :down-fn mig-2019-02-05-copy-from-product-categories-down}]]])
+                  :down-fn mig-2019-02-05-copy-from-product-categories-down}]]
 
+   [[2019 2 6 00 00]
+    [:create-table {:schema :vetd
+                    :name :docs
+                    :columns {:id [:bigint :NOT :NULL]
+                              :idstr [:text]
+                              :created [:timestamp :with :time :zone]
+                              :updated [:timestamp :with :time :zone]
+                              :deleted [:timestamp :with :time :zone]
+                              :title [:text]
+                              :descr [:text]
+                              :notes [:text]                              
+                              :from_org [:bigint]
+                              :from_user [:bigint]
+                              :to_org [:bigint]
+                              :to_user [:bigint]}
+                    :owner :vetd
+                    :grants {:hasura [:SELECT]}}]
+
+    [:create-table {:schema :vetd
+                    :name :doc_resp
+                    :columns {:id [:bigint :NOT :NULL]
+                              :idstr [:text]
+                              :created [:timestamp :with :time :zone]
+                              :updated [:timestamp :with :time :zone]
+                              :deleted [:timestamp :with :time :zone]
+                              :doc_id [:bigint]
+                              :resp_id [:bigint]}
+                    :owner :vetd
+                    :grants {:hasura [:SELECT]}}]
+    
+    [:create-table {:schema :vetd
+                    :name :req_template
+                    :columns {:id [:bigint :NOT :NULL]
+                              :idstr [:text]
+                              :created [:timestamp :with :time :zone]
+                              :updated [:timestamp :with :time :zone]
+                              :deleted [:timestamp :with :time :zone]
+                              :title [:text]}
+                    :owner :vetd
+                    :grants {:hasura [:SELECT]}}]
+
+    [:create-table {:schema :vetd
+                    :name :req_template_prompt
+                    :columns {:id [:bigint :NOT :NULL]
+                              :idstr [:text]
+                              :created [:timestamp :with :time :zone]
+                              :updated [:timestamp :with :time :zone]
+                              :deleted [:timestamp :with :time :zone]
+                              :prompt_id [:bigint]
+                              :sort [:integer]}
+                    :owner :vetd
+                    :grants {:hasura [:SELECT]}}]
+    
+    [:create-table {:schema :vetd
+                    :name :reqs
+                    :columns {:id [:bigint :NOT :NULL]
+                              :idstr [:text]
+                              :created [:timestamp :with :time :zone]
+                              :updated [:timestamp :with :time :zone]
+                              :deleted [:timestamp :with :time :zone]
+                              :req_template_id [:bigint]
+                              :title [:text]
+                              :descr [:text]                              
+                              :notes [:text]                                                            
+                              :from_org [:bigint]
+                              :from_user [:bigint]
+                              :to_org [:bigint]
+                              :to_user [:bigint]
+                              :status [:text]}
+                    :owner :vetd
+                    :grants {:hasura [:SELECT]}}]
+
+    [:create-table {:schema :vetd
+                    :name :prompts
+                    :columns {:id [:bigint :NOT :NULL]
+                              :idstr [:text]
+                              :created [:timestamp :with :time :zone]
+                              :updated [:timestamp :with :time :zone]
+                              :deleted [:timestamp :with :time :zone]
+                              :prompt [:text]
+                              :descr [:text]}
+                    :owner :vetd
+                    :grants {:hasura [:SELECT]}}]
+
+    [:create-table {:schema :vetd
+                    :name :prompt_fields
+                    :columns {:id [:bigint :NOT :NULL]
+                              :idstr [:text]
+                              :created [:timestamp :with :time :zone]
+                              :updated [:timestamp :with :time :zone]
+                              :deleted [:timestamp :with :time :zone]
+                              :prompt_id [:bigint]
+                              :fname [:text]
+                              :descr [:text]
+                              :dtype [:text]
+                              :sort [:integer]}
+                    :owner :vetd
+                    :grants {:hasura [:SELECT]}}]
+
+    [:create-table {:schema :vetd
+                    :name :responses
+                    :columns {:id [:bigint :NOT :NULL]
+                              :idstr [:text]
+                              :created [:timestamp :with :time :zone]
+                              :updated [:timestamp :with :time :zone]
+                              :deleted [:timestamp :with :time :zone]
+                              :prompt_id [:bigint]
+                              :user_id [:bigint]
+                              :org_id [:bigint]}
+                    :owner :vetd
+                    :grants {:hasura [:SELECT]}}]
+
+    [:create-table {:schema :vetd
+                    :name :resp_fields
+                    :columns {:id [:bigint :NOT :NULL]
+                              :idstr [:text]
+                              :created [:timestamp :with :time :zone]
+                              :updated [:timestamp :with :time :zone]
+                              :deleted [:timestamp :with :time :zone]
+                              :resp_id [:bigint]
+                              :pf_id [:bigint]
+                              :sval [:text]
+                              :nval [[:numeric 12 3]]
+                              :dval [:timestamp :with :time :zone]}
+                    :owner :vetd
+                    :grants {:hasura [:SELECT]}}]
+
+    [:create-table {:schema :vetd
+                    :name :enums
+                    :columns {:id [:bigint :NOT :NULL]
+                              :idstr [:text]
+                              :created [:timestamp :with :time :zone]
+                              :updated [:timestamp :with :time :zone]
+                              :deleted [:timestamp :with :time :zone]
+                              :dtype [:text]
+                              :descr [:text]}
+                    :owner :vetd
+                    :grants {:hasura [:SELECT]}}]
+
+    [:create-table {:schema :vetd
+                    :name :enum_vals
+                    :columns {:id [:bigint :NOT :NULL]
+                              :idstr [:text]
+                              :created [:timestamp :with :time :zone]
+                              :updated [:timestamp :with :time :zone]
+                              :deleted [:timestamp :with :time :zone]
+                              :value [:text]}
+                    :owner :vetd
+                    :grants {:hasura [:SELECT]}}]]])
+
+#_
 (def hasura-meta-cfg
   {:remote_schemas []
    :query_templates []
@@ -274,9 +425,52 @@
                             :user {:rem-tbl :users
                                    :col-map {:user_id "id"}}}}}}})
 
+(def hasura-meta-cfg2
+  {:remote_schemas []
+   :query_templates []
+   :rels [{:tables [:vetd :categories
+                    :vetd :rounds_by_category]
+           :fields [:rounds]
+           :cols [:id :category_id]
+           :rel :one-many}
+          {:tables [:vetd :orgs
+                    :vetd :memberships]
+           :fields [:memberships :org]
+           :cols [:id :org_id]
+           :rel :one-many}
+          {:tables [:vetd :orgs
+                    :vetd :products]
+           :fields [:products :vendor]
+           :cols [:id :vendor_id]
+           :rel :one-many}
+          {:tables [:vetd :products
+                    :vetd :rounds_by_product]
+           :fields [:rounds]
+           :cols [:id :product_id]
+           :rel :many-many}
+          {:tables [:vetd :products
+                    :vetd :categories_by_product]
+           :fields [:categories]
+           :cols [:id :prod_id]
+           :rel :many-many}
+          {:tables [:vetd :users
+                    :vetd :memberships]
+           :fields [:memberships :user]
+           :cols [:id :user_id]
+           :rel :one-many}
+          {:tables [:vetd :users
+                    :vetd :sessions]
+           :fields [:sessions :user]
+           :cols [:id :user_id]
+           :rel :one-many}]})
+
 #_(mig/mk-migration-files migrations
                           "migrations")
 
 #_
 (mig/proc-hasura-meta-cfg
  hasura-meta-cfg)
+
+#_
+(mig/proc-hasura-meta-cfg2
+ hasura-meta-cfg2)

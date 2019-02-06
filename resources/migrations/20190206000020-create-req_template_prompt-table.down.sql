@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS vetd.req_template_prompt;

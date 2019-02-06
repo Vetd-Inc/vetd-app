@@ -23,6 +23,15 @@
           schema
           view))
 
+(defn convert-numeric-types [col-args]
+  (mapv (fn [a]
+          (if (and (sequential? a)
+                   (-> a first (= :numeric)))
+            (let [[_ s p] a]
+              (keyword (format "numeric(%d,%d)" s p)))
+            a))
+        col-args))
+
 (defmulti mk-sql (fn [[op]] op))
 
 (defmethod mk-sql :create-table
@@ -38,7 +47,8 @@
                                                    schema'
                                                    table')
                                            (for [[k v] columns]
-                                             (into [k] v)))
+                                             (into [k]
+                                                   (convert-numeric-types v))))
                        (when owner
                          (format "ALTER TABLE %s.%s OWNER TO %s"
                                  schema'
@@ -173,7 +183,35 @@
             (update :tables #(->> % (apply concat) vec))
             (json/generate-string))))
 
+(defn apply-hasura-rels
+  [agg {:keys [tables fields cols rel]}]
+  (let [[s1 t1 s2 t2] tables
+        [f1 f2] fields
+        [c1 c2] cols
+        rel-type1 (if (#{:one-many :many-many} rel)
+                    :arr-rel :obj-rel)
+        rel-type2 (if (#{:many-one :many-many} rel)
+                    :arr-rel :obj-rel)
+        agg' (assoc-in agg [s1 t1 rel-type1 f1]
+                       {:rem-tbl t2
+                        :col-map {c1 c2}})
+        agg'' (if f2
+                (assoc-in agg' [s2 t2 rel-type2 f2]
+                          {:rem-tbl t1
+                           :col-map {c2 c1}})
+                (update-in agg' [s2 t2]
+                          #(or % {})))]
+    agg''))
 
+(defn proc-hasura-meta-cfg2
+  [{:keys [rels] :as cfg}]
+  (-> cfg
+      (assoc :tables
+             (reduce apply-hasura-rels
+                     {}
+                     rels))
+      (dissoc :rels)
+      proc-hasura-meta-cfg))
 
 #_(-> "/home/bill/repos/vetd-app/resources/hasura-metadata.json"
     slurp
