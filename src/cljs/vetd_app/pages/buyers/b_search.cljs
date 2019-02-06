@@ -1,5 +1,6 @@
 (ns vetd-app.pages.buyers.b-search
   (:require [vetd-app.util :as ut]
+            [vetd-app.flexer :as flx]
             [reagent.core :as r]
             [re-frame.core :as rf]
             [re-com.core :as rc]))
@@ -88,37 +89,15 @@
   [{:keys [created]}]
   [:div "Preposal Requested " (str created)])
 
-#_
 (defn c-product-search-result
   [{:keys [id pname short-desc preposals logo rounds categories]} org-name ]
-  [:div {:class :product-search-result}
-   [:div {:class :header}
-    [:div.org-logo
-     [:div
-      [:img {:src (str "https://s3.amazonaws.com/vetd-logos/" logo)}]]]
-    [:span.product-name pname] " by "
-    [:span.org-name org-name]]
-   [:div "Categories: " (str (mapv :cname categories))]
-   [:div {:class :product-short-desc} short-desc]
-   (cond (not-empty rounds) (for [r rounds]
-                              [c-round-search-result r])
-         :else [rc/button
-                :on-click #(rf/dispatch [:start-round :product id])
-                :label "Start Round"])])
-
-(defn c-product-search-result
-  [{:keys [id pname short-desc preposals logo rounds categories]} org-name ]
-  [ut/flx {:p {:class [:product-search-result]
-               :style {:f/dir :row}}}
-   [{:class [:prod-logo]}
-    [:img {:src (str "https://s3.amazonaws.com/vetd-logos/" logo)}]]
-   [{:class [:content]}
-    [ut/flx {:p {:class :header
-                 :style {:flex-direction :row}}}
-     [{:class [:product-name]} pname]
-     [{} " by "]
-     [{:class [:org-name]} org-name]
-     [{} (str (mapv :cname categories))]]
+  [flx/row #{:product-search-result}
+   [#{:prod-logo} [:img {:src (str "https://s3.amazonaws.com/vetd-logos/" logo)}]]
+   [#{:content} [flx/row #{:header}
+                 [#{:product-name} pname]
+                 " by "
+                 [#{:org-name} org-name]
+                 (str (mapv :cname categories))]
     [:div {:class :body}
      [:div {:class :product-short-desc} short-desc]
      (cond (not-empty rounds) (for [r rounds]

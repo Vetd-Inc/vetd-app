@@ -4,7 +4,7 @@
   :url "http://example.com/FIXME"
   
   :dependencies [[org.clojure/clojure "1.10.0"]
-                 [org.clojure/clojurescript "1.10.439" :scope "provided"]
+                 [org.clojure/clojurescript "1.10.516" :scope "provided"]
                  [org.clojure/core.async "0.4.474"]
                  
                  [compojure "1.6.1"]
@@ -59,7 +59,7 @@
   :test-paths ["test/clj"]
   :resource-paths ["resources" "target/cljsbuild"]
 
-  :figwheel {:css-dirs ["resources/public/assets/app/css/app.css"]}
+  :figwheel {:css-dirs ["resources/public/assets/app/css/"]}
 
   :plugins [[lein-cljsbuild "1.1.7"]]
 

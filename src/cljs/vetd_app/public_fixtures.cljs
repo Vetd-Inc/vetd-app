@@ -1,5 +1,6 @@
 (ns vetd-app.public-fixtures
   (:require [vetd-app.util :as ut]
+            [vetd-app.flexer :as flx]
             [reagent.core :as r]
             [re-frame.core :as rf]
             [re-com.core :as rc]))
@@ -8,18 +9,15 @@
 (defn header []
   (let [org-id& (rf/subscribe [:org-id])
         cart-items& (rf/subscribe [:gql/sub
-                                  {:queries
-                                   [[:cart_items {:buyer-id @org-id&}
-                                     [:id]]]}])]
+                                   {:queries
+                                    [[:cart_items {:buyer-id @org-id&}
+                                      [:id]]]}])]
     (fn []
-      [ut/flexer {:p {:id :full-header
-                      :style {:justify-content :center
-                              :f/dir :row}}}
-       [[{:class [:logo]}]]])))
+      [flx/row :full-header {:justify-content :center}
+       [#{:logo}]])))
 
 
 (defn container [body]
-  [ut/flx {:p {:id :container
-               :class [:buyer]}}
-   [{:style {:width "100%"}} [header]]
-   [{:style {:width "100%"}} body]])
+  [flx/col :container #{:buyer}
+   [{:width "100%"} [header]]
+   [{:width "100%"} body]])

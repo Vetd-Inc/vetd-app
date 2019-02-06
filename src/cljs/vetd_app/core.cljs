@@ -3,7 +3,6 @@
             [vetd-app.websockets :as ws]
             [vetd-app.graphql :as graphql]            
             [vetd-app.db-plus :as db+]
-            [vetd-app.nav :as nav]
             [vetd-app.blocker :as bl]                        
             [vetd-app.pages.home :as p-home]
             [vetd-app.pages.buyers.b-search :as p-b-search]

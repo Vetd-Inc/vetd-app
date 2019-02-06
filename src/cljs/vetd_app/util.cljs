@@ -1,7 +1,7 @@
 (ns vetd-app.util
   (:require [clojure.string]
             [clojure.set]
-            [re-frame.interop :refer [#_make-reaction deref? reagent-id]]
+            [re-frame.interop :refer [deref? reagent-id]]
             [reagent.ratom :as rr]
             [re-frame.registrar :as rf-reg]))
 
@@ -103,7 +103,6 @@
               (into [:div (flexer-xfrm-attrs
                            (flexer-merge-attrs c attrs))]
                     body))))))
-
 
 (defn- map-signals
   "Runs f over signals. Signals may take several
