@@ -1,5 +1,5 @@
 (ns vetd-app.admin
-  (:require [vetd-app.common :as com]   
+  (:require [vetd-app.hooks :as hks]   
             [vetd-app.util :as ut]   
             [reagent.core :as r]
             [re-frame.core :as rf]
@@ -10,5 +10,4 @@
   (do (.log js/console "nav admin")
       (rf/dispatch [:admin/route-home])))
 
-(defmethod com/fn-plugin-hook :admin/init [& _]
-  (println "INIT ADMIN"))
+

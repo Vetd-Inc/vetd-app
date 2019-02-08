@@ -1,5 +1,6 @@
 (ns vetd-app.core
-  (:require [vetd-app.util :as ut]   
+  (:require [vetd-app.util :as ut]
+            [vetd-app.hooks :as hks]   
             [vetd-app.websockets :as ws]
             [vetd-app.graphql :as graphql]            
             [vetd-app.db-plus :as db+]
@@ -141,6 +142,9 @@
    :b-search #'p-b-search/c-page   
    :vendors #'p-vendors/vendors-page})
 
+(hks/reg-hook hks/c-page :login #'p-login/login-page)
+
+(hks/c-page :login)
 
 (def containers
   {:b-home #'b-fix/container
@@ -149,19 +153,17 @@
    :signup #'pub-fix/container})
 
 #_(defn page []
-  [:div#page
-   [(headers @(rf/subscribe [:page])
-             (constantly [:div]))]
-   [(pages @(rf/subscribe [:page])
-           (constantly [:div "none"]))]
-   #_[bl/blocker]])
-
-(defn page []
   (let [page @(rf/subscribe [:page])]
     [:div#page
      [(containers page (constantly [:div "no container"]))
       [(pages page  (constantly [:div "none"]))]]
      #_[bl/blocker]]))
+
+(defn page []
+  (let [page @(rf/subscribe [:page])]
+    [:div#page
+     [(containers page (constantly [:div "no container"]))
+      [hks/c-page page]]]))
 
 (defn mount-components []
   (.log js/console "mount-components STARTED")

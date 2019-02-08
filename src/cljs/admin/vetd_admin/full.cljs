@@ -1,5 +1,5 @@
 (ns vetd-admin.full
-  (:require [vetd-app.common :as com]
+  (:require [vetd-app.hooks :as hks]
             [vetd-admin.admin :as admin]
             [vetd-app.util :as ut]   
             [secretary.core :as sec]))

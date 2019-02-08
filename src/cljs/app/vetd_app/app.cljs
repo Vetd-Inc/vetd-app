@@ -4,7 +4,7 @@
             [expound.alpha :as expound]
             [devtools.core :as devtools]))
 
-(def app-loaded? (volatile false))
+(def app-loaded? (volatile! false))
 
 ;;ignore println statements in prod
 #_(set! *print-fn* (fn [& _]))

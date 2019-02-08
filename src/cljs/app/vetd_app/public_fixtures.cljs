@@ -20,4 +20,5 @@
 (defn container [body]
   [flx/col :container #{:buyer}
    [{:width "100%"} [header]]
-   [{:width "100%"} body]])
+   [{:width "100%"} body]
+   [(constantly nil)]])
