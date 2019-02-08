@@ -47,6 +47,7 @@
 
                  ;; TODO remove dev stuff?
                  [expound "0.7.1"]
+                 ;; where is this referenced in prod code???
                  [binaryage/devtools "0.9.10"]]
 
   :repl-options {:timeout 120000}
@@ -55,7 +56,7 @@
   
   :main ^:skip-aot com.vetd.app.core
   :target-path "target/%s"
-  :source-paths ["src/clj" "src/cljs" "src/cljc"]
+  :source-paths ["src/clj" "src/cljs/app" "src/cljs/admin" "src/cljc"]
   :test-paths ["test/clj"]
   :resource-paths ["resources" "target/cljsbuild"]
 
@@ -70,21 +71,31 @@
 
   :profiles
   {:uberjar {:omit-source true
-             :prep-tasks ["compile" ["cljsbuild" "once" "min"]]
+             :prep-tasks ["compile" ["cljsbuild" "once" "min-public" "min-full"]]
              :cljsbuild
              {:builds
-              {:min
-               {:source-paths ["src/cljc" "src/cljs" "env/prod/cljs"]
+              {:min-public
+               {:source-paths ["src/cljc" "src/cljs/app" "env/prod/cljs"]
                 :compiler
-                {:output-dir "target/cljsbuild/public/js"
+                {:output-dir "target/cljsbuild/public/js/public-out"
                  :output-to "target/cljsbuild/public/js/app.js"
                  :source-map "target/cljsbuild/public/js/app.js.map"
                  :optimizations :advanced
                  :pretty-print false
                  :closure-warnings
                  {:externs-validation :off :non-standard-jsdoc :off}
-                 :externs ["react/externs/react.js"
-                           "cytoscape.ext.js"]}}}}
+                 :externs ["react/externs/react.js"]}}
+               :min-full
+               {:source-paths ["src/cljc" "src/cljs/app" "src/cljs/admin" "env/prod/cljs"]
+                :compiler
+                {:output-dir "target/cljsbuild/public/js/full-out"
+                 :output-to "target/cljsbuild/public/js/full.js"
+                 :source-map "target/cljsbuild/public/js/full.js.map"
+                 :optimizations :advanced
+                 :pretty-print false
+                 :closure-warnings
+                 {:externs-validation :off :non-standard-jsdoc :off}
+                 :externs ["react/externs/react.js"]}}}}
              :aot :all
              :uberjar-name "vetd-app.jar"
              :source-paths ["env/prod/clj"]
@@ -109,14 +120,27 @@
                                  [lein-figwheel "0.5.18"]]
                   :cljsbuild
                   {:builds
-                   {:app
-                    {:source-paths ["src/cljs" "src/cljc" "env/dev/cljs"]
+                   {:dev-public
+                    {:source-paths ["src/cljs/app" "src/cljc" "env/dev/cljs"]
                      :figwheel {:on-jsload "vetd-app.core/mount-components"}
                      :compiler
                      {:main "vetd-app.app"
-                      :asset-path "/js/out"
+                      :asset-path "/js/public-out"
                       :output-to "target/cljsbuild/public/js/app.js"
-                      :output-dir "target/cljsbuild/public/js/out"
+                      :output-dir "target/cljsbuild/public/js/public-out"
+                      :source-map true
+                      :optimizations :none
+                      :pretty-print true
+                      :closure-defines {"re_frame.trace.trace_enabled_QMARK_" true}
+                      :preloads [day8.re-frame-10x.preload]}}
+                    :dev-full
+                    {:source-paths ["src/cljs/app" "src/cljs/admin" "src/cljc" "env/dev/cljs"]
+                     :figwheel {:on-jsload "vetd-app.core/mount-components"}
+                     :compiler
+                     {:main "vetd-app.app"
+                      :asset-path "/js/full-out"
+                      :output-to "target/cljsbuild/public/js/full.js"
+                      :output-dir "target/cljsbuild/public/js/full-out"
                       :source-map true
                       :optimizations :none
                       :pretty-print true
@@ -134,7 +158,7 @@
                   :cljsbuild
                   {:builds
                    {:test
-                    {:source-paths ["src/cljc" "src/cljs" "test/cljs"]
+                    {:source-paths ["src/cljc" "src/cljs/app" "src/cljs/admin" "test/cljs"]
                      :compiler
                      {:output-to "target/test.js"
                       :main "vetd-app.doo-runner"

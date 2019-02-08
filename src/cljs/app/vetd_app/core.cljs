@@ -1,5 +1,6 @@
 (ns vetd-app.core
-  (:require [vetd-app.util :as ut]   
+  (:require vetd-app.admin-loader
+            [vetd-app.util :as ut]   
             [vetd-app.websockets :as ws]
             [vetd-app.graphql :as graphql]            
             [vetd-app.db-plus :as db+]
@@ -20,6 +21,7 @@
             [secretary.core :as sec]
             [accountant.core :as acct]
             [cognitect.transit :as t]))
+
 
 (println "START core")
 
@@ -212,6 +214,7 @@
       #_      (db+/reset-db!)
       (rf/dispatch-sync [:ws-init])
       (config-acct)
+      (vetd-app.admin-loader/try-init-admin!)
       (acct/dispatch-current!)
       (rf/dispatch-sync [:ws-get-session-user])
       (mount-components)

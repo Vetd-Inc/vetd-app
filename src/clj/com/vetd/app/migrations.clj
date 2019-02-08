@@ -273,7 +273,8 @@
                               :deleted [:timestamp :with :time :zone]
                               :title [:text]
                               ;; preposal, profile etc????
-                              :rtype [:text]}
+                              :rtype [:text]
+                              :descr [:text]}
                     :owner :vetd
                     :grants {:hasura [:SELECT]}}]
 
@@ -345,6 +346,7 @@
                               :fname [:text]
                               :descr [:text]
                               :dtype [:text]
+                              :list_qm [:boolean]
                               :sort [:integer]}
                     :owner :vetd
                     :grants {:hasura [:SELECT]}}]
@@ -371,6 +373,7 @@
                               :deleted [:timestamp :with :time :zone]
                               :resp_id [:bigint]
                               :pf_id [:bigint]
+                              :idx [:integer] ;; for lists
                               :sval [:text]
                               :nval [[:numeric 12 3]]
                               :dval [:timestamp :with :time :zone]}
@@ -598,3 +601,88 @@
 (mig/proc-hasura-meta-cfg2
  hasura-meta-cfg2)
 
+
+#_(let [[id1 idstr1] (ut/mk-id&str)
+      [id2 idstr2] (ut/mk-id&str)
+      [id3 idstr3] (ut/mk-id&str)
+      [id4 idstr4] (ut/mk-id&str)]
+  
+  (db/insert! :prompts
+              {:id id1
+               :idstr idstr1
+               :created (ut/now-ts)
+               :updated (ut/now-ts)
+               :deleted nil
+               :prompt "Pricing Estimate"
+               :descr "In what range would you expect this buyer's costs to fall?"})
+
+  (db/insert! :prompt_fields
+              {:id id2
+               :idstr idstr2
+               :created (ut/now-ts)
+               :updated (ut/now-ts)
+               :deleted nil
+               :prompt_id id1
+               :fname "Low"
+               :descr nil
+               :dtype :n
+               :list_qm false
+               :sort 0})
+
+  (db/insert! :prompt_fields
+              {:id id3
+               :idstr idstr3
+               :created (ut/now-ts)
+               :updated (ut/now-ts)
+               :deleted nil
+               :prompt_id id1
+               :fname "High"
+               :descr nil
+               :dtype :n
+               :list_qm false
+               :sort 1})
+
+  (db/insert! :prompt_fields
+              {:id id4
+               :idstr idstr4
+               :created (ut/now-ts)
+               :updated (ut/now-ts)
+               :deleted nil
+               :prompt_id id1
+               :fname "Unit"
+               :descr nil
+               :dtype :e-price-per
+               :list_qm false
+               :sort 2})
+
+  (db/insert! :req_templates
+              {:id id5
+               :idstr idstr5
+               :created (ut/now-ts)
+               :updated (ut/now-ts)
+               :deleted nil
+               :title "Preposal Request"
+               :rtype :preposal1
+               :descr "Basic Preposal Request"})
+
+  (db/insert! :req_template_prompt
+              {:id id6
+               :idstr idstr6
+               :created (ut/now-ts)
+               :updated (ut/now-ts)
+               :deleted nil
+               :req_template_id id5
+               :prompt_id id1
+               :sort 0}))
+
+
+
+#_(let [[id idstr] (ut/mk-id&str)]
+  (db/insert! :prompts
+              {:id id
+               :idstr idstr
+               :created (ut/now-ts)
+               :updated (ut/now-ts)
+               :deleted nil
+               :prompt "Pitch"
+               :descr "Why do we believe you are a fit for this product?"}))

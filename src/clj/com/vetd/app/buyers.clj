@@ -2,7 +2,6 @@
   (:require [com.vetd.app.db :as db]
             [com.vetd.app.hasura :as ha]
             [com.vetd.app.common :as com]
-            [com.vetd.app.auth :as auth]
             [com.vetd.app.util :as ut]
             [taoensso.timbre :as log]))
 
@@ -77,7 +76,7 @@
 
 (defn insert-cart-item
   [buyer-id prod-id]
-  (let [[id idstr] (auth/mk-id&str)]
+  (let [[id idstr] (ut/mk-id&str)]
     (-> (db/insert! :cart_items
                     {:id id
                      :idstr idstr
@@ -89,7 +88,7 @@
 
 (defn insert-round
   [buyer-id]
-  (let [[id idstr] (auth/mk-id&str)]
+  (let [[id idstr] (ut/mk-id&str)]
     (-> (db/insert! :rounds
                     {:id id
                      :idstr idstr
@@ -101,7 +100,7 @@
 
 (defn insert-round-product
   [round-id prod-id]
-  (let [[id idstr] (auth/mk-id&str)]
+  (let [[id idstr] (ut/mk-id&str)]
     (-> (db/insert! :round_product
                     {:id id
                      :idstr idstr
@@ -113,7 +112,7 @@
 
 (defn insert-round-category
   [round-id category-id]
-  (let [[id idstr] (auth/mk-id&str)]
+  (let [[id idstr] (ut/mk-id&str)]
     (-> (db/insert! :round_category
                     {:id id
                      :idstr idstr

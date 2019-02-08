@@ -129,3 +129,71 @@
   (if (coll? v)
     (fmap (partial traverse-values f) v)
     (f v)))
+
+;; --------------------
+
+
+;; max is 100k (not 10k) to avoid conflicts during bursts (which shouldn't really happen)
+(def last-id (atom (rand-int 10000)))
+
+(def ts2019-01-01 1546300800000)
+
+(defn ms-since-vetd-epoch []
+  (- (System/currentTimeMillis) ts2019-01-01))
+
+(def base36
+  (into {}
+        (map-indexed vector
+                     (concat
+                      (range 97 123)
+                      (range 48 58)))))
+
+(def base36-inv (clojure.set/map-invert base36))
+
+(defn long-floor-div
+  [a b]
+  (-> a
+      (/ b)
+      long))
+
+(defn base36->str
+  [v]
+  (let [x (loop [v' v
+                 r []]
+            (if (zero? v')
+              r
+              (let [idx (mod v' 36)
+                    v'' (long-floor-div v' 36)]
+                (recur v''
+                       (conj r (mod v' 36))))))]
+    (->> x
+         reverse
+         (map base36)
+         (map char)
+         clojure.string/join)))
+
+(defn base36->num
+  [s]
+  (loop [[head & tail] (reverse s)
+         idx 0
+         r 0]
+    (if (nil? head)
+      (int r)
+      (let [d (* (base36-inv (int head)) (Math/pow 36 idx))]
+        (recur tail
+               (inc idx)
+               (+ r d))))))
+
+(defn mk-id []
+  ;; max is 100k (not 10k) to avoid conflicts during bursts (which shouldn't really happen)
+  (let [sub-id (swap! last-id #(-> % inc (mod 100000)))] 
+    (-> (ms-since-vetd-epoch)
+        (long-floor-div 100)
+        (* 10000)
+        (+ sub-id))))
+
+(defn mk-id&str []
+  (let [id (mk-id)]
+    [id (base36->str id)]))
+
+;; --------------------

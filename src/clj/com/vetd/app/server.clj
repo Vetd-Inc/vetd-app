@@ -107,7 +107,8 @@
 (c/defroutes routes
   (c/GET "/ws" [] #'ws-handler)
   (c/GET "/assets*" [] (fn [{:keys [uri]}] (get-public-resource uri)))
-  (c/GET "/js*" [] (fn [{:keys [uri]}] (get-public-resource uri)))    
+  (c/GET "/js*" [] (fn [{:keys [uri]}] (get-public-resource uri)))
+  (c/GET "/a" [] (fn [_] (-> "public/admin.html" io/resource io/input-stream)))  
   (c/GET "*" [] (fn [_] (-> "public/app.html" io/resource io/input-stream))))
 
 (defn start-server []
