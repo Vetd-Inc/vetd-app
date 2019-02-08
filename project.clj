@@ -45,10 +45,7 @@
 
                  [buddy/buddy-hashers "1.3.0"]
 
-                 ;; TODO remove dev stuff?
-                 [expound "0.7.1"]
-                 ;; where is this referenced in prod code???
-                 [binaryage/devtools "0.9.10"]]
+                 [expound "0.7.2"]]
 
   :repl-options {:timeout 120000}
   
@@ -56,7 +53,7 @@
   
   :main ^:skip-aot com.vetd.app.core
   :target-path "target/%s"
-  :source-paths ["src/clj" "src/cljs/app" "src/cljs/admin" "src/cljc"]
+  :source-paths ["src/clj" "src/cljs/admin" "src/cljs/app" "src/cljc"]
   :test-paths ["test/clj"]
   :resource-paths ["resources" "target/cljsbuild"]
 
@@ -77,7 +74,8 @@
               {:min-public
                {:source-paths ["src/cljc" "src/cljs/app" "env/prod/cljs"]
                 :compiler
-                {:output-dir "target/cljsbuild/public/js/public-out"
+                {:main "vetd-app.app"
+                 :output-dir "target/cljsbuild/public/js/public-out"
                  :output-to "target/cljsbuild/public/js/app.js"
                  :source-map "target/cljsbuild/public/js/app.js.map"
                  :optimizations :advanced
@@ -86,9 +84,10 @@
                  {:externs-validation :off :non-standard-jsdoc :off}
                  :externs ["react/externs/react.js"]}}
                :min-full
-               {:source-paths ["src/cljc" "src/cljs/app" "src/cljs/admin" "env/prod/cljs"]
+               {:source-paths ["src/cljc" "src/cljs/admin" "src/cljs/app" "env/prod/cljs"]
                 :compiler
-                {:output-dir "target/cljsbuild/public/js/full-out"
+                {:main "vetd-admin.admin"
+                 :output-dir "target/cljsbuild/public/js/full-out"
                  :output-to "target/cljsbuild/public/js/full.js"
                  :source-map "target/cljsbuild/public/js/full.js.map"
                  :optimizations :advanced
@@ -109,7 +108,6 @@
                                  [cider/piggieback "0.3.10"]
                                  [day8.re-frame/re-frame-10x "0.3.3-react16"]
                                  [doo "0.1.10"]
-                                 [expound "0.7.1"]
                                  [figwheel-sidecar "0.5.18"]
                                  [pjstadig/humane-test-output "0.8.3"]
                                  [prone "1.6.0"]
@@ -132,9 +130,9 @@
                       :optimizations :none
                       :pretty-print true
                       :closure-defines {"re_frame.trace.trace_enabled_QMARK_" true}
-                      :preloads [day8.re-frame-10x.preload]}}
+                      :preloads [devtools.preload day8.re-frame-10x.preload]}}
                     :dev-full
-                    {:source-paths ["src/cljs/app" "src/cljs/admin" "src/cljc" "env/dev/cljs"]
+                    {:source-paths ["src/cljs/admin" "src/cljs/app" "src/cljc" "env/dev/cljs"]
                      :figwheel {:on-jsload "vetd-app.core/mount-components"}
                      :compiler
                      {:main "vetd-app.app"
@@ -145,7 +143,7 @@
                       :optimizations :none
                       :pretty-print true
                       :closure-defines {"re_frame.trace.trace_enabled_QMARK_" true}
-                      :preloads [day8.re-frame-10x.preload]}}}}
+                      :preloads [devtools.preload day8.re-frame-10x.preload]}}}}
 
                   :doo {:build "test"}
                   :source-paths ["env/dev/clj"]
@@ -158,7 +156,7 @@
                   :cljsbuild
                   {:builds
                    {:test
-                    {:source-paths ["src/cljc" "src/cljs/app" "src/cljs/admin" "test/cljs"]
+                    {:source-paths ["src/cljc" "src/cljs/admin" "src/cljs/app" "test/cljs"]
                      :compiler
                      {:output-to "target/test.js"
                       :main "vetd-app.doo-runner"

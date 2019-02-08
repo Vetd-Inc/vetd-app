@@ -46,3 +46,5 @@
   (if prod?
     "http://172.31.0.60:8080/v1alpha1/graphql"
     "http://localhost:8080/v1alpha1/graphql"))
+
+(com/setup-env prod?)

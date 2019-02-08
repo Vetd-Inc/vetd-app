@@ -1,13 +1,14 @@
-(ns vetd-admin.admin
-  (:require [vetd-app.util :as ut]   
+(ns vetd-app.admin
+  (:require [vetd-app.common :as com]   
+            [vetd-app.util :as ut]   
+            [reagent.core :as r]
+            [re-frame.core :as rf]
             [secretary.core :as sec]))
 
-(println "BEGIN ADMIN")
 
 (sec/defroute admin-path "/a" []
-    (.log js/console "nav admin"))
+  (do (.log js/console "nav admin")
+      (rf/dispatch [:admin/route-home])))
 
-(defn init! []
+(defmethod com/fn-plugin-hook :admin/init [& _]
   (println "INIT ADMIN"))
-
-(println "END ADMIN")

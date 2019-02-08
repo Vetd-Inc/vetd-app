@@ -1,5 +1,6 @@
 (ns com.vetd.app.util
-  (:require [clojure.walk :as walk]))
+  (:require [clojure.walk :as walk]
+            clojure.set))
 
 (defn now [] (System/currentTimeMillis))
 

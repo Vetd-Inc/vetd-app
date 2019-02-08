@@ -4,15 +4,17 @@
             [expound.alpha :as expound]
             [devtools.core :as devtools]))
 
+(def app-loaded? (volatile false))
+
 ;;ignore println statements in prod
 #_(set! *print-fn* (fn [& _]))
 
-(set! s/*explain-out* expound/printer)
+(defn load-app []
+  (when-not @app-loaded?
+    (vreset! app-loaded? true)
+    (set! s/*explain-out* expound/printer)
+    (enable-console-print!)
+    (core/init!)))
 
-(enable-console-print!)
 
-(devtools/install!)
-
-(core/init!)
-
-
+(load-app)
