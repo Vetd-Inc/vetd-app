@@ -5,16 +5,15 @@
             [re-com.core :as rc]))
 
 (rf/reg-event-fx
- :nav-buyers
- (fn [{:keys [db]} [_ query]]
-   {:nav {:path (:org-id db)
-          :query query}}))
+ :b/nav-home
+ (fn [{:keys [db]} _]
+   {:nav {:path "/b/home/"}}))
 
 (rf/reg-event-db
- :route-b-home
+ :b/route-home
  (fn [db [_ query-params]]
    (assoc db
-          :page :b-home
+          :page :b/home
           :query-params query-params)))
 
 (defn c-page []

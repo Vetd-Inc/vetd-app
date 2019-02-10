@@ -121,7 +121,7 @@
       (sequential? signals) (map deref signals)
       (map? signals) (fmap deref signals)
       (deref? signals) (deref signals)
-      :else (println :error "datarumpus: in the reg-sub for" query-id ", the input-signals function returns:" signals))
+      :else (println :error "in the reg-sub for" query-id ", the input-signals function returns:" signals))
     dereffed-signals))
 
 

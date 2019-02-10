@@ -8,7 +8,7 @@
         ^{::type ~h-kw}
        (fn
          [handle# & args#]
-         (if-let [hk# (get-in hook-registry [~h-kw handle#])]
+         (if-let [hk# (get-in @hook-registry [~h-kw handle#])]
            (apply hk# args#)
            (apply ~default args#))))))
 

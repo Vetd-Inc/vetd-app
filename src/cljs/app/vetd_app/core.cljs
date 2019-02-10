@@ -27,6 +27,23 @@
 
 (defonce init-done? (volatile! false))
 
+(hks/reg-hooks! hks/c-page
+                {:home #'p-home/home-page
+                 :pub/signup #'p-signup/signup-page
+                 :pub/login #'p-login/login-page
+                 :b/home #'p-bhome/c-page
+                 :b/search #'p-b-search/c-page   
+                 :v/home #'p-vendors/vendors-page})
+
+(hks/reg-hooks! hks/c-container
+                {:b/home #'b-fix/container
+                 :b/search #'b-fix/container   
+                 :pub/login #'pub-fix/container
+                 :pub/signup #'pub-fix/container})
+
+
+
+
 (rf/reg-event-db
  :init-db
  (fn [_ _]
@@ -40,7 +57,7 @@
           :search-query (:q query-params "") ;; to make :default-value work
           :query-params query-params)))
 
-(def public-pages #{:login :signup})
+(def public-pages #{:pub/login :pub/signup})
 
 (rf/reg-sub
  :page
@@ -48,7 +65,7 @@
    (if (or (and logged-in? user)
            (public-pages page))
      page
-     :login)))
+     :pub/login)))
 
 (rf/reg-sub
  :active-org
@@ -132,25 +149,7 @@
                  :active-memb-id (some-> memberships first :id))
       :dispatch-later [{:ms 100 :dispatch [:nav-if-public]}]}
      {:db (dissoc db :user)
-      :dispatch [:nav-login]})))
-
-(def pages
-  {:home #'p-home/home-page
-   :signup #'p-signup/signup-page
-   :login #'p-login/login-page
-   :b-home #'p-bhome/c-page
-   :b-search #'p-b-search/c-page   
-   :vendors #'p-vendors/vendors-page})
-
-(hks/reg-hook hks/c-page :login #'p-login/login-page)
-
-(hks/c-page :login)
-
-(def containers
-  {:b-home #'b-fix/container
-   :b-search #'b-fix/container   
-   :login #'pub-fix/container
-   :signup #'pub-fix/container})
+      :dispatch [:pub/nav-login]})))
 
 #_(defn page []
   (let [page @(rf/subscribe [:page])]
@@ -159,16 +158,16 @@
       [(pages page  (constantly [:div "none"]))]]
      #_[bl/blocker]]))
 
-(defn page []
+(defn c-page []
   (let [page @(rf/subscribe [:page])]
     [:div#page
-     [(containers page (constantly [:div "no container"]))
+     [hks/c-container page
       [hks/c-page page]]]))
 
 (defn mount-components []
   (.log js/console "mount-components STARTED")
   (rf/clear-subscription-cache!)
-  (r/render [#'page] (.getElementById js/document "app"))
+  (r/render [#'c-page] (.getElementById js/document "app"))
   (.log js/console "mount-components DONE"))
 
 ;; -------------------------
@@ -179,22 +178,22 @@
       (rf/dispatch [:route-home query-params])))
 
 (sec/defroute buyers-search "/b/search/" [query-params]
-  (rf/dispatch [:route-b-search query-params]))
+  (rf/dispatch [:b/route-search query-params]))
 
 (sec/defroute buyers-home "/b/home/" [query-params]
-  (rf/dispatch [:route-b-home query-params]))
+  (rf/dispatch [:b/route-home query-params]))
 
 (sec/defroute vendors-home "/v/home/" [query-params]
   (do (.log js/console "nav vendors")
-      (rf/dispatch [:route-v-home query-params])))
+      (rf/dispatch [:v/route-home query-params])))
 
 (sec/defroute login-path "/login" [query-params]
   (do #_(.log js/console "nav home")
-      (rf/dispatch [:route-login query-params])))
+      (rf/dispatch [:pub/route-login query-params])))
 
 (sec/defroute signup-path "/signup" [query-params]
   (do #_(.log js/console "nav home")
-      (rf/dispatch [:route-signup query-params])))
+      (rf/dispatch [:pub/route-signup query-params])))
 
 (sec/defroute catchall-path "*" []
   (do (.log js/console "nav catchall")

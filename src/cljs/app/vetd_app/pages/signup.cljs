@@ -38,7 +38,7 @@
    (def res1 results)
    #_ (println res1)
    (if-not (:email-used? results)
-     {:dispatch [:nav-login]}
+     {:dispatch [:pub/nav-login]}
      (js/alert "Email already in use by another account."))))
 
 

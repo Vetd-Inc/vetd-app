@@ -12,13 +12,13 @@
  (fn [{:keys [login-failed?]} _] login-failed?))
 
 (rf/reg-event-db
- :route-login
+ :pub/route-login
  (fn [db [_ query-params]]
    (assoc db
           :page :login)))
 
 (rf/reg-event-fx
- :nav-login
+ :pub/nav-login
  (fn [_ _]
    {:nav {:path "/login"}}))
 
@@ -70,6 +70,6 @@
         :on-click #(rf/dispatch [:login [@email @pwd]])
         :label "Login"]
        [rc/button
-        :on-click #(rf/dispatch [:nav-signup])
+        :on-click #(rf/dispatch [:pub/nav-signup])
         :label "Sign Up"]])))
 

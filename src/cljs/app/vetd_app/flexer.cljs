@@ -104,10 +104,8 @@
   [dir args]
   (let [{:keys [attrs children]}
         (interpret-flx-args dir args)]
-    (let [r (into [:div attrs]
-                  children)]
-      (println r)
-      r)))
+    (into [:div attrs]
+          children)))
 
 (defn row
   [& args]

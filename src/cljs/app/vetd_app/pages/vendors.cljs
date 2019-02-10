@@ -20,7 +20,7 @@
     (:vendor-profile db)))
 
 (rf/reg-event-fx
- :route-v-home
+ :v/route-home
  (fn [{:keys [db]} [_ id query-params]]
    (let [{:keys [org-id]} db]
      {:db (assoc db

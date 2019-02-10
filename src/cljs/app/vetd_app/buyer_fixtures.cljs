@@ -9,7 +9,7 @@
  :logout
  (fn [{:keys [db]} _]
    {:local-store {:session-token nil}
-    :dispatch [:nav-login]}))
+    :dispatch [:pub/nav-login]}))
 
 (defn header []
   (let [user-name& (rf/subscribe [:user-name])
@@ -36,9 +36,9 @@
   (let [page& (rf/subscribe [:page])]
     (fn []
       [flx/col :sidebar
-       (tab page& "Home" :b-home [:nav-home])
+       (tab page& "Home" :b/home [:b/nav-home])
        [#{:tab} [:a "Preposals"]]
-       (tab page& "Products & Categories" :b-search [:nav-b-search])])))
+       (tab page& "Products & Categories" :b/search [:b/nav-search])])))
 
 (defn container [body]
   [flx/col :container #{:buyer}

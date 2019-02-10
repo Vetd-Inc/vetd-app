@@ -11,15 +11,15 @@
   (swap! last-query-id inc))
 
 (rf/reg-event-fx
- :nav-b-search
+ :b/nav-search
  (fn [_ _]
    {:nav {:path "/b/search/"}}))
 
 (rf/reg-event-db
- :route-b-search
+ :b/route-search
  (fn [db [_ query-params]]
    (assoc db
-          :page :b-search
+          :page :b/search
           :query-params query-params)))
 
 (def dispatch-search-DB
