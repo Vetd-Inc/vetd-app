@@ -1,5 +1,7 @@
 (ns com.vetd.app.server
   (:require [com.vetd.app.common :as com]
+            [migratus.core :as mig]
+            [com.vetd.app.env :as env]
             [com.vetd.app.db :as db]
             [clojure.core.async :as a]
             [compojure.core :as c]
@@ -105,15 +107,6 @@
                          ws-id)
                 ws)))
 
-#_(c/defroutes routes
-  (c/GET "/ws" [] #'ws-handler)
-  (c/GET "/assets*" [] (fn [{:keys [uri]}] (get-public-resource uri)))
-  (c/GET "/js/full.js" [] (fn [{:keys [uri]}]
-                            (get-public-resource uri)))  
-  (c/GET "/js*" [] (fn [{:keys [uri]}] (get-public-resource uri)))
-  (c/GET "/a" [] (fn [_] (-> "public/admin.html" io/resource io/input-stream)))  
-  (c/GET "*" [] (fn [_] (-> "public/app.html" io/resource io/input-stream))))
-
 (defn admin-session? [cookies]
   (-> "admin-token"
       cookies
@@ -125,11 +118,16 @@
        (c/GET "/ws" [] #'ws-handler)
        (c/GET "/assets*" [] (fn [{:keys [uri]}] (get-public-resource uri)))
        (c/GET "/js/full.js" [] (fn [{:keys [uri cookies]}]
-                                 (clojure.pprint/pprint cookies)
                                  (if (admin-session? cookies)
                                    (get-public-resource uri)
                                    "")))  
        (c/GET "/js*" [] (fn [{:keys [uri]}] (get-public-resource uri)))
+       (c/GET "/-reset-db-" [] (fn [{:keys [cookies]}]
+                                 (if (admin-session? cookies)
+                                   (do (future (mig/reset {:store :database
+                                                           :db env/pg-db}))
+                                       "DOING IT")
+                                   "")))
        (c/GET "*" [] (fn [{:keys [cookies]}]
                        (-> (if (admin-session? cookies)
                              "public/admin.html"

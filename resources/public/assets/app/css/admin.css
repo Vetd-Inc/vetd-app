@@ -19,7 +19,7 @@
       transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg);
   }
   25% {
-      transform: rotateX(90deg) rotateY(-180deg) rotateZ(-90deg);
+      transform: rotateX(50deg) rotateY(-180deg) rotateZ(-90deg);
   }
   
   50% {
@@ -27,7 +27,7 @@
   }
   
   75% {
-      transform: rotateX(270deg) rotateY(180deg) rotateZ(-270deg);
+      transform: rotateX(300deg) rotateY(180deg) rotateZ(-270deg);
   }
   100% {
       filter: hue-rotate(360deg);
