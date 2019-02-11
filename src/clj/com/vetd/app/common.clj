@@ -1,6 +1,7 @@
 (ns com.vetd.app.common
   (:require [expound.alpha :as expound]
-            [clojure.spec.alpha :as spec]))
+            [clojure.spec.alpha :as spec]
+            [taoensso.timbre :as log]))
 
 
 #_ (def handle-ws-inbound nil)
@@ -12,5 +13,8 @@
   :NOT-IMPLEMENTED)
 
 (defn setup-env [prod?]
-  (when-not prod?
-    (alter-var-root #'spec/*explain-out* (constantly expound/printer))))
+  (if prod?
+    (do (log/set-config! {:level :info
+                          :output-fn (partial log/default-output-fn {:stacktrace-fonts {}})}))
+    (do (alter-var-root #'spec/*explain-out* (constantly expound/printer)))))
+

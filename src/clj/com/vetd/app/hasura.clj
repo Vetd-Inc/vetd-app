@@ -319,9 +319,8 @@
   (let [data' (json/parse-string data keyword)]
     (when-let [errors (-> data' :payload :errors)]
       (log/error errors))
-    (-> data'        
-        (update :payload :data)
-        (update :payload walk-result #_process-result)
+    (-> data'
+        (assoc :pdata (-> data' :payload :data walk-result))
         handle-from-graphql)))
 
 (declare ensure-ws-setup)
@@ -404,20 +403,19 @@
 (defmethod handle-from-graphql :connection-error [data]
   (log/error data))
 
-(defmethod handle-from-graphql :data [{:keys [id payload]}]
-  
+(defmethod handle-from-graphql :data [{:keys [id pdata]}]
   (respond-to-client id {:mtype :data
-                         :payload payload}))
+                         :payload pdata}))
 
-(defmethod handle-from-graphql :error [{:keys [id payload] :as resp}]
+(defmethod handle-from-graphql :error [{:keys [id pdata] :as resp}]
   (log/error resp)
   (respond-to-client id {:mtype :error
-                         :payload payload}))
+                         :payload pdata}))
 
-(defmethod handle-from-graphql :complete [{:keys [id payload]}]
+(defmethod handle-from-graphql :complete [{:keys [id pdata]}]
   (unregister-sub-id id)
   (respond-to-client id {:mtype :complete
-                         :payload payload}))
+                         :payload pdata}))
 
 ;; ws from client
 (defmethod com/handle-ws-inbound :graphql

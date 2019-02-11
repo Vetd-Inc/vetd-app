@@ -105,7 +105,8 @@
     (ms/consume (partial ws-inbound-handler
                          ws
                          ws-id)
-                ws)))
+                ws)
+    "ws"))
 
 (defn admin-session? [cookies]
   (-> "admin-token"

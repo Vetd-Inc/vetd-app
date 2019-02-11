@@ -7,11 +7,7 @@
 
 
 (defn header []
-  (let [org-id& (rf/subscribe [:org-id])
-        cart-items& (rf/subscribe [:gql/sub
-                                   {:queries
-                                    [[:cart_items {:buyer-id @org-id&}
-                                      [:id]]]}])]
+  (let [org-id& (rf/subscribe [:org-id])]
     (fn []
       [flx/row :full-header {:justify-content :center}
        [#{:logo}]])))
