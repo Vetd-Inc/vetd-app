@@ -2,7 +2,7 @@
   (:require [vetd-app.common :as com]
             [vetd-app.hooks :as hks]   
             [vetd-app.util :as ut]
-            [vetd-app.a-home :as p-a-home]
+            [vetd-admin.pages.a-home :as p-a-home]
             [reagent.core :as r]
             [re-frame.core :as rf]
             [secretary.core :as sec]))

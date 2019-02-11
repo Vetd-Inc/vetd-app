@@ -1,4 +1,4 @@
-(ns vetd-app.a-home
+(ns vetd-admin.pages.a-home
   (:require [vetd-app.util :as ut]   
             [reagent.core :as r]
             [re-frame.core :as rf]))

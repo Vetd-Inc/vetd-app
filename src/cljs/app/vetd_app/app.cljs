@@ -1,8 +1,7 @@
 (ns vetd-app.app
   (:require [vetd-app.core :as core]
             [cljs.spec.alpha :as s]
-            [expound.alpha :as expound]
-            [devtools.core :as devtools]))
+            [expound.alpha :as expound]))
 
 (def app-loaded? (volatile! false))
 
