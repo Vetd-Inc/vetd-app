@@ -64,6 +64,7 @@
               [[op] v]
               [[:where k] (cond (map? v) v
                                 (coll? v) {:_in v}
+                                (nil? v) {:_is_null true}
                                 :else {:_eq v})]))
        (reduce process-sub-gql-map*
                {})))
@@ -112,13 +113,16 @@
   (mapv (partial walk-gql-query->sub* field args)
         sub))
 
+(defn long->str [l]
+  (when l (str l)))
+
 (defn walk-gql-query->args
   [field args sub]
   (-> (for [[k v] args]
-        [k (if (->> k name (take-last 2) (= [\i \d]))
+        [k (if (->> k name (take-last 2) (= [\i \d]))  ;; HACK \i \d
              (if (coll? v)
-               (mapv str v)
-               (str v))
+               (mapv long->str v)
+               (long->str v))
              v)])
       (into {})
       process-sub-gql-map

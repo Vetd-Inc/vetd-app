@@ -9,6 +9,8 @@
  :logout
  (fn [{:keys [db]} _]
    {:local-store {:session-token nil}
+    :cookies {:admin-token [nil {:max-age 60
+                                 :path "/"}] }
     :dispatch [:pub/nav-login]}))
 
 (defn header []

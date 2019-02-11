@@ -6,9 +6,13 @@
 (def json-writer (t/writer :json))
 (def json-reader (t/reader :json))
 
-(def ws& (atom nil))
+(defonce ws& (atom nil))
 
 (def ws-queue (atom []))
+
+(defn log-ws? []
+  (and (exists? js/log_ws)
+       (true? js/log_ws)))
 
 (comment
     #_(def ws1 (mk-ws-conn "ws://localhost:8080/v1alpha1/graphql"))
@@ -36,10 +40,13 @@
  :ws-inbound
  (fn [cofx [_ data]]
    (def d1 data)
+   (when (log-ws?)
+     (.log js/console "ws-inbound")
+     (.log js/console (str data)))
    (if (map? data)
      (let [{:keys [return response]} data]
        (let [handler (or (and (keyword? return) return)
-                      (:handler return))]
+                         (:handler return))]
          {:dispatch [handler response data]}))
      {})))
 
@@ -86,6 +93,8 @@
 
 (defn ws-send [{:keys [ws payload]}]
   (.log js/console "ws-send")
+  (when (log-ws?)
+    (.log js/console (str payload)))
   (let [ws @ws&]   
     (if (and ws
              (= 1 (.-readyState ws)))

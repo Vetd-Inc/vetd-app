@@ -175,7 +175,7 @@
   [session-token]
   (-> [[:sessions
         {:token session-token
-         :deleted {:_is_null true}}
+         :deleted nil}
         [:user-id]]]
       ha/sync-query
       :sessions
@@ -201,7 +201,6 @@
                             [:= :s.deleted nil]]})
       empty?
       not))
-
 
 (defn insert-session
   [user-id]
