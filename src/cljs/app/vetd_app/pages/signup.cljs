@@ -7,16 +7,16 @@
             [re-com.core :as rc]
             [goog.functions]))
 
-
 (rf/reg-event-db
- :route-signup
+ :pub/route-signup
  (fn [db [_ query-params]]
    (assoc db
-          :page :signup)))
+          :page :pub/signup)))
 
 (rf/reg-event-fx
- :nav-signup
+ :pub/nav-signup
  (fn [_ _]
+   (println "pub/nav-signup")
    {:nav {:path "/signup"}}))
 
 (rf/reg-event-fx
@@ -89,60 +89,3 @@
        [rc/button
         :on-click #(rf/dispatch [:create-acct [@uname @email @org-name @org-url @pwd @b-or-v]])
         :label "Create Account"]])))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

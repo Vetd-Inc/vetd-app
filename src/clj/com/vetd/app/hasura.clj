@@ -21,6 +21,8 @@
 (defonce cn& (atom {:ws nil
                 :state :closed}))
 
+(def last-ka& (atom nil))
+
 ;; TODO switch to channel??
 (defonce queue& (atom []))
 
@@ -391,7 +393,7 @@
    msg))
 
 (defmethod handle-from-graphql :connection-keep-alive [_]
-
+  (reset! last-ka& (java.util.Date.))
   #_(println "KA"))
 
 (defmethod handle-from-graphql :connection-ack [_]

@@ -43,7 +43,6 @@
                  :pub/signup #'pub-fix/container})
 
 
-
 (rf/reg-event-db
  :init-db
  (fn [_ _]
@@ -106,6 +105,8 @@
  (fn nav-fx [{:keys [path query]}]
    (acct/navigate! path query)))
 
+
+
 (defn memberships->home-url
   [membs]
   (if-let [{{:keys [id buyer? vendor?]} :org} (first membs)]
@@ -158,10 +159,11 @@
 (defn c-page []
   (let [page @(rf/subscribe [:page])]
     [:div#page
-     [hks/c-container :admin-overlay
-      [hks/c-admin page]]
-     [hks/c-container page
-      [hks/c-page page]]]))
+     [#'hks/c-container :admin-overlay
+      [#'hks/c-admin page]]
+     [#'hks/c-container page
+      [#'hks/c-page page]]]))
+
 
 (defn mount-components []
   (.log js/console "mount-components STARTED")
