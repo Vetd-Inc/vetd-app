@@ -22,8 +22,6 @@
 (defonce server (atom nil))
 (defonce ws-conns (atom #{})) ;; TODO
 
-
-
 (defn uri->content-type
   [uri]
   (or (-> uri
@@ -147,10 +145,12 @@
     (catch Exception e
       (log/error e "EXCEPTION while trying to start http server"))))
 
-(defn stop-server []
+(defn stop-server [& [final-fn]]
   (log/info "stopping http server...")
   (try
     (.close @server)
+    (when
+        (future (final-fn @server)))
     (reset! server nil)
     (log/info "stopped http server on port 5080")
     (catch Exception e

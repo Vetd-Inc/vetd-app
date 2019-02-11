@@ -14,7 +14,7 @@
 
 (defn setup-env [prod?]
   (if prod?
-    (do #_ (log/set-config! {:level :info
-                          :output-fn (partial log/default-output-fn {:stacktrace-fonts {}})}))
+    (do (log/merge-config! {:level :info
+                            :output-fn (partial log/default-output-fn {:stacktrace-fonts {}})}))
     (do (alter-var-root #'spec/*explain-out* (constantly expound/printer)))))
 
