@@ -121,3 +121,7 @@
 #_(prep-pg-dump-file "/home/bill/products.sql" "/home/bill/repos/vetd-app/resources/migrations/data/productes.sql")
 
 #_(prep-pg-dump-file "/home/bill/Downloads/product-categories.sql" "/home/bill/repos/vetd-app/resources/migrations/data/product-categories.sql")
+
+#_(prep-pg-dump-file "/home/bill/dump-users.sql" "/home/bill/repos/vetd-app/resources/migrations/data/2019-02-10-users.sql")
+
+#_(prep-pg-dump-file "/home/bill/dump-admins.sql" "/home/bill/repos/vetd-app/resources/migrations/data/2019-02-10-admins.sql")

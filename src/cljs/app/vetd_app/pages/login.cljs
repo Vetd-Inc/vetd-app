@@ -15,7 +15,7 @@
  :pub/route-login
  (fn [db [_ query-params]]
    (assoc db
-          :page :login)))
+          :page :pub/login)))
 
 (rf/reg-event-fx
  :pub/nav-login
@@ -33,7 +33,7 @@
 
 (rf/reg-event-fx
  :ws/login
- (fn [{:keys [db]} [_ {:keys [logged-in? user session-token memberships] :as results}]]
+ (fn [{:keys [db]} [_ {:keys [logged-in? user session-token memberships admin?] :as results}]]
    (def res1 results)
    (if logged-in?
      {:db (assoc db
@@ -45,6 +45,9 @@
                  ;; TODO support users with multi-orgs
                  :org-id (-> memberships first :org-id))
       :local-store {:session-token session-token}
+      :cookies {:admin-token (when admin?
+                               [session-token {:max-age 60
+                                               :path "/"}])}
       :dispatch-later [{:ms 100 :dispatch [:nav-home]}]}
      {:db (assoc db
                  :logged-in? logged-in?
@@ -72,4 +75,3 @@
        [rc/button
         :on-click #(rf/dispatch [:pub/nav-signup])
         :label "Sign Up"]])))
-

@@ -79,6 +79,9 @@
                      :pwd (bhsh/derive pwd)})
         first)))
 
+
+
+
 #_(insert-select-user "John Test" "jtest@gmail.com" "hello")
 
 (defn valid-creds?
@@ -178,6 +181,28 @@
       :sessions
       first))
 
+(defn is-admin? [user-id]
+  (-> (db/hs-query {:select [:id]
+                    :from [:admins]
+                    :where [:and
+                            [:= :user_id user-id]
+                            [:= :deleted nil]]})
+      empty?
+      not))
+
+(defn admin-session? [session-token]
+  (-> (db/hs-query {:select [:a.id]
+                    :from [[:sessions :s]]
+                    :join [[:admins :a] [:and
+                                         [:= :a.user_id :s.user_id]
+                                         [:= :a.deleted nil]]]
+                    :where [:and
+                            [:= :s.token session-token]
+                            [:= :s.deleted nil]]})
+      empty?
+      not))
+
+
 (defn insert-session
   [user-id]
   (let [[id idstr] (ut/mk-id&str)]
@@ -191,11 +216,14 @@
 (defn login
   [{:keys [email pwd]}]
   (or (when-let [{:keys [id] :as user} (valid-creds? email pwd)]
-        (let [memberships (-> id select-memb-org-by-user-id not-empty)]
-          (when (->> memberships (keep :org) not-empty)
+        (let [memberships (-> id select-memb-org-by-user-id not-empty)
+              admin? (is-admin? id)]
+          (when (or (->> memberships (keep :org) not-empty)
+                    admin?)
             {:logged-in? true
              :session-token (-> id insert-session :token)
              :user (dissoc user :pwd)
+             :admin? admin?
              :memberships memberships})))
       {:logged-in? false
        :login-failed? true}))
@@ -214,8 +242,18 @@
     {:logged-in? true
      :session-token session-token
      :user (select-user-by-id user-id)
+     :admin? (is-admin? user-id)     
      :memberships (select-memb-org-by-user-id user-id)}
     {:logged-in? false}))
 
 
 ;; TODO logout!!!!!!!!!!!!!!!
+
+
+
+
+
+
+
+
+

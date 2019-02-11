@@ -7,10 +7,11 @@
             [compojure.route :as cr]
             [aleph.http :as ah]
             [manifold.stream :as ms]
+            [ring.middleware.cookies :as rm-cookies]
             [taoensso.timbre :as log]
             [cognitect.transit :as t]
             [clojure.java.io :as io]
-            com.vetd.app.auth
+            [com.vetd.app.auth :as auth]
             com.vetd.app.buyers
             com.vetd.app.vendors)
   (:import [java.io ByteArrayInputStream ByteArrayOutputStream])
@@ -104,19 +105,44 @@
                          ws-id)
                 ws)))
 
-(c/defroutes routes
+#_(c/defroutes routes
   (c/GET "/ws" [] #'ws-handler)
   (c/GET "/assets*" [] (fn [{:keys [uri]}] (get-public-resource uri)))
+  (c/GET "/js/full.js" [] (fn [{:keys [uri]}]
+                            (get-public-resource uri)))  
   (c/GET "/js*" [] (fn [{:keys [uri]}] (get-public-resource uri)))
   (c/GET "/a" [] (fn [_] (-> "public/admin.html" io/resource io/input-stream)))  
   (c/GET "*" [] (fn [_] (-> "public/app.html" io/resource io/input-stream))))
+
+(defn admin-session? [cookies]
+  (-> "admin-token"
+      cookies
+      :value
+      auth/admin-session?))
+
+(def app
+  (-> (c/routes
+       (c/GET "/ws" [] #'ws-handler)
+       (c/GET "/assets*" [] (fn [{:keys [uri]}] (get-public-resource uri)))
+       (c/GET "/js/full.js" [] (fn [{:keys [uri cookies]}]
+                                 (clojure.pprint/pprint cookies)
+                                 (if (admin-session? cookies)
+                                   (get-public-resource uri)
+                                   "")))  
+       (c/GET "/js*" [] (fn [{:keys [uri]}] (get-public-resource uri)))
+       (c/GET "*" [] (fn [{:keys [cookies]}]
+                       (-> (if (admin-session? cookies)
+                             "public/admin.html"
+                             "public/app.html")
+                           io/resource io/input-stream))))
+      rm-cookies/wrap-cookies))
 
 (defn start-server []
   (log/info "starting http server...")
   (try
     (if-not @server
       (do (reset! server
-                  (ah/start-server #'routes {:port 5080}))
+                  (ah/start-server #'app {:port 5080}))
           (log/info "started http server on port 5080"))
       (log/info "server already running"))
     (catch Exception e

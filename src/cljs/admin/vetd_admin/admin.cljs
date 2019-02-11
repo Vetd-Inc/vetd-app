@@ -1,5 +1,6 @@
 (ns vetd-admin.admin
-  (:require [vetd-app.hooks :as hks]   
+  (:require [vetd-app.common :as com]
+            [vetd-app.hooks :as hks]   
             [vetd-app.util :as ut]
             [vetd-app.a-home :as p-a-home]
             [reagent.core :as r]
@@ -7,6 +8,8 @@
             [secretary.core :as sec]))
 
 (println "START ADMIN")
+
+(reset! com/admin-present? true)
 
 (sec/defroute admin-path "/a" []
   (do (.log js/console "nav admin")
@@ -22,7 +25,7 @@
   [:div "ADMIN BUYER"])
 
 (defn c-admin-overlay-container [p]
-  [:div "ADMIN OVERLAY CONTAINER " p])
+  [:div#admin-over-cont ""])
 
 (defn c-admin-container [p]
   [:div "ADMIN CONTAINER " p])

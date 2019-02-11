@@ -19,7 +19,7 @@
 
 (vetd-app.hooks/defhook c-page (constantly [:div "no page"]))
 
-(vetd-app.hooks/defhook c-container (constantly [:div "no container"]))
+(vetd-app.hooks/defhook c-container (fn [p] [:div p]))
 
 (vetd-app.hooks/defhook c-general (constantly nil))
 

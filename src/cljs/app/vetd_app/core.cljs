@@ -15,6 +15,7 @@
             [vetd-app.vendor-fixtures :as v-fix]
             [vetd-app.public-fixtures :as pub-fix]            
             vetd-app.localstore
+            vetd-app.cookies
             [reagent.core :as r]
             [re-frame.core :as rf]
             [goog.events :as events]
@@ -40,7 +41,6 @@
                  :b/search #'b-fix/container   
                  :pub/login #'pub-fix/container
                  :pub/signup #'pub-fix/container})
-
 
 
 
@@ -139,7 +139,8 @@
 
 (rf/reg-event-fx
  :ws/req-session
- (fn [{:keys [db]} [_ {:keys [logged-in? user memberships]}]]
+ [(rf/inject-cofx :local-store [:session-token])]  
+ (fn [{:keys [db local-store]} [_ {:keys [logged-in? user memberships admin?]}]]
    (if logged-in?
      {:db (assoc db
                  :user user
@@ -147,16 +148,12 @@
                  :memberships memberships
                  ;; TODO support users with multi-orgs                 
                  :active-memb-id (some-> memberships first :id))
+      :cookies {:admin-token (when admin?
+                               [(:session-token local-store)
+                                {:max-age 3600 :path "/"}])}
       :dispatch-later [{:ms 100 :dispatch [:nav-if-public]}]}
      {:db (dissoc db :user)
       :dispatch [:pub/nav-login]})))
-
-#_(defn page []
-  (let [page @(rf/subscribe [:page])]
-    [:div#page
-     [(containers page (constantly [:div "no container"]))
-      [(pages page  (constantly [:div "none"]))]]
-     #_[bl/blocker]]))
 
 (defn c-page []
   (let [page @(rf/subscribe [:page])]

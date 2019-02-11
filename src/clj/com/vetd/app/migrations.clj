@@ -434,7 +434,18 @@
                            :from [[:req_prompt :rp]]
                            :join [[:prompts :p]
                                   [:= :p.id :rp.prompt_id]]}
-                   :owner :vetd}]]])
+                   :owner :vetd}]]
+   
+   [[2019 2 10 00 00]
+    [:create-table {:schema :vetd
+                    :name :admins
+                    :columns {:id [:bigint :NOT :NULL]
+                              :created [:timestamp :with :time :zone]
+                              :updated [:timestamp :with :time :zone]
+                              :deleted [:timestamp :with :time :zone]
+                              :user_id [:bigint]}
+                    :owner :vetd
+                    :grants {}}]]])
 
 
 (def hasura-meta-cfg2
@@ -686,3 +697,22 @@
                :deleted nil
                :prompt "Pitch"
                :descr "Why do we believe you are a fit for this product?"}))
+
+#_(let [[id idstr] (ut/mk-id&str)]
+  (db/insert! :users
+              {:id id
+               :idstr idstr
+               :created (ut/now-ts)
+               :updated (ut/now-ts)
+               :deleted nil
+               :uname "Vetd Support"
+               :email "admin"
+               :pwd "bcrypt+sha512$3b6415538cad5da4f44467c6f56a3cbe$12$569225967125ab9256b1799616ab63e5186b8f64ad99cd6e"}))
+
+#_(let [[id idstr] (ut/mk-id&str)]
+  (db/insert! :admins
+              {:id id
+               :created (ut/now-ts)
+               :updated (ut/now-ts)
+               :deleted nil
+               :user_id 354804007067}))
