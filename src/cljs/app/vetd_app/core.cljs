@@ -161,6 +161,8 @@
 (defn c-page []
   (let [page @(rf/subscribe [:page])]
     [:div#page
+     [hks/c-container :admin-overlay
+      [hks/c-admin page]]
      [hks/c-container page
       [hks/c-page page]]]))
 

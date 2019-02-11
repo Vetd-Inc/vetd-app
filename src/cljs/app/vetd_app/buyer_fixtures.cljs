@@ -47,4 +47,5 @@
              :width "100%"}
     [sidebar]
     [{:flex-grow 1 :margin "10px"}
-     body]]])
+     body]
+    ]])

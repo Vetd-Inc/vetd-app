@@ -86,7 +86,7 @@
                :min-full
                {:source-paths ["src/cljc" "src/cljs/admin" "src/cljs/app" "env/prod/cljs"]
                 :compiler
-                {:main "vetd-admin.admin"
+                {:main "vetd-admin.full"
                  :output-dir "target/cljsbuild/public/js/full-out"
                  :output-to "target/cljsbuild/public/js/full.js"
                  :source-map "target/cljsbuild/public/js/full.js.map"
@@ -118,8 +118,8 @@
                                  [lein-figwheel "0.5.18"]]
                   :cljsbuild
                   {:builds
-                   {:dev-public
-                    {:source-paths ["src/cljs/app" "src/cljc" "env/dev/cljs"]
+                   [{:id "dev-public"
+                     :source-paths ["src/cljs/app" "src/cljc" "env/dev/cljs"]
                      :figwheel {:on-jsload "vetd-app.core/mount-components"}
                      :compiler
                      {:main "vetd-app.app"
@@ -131,11 +131,11 @@
                       :pretty-print true
                       :closure-defines {"re_frame.trace.trace_enabled_QMARK_" true}
                       :preloads [devtools.preload day8.re-frame-10x.preload]}}
-                    :dev-full
-                    {:source-paths ["src/cljs/admin" "src/cljs/app" "src/cljc" "env/dev/cljs"]
+                    {:id "dev-full"
+                     :source-paths ["src/cljs/admin" "src/cljs/app" "src/cljc" "env/dev/cljs"]
                      :figwheel {:on-jsload "vetd-app.core/mount-components"}
                      :compiler
-                     {:main "vetd-app.app"
+                     {:main "vetd-admin.full"
                       :asset-path "/js/full-out"
                       :output-to "target/cljsbuild/public/js/full.js"
                       :output-dir "target/cljsbuild/public/js/full-out"
@@ -143,7 +143,34 @@
                       :optimizations :none
                       :pretty-print true
                       :closure-defines {"re_frame.trace.trace_enabled_QMARK_" true}
-                      :preloads [devtools.preload day8.re-frame-10x.preload]}}}}
+                      :preloads [devtools.preload day8.re-frame-10x.preload]}}]
+                   
+                   #_ {:dev-public
+                       {:source-paths ["src/cljs/app" "src/cljc" "env/dev/cljs"]
+                        :figwheel {:on-jsload "vetd-app.core/mount-components"}
+                        :compiler
+                        {:main "vetd-app.app"
+                         :asset-path "/js/public-out"
+                         :output-to "target/cljsbuild/public/js/app.js"
+                         :output-dir "target/cljsbuild/public/js/public-out"
+                         :source-map true
+                         :optimizations :none
+                         :pretty-print true
+                         :closure-defines {"re_frame.trace.trace_enabled_QMARK_" true}
+                         :preloads [devtools.preload day8.re-frame-10x.preload]}}
+                       :dev-full
+                       {:source-paths ["src/cljs/admin" "src/cljs/app" "src/cljc" "env/dev/cljs"]
+                        :figwheel {:on-jsload "vetd-app.core/mount-components"}
+                        :compiler
+                        {:main "vetd-admin.full"
+                         :asset-path "/js/full-out"
+                         :output-to "target/cljsbuild/public/js/full.js"
+                         :output-dir "target/cljsbuild/public/js/full-out"
+                         :source-map true
+                         :optimizations :none
+                         :pretty-print true
+                         :closure-defines {"re_frame.trace.trace_enabled_QMARK_" true}
+                         :preloads [devtools.preload day8.re-frame-10x.preload]}}}}
 
                   :doo {:build "test"}
                   :source-paths ["env/dev/clj"]

@@ -1,9 +1,5 @@
 (ns vetd-admin.full
-  (:require [vetd-app.hooks :as hks]
-            [vetd-admin.admin :as admin]
-            [vetd-app.util :as ut]   
-            [secretary.core :as sec]))
+  (:require [vetd-admin.admin :as admin]
+            [vetd-app.app :as app]))
 
-(println "BEGIN FULL")
-
-(println "END FULL")
+(println "LOADED FULL")
