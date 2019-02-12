@@ -71,7 +71,8 @@
                  :updated (ut/now-ts)
                  :deleted nil
                  :title "Preposal Request"
-                 :rtype "preposal1"
+                 :rtype "preposal"
+                 :rsubtype "preposal1"                 
                  :descr "Basic Preposal Request"})
     
     (db/insert! :prompts
@@ -147,7 +148,7 @@
                  :prompt_id id5
                  :fname "value"
                  :descr nil
-                 :dtype "e-price-per"
+                 :dtype "s"
                  :list_qm false
                  :sort 0}))
 

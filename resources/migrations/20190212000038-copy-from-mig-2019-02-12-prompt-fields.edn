@@ -1,0 +1,3 @@
+{:ns com.vetd.app.migrations,
+ :up-fn mig-2019-02-12-prompt-fields-up,
+ :down-fn mig-2019-02-12-prompt-fields-down}

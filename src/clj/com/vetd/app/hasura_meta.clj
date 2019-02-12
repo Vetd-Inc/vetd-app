@@ -7,6 +7,12 @@
 (def hasura-meta-cfg
   {:remote_schemas []
    :query_templates []
+   :inherits {[:vetd :prompts_by_req] [[:vetd :prompts]]
+              [:vetd :prompts_by_template] [[:vetd :prompts]]
+              [:vetd :rounds_by_category] [[:vetd :rounds]]
+              [:vetd :rounds_by_product] [[:vetd :rounds]]
+              [:vetd :categories_by_product] [[:vetd :categories]]
+              [:vetd :responses_by_doc] [[:vetd :responses]]}
    :rels [{:tables [:vetd :categories
                     :vetd :rounds_by_category]
            :fields [:rounds]
@@ -105,7 +111,7 @@
 
           {:tables [:vetd :reqs
                     :vetd :prompts_by_req]
-           :fields [:prompts]
+           :fields [:prompts :reqs]
            :cols [:id :req_id]
            :rel :one-many}
 

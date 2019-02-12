@@ -53,6 +53,38 @@
    {:delete-from :users
     :where [:= :id 354836657067]}))
 
+(def mig-2019-02-12-req-templates-up
+  (mig/mk-copy-from-up-fn "data/mig-2019-02-12-req-templates.sql"))
+
+(def mig-2019-02-12-req-templates-down
+  (mig/mk-exe-honeysql-fn
+   {:delete-from :req_templates
+    :where [:= :id 370382503635]}))
+
+(def mig-2019-02-12-req-template-prompt-up
+  (mig/mk-copy-from-up-fn "data/mig-2019-02-12-req-template-prompt.sql"))
+
+(def mig-2019-02-12-req-template-prompt-down
+  (mig/mk-exe-honeysql-fn
+   {:delete-from :req_template_prompt
+    :where [:between :id 370382503634 370382503636]}))
+
+(def mig-2019-02-12-prompts-up
+  (mig/mk-copy-from-up-fn "data/mig-2019-02-12-prompts.sql"))
+
+(def mig-2019-02-12-prompts-down
+  (mig/mk-exe-honeysql-fn
+   {:delete-from :prompts
+    :where [:between :id 370382503629 370382503633]}))
+
+(def mig-2019-02-12-prompt-fields-up
+  (mig/mk-copy-from-up-fn "data/mig-2019-02-12-prompt-fields.sql"))
+
+(def mig-2019-02-12-prompt-fields-down
+  (mig/mk-exe-honeysql-fn
+   {:delete-from :prompt_fields
+    :where [:between :id 370382503630 370382503634]}))
+
 
 (def migrations
   [[[2019 2 4 00 00]
@@ -256,9 +288,11 @@
                               :updated [:timestamp :with :time :zone]
                               :deleted [:timestamp :with :time :zone]
                               :title [:text]
-                              :dtype [:text] ;;preposal, profile etc???
+                              :dtype [:text]
+                              :dsubtype [:text]                               
                               :descr [:text]
-                              :notes [:text]                              
+                              :notes [:text]
+                              :topic [:bigint]                              
                               :from_org_id [:bigint]
                               :from_user_id [:bigint]
                               :to_org_id [:bigint]
@@ -288,6 +322,7 @@
                               :title [:text]
                               ;; preposal, profile etc????
                               :rtype [:text]
+                              :rsubtype [:text]
                               :descr [:text]}
                     :owner :vetd
                     :grants {:hasura [:SELECT]}}]
@@ -316,7 +351,9 @@
                               :title [:text]
                               :descr [:text]                              
                               :notes [:text]
-                              :rtype [:text]                              
+                              :rtype [:text]
+                              :rsubtype [:text]
+                              :topic [:bigint]
                               :from_org_id [:bigint]
                               :from_user_id [:bigint]
                               :to_org_id [:bigint]
@@ -464,15 +501,17 @@
                               :user_id [:bigint]}
                     :owner :vetd
                     :grants {}}]
+
     [:copy-from '{:name :mig-2019-02-10-copy-from-users
                   :ns com.vetd.app.migrations
                   :up-fn mig-2019-02-10-copy-from-users-up
                   :down-fn mig-2019-02-10-copy-from-users-down}]
+
     [:copy-from '{:name :mig-2019-02-10-copy-from-admins
                   :ns com.vetd.app.migrations
                   :up-fn mig-2019-02-10-copy-from-admins-up
                   :down-fn mig-2019-02-10-copy-from-admins-down}]]
-
+   
    [[2019 2 11 00 00]
     [:create-view {:schema :vetd
                    :name :prompts_by_template
@@ -490,7 +529,28 @@
                            :join [[:prompts :p]
                                   [:= :p.id :rp.prompt_id]]}
                    :owner :vetd
-                   :grants {:hasura [:SELECT]}}]]])
+                   :grants {:hasura [:SELECT]}}]]
+
+   [[2019 2 12 00 00]
+    [:copy-from '{:name :mig-2019-02-12-req-templates
+                  :ns com.vetd.app.migrations
+                  :up-fn mig-2019-02-12-req-templates-up
+                  :down-fn mig-2019-02-12-req-templates-down}]
+
+    [:copy-from '{:name :mig-2019-02-12-req-templates-prompt
+                  :ns com.vetd.app.migrations
+                  :up-fn mig-2019-02-12-req-template-prompt-up
+                  :down-fn mig-2019-02-12-req-template-prompt-down}]
+    
+    [:copy-from '{:name :mig-2019-02-12-prompts
+                  :ns com.vetd.app.migrations
+                  :up-fn mig-2019-02-12-prompts-up
+                  :down-fn mig-2019-02-12-prompts-down}]
+    
+    [:copy-from '{:name :mig-2019-02-12-prompt-fields
+                  :ns com.vetd.app.migrations
+                  :up-fn mig-2019-02-12-prompt-fields-up
+                  :down-fn mig-2019-02-12-prompt-fields-down}]]])
 
 #_(mig/mk-migration-files migrations
                           "migrations")

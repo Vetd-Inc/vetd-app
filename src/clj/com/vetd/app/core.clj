@@ -25,7 +25,8 @@
 (defn shutdown []
   (try
     (log/info "Starting shutdown hook")
-    (svr/stop-server wait-to-exit)
+    (when-let [svr (svr/stop-server)]
+      (wait-to-exit svr))
     (catch Throwable t
       (log/error t))
     (finally

@@ -1,6 +1,6 @@
 DROP TABLE IF EXISTS vetd.req_templates;
 --;;
-CREATE TABLE vetd.req_templates (id bigint NOT NULL, idstr text, created timestamp with time zone, updated timestamp with time zone, deleted timestamp with time zone, title text, rtype text, descr text)
+CREATE TABLE vetd.req_templates (deleted timestamp with time zone, updated timestamp with time zone, created timestamp with time zone, idstr text, title text, rsubtype text, rtype text, id bigint NOT NULL, descr text)
 --;;
 ALTER TABLE vetd.req_templates OWNER TO vetd
 --;;

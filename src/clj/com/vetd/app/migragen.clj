@@ -197,6 +197,12 @@
       (st/replace #"-" "_")
       keyword))
 
+(defn merge-hasura-rels
+  [{obj1 :obj-rel arr1 :arr-rel}
+   {obj2 :obj-rel arr2 :arr-rel}]
+  {:obj-rel (merge obj1 obj2)
+   :arr-rel (merge arr1 arr2)})
+
 (defn apply-hasura-rels
   [agg {:keys [tables fields cols rel]}]
   (let [[s1 t1 s2 t2] tables
@@ -217,14 +223,30 @@
                           #(or % {})))]
     agg''))
 
+(defn apply-hasura-inheritance*
+  [agg [to-sch to-tbl from-sch from-tbl]]
+  (assoc-in agg
+            [to-sch to-tbl]
+            (merge-hasura-rels (get-in agg [from-sch from-tbl])
+                               (get-in agg [to-sch to-tbl]))))
+
+(defn apply-hasura-inheritance
+  [tables inherits]
+  (reduce apply-hasura-inheritance*
+          tables
+          (for [[[to-sch to-tbl] vs] inherits
+                [from-sch from-tbl] vs]
+            [to-sch to-tbl from-sch from-tbl])))
+
 (defn proc-hasura-meta-cfg2
-  [{:keys [rels] :as cfg}]
+  [{:keys [rels inherits] :as cfg}]
   (-> cfg
       (assoc :tables
              (reduce apply-hasura-rels
                      {}
                      rels))
-      (dissoc :rels)
+      (dissoc :rels :inherits)
+      (update :tables apply-hasura-inheritance inherits)
       proc-hasura-meta-cfg))
 
 #_
@@ -232,3 +254,53 @@
     slurp
     json/parse-string
     clojure.pprint/pprint )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

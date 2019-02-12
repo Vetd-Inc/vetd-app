@@ -106,3 +106,71 @@
                  :from-user-id vendor-user-id
                  :to-org-id buyer-org-id
                  :to-user-id buyer-user-id})))
+
+(clojure.pprint/pprint 
+ (ha/sync-query [[:req-templates {:rtype "preposal"}
+                  [:id :idstr :rtype :rsubtype
+                   [:prompts
+                    [:id :idstr :prompt :descr
+                     [:fields
+                      [:id :idstr :fname :descr :dtype :list? :sort]]
+                     ]]]]]))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
