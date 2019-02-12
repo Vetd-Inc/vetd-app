@@ -3,7 +3,8 @@
             [com.vetd.app.util :as ut]
             [com.vetd.app.db-copier :as cp]
             [com.vetd.app.env :as env]
-            [com.vetd.app.db :as db]            
+            [com.vetd.app.db :as db]
+            [clojure.string :as st]
             [clojure.java.jdbc :as j]
             [taoensso.timbre :as log]
             [honeysql.core :as hny]
@@ -85,7 +86,14 @@
                          (format "ALTER VIEW %s.%s OWNER TO %s"
                                  schema'
                                  view'
-                                 owner'))])
+                                 owner'))]
+                      (for [[k vs] grants
+                            v      vs]
+                        (format "GRANT %s ON %s.%s TO %s;"
+                                (name v)
+                                schema'
+                                view'
+                                (name k))))
               (remove nil?))
      :down [(drop-view-if-exists schema'
                                  view')]}))
@@ -183,10 +191,16 @@
             (update :tables #(->> % (apply concat) vec))
             (json/generate-string))))
 
+(defn kw-kebab->snake [kw]
+  (-> kw
+      name
+      (st/replace #"-" "_")
+      keyword))
+
 (defn apply-hasura-rels
   [agg {:keys [tables fields cols rel]}]
   (let [[s1 t1 s2 t2] tables
-        [f1 f2] fields
+        [f1 f2] (map kw-kebab->snake fields)
         [c1 c2] cols
         rel-type1 (if (#{:one-many :many-many} rel)
                     :arr-rel :obj-rel)
@@ -212,11 +226,6 @@
                      rels))
       (dissoc :rels)
       proc-hasura-meta-cfg))
-
-#_(-> "/home/bill/repos/vetd-app/resources/hasura-metadata.json"
-    slurp
-    json/parse-string
-    clojure.pprint/pprint )
 
 #_
 (-> "/home/bill/repos/vetd-app/resources/hasura/metadata-gen.json"

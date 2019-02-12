@@ -53,3 +53,124 @@
              :created (ut/now-ts)
              :org_id (first (->id :orgs-Vetd))
              :user_id (first (->id :users-a-f.com))})
+
+
+#_(let [[id1 idstr1] (ut/mk-id&str)
+        [id2 idstr2] (ut/mk-id&str)
+        [id3 idstr3] (ut/mk-id&str)
+        [id4 idstr4] (ut/mk-id&str)
+        [id5 idstr5] (ut/mk-id&str)
+        [id6 idstr6] (ut/mk-id&str)
+        [id7 idstr7] (ut/mk-id&str)
+        [id8 idstr8] (ut/mk-id&str)]
+
+    (db/insert! :req_templates
+                {:id id7
+                 :idstr idstr7
+                 :created (ut/now-ts)
+                 :updated (ut/now-ts)
+                 :deleted nil
+                 :title "Preposal Request"
+                 :rtype "preposal1"
+                 :descr "Basic Preposal Request"})
+    
+    (db/insert! :prompts
+                {:id id1
+                 :idstr idstr1
+                 :created (ut/now-ts)
+                 :updated (ut/now-ts)
+                 :deleted nil
+                 :prompt "Pricing Estimate"
+                 :descr "In what range would you expect this buyer's costs to fall?"})
+
+    (db/insert! :req_template_prompt
+                {:id id6
+                 :idstr idstr6
+                 :created (ut/now-ts)
+                 :updated (ut/now-ts)
+                 :deleted nil
+                 :req_template_id id7
+                 :prompt_id id1
+                 :sort 0})
+    
+    (db/insert! :prompt_fields
+                {:id id2
+                 :idstr idstr2
+                 :created (ut/now-ts)
+                 :updated (ut/now-ts)
+                 :deleted nil
+                 :prompt_id id1
+                 :fname "value"
+                 :descr nil
+                 :dtype "n"
+                 :list_qm false
+                 :sort 0})
+
+    (db/insert! :prompt_fields
+                {:id id4
+                 :idstr idstr4
+                 :created (ut/now-ts)
+                 :updated (ut/now-ts)
+                 :deleted nil
+                 :prompt_id id1
+                 :fname "unit"
+                 :descr nil
+                 :dtype "e-price-per"
+                 :list_qm false
+                 :sort 2})
+
+    (db/insert! :prompts
+                {:id id5
+                 :idstr idstr5
+                 :created (ut/now-ts)
+                 :updated (ut/now-ts)
+                 :deleted nil
+                 :prompt "Pitch"
+                 :descr "Why do we believe you are a fit for this product?"})
+
+    (db/insert! :req_template_prompt
+                {:id id8
+                 :idstr idstr8
+                 :created (ut/now-ts)
+                 :updated (ut/now-ts)
+                 :deleted nil
+                 :req_template_id id7
+                 :prompt_id id5
+                 :sort 1})
+    
+    (db/insert! :prompt_fields
+                {:id id6
+                 :idstr idstr6
+                 :created (ut/now-ts)
+                 :updated (ut/now-ts)
+                 :deleted nil
+                 :prompt_id id5
+                 :fname "value"
+                 :descr nil
+                 :dtype "e-price-per"
+                 :list_qm false
+                 :sort 0}))
+
+
+
+#_(let [[id idstr] (ut/mk-id&str)]
+  )
+
+#_(let [[id idstr] (ut/mk-id&str)]
+  (db/insert! :users
+              {:id id
+               :idstr idstr
+               :created (ut/now-ts)
+               :updated (ut/now-ts)
+               :deleted nil
+               :uname "Vetd Support"
+               :email "admin"
+               :pwd "bcrypt+sha512$3b6415538cad5da4f44467c6f56a3cbe$12$569225967125ab9256b1799616ab63e5186b8f64ad99cd6e"}))
+
+#_(let [[id idstr] (ut/mk-id&str)]
+  (db/insert! :admins
+              {:id id
+               :created (ut/now-ts)
+               :updated (ut/now-ts)
+               :deleted nil
+               :user_id 354804007067}))

@@ -2,15 +2,13 @@
   (:require [com.vetd.app.common :as com]
             [com.vetd.app.util :as ut]
             [com.vetd.app.env :as env]
-            [com.vetd.app.db-schema :as sch]
+            [com.vetd.app.db :as db]
+            [com.vetd.app.hasura-meta :as hm]
             [aleph.http :as ah]
             [manifold.stream :as ms]
             [manifold.deferred :as md]            
-            [clojure.java.jdbc :as j]
             [clojure.string :as st]            
             [taoensso.timbre :as log]
-            [honeysql.core :as hs]
-            [honeysql.format :as hsfmt]
             [clojure.walk :as w]
             [cheshire.core :as json]
             [graphql-query.core :as dgql]
@@ -44,6 +42,41 @@
    :stop "stop"})
 
 (def gql-msg-types-str->kw (clojure.set/map-invert gql-msg-types-kw->str))
+
+
+(defn convert-kw
+  [kw]
+  (let [n (name kw)]
+    (-> n
+        (clojure.string/replace #"_qm$" "?")
+        (clojure.string/replace #"_" "-")
+        keyword)))
+
+
+(defn mk-sql-field->clj-kw [fields]
+  (into {}
+        (for [f fields]
+          [f (convert-kw f)])))
+
+(defn get-all-field-names []
+  (-> (concat (->> (db/select-distinct-col-names)
+                   (map keyword))
+              (->> hm/hasura-meta-cfg
+                   :rels
+                   (map (juxt :tables :fields))
+                   flatten
+                   distinct))
+      distinct))
+
+(def sql-field->clj-kw (mk-sql-field->clj-kw (get-all-field-names)))
+
+(def clj-kw->sql-field (clojure.set/map-invert sql-field->clj-kw))
+
+(defn walk-sql-field->clj-kw [v]
+  (w/prewalk-replace sql-field->clj-kw v))
+
+(defn walk-clj-kw->sql-field [v]
+  (w/prewalk-replace clj-kw->sql-field v))
 
 
 (defn smoosh [a b]
@@ -98,7 +131,7 @@
 
 (defn walk-gql-query->sub-kw
   [field args sub]
-  (sch/walk-clj-kw->sql-field sub))
+  (walk-clj-kw->sql-field sub))
 
 (defn walk-gql-query->sub-coll
   [field args sub]
@@ -128,12 +161,12 @@
              v)])
       (into {})
       process-sub-gql-map
-      sch/walk-clj-kw->sql-field))
+      walk-clj-kw->sql-field))
 
 (defn walk-gql-query->entity
   [field args sub]
   (->> field
-       sch/walk-clj-kw->sql-field
+       clj-kw->sql-field
        name
        ;; HACK enforce default schema
        (str "vetd_")
@@ -141,7 +174,7 @@
 
 (defn walk-gql-query->field
   [field args sub]
-  (sch/walk-clj-kw->sql-field field))
+  (clj-kw->sql-field field))
 
 (defn walk-gql-query
   [root? [field a b]]
@@ -160,13 +193,6 @@
 (defn walk-gql
   [{:keys [queries]}]
   {:queries (mapv (partial walk-gql-query true) queries)})
-
-#_(defn ->gql-str
-  [v]
-  (->> v
-       (w/postwalk process-sub-gql)
-       sch/walk-clj-kw->sql-field  ;; will I regret this??????
-       dgql/graphql-query))
 
 (defn ->gql-str
   [v]
@@ -203,29 +229,8 @@
                                    :deleted {:_is_null false}}}
                          [:user_id]]]})
 
-#_(defn walk-ids->long*
-  [m]
-  (if (map? m)
-    (into {}
-          (for [[k v] m]
-            (if (->> k name (take-last 2) (= [\i \d]))
-              [k (ut/->long v)]
-              [k v])))
-    m))
-
-;; HACK -- Hasura returns bigints as string
-#_(defn walk-ids->long [v]
-  (w/prewalk walk-ids->long* v))
-
-
-#_(defn process-result
-  [r]
-  (-> r
-      sch/walk-sql-field->clj-kw
-      walk-ids->long))
-
 (defn walk-result-sub-kw [field sub v]
-  (sch/walk-sql-field->clj-kw sub))
+  (sql-field->clj-kw sub))
 
 (declare walk-result-sub-val-pair)
 
@@ -262,12 +267,12 @@
   (-> field
       name
       (st/replace #"^vetd_" "")
-      keyword))
+      keyword
+      sql-field->clj-kw))
 
 (defn walk-result->field
   [field recs]
   field)
-
 
 (defn walk-result-field-recs-pair
   [root? field recs]

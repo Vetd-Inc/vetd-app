@@ -8,7 +8,7 @@
             [vetd-app.pages.home :as p-home]
             [vetd-app.pages.buyers.b-search :as p-b-search]
             [vetd-app.pages.buyers.b-home :as p-bhome]
-            [vetd-app.pages.vendors :as p-vendors]            
+            [vetd-app.pages.vendors.v-home :as p-vhome]
             [vetd-app.pages.signup :as p-signup]
             [vetd-app.pages.login :as p-login]
             [vetd-app.buyer-fixtures :as b-fix]
@@ -34,13 +34,14 @@
                  :pub/login #'p-login/login-page
                  :b/home #'p-bhome/c-page
                  :b/search #'p-b-search/c-page   
-                 :v/home #'p-vendors/vendors-page})
+                 :v/home #'p-vhome/c-page})
 
 (hks/reg-hooks! hks/c-container
-                {:b/home #'b-fix/container
-                 :b/search #'b-fix/container   
-                 :pub/login #'pub-fix/container
-                 :pub/signup #'pub-fix/container})
+                {:pub/login #'pub-fix/container
+                 :pub/signup #'pub-fix/container
+                 :b/home #'b-fix/container
+                 :b/search #'b-fix/container
+                 :v/home #'v-fix/container})
 
 
 (rf/reg-event-db

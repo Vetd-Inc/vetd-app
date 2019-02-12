@@ -2,12 +2,7 @@
   (:require [com.vetd.app.common :as com]
             [com.vetd.app.util :as ut]
             [com.vetd.app.migragen :as mig]            
-            [com.vetd.app.db-copier :as cp]
-            [com.vetd.app.db :as db]            
-            [clojure.java.jdbc :as j]
-            [taoensso.timbre :as log]
-            clojure.edn
-            clojure.pprint))
+            [taoensso.timbre :as log]))
 
 
 (def mig-2019-02-04-copy-from-categories-up
@@ -150,7 +145,8 @@
                            :from [[:product_categories :pc]]
                            :join [[:categories :c]
                                   [:= :c.id :pc.cat_id]]}
-                   :owner :vetd}]
+                   :owner :vetd
+                   :grants {:hasura [:SELECT]}}]
 
     [:create-table {:schema :vetd
                     :name :memberships
@@ -212,7 +208,8 @@
                            :from [[:round_category :rc]]
                            :join [[:rounds :r]
                                   [:= :r.id :rc.round_id]]}
-                   :owner :vetd}]
+                   :owner :vetd
+                   :grants {:hasura [:SELECT]}}]
 
     [:create-view {:schema :vetd
                    :name :rounds_by_product
@@ -226,7 +223,8 @@
                            :from [[:round_product :rp]]
                            :join [[:rounds :r]
                                   [:= :r.id :rp.round_id]]}
-                   :owner :vetd}]
+                   :owner :vetd
+                   :grants {:hasura [:SELECT]}}]
 
     [:copy-from '{:name :categories
                   :ns com.vetd.app.migrations
@@ -281,7 +279,7 @@
                     :grants {:hasura [:SELECT]}}]
 
     [:create-table {:schema :vetd
-                    :name :req_template
+                    :name :req_templates
                     :columns {:id [:bigint :NOT :NULL]
                               :idstr [:text]
                               :created [:timestamp :with :time :zone]
@@ -318,6 +316,7 @@
                               :title [:text]
                               :descr [:text]                              
                               :notes [:text]
+                              :rtype [:text]                              
                               :from_org_id [:bigint]
                               :from_user_id [:bigint]
                               :to_org_id [:bigint]
@@ -376,7 +375,8 @@
                               :deleted [:timestamp :with :time :zone]
                               :prompt_id [:bigint]
                               :user_id [:bigint]
-                              :org_id [:bigint]}
+                              :org_id [:bigint]
+                              :notes [:text]}
                     :owner :vetd
                     :grants {:hasura [:SELECT]}}]
 
@@ -434,7 +434,8 @@
                            :from [[:doc_resp :dr]]
                            :join [[:responses :r]
                                   [:= :r.id :dr.resp_id]]}
-                   :owner :vetd}]
+                   :owner :vetd
+                   :grants {:hasura [:SELECT]}}]
 
     [:create-view {:schema :vetd
                    :name :prompts_by_req
@@ -450,7 +451,8 @@
                            :from [[:req_prompt :rp]]
                            :join [[:prompts :p]
                                   [:= :p.id :rp.prompt_id]]}
-                   :owner :vetd}]]
+                   :owner :vetd
+                   :grants {:hasura [:SELECT]}}]]
    
    [[2019 2 10 00 00]
     [:create-table {:schema :vetd
@@ -469,274 +471,27 @@
     [:copy-from '{:name :mig-2019-02-10-copy-from-admins
                   :ns com.vetd.app.migrations
                   :up-fn mig-2019-02-10-copy-from-admins-up
-                  :down-fn mig-2019-02-10-copy-from-admins-down}]]])
+                  :down-fn mig-2019-02-10-copy-from-admins-down}]]
 
-
-(def hasura-meta-cfg2
-  {:remote_schemas []
-   :query_templates []
-   :rels [{:tables [:vetd :categories
-                    :vetd :rounds_by_category]
-           :fields [:rounds]
-           :cols [:id :category_id]
-           :rel :one-many}
-
-          {:tables [:vetd :orgs
-                    :vetd :memberships]
-           :fields [:memberships :org]
-           :cols [:id :org_id]
-           :rel :one-many}
-
-          {:tables [:vetd :orgs
-                    :vetd :products]
-           :fields [:products :vendor]
-           :cols [:id :vendor_id]
-           :rel :one-many}
-
-          {:tables [:vetd :products
-                    :vetd :rounds_by_product]
-           :fields [:rounds]
-           :cols [:id :product_id]
-           :rel :many-many}
-
-          {:tables [:vetd :products
-                    :vetd :categories_by_product]
-           :fields [:categories]
-           :cols [:id :prod_id]
-           :rel :many-many}
-
-          {:tables [:vetd :users
-                    :vetd :memberships]
-           :fields [:memberships :user]
-           :cols [:id :user_id]
-           :rel :one-many}
-
-          {:tables [:vetd :users
-                    :vetd :sessions]
-           :fields [:sessions :user]
-           :cols [:id :user_id]
-           :rel :one-many}
-
-          {:tables [:vetd :docs
-                    :vetd :responses_by_doc]
-           :fields [:responses]
-           :cols [:id :doc_id]
-           :rel :many-many}
-
-          {:tables [:vetd :docs
-                    :vetd :orgs]
-           :fields [:from-org :docs-out]
-           :cols [:from_org_id :id]
-           :rel :many-one}
-
-          {:tables [:vetd :docs
-                    :vetd :orgs]
-           :fields [:to-org :docs-in]
-           :cols [:to_org_id :id]
-           :rel :many-one}
-
-          {:tables [:vetd :docs
-                    :vetd :users]
-           :fields [:from-user :docs-out]
-           :cols [:from_user_id :id]
-           :rel :many-one}
-
-          {:tables [:vetd :docs
-                    :vetd :users]
-           :fields [:to-user :docs-in]
-           :cols [:to_user_id :id]
-           :rel :many-one}
-
-          {:tables [:vetd :reqs
-                    :vetd :orgs]
-           :fields [:from-org :reqs-out]
-           :cols [:from_org_id :id]
-           :rel :many-one}
-
-          {:tables [:vetd :reqs
-                    :vetd :orgs]
-           :fields [:to-org :reqs-in]
-           :cols [:to_org_id :id]
-           :rel :many-one}
-
-          {:tables [:vetd :reqs
-                    :vetd :users]
-           :fields [:from-user :reqs-out]
-           :cols [:from_user_id :id]
-           :rel :many-one}
-
-          {:tables [:vetd :reqs
-                    :vetd :users]
-           :fields [:to-user :reqs-in]
-           :cols [:to_user_id :id]
-           :rel :many-one}
-
-          {:tables [:vetd :reqs
-                    :vetd :prompts_by_req]
-           :fields [:prompts]
-           :cols [:id :req_id]
-           :rel :one-many}
-
-          {:tables [:vetd :prompts
-                    :vetd :prompt_fields]
-           :fields [:fields :prompt]
-           :cols [:id :prompt_id]
-           :rel :one-many}
-
-          {:tables [:vetd :responses
-                    :vetd :prompts]
-           :fields [:prompt :responses]
-           :cols [:prompt_id :id]
-           :rel :many-one}
-
-          {:tables [:vetd :responses
-                    :vetd :users]
-           :fields [:prompt :users]
-           :cols [:prompt_id :id]
-           :rel :many-one}
-
-          {:tables [:vetd :responses
-                    :vetd :prompts]
-           :fields [:prompt :responses]
-           :cols [:prompt_id :id]
-           :rel :many-one}
-
-          {:tables [:vetd :responses
-                    :vetd :users]
-           :fields [:user :responses]
-           :cols [:user_id :id]
-           :rel :many-one}
-          
-          {:tables [:vetd :responses
-                    :vetd :orgs]
-           :fields [:org :responses]
-           :cols [:org_id :id]
-           :rel :many-one}
-
-          {:tables [:vetd :responses
-                    :vetd :resp_fields]
-           :fields [:fields :response]
-           :cols [:id :resp_id]
-           :rel :one-many}
-
-          {:tables [:vetd :resp_fields
-                    :vetd :prompt_fields]
-           :fields [:prompt-field :resp-field]
-           :cols [:pf_id :id]
-           :rel :many-one}]})
+   [[2019 2 11 00 00]
+    [:create-view {:schema :vetd
+                   :name :prompts_by_template
+                   :honey {:select [[:rp.id :rpid]
+                                    :rp.req_template_id
+                                    :rp.sort
+                                    :p.id
+                                    :p.idstr                                    
+                                    :p.created
+                                    :p.updated
+                                    :p.deleted
+                                    :p.prompt
+                                    :p.descr]
+                           :from [[:req_template_prompt :rp]]
+                           :join [[:prompts :p]
+                                  [:= :p.id :rp.prompt_id]]}
+                   :owner :vetd
+                   :grants {:hasura [:SELECT]}}]]])
 
 #_(mig/mk-migration-files migrations
                           "migrations")
 
-#_
-(mig/proc-hasura-meta-cfg
- hasura-meta-cfg)
-
-#_
-(mig/proc-hasura-meta-cfg2
- hasura-meta-cfg2)
-
-
-#_(let [[id1 idstr1] (ut/mk-id&str)
-      [id2 idstr2] (ut/mk-id&str)
-      [id3 idstr3] (ut/mk-id&str)
-      [id4 idstr4] (ut/mk-id&str)]
-  
-  (db/insert! :prompts
-              {:id id1
-               :idstr idstr1
-               :created (ut/now-ts)
-               :updated (ut/now-ts)
-               :deleted nil
-               :prompt "Pricing Estimate"
-               :descr "In what range would you expect this buyer's costs to fall?"})
-
-  (db/insert! :prompt_fields
-              {:id id2
-               :idstr idstr2
-               :created (ut/now-ts)
-               :updated (ut/now-ts)
-               :deleted nil
-               :prompt_id id1
-               :fname "Low"
-               :descr nil
-               :dtype :n
-               :list_qm false
-               :sort 0})
-
-  (db/insert! :prompt_fields
-              {:id id3
-               :idstr idstr3
-               :created (ut/now-ts)
-               :updated (ut/now-ts)
-               :deleted nil
-               :prompt_id id1
-               :fname "High"
-               :descr nil
-               :dtype :n
-               :list_qm false
-               :sort 1})
-
-  (db/insert! :prompt_fields
-              {:id id4
-               :idstr idstr4
-               :created (ut/now-ts)
-               :updated (ut/now-ts)
-               :deleted nil
-               :prompt_id id1
-               :fname "Unit"
-               :descr nil
-               :dtype :e-price-per
-               :list_qm false
-               :sort 2})
-
-  (db/insert! :req_templates
-              {:id id5
-               :idstr idstr5
-               :created (ut/now-ts)
-               :updated (ut/now-ts)
-               :deleted nil
-               :title "Preposal Request"
-               :rtype :preposal1
-               :descr "Basic Preposal Request"})
-
-  (db/insert! :req_template_prompt
-              {:id id6
-               :idstr idstr6
-               :created (ut/now-ts)
-               :updated (ut/now-ts)
-               :deleted nil
-               :req_template_id id5
-               :prompt_id id1
-               :sort 0}))
-
-
-
-#_(let [[id idstr] (ut/mk-id&str)]
-  (db/insert! :prompts
-              {:id id
-               :idstr idstr
-               :created (ut/now-ts)
-               :updated (ut/now-ts)
-               :deleted nil
-               :prompt "Pitch"
-               :descr "Why do we believe you are a fit for this product?"}))
-
-#_(let [[id idstr] (ut/mk-id&str)]
-  (db/insert! :users
-              {:id id
-               :idstr idstr
-               :created (ut/now-ts)
-               :updated (ut/now-ts)
-               :deleted nil
-               :uname "Vetd Support"
-               :email "admin"
-               :pwd "bcrypt+sha512$3b6415538cad5da4f44467c6f56a3cbe$12$569225967125ab9256b1799616ab63e5186b8f64ad99cd6e"}))
-
-#_(let [[id idstr] (ut/mk-id&str)]
-  (db/insert! :admins
-              {:id id
-               :created (ut/now-ts)
-               :updated (ut/now-ts)
-               :deleted nil
-               :user_id 354804007067}))

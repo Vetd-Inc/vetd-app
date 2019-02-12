@@ -74,18 +74,6 @@
             {}
             paths)))
 
-(defn insert-cart-item
-  [buyer-id prod-id]
-  (let [[id idstr] (ut/mk-id&str)]
-    (-> (db/insert! :cart_items
-                    {:id id
-                     :idstr idstr
-                     :buyer_id buyer-id                 
-                     :product_id prod-id
-                     :created (ut/now-ts)
-                     :updated (ut/now-ts)})
-        first)))
-
 (defn insert-round
   [buyer-id]
   (let [[id idstr] (ut/mk-id&str)]
