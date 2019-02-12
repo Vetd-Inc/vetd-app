@@ -4,11 +4,9 @@
             [com.vetd.app.util :as ut]
             [taoensso.timbre :as log]))
 
-;; TODO preposals and prep reqs should by FULL JOINed somehow???
-
 (defn create-preposal
   [prep-req-id txt]
-  (let [[{:keys [buyer-id vendor-id]}]
+  #_(let [[{:keys [buyer-id vendor-id]}]
         (db/hs-query {:select [:buyer-id :vendor-id]
                       :from [:preposal_reqs]
                       :where [:= :id prep-req-id]})]
@@ -21,7 +19,7 @@
 
 (defn create-preposal
   [{:keys [buyer-org-id buyer-user-id pitch price-val price-unit]}]
-  (let [[{:keys [buyer-id vendor-id]}]
+  #_(let [[{:keys [buyer-id vendor-id]}]
         (db/hs-query {:select [:buyer-id :vendor-id]
                       :from [:preposal_reqs]
                       :where [:= :id prep-req-id]})]

@@ -148,11 +148,14 @@
 (defn stop-server [& [final-fn]]
   (log/info "stopping http server...")
   (try
-    (.close @server)
-    (when
-        (future (final-fn @server)))
-    (reset! server nil)
-    (log/info "stopped http server on port 5080")
+    (if-let [svr @server]
+      (do
+        (.close @server)
+        (when final-fn
+          (future (final-fn @server)))
+        (reset! server nil)
+        (log/info "executed close for http server on port 5080"))
+      (log/info "There was no server to stop."))
     (catch Exception e
       (log/error e "EXCEPTION while trying to stop http server"))))
 

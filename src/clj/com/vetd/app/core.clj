@@ -12,16 +12,24 @@
 
 (log/set-level! :info)
 
+(defn wait-to-exit [s]
+  [s]
+  (log/info "Waiting for server to close...")
+  (try
+    (.wait_for_close s)
+    (finally
+      (log/info "Calling EXIT...")
+      (.exit (Runtime/getRuntime) 0)
+      (log/info "Called EXIT"))))
+
 (defn shutdown []
   (try
     (log/info "Starting shutdown hook")
-    (svr/stop-server
-     (fn [s]
-       (.wait_for_close s)
-       (log/info "Exiting")        
-       (.exit (Runtime/getRuntime) 0)
-       (log/info "Done shutdown hook")))
-    (catch Throwable t)))
+    (svr/stop-server wait-to-exit)
+    (catch Throwable t
+      (log/error t))
+    (finally
+      (log/info "Done shutdown hook"))))
 
 #_ (shutdown)
 
@@ -31,10 +39,16 @@
   (.addShutdownHook (Runtime/getRuntime)
                     (Thread. shutdown))
   (log/set-level! :info)
-  (mig/migrate {:store :database
-                :db env/pg-db})
-  (log/set-level! :info)  
-  (svr/start-server))
+  (try
+    (mig/migrate {:store :database
+                  :db env/pg-db})
+    (catch Throwable t
+      (log/error t)))
+  (log/set-level! :info)
+  (try
+    (svr/start-server)
+    (catch Throwable t
+      (log/error t))))
 
 
 #_ (-main)

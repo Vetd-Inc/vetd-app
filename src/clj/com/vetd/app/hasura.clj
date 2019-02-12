@@ -68,7 +68,11 @@
                    distinct))
       distinct))
 
-(def sql-field->clj-kw (mk-sql-field->clj-kw (get-all-field-names)))
+(def sql-field->clj-kw
+  (try (mk-sql-field->clj-kw (get-all-field-names))
+       (catch Throwable t
+         (log/error t)
+         {})))
 
 (def clj-kw->sql-field (clojure.set/map-invert sql-field->clj-kw))
 
