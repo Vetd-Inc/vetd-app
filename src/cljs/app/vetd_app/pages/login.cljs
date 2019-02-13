@@ -42,6 +42,7 @@
                  :user user
                  :session-token session-token
                  :memberships memberships
+                 :admin? admin?
                  ;; TODO support users with multi-orgs
                  :org-id (-> memberships first :org-id))
       :local-store {:session-token session-token}

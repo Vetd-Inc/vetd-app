@@ -11,7 +11,7 @@
 
 (reset! com/admin-present? true)
 
-(sec/defroute admin-path "/a" []
+(sec/defroute admin-path "/a/home/" []
   (do (.log js/console "nav admin")
       (rf/dispatch [:a/route-home])))
 

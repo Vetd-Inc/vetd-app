@@ -5,4 +5,13 @@
 
 
 (defn c-page []
-  [:div "ADMIN HOME"])
+  (let [orgs& (rf/subscribe [:gql/q
+                             {:queries
+                              [[:orgs 
+                                [:id :oname :idstr :short-desc
+                                 [:memberships 
+                                  [:id
+                                   [:user
+                                    [:id :idstr :uname]]]]]]]}])])
+  (fn []
+    [:div "ADMIN HOME"]))

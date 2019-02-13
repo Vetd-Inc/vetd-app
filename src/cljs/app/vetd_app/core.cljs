@@ -108,27 +108,30 @@
 
 
 
-(defn memberships->home-url
-  [membs]
-  (if-let [{{:keys [id buyer? vendor?]} :org} (first membs)]
-    (str (if buyer?
-           "/b/home"
-           "/v/home")
-         "/")
-    "/"))
+(defn ->home-url
+  [membs admin?]
+  (if admin?
+    "/a/home/"
+    (if-let [{{:keys [id buyer? vendor?]} :org} (first membs)]
+      (if buyer?
+        "/b/home/"
+        "/v/home/")
+      "/")))
 
 ;; TODO rename
 (rf/reg-event-fx
  :nav-home
  (fn [{:keys [db]} _]
-   {:nav {:path (-> db :memberships memberships->home-url)}}))
+   (let [{:keys [page memberships admin?]} db]
+     {:nav {:path (->home-url memberships admin?)}})))
 
 (rf/reg-event-fx
  :nav-if-public
  (fn [{:keys [db]} _]
-   (if ((conj public-pages :home) (:page db))
-     {:nav {:path (-> db :memberships memberships->home-url)}}
-     {})))
+   (let [{:keys [page memberships admin?]} db]
+     (if ((conj public-pages :home) page)
+       {:nav {:path (->home-url memberships admin?)}}
+       {}))))
 
 (rf/reg-event-fx
  :ws-get-session-user
@@ -148,6 +151,7 @@
                  :user user
                  :logged-in? logged-in?
                  :memberships memberships
+                 :admin? admin?
                  ;; TODO support users with multi-orgs                 
                  :active-memb-id (some-> memberships first :id))
       :cookies {:admin-token (when admin?
