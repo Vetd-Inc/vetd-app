@@ -268,3 +268,14 @@ body, *{
     padding: 10px;
     width: 75%;
 }
+
+.preposal-req {
+    border: solid 1px; #AAA;
+    margin: 20px;
+    padding: 10px;
+    max-width: 500px;
+}
+
+.preposal-req .info {
+    margin: 5px
+}

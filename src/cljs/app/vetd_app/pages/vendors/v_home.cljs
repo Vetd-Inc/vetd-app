@@ -24,7 +24,7 @@
                                :return nil}
                               prep-def)}}))
 
-(defn new-preposal [orgs]
+(defn new-preposal [{:keys [id title product from-org from-user docs] :as preq}]
   (let [pitch& (r/atom {})
         org-user& (r/atom nil)
         pitch& (r/atom "")
@@ -58,44 +58,39 @@
        [rc/button
         :label "Save"
         :on-click (fn []
-                     (let [{:keys [org-id user-id]} @org-user&]
-                       (rf/dispatch [:v/create-preposal {:buyer-org-id org-id
-                                                       :buyer-user-id user-id
-                                                       :pitch @pitch&
-                                                       :price-val @price-val&
-                                                         :price-unit @price-unit&}])))]])))
+                    (let [{:keys [org-id user-id]} @org-user&]
+                      (rf/dispatch [:v/create-preposal {:buyer-org-id org-id
+                                                        :buyer-user-id user-id
+                                                        :pitch @pitch&
+                                                        :price-val @price-val&
+                                                        :price-unit @price-unit&}])))]])))
 
 (defn c-req-without-preposal
   [{:keys [id title product from-org from-user docs] :as preq}]
-  [flx/col
+  [flx/col #{:preposal-req}
    [:div "Preposal Request"]
-   [:div title]
-   [:div (:pname product)]
-   [:div (:oname from-org)]
-   [:div (:uname from-user)]])
+   [flx/row
+    [:div.info title]
+    [:div.info (:pname product)]
+    [:div.info (:oname from-org)]
+    [:div.info (:uname from-user)]]
+   [new-preposal preq]])
 
 (defn c-req-with-preposal
   [{:keys [id title product from-org from-user docs] :as preq}]
-  [flx/col
+  [flx/col #{:preposal}
    [:div "Preposal"]
-   [:div title]
-   [:div (:pname product)]
-   [:div (:oname from-org)]
-   [:div (:uname from-user)]])
+   [flx/row
+    [:div title]
+    [:div (:pname product)]
+    [:div (:oname from-org)]
+    [:div (:uname from-user)]]])
 
 (defn c-req-maybe-preposal
   [{:keys [id title product from-org from-user docs] :as preq}]
   (if (empty? docs)
     [c-req-without-preposal preq]
-    [c-req-with-preposal preq]    )
-  [flx/col
-   [:div (if (empty? docs)
-           "Preposal Request"
-           "Preposal")]
-   [:div title]
-   [:div (:pname product)]
-   [:div (:oname from-org)]
-   [:div (:uname from-user)]])
+    [c-req-with-preposal preq]))
 
 (defn c-page []
   (let [org-id& (rf/subscribe [:org-id])
@@ -108,9 +103,16 @@
                                       [:from-org [:id :oname]]
                                       [:from-user [:id :uname]]
                                       [:docs
-                                       [:id :title]]]]]}])]
+                                       [:id :title]]
+                                      [:prompts
+                                       [:id :prompt :descr
+                                        [:fields
+                                         [:id :fname]]]]]]]}])]
     (fn []
+      (def preq1 @prep-reqs&)
       [:div
        (for [preq (:forms @prep-reqs&)]
          ^{:key (str "form" (:id preq))}
          [c-req-maybe-preposal preq])])))
+
+#_ (cljs.pprint/pprint preq1)
