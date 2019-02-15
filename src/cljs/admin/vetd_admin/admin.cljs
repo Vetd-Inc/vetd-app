@@ -5,13 +5,17 @@
             [vetd-admin.pages.a-home :as p-a-home]
             [vetd-admin.pages.a-search :as p-a-search]
             [vetd-admin.admin-fixtures :as a-fix]
+            [vetd-admin.overlays.admin-v-home :as ovr-v-home]
             [reagent.core :as r]
             [re-frame.core :as rf]
+            [re-com.core :as rc]
             [secretary.core :as sec]))
 
 (println "START ADMIN")
 
 (reset! com/admin-present? true)
+
+(def show-admin?& (r/atom true #_false))
 
 (sec/defroute admin-home-path "/a/home/" []
   (do (.log js/console "nav admin")
@@ -30,7 +34,15 @@
   [:div "ADMIN BUYER"])
 
 (defn c-admin-overlay-container [p]
-  [:div#admin-over-cont ""])
+  (fn [p]
+    (if-not @show-admin?&
+      [:div#admin-over-cont.closed
+       [:div#admin-symbol
+        {:on-click #(reset! show-admin?& true)}]]
+      [:div#admin-over-cont.open
+       p
+       [:div#admin-symbol
+        {:on-click #(reset! show-admin?& false)}]])))
 
 (defn c-admin-container [p]
   [:div "ADMIN CONTAINER " p])
@@ -47,5 +59,8 @@
 
 (hks/reg-hook! hks/c-container :a/home a-fix/container)
 (hks/reg-hook! hks/c-container :a/search a-fix/container)
+
+(hks/reg-hook! hks/c-admin :v/home ovr-v-home/c-overlay)
+
 
 (println "END ADMIN")

@@ -84,6 +84,24 @@
            :cols [:to_user_id :id]
            :rel :many-one}
 
+          {:tables [:vetd :docs
+                    :vetd :products]
+           :fields [:product :docs]
+           :cols [:subject :id]
+           :rel :many-one}
+          
+          {:tables [:vetd :docs
+                    :vetd :forms]
+           :fields [:form :docs]
+           :cols [:form_id :id]
+           :rel :many-one}
+          
+          {:tables [:vetd :forms
+                    :vetd :products]
+           :fields [:product :forms]
+           :cols [:subject :id]
+           :rel :many-one}
+
           {:tables [:vetd :forms
                     :vetd :orgs]
            :fields [:from-org :forms-out]
@@ -165,7 +183,7 @@
           {:tables [:vetd :form_templates
                     :vetd :prompts_by_template]
            :fields [:prompts]
-           :cols [:id :form_template_id]
+           :cols [:id :form_template_]
            :rel :one-many}]})
 
 

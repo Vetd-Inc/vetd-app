@@ -1,5 +1,6 @@
 (ns vetd-app.pages.vendors.v-home
   (:require [vetd-app.util :as ut]
+            [vetd-app.flexer :as flx]
             [reagent.core :as r]
             [re-frame.core :as rf]
             [re-com.core :as rc]))
@@ -23,20 +24,8 @@
                                :return nil}
                               prep-def)}}))
 
-(defn search-results
-  [orgs q]
-  (->> (for [org (:orgs orgs)
-             {:keys [user]} (:memberships org)]
-         {:label (str (:oname org) " / " (:uname user))
-          :org-id (:id org)
-          :user-id (:id user)})
-       (filter (fn [{:keys [label]}]
-                 (re-find (re-pattern (str "(?i)" q))
-                          label))))
-  #_[{:label "hello" :value 44}])
-
 (defn new-preposal [orgs]
-  (let [model& (r/atom {})
+  (let [pitch& (r/atom {})
         org-user& (r/atom nil)
         pitch& (r/atom "")
         price-val& (r/atom "")
@@ -51,18 +40,10 @@
                                     [:id :idstr :uname]]]]]]]}])]
     (fn []
       [:div "NEW PREPOSAL"
-       [rc/typeahead
-        :data-source (partial search-results @orgs&)
-        :model model&
-        :render-suggestion (fn [{:keys [label]}]
-                             [:span label])
-        :suggestion-to-string #(:label %)
-        :rigid? true
-        :on-change #(reset! org-user& %)]
        [:div "Pitch"
         [rc/input-textarea
          :model pitch&
-         :on-change #(reset! model& %)]]
+         :on-change #(reset! pitch& %)]]
        "Price Estimate "
        [rc/input-text
         :model price-val&
@@ -82,17 +63,54 @@
                                                        :buyer-user-id user-id
                                                        :pitch @pitch&
                                                        :price-val @price-val&
-                                                       :price-unit @price-unit&}])))]])))
+                                                         :price-unit @price-unit&}])))]])))
+
+(defn c-req-without-preposal
+  [{:keys [id title product from-org from-user docs] :as preq}]
+  [flx/col
+   [:div "Preposal Request"]
+   [:div title]
+   [:div (:pname product)]
+   [:div (:oname from-org)]
+   [:div (:uname from-user)]])
+
+(defn c-req-with-preposal
+  [{:keys [id title product from-org from-user docs] :as preq}]
+  [flx/col
+   [:div "Preposal"]
+   [:div title]
+   [:div (:pname product)]
+   [:div (:oname from-org)]
+   [:div (:uname from-user)]])
+
+(defn c-req-maybe-preposal
+  [{:keys [id title product from-org from-user docs] :as preq}]
+  (if (empty? docs)
+    [c-req-without-preposal preq]
+    [c-req-with-preposal preq]    )
+  [flx/col
+   [:div (if (empty? docs)
+           "Preposal Request"
+           "Preposal")]
+   [:div title]
+   [:div (:pname product)]
+   [:div (:oname from-org)]
+   [:div (:uname from-user)]])
 
 (defn c-page []
-  (let [orgs& (rf/subscribe [:gql/q
-                             {:queries
-                              [[:orgs {:buyer? true}
-                                [:id :oname :idstr :short-desc
-                                 [:memberships
-                                  [:id
-                                   [:user
-                                    [:id :idstr :uname]]]]]]]}])]
+  (let [org-id& (rf/subscribe [:org-id])
+        prep-reqs& (rf/subscribe [:gql/sub
+                                  {:queries
+                                   [[:forms {:ftype "preposal"
+                                             :to-org-id @org-id&}
+                                     [:id :title
+                                      [:product [:id :pname]]
+                                      [:from-org [:id :oname]]
+                                      [:from-user [:id :uname]]
+                                      [:docs
+                                       [:id :title]]]]]}])]
     (fn []
-      [:div "VENDORS' HOME"
-       [new-preposal @orgs&]])))
+      [:div
+       (for [preq (:forms @prep-reqs&)]
+         ^{:key (str "form" (:id preq))}
+         [c-req-maybe-preposal preq])])))

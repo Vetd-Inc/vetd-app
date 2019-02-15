@@ -6,6 +6,7 @@
 #_(vreset! hook-registry {})
 
 
+
 (defn reg-hook! [hook-fn handle f]
   (if-let [hook-type (-> hook-fn meta ::type)]
     (vswap! hook-registry assoc-in [hook-type handle] f)

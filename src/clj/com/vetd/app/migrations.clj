@@ -293,7 +293,8 @@
                               :subject [:bigint]
                               :descr [:text]
                               :notes [:text]
-
+                              :form_id [:bigint]
+                              :from_org_id [:bigint]
                               :from_user_id [:bigint]
                               :to_org_id [:bigint]
                               :to_user_id [:bigint]}

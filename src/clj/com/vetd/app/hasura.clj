@@ -52,6 +52,13 @@
         (clojure.string/replace #"_" "-")
         keyword)))
 
+(defn reverse-convert-kw
+  [kw]
+  (let [n (name kw)]
+    (-> n
+        (clojure.string/replace #"\?$" "_qm")
+        (clojure.string/replace #"-" "_")
+        keyword)))
 
 (defn mk-sql-field->clj-kw [fields]
   (into {}
@@ -65,7 +72,13 @@
                    :rels
                    (map (juxt :tables :fields))
                    flatten
-                   distinct))
+                   distinct)
+              (->> hm/hasura-meta-cfg
+                   :rels
+                   (map :fields)
+                   flatten
+                   distinct
+                   (map reverse-convert-kw)))
       distinct))
 
 (def sql-field->clj-kw

@@ -3,6 +3,7 @@
             [com.vetd.app.hasura :as ha]
             [com.vetd.app.common :as com]
             [com.vetd.app.util :as ut]
+            [com.vetd.app.docs :as docs]
             [taoensso.timbre :as log]))
 
 (defn search-orgs->ids
@@ -22,3 +23,7 @@
 (defmethod com/handle-ws-inbound :a/search
   [{:keys [query]} ws-id sub-fn]
   (search-orgs->ids query))
+
+(defmethod com/handle-ws-inbound :a/create-preposal-req
+  [{:keys [prep-req]} ws-id sub-fn]
+  (docs/create-preposal-req-form prep-req))

@@ -1,4 +1,20 @@
 #admin-over-cont {
+    position: fixed;
+    right: 5px;
+    bottom: 5px;
+}
+
+
+#admin-over-cont .closed {
+    height: 100px;
+    width: 100px;
+    position: fixed;
+    right: 5px;
+    bottom: 5px;
+}
+
+
+#admin-over-cont #admin-symbol {
     background-image: url(../img/vetd-arrow.svg);
     background-size: 58px 97px;
     height: 100px;
@@ -11,6 +27,20 @@
     position: fixed;
     right: 5px;
     bottom: 5px;
+}
+
+#admin-over-cont.open {
+    background-color: #EEE;
+    border: solid 3px  #27AAE0;    
+    height: 50%;
+    width: 50%;
+    padding: 5px;
+}
+
+#admin-over-cont .admin-over-close{
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
 }
 
 @keyframes mega-evolve {

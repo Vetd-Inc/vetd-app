@@ -18,7 +18,8 @@
         org-name& (rf/subscribe [:org-name])]
     (fn []
       [flx/row :header
-       [:div#header-left [:div.logo]]
+       [:div#header-left [:div.logo
+                          {:on-click #(rf/dispatch [:nav-home])}]]
        [:div#header-middle [:div.org-name @org-name&]]
        [:div#header-right
         [:div.user-name @user-name&]
@@ -47,5 +48,4 @@
              :width "100%"}
     [sidebar]
     [{:flex-grow 1 :margin "10px"}
-     body]
-    ]])
+     body]]])

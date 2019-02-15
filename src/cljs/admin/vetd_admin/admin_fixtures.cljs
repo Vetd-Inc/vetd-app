@@ -12,7 +12,8 @@
         org-name& (rf/subscribe [:org-name])]
     (fn []
       [flx/row :header
-       [:div#header-left [:div.logo]]
+       [:div#header-left
+        [:div.logo {:on-click #(rf/dispatch [:nav-home])}]]
        [:div#header-middle [:div.admin-notice "ADMIN PANEL"]]
        [:div#header-right
         [:div.user-name @user-name&]
