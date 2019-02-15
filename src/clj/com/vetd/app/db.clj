@@ -22,8 +22,9 @@
 
 
 #_
-(mig/rollback {:store :database
-               :db env/pg-db})
+(dotimes [_ 10]
+  (mig/rollback {:store :database
+                 :db env/pg-db}))
 
 (def pg-db env/pg-db)
 

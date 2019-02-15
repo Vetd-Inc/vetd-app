@@ -5,7 +5,7 @@
 
 
 (defn c-page []
-  (let [orgs& (rf/subscribe [:gql/q
+  (let [orgs& nil #_(rf/subscribe [:gql/q
                              {:queries
                               [[:orgs 
                                 [:id :oname :idstr :short-desc
