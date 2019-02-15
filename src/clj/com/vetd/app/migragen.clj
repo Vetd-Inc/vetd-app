@@ -149,7 +149,7 @@
 (defn mk-copy-from-up-fn [filename]
   (fn [{:keys [db]}]
     (cp/copy-from-sql-dump
-     (-> (str "migrations/" filename )
+     (-> (str "migrations_data/" filename )
          io/resource
 #_         .getPath)
      (j/get-connection db))))

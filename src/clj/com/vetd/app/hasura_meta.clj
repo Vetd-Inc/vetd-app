@@ -3,11 +3,10 @@
             [com.vetd.app.util :as ut]
             [com.vetd.app.migragen :as mig]))
 
-
 (def hasura-meta-cfg
   {:remote_schemas []
    :query_templates []
-   :inherits {[:vetd :prompts_by_req] [[:vetd :prompts]]
+   :inherits {[:vetd :prompts_by_form] [[:vetd :prompts]]
               [:vetd :prompts_by_template] [[:vetd :prompts]]
               [:vetd :rounds_by_category] [[:vetd :rounds]]
               [:vetd :rounds_by_product] [[:vetd :rounds]]
@@ -85,34 +84,34 @@
            :cols [:to_user_id :id]
            :rel :many-one}
 
-          {:tables [:vetd :reqs
+          {:tables [:vetd :forms
                     :vetd :orgs]
-           :fields [:from-org :reqs-out]
+           :fields [:from-org :forms-out]
            :cols [:from_org_id :id]
            :rel :many-one}
 
-          {:tables [:vetd :reqs
+          {:tables [:vetd :forms
                     :vetd :orgs]
-           :fields [:to-org :reqs-in]
+           :fields [:to-org :forms-in]
            :cols [:to_org_id :id]
            :rel :many-one}
 
-          {:tables [:vetd :reqs
+          {:tables [:vetd :forms
                     :vetd :users]
-           :fields [:from-user :reqs-out]
+           :fields [:from-user :forms-out]
            :cols [:from_user_id :id]
            :rel :many-one}
 
-          {:tables [:vetd :reqs
+          {:tables [:vetd :forms
                     :vetd :users]
-           :fields [:to-user :reqs-in]
+           :fields [:to-user :forms-in]
            :cols [:to_user_id :id]
            :rel :many-one}
 
-          {:tables [:vetd :reqs
-                    :vetd :prompts_by_req]
-           :fields [:prompts :reqs]
-           :cols [:id :req_id]
+          {:tables [:vetd :forms
+                    :vetd :prompts_by_form]
+           :fields [:prompts :forms]
+           :cols [:id :form_id]
            :rel :one-many}
 
           {:tables [:vetd :prompts
@@ -163,10 +162,10 @@
            :cols [:pf_id :id]
            :rel :many-one}
 
-          {:tables [:vetd :req_templates
+          {:tables [:vetd :form_templates
                     :vetd :prompts_by_template]
            :fields [:prompts]
-           :cols [:id :req_template_id]
+           :cols [:id :form_template_id]
            :rel :one-many}]})
 
 

@@ -1,3 +1,0 @@
-{:ns com.vetd.app.migrations,
- :up-fn mig-2019-02-12-req-templates-up,
- :down-fn mig-2019-02-12-req-templates-down}

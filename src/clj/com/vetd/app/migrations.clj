@@ -6,7 +6,7 @@
 
 
 (def mig-2019-02-04-copy-from-categories-up
-  (mig/mk-copy-from-up-fn "data/categories.sql"))
+  (mig/mk-copy-from-up-fn "categories.sql"))
 
 (def mig-2019-02-04-copy-from-categories-down
   (mig/mk-exe-honeysql-fn
@@ -14,7 +14,7 @@
     :where [:between :id 272814110001 272814110725]}))
 
 (def mig-2019-02-04-copy-from-orgs-up
-  (mig/mk-copy-from-up-fn "data/orgs.sql"))
+  (mig/mk-copy-from-up-fn "orgs.sql"))
 
 (def mig-2019-02-04-copy-from-orgs-down
   (mig/mk-exe-honeysql-fn
@@ -22,7 +22,7 @@
     :where [:between :id 273818389861 272814405123]}))
 
 (def mig-2019-02-04-copy-from-products-up
-  (mig/mk-copy-from-up-fn "data/products.sql"))
+  (mig/mk-copy-from-up-fn "products.sql"))
 
 (def mig-2019-02-04-copy-from-products-down
   (mig/mk-exe-honeysql-fn
@@ -30,7 +30,7 @@
     :where [:between :id 272814695125 272814743922]}))
 
 (def mig-2019-02-05-copy-from-product-categories-up
-  (mig/mk-copy-from-up-fn "data/product-categories.sql"))
+  (mig/mk-copy-from-up-fn "product-categories.sql"))
 
 (def mig-2019-02-05-copy-from-product-categories-down
   (mig/mk-exe-honeysql-fn
@@ -38,7 +38,7 @@
     :where [:between :id 273266515726 273266499717]}))
 
 (def mig-2019-02-10-copy-from-admins-up
-  (mig/mk-copy-from-up-fn "data/mig-2019-02-10-admins.sql"))
+  (mig/mk-copy-from-up-fn "mig-2019-02-10-admins.sql"))
 
 (def mig-2019-02-10-copy-from-admins-down
   (mig/mk-exe-honeysql-fn
@@ -46,31 +46,31 @@
     :where [:= :id 354836657068]}))
 
 (def mig-2019-02-10-copy-from-users-up
-  (mig/mk-copy-from-up-fn "data/mig-2019-02-10-users.sql"))
+  (mig/mk-copy-from-up-fn "mig-2019-02-10-users.sql"))
 
 (def mig-2019-02-10-copy-from-users-down
   (mig/mk-exe-honeysql-fn
    {:delete-from :users
     :where [:= :id 354836657067]}))
 
-(def mig-2019-02-12-req-templates-up
-  (mig/mk-copy-from-up-fn "data/mig-2019-02-12-req-templates.sql"))
+(def mig-2019-02-12-form-templates-up
+  (mig/mk-copy-from-up-fn "mig-2019-02-12-form-templates.sql"))
 
-(def mig-2019-02-12-req-templates-down
+(def mig-2019-02-12-form-templates-down
   (mig/mk-exe-honeysql-fn
-   {:delete-from :req_templates
+   {:delete-from :form_templates
     :where [:= :id 370382503635]}))
 
-(def mig-2019-02-12-req-template-prompt-up
-  (mig/mk-copy-from-up-fn "data/mig-2019-02-12-req-template-prompt.sql"))
+(def mig-2019-02-12-form-template-prompt-up
+  (mig/mk-copy-from-up-fn "mig-2019-02-12-form-template-prompt.sql"))
 
-(def mig-2019-02-12-req-template-prompt-down
+(def mig-2019-02-12-form-template-prompt-down
   (mig/mk-exe-honeysql-fn
-   {:delete-from :req_template_prompt
+   {:delete-from :form_template_prompt
     :where [:between :id 370382503634 370382503636]}))
 
 (def mig-2019-02-12-prompts-up
-  (mig/mk-copy-from-up-fn "data/mig-2019-02-12-prompts.sql"))
+  (mig/mk-copy-from-up-fn "mig-2019-02-12-prompts.sql"))
 
 (def mig-2019-02-12-prompts-down
   (mig/mk-exe-honeysql-fn
@@ -78,7 +78,7 @@
     :where [:between :id 370382503629 370382503633]}))
 
 (def mig-2019-02-12-prompt-fields-up
-  (mig/mk-copy-from-up-fn "data/mig-2019-02-12-prompt-fields.sql"))
+  (mig/mk-copy-from-up-fn "mig-2019-02-12-prompt-fields.sql"))
 
 (def mig-2019-02-12-prompt-fields-down
   (mig/mk-exe-honeysql-fn
@@ -313,7 +313,7 @@
                     :grants {:hasura [:SELECT]}}]
 
     [:create-table {:schema :vetd
-                    :name :req_templates
+                    :name :form_templates
                     :columns {:id [:bigint :NOT :NULL]
                               :idstr [:text]
                               :created [:timestamp :with :time :zone]
@@ -328,26 +328,26 @@
                     :grants {:hasura [:SELECT]}}]
 
     [:create-table {:schema :vetd
-                    :name :req_template_prompt
+                    :name :form_template_prompt
                     :columns {:id [:bigint :NOT :NULL]
                               :idstr [:text]
                               :created [:timestamp :with :time :zone]
                               :updated [:timestamp :with :time :zone]
                               :deleted [:timestamp :with :time :zone]
-                              :req_template_id [:bigint]
+                              :form_template_id [:bigint]
                               :prompt_id [:bigint]
                               :sort [:integer]}
                     :owner :vetd
                     :grants {:hasura [:SELECT]}}]
     
     [:create-table {:schema :vetd
-                    :name :reqs
+                    :name :forms
                     :columns {:id [:bigint :NOT :NULL]
                               :idstr [:text]
                               :created [:timestamp :with :time :zone]
                               :updated [:timestamp :with :time :zone]
                               :deleted [:timestamp :with :time :zone]
-                              :req_template_id [:bigint]
+                              :form_template_id [:bigint]
                               :title [:text]
                               :descr [:text]                              
                               :notes [:text]
@@ -363,13 +363,13 @@
                     :grants {:hasura [:SELECT]}}]
 
     [:create-table {:schema :vetd
-                    :name :req_prompt
+                    :name :form_prompt
                     :columns {:id [:bigint :NOT :NULL]
                               :idstr [:text]
                               :created [:timestamp :with :time :zone]
                               :updated [:timestamp :with :time :zone]
                               :deleted [:timestamp :with :time :zone]
-                              :req_id [:bigint]
+                              :form_id [:bigint]
                               :prompt_id [:bigint]
                               :sort [:integer]}
                     :owner :vetd
@@ -475,9 +475,9 @@
                    :grants {:hasura [:SELECT]}}]
 
     [:create-view {:schema :vetd
-                   :name :prompts_by_req
+                   :name :prompts_by_form
                    :honey {:select [[:rp.id :rpid]
-                                    :rp.req_id
+                                    :rp.form_id
                                     :p.id
                                     :p.idstr                                    
                                     :p.created
@@ -485,7 +485,7 @@
                                     :p.deleted
                                     :p.prompt
                                     :p.descr]
-                           :from [[:req_prompt :rp]]
+                           :from [[:form_prompt :rp]]
                            :join [[:prompts :p]
                                   [:= :p.id :rp.prompt_id]]}
                    :owner :vetd
@@ -516,7 +516,7 @@
     [:create-view {:schema :vetd
                    :name :prompts_by_template
                    :honey {:select [[:rp.id :rpid]
-                                    :rp.req_template_id
+                                    :rp.form_template_id
                                     :rp.sort
                                     :p.id
                                     :p.idstr                                    
@@ -525,22 +525,22 @@
                                     :p.deleted
                                     :p.prompt
                                     :p.descr]
-                           :from [[:req_template_prompt :rp]]
+                           :from [[:form_template_prompt :rp]]
                            :join [[:prompts :p]
                                   [:= :p.id :rp.prompt_id]]}
                    :owner :vetd
                    :grants {:hasura [:SELECT]}}]]
 
    [[2019 2 12 00 00]
-    [:copy-from '{:name :mig-2019-02-12-req-templates
+    [:copy-from '{:name :mig-2019-02-12-form-templates
                   :ns com.vetd.app.migrations
-                  :up-fn mig-2019-02-12-req-templates-up
-                  :down-fn mig-2019-02-12-req-templates-down}]
+                  :up-fn mig-2019-02-12-form-templates-up
+                  :down-fn mig-2019-02-12-form-templates-down}]
 
-    [:copy-from '{:name :mig-2019-02-12-req-templates-prompt
+    [:copy-from '{:name :mig-2019-02-12-form-templates-prompt
                   :ns com.vetd.app.migrations
-                  :up-fn mig-2019-02-12-req-template-prompt-up
-                  :down-fn mig-2019-02-12-req-template-prompt-down}]
+                  :up-fn mig-2019-02-12-form-template-prompt-up
+                  :down-fn mig-2019-02-12-form-template-prompt-down}]
     
     [:copy-from '{:name :mig-2019-02-12-prompts
                   :ns com.vetd.app.migrations

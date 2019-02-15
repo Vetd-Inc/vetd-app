@@ -1,1 +1,0 @@
-DROP TABLE IF EXISTS vetd.req_templates;
