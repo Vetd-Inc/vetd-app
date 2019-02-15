@@ -42,8 +42,16 @@
                           :qid qid}}})))
 
 (rf/reg-event-fx
+ :a/login-as-support
+ (fn [{:keys [db]} [_ org-id]]
+   (let [qid (get-next-query-id)]
+     {:db (assoc db
+                 :org-id org-id)
+      :dispatch [:v/nav-home]})))
+
+(rf/reg-event-fx
  :a/create-membership
- (fn [{:keys [db ws]} [_ user-id org-id]]
+ (fn [{:keys [db]} [_ user-id org-id]]
    (let [qid (get-next-query-id)]
      {:db (assoc db
                  :buyer-qid qid)
@@ -79,7 +87,9 @@
          [rc/button
           :label "Join Org"
           :on-click #(rf/dispatch [:a/create-membership @user-id& id])]
-         [:div "LOGIN AS SUPPORT USER"])])))
+         [rc/button
+          :label "Login as Support User"
+          :on-click #(rf/dispatch [:a/login-as-support id])])])))
 
 (defn c-search-results []
   (let [user-id @(rf/subscribe [:user-id])
