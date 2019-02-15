@@ -1,0 +1,24 @@
+(ns com.vetd.app.admin
+  (:require [com.vetd.app.db :as db]
+            [com.vetd.app.hasura :as ha]
+            [com.vetd.app.common :as com]
+            [com.vetd.app.util :as ut]
+            [taoensso.timbre :as log]))
+
+(defn search-orgs->ids
+  [q]
+  (if (not-empty q)
+    (let [ids (db/hs-query {:select [[:o.id :oid]]
+                            :from [[:orgs :o]]
+                            :where [(keyword "~*") :o.oname (str ".*?" q ".*")]
+                            :limit 30})
+          vids (->> ids
+                    (map :oid)
+                    distinct)]
+      {:org-ids vids})
+      {:org-ids []}))
+
+
+(defmethod com/handle-ws-inbound :a/search
+  [{:keys [query]} ws-id sub-fn]
+  (search-orgs->ids query))

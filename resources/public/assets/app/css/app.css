@@ -261,3 +261,10 @@ body, *{
     align-items: stretch;
     justify-content: stretch;
 }
+
+
+.org-search-result {
+    margin: 20px;
+    padding: 10px;
+    width: 75%;
+}

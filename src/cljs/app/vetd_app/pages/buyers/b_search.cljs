@@ -24,36 +24,36 @@
 
 (def dispatch-search-DB
   (goog.functions.debounce
-   #(do (rf/dispatch [:search %]))
+   #(do (rf/dispatch [:b/search %]))
    250))
 
 (rf/reg-event-fx
- :search
+ :b/search
  (fn [{:keys [db ws]} [_ q-str q-type]]
    (let [qid (get-next-query-id)]
      {:db (assoc db
                  :buyer-qid qid)
-      :ws-send {:payload {:cmd :search
-                          :return {:handler :ws/search-result-ids
+      :ws-send {:payload {:cmd :b/search
+                          :return {:handler :b/ws-search-result-ids
                                    :qid qid}
                           :query q-str
                           :buyer-id (:org-id db)
                           :qid qid}}})))
 
 (rf/reg-sub
- :search-result-ids
+ :b/search-result-ids
   (fn [db _]
-    (:search-result-ids db)))
+    (:b/search-result-ids db)))
 
 (rf/reg-event-fx
- :ws/search-result-ids
+ :b/ws-search-result-ids
  (fn [{:keys [db]} [_ results {:keys [return]}]]
    (def res1 results)
    #_ (println res1)
    (def ret1 return)
    (if (= (:buyer-qid db) (:qid return))
      {:db (assoc db
-                 :search-result-ids
+                 :b/search-result-ids
                  results)}
      {})))
 
@@ -128,7 +128,7 @@
 
 (defn c-search-results []
   (let [org-id @(rf/subscribe [:org-id])
-        {:keys [product-ids vendor-ids category-ids] :as ids} @(rf/subscribe [:search-result-ids])
+        {:keys [product-ids vendor-ids category-ids] :as ids} @(rf/subscribe [:b/search-result-ids])
         prods (if (not-empty (concat product-ids vendor-ids))
                 @(rf/subscribe [:gql/sub
                                 {:queries

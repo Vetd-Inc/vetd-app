@@ -92,7 +92,7 @@
 (rf/reg-sub
  :user-id
  :<- [:user] 
- (fn [{:keys [user-id]}] user-id))
+ (fn [{:keys [id]}] id))
 
 (rf/reg-sub
  :user-name

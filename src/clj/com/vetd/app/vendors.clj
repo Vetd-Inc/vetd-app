@@ -48,6 +48,6 @@
   [req ws-id sub-fn]
   (create-preposal req))
 
-(defmethod com/handle-ws-inbound :save-profile
+(defmethod com/handle-ws-inbound :v/save-profile
   [{:keys [vendor-id long-desc]} ws-id sub-fn]
 #_  (create-profile vendor-id long-desc))

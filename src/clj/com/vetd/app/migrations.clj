@@ -289,11 +289,11 @@
                               :deleted [:timestamp :with :time :zone]
                               :title [:text]
                               :dtype [:text]
-                              :dsubtype [:text]                               
+                              :dsubtype [:text]
+                              :subject [:bigint]
                               :descr [:text]
                               :notes [:text]
-                              :topic [:bigint]                              
-                              :from_org_id [:bigint]
+
                               :from_user_id [:bigint]
                               :to_org_id [:bigint]
                               :to_user_id [:bigint]}
@@ -321,8 +321,8 @@
                               :deleted [:timestamp :with :time :zone]
                               :title [:text]
                               ;; preposal, profile etc????
-                              :rtype [:text]
-                              :rsubtype [:text]
+                              :ftype [:text]
+                              :fsubtype [:text]
                               :descr [:text]}
                     :owner :vetd
                     :grants {:hasura [:SELECT]}}]
@@ -349,11 +349,11 @@
                               :deleted [:timestamp :with :time :zone]
                               :form_template_id [:bigint]
                               :title [:text]
+                              :subject [:bigint]                              
                               :descr [:text]                              
                               :notes [:text]
-                              :rtype [:text]
-                              :rsubtype [:text]
-                              :topic [:bigint]
+                              :ftype [:text]
+                              :fsubtype [:text]
                               :from_org_id [:bigint]
                               :from_user_id [:bigint]
                               :to_org_id [:bigint]

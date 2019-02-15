@@ -245,5 +245,8 @@
      :memberships (select-memb-org-by-user-id user-id)}
     {:logged-in? false}))
 
+(defmethod com/handle-ws-inbound :create-membership
+  [{:keys [user-id org-id]} ws-id sub-fn]
+  (create-or-find-memb user-id org-id))
 
 ;; TODO logout!!!!!!!!!!!!!!!

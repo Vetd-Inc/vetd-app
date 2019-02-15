@@ -34,3 +34,10 @@
       transform: rotateX(360deg) rotateY(360deg) rotateZ(-360deg);      
   }
 }
+
+.admin-notice{
+    background-color: #FAA;
+    color: #A00;
+    font-weight: bold;
+    padding: 10px;
+}

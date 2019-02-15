@@ -18,16 +18,6 @@
 (defn get-next-sub-id []
   (swap! last-sub-id& inc))
 
-#_(ds/reg-sub-special
- :graphql
- :<- [:search-results-RAW]
- (fn [[_ query]]
-   (let [sub-id (get-next-sub-id)]
-     (swap! subscriptions assoc sub-id {:sub-id sub-id})
-     (rf/dispatch-sync [:search query sub-id])
-     {:computation identity
-      :on-dispose #(rf/dispatch [:unsub-query sub-id])})))
-
 (rf/reg-event-fx
  :gql/q
  (fn [{:keys [db ws]} [_ q sub-id]]

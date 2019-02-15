@@ -3,6 +3,8 @@
             [vetd-app.hooks :as hks]   
             [vetd-app.util :as ut]
             [vetd-admin.pages.a-home :as p-a-home]
+            [vetd-admin.pages.a-search :as p-a-search]
+            [vetd-admin.admin-fixtures :as a-fix]
             [reagent.core :as r]
             [re-frame.core :as rf]
             [secretary.core :as sec]))
@@ -11,9 +13,12 @@
 
 (reset! com/admin-present? true)
 
-(sec/defroute admin-path "/a/home/" []
+(sec/defroute admin-home-path "/a/home/" []
   (do (.log js/console "nav admin")
       (rf/dispatch [:a/route-home])))
+
+(sec/defroute admin-search-path "/a/search/" []
+  (rf/dispatch [:a/route-search]))
 
 (rf/reg-event-db
  :a/route-home
@@ -36,9 +41,11 @@
 (hks/reg-hook! hks/init! :admin init!)
 
 (hks/reg-hook! hks/c-page :a/home p-a-home/c-page)
+(hks/reg-hook! hks/c-page :a/search p-a-search/c-page)
 
 (hks/reg-hook! hks/c-container :admin-overlay c-admin-overlay-container)
 
-(hks/reg-hook! hks/c-container :a/home c-admin-container)
+(hks/reg-hook! hks/c-container :a/home a-fix/container)
+(hks/reg-hook! hks/c-container :a/search a-fix/container)
 
 (println "END ADMIN")

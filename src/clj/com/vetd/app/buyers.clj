@@ -121,17 +121,17 @@
 ;; TODO there could be multiple preposals/rounds per buyer-vendor pair
 
 ;; TODO use session-id to verify permissions!!!!!!!!!!!!
-(defmethod com/handle-ws-inbound :search
+(defmethod com/handle-ws-inbound :b/search
   [{:keys [buyer-id query]} ws-id sub-fn]
   (-> query
       search-prods-vendors->ids
       (assoc :category-ids
              (search-category-ids query))))
 
-(defmethod com/handle-ws-inbound :request-preposal
+(defmethod com/handle-ws-inbound :b/request-preposal
   [{:keys [buyer-id vendor-id]} ws-id sub-fn]
   (insert-preposal-req buyer-id vendor-id))
 
-(defmethod com/handle-ws-inbound :start-round
+(defmethod com/handle-ws-inbound :b/start-round
   [{:keys [etype buyer-id eid]} ws-id sub-fn]
   (create-round buyer-id eid etype))
