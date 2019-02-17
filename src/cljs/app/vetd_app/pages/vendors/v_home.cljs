@@ -107,7 +107,7 @@
                                       [:prompts
                                        [:id :prompt :descr
                                         [:fields
-                                         [:id :fname]]]]]]]}])]
+                                         [:id :fname :ftype :fsubtype :list?]]]]]]]}])]
     (fn []
       (def preq1 @prep-reqs&)
       [:div

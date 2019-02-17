@@ -84,3 +84,36 @@ WHERE table_schema = 'vetd' AND table_catalog = 'vetd1';")
        (mapv :c)))
 
 
+(defn drop-table [tbl]
+  (exe! (format "DROP TABLE \"%s\";"
+                tbl)))
+
+(defn drop-view [tbl]
+  (exe! (format "DROP VIEW \"%s\";"
+                tbl)))
+
+(defn select-all-table-names [schema]
+  (->> {:select [[:table_name :table-name]]
+        :from [:information_schema.tables]
+        :where [:= :table_schema schema]}
+       hs-query
+       (mapv :table-name)))
+
+(defn select-all-view-names [schema]
+  (->> {:select [[:table_name :table-name]]
+        :from [:information_schema.views]
+        :where [:= :table_schema schema]}
+       hs-query
+       (mapv :table-name)))
+
+
+(defn drop-all [schema]
+  (doseq [v (select-all-view-names schema)]
+    (println "dropping view " v)
+    (drop-view v))
+  (doseq [t (select-all-table-names schema)]
+    (println "dropping table " t)    
+    (drop-table t)))
+
+
+#_ (drop-all "vetd")

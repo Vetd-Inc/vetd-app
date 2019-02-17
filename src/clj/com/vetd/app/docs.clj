@@ -137,4 +137,4 @@
                    [:prompts
                     [:id :idstr :prompt :descr
                      [:fields
-                      [:id :idstr :fname :descr :dtype :list? :sort]]]]]]]))
+                      [:id :idstr :fname :descr :ftype :list? :sort]]]]]]]))

@@ -398,7 +398,8 @@
                               :prompt_id [:bigint]
                               :fname [:text]
                               :descr [:text]
-                              :dtype [:text]
+                              :ftype [:text]
+                              :fsubtype [:text]
                               :list_qm [:boolean]
                               :sort [:integer]}
                     :owner :vetd
@@ -441,7 +442,7 @@
                               :created [:timestamp :with :time :zone]
                               :updated [:timestamp :with :time :zone]
                               :deleted [:timestamp :with :time :zone]
-                              :dtype [:text]
+                              :ftype [:text]
                               :descr [:text]}
                     :owner :vetd
                     :grants {:hasura [:SELECT]}}]
@@ -453,6 +454,7 @@
                               :created [:timestamp :with :time :zone]
                               :updated [:timestamp :with :time :zone]
                               :deleted [:timestamp :with :time :zone]
+                              :enum_id [:bigint]
                               :value [:text]}
                     :owner :vetd
                     :grants {:hasura [:SELECT]}}]
