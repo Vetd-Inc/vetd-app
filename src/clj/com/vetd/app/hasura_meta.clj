@@ -11,7 +11,8 @@
               [:vetd :rounds_by_category] [[:vetd :rounds]]
               [:vetd :rounds_by_product] [[:vetd :rounds]]
               [:vetd :categories_by_product] [[:vetd :categories]]
-              [:vetd :responses_by_doc] [[:vetd :responses]]}
+              [:vetd :responses_by_doc] [[:vetd :responses]]
+              [:vetd :form_docs] [[:vetd :forms]]}
    :rels [{:tables [:vetd :categories
                     :vetd :rounds_by_category]
            :fields [:rounds]
@@ -60,6 +61,12 @@
            :cols [:id :doc_id]
            :rel :many-many}
 
+          {:tables [:vetd :form_docs
+                    :vetd :responses_by_doc]
+           :fields [:responses]
+           :cols [:id :doc_id]
+           :rel :many-many}
+          
           {:tables [:vetd :docs
                     :vetd :orgs]
            :fields [:from-org :docs-out]

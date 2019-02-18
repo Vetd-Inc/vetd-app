@@ -76,43 +76,58 @@
     [:div.info (:uname from-user)]]
    [new-preposal preq]])
 
-(defn c-req-with-preposal
-  [{:keys [id title product from-org from-user docs] :as preq}]
+(defn c-prompt-field
+  [{:keys [fname ftype fsubtype list?]}]
+  (let [value& (r/atom "")]
+    [:div
+     fname
+     [rc/input-text
+      :model value&
+      :on-change #(reset! value& %)]]))
+
+(defn c-prompt
+  [{:keys [prompt descr fields]}]
   [flx/col #{:preposal}
-   [:div "Preposal"]
+   [:div prompt]
+   [:div descr]   
+   (for [f fields]
+     ^{:key (str "field" (:id f))}
+     [c-prompt-field f])])
+
+(defn c-form-maybe-doc
+  [{:keys [id title product from-org from-user doc-id doc-title prompts]}]
+  [flx/col #{:preposal}
+   [:div (or doc-title title)]
    [flx/row
-    [:div title]
     [:div (:pname product)]
     [:div (:oname from-org)]
-    [:div (:uname from-user)]]])
-
-(defn c-req-maybe-preposal
-  [{:keys [id title product from-org from-user docs] :as preq}]
-  (if (empty? docs)
-    [c-req-without-preposal preq]
-    [c-req-with-preposal preq]))
+    [:div (:uname from-user)]]
+   (for [p prompts]
+     ^{:key (str "prompt" (:id p))}
+     [c-prompt p])])
 
 (defn c-page []
   (let [org-id& (rf/subscribe [:org-id])
         prep-reqs& (rf/subscribe [:gql/sub
                                   {:queries
-                                   [[:forms {:ftype "preposal"
-                                             :to-org-id @org-id&}
+                                   [[:form-docs {:ftype "preposal"
+                                                 :to-org-id @org-id&}
                                      [:id :title
+                                      :doc-id :doc-title
                                       [:product [:id :pname]]
                                       [:from-org [:id :oname]]
                                       [:from-user [:id :uname]]
-                                      [:docs
-                                       [:id :title]]
                                       [:prompts
                                        [:id :prompt :descr
                                         [:fields
-                                         [:id :fname :ftype :fsubtype :list?]]]]]]]}])]
+                                         [:id :fname :ftype :fsubtype :list?]]]]
+                                      [:responses
+                                       [:id :prompt-id]]]]]}])]
     (fn []
       (def preq1 @prep-reqs&)
       [:div
-       (for [preq (:forms @prep-reqs&)]
+       (for [preq (:form-docs @prep-reqs&)]
          ^{:key (str "form" (:id preq))}
-         [c-req-maybe-preposal preq])])))
+         [c-form-maybe-doc preq])])))
 
 #_ (cljs.pprint/pprint preq1)
