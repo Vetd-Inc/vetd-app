@@ -70,7 +70,7 @@
                    (map keyword))
               (->> hm/hasura-meta-cfg
                    :rels
-                   (map (juxt :tables :fields))
+                   (map :tables)
                    flatten
                    distinct)
               (->> hm/hasura-meta-cfg
