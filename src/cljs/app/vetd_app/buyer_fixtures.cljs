@@ -28,7 +28,7 @@
          :on-click #(rf/dispatch [:logout])]]])))
 
 (defn tab [current& label target disp]
-  [:div
+  [:div.tab
    [:a {:class (into [:tab]
                      (when (= @current& target)
                        [:selected]))
@@ -40,7 +40,7 @@
     (fn []
       [flx/col :sidebar
        (tab page& "Home" :b/home [:b/nav-home])
-       [#{:tab} [:a "Preposals"]]
+       (tab page& "Preposals" :b/preposals [:b/nav-preposals])
        (tab page& "Products & Categories" :b/search [:b/nav-search])])))
 
 (defn container [body]

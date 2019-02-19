@@ -50,6 +50,7 @@
           (map? head) [(flx-child* ch)]
           (sequential? head) (flx-children ch)
           (string? ch) [ch]
+          (empty? ch) []
           :else (throw
                  (js/Error. (str "flx-child -- what is this? " ch))))))
 

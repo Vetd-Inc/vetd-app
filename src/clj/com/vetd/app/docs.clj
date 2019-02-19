@@ -49,7 +49,7 @@
 (defn insert-doc
   [{:keys [title dtype descr notes from-org-id
            from-user-id to-org-id to-user-id
-           dtype dsubtype form-id]}]
+           dtype dsubtype form-id subject]}]
   (let [[id idstr] (ut/mk-id&str)]
     (-> (db/insert! :docs
                     {:id id
@@ -62,6 +62,7 @@
                      :dsubtype dsubtype
                      :descr descr
                      :notes notes
+                     :subject subject
                      :form_id form-id
                      :from_org_id from-org-id
                      :from_user_id from-user-id
@@ -206,11 +207,11 @@
 
 (defn create-doc-from-form-doc
   [{:keys [id doc-title prompts from-org from-user to-org to-user
-           doc-descr doc-notes doc-dtype doc-dsubtype subject]}]
+           doc-descr doc-notes doc-dtype doc-dsubtype product]}]
   (let [{doc-id :id} (insert-doc {:title doc-title
                                   :dtype doc-dtype
                                   :dsubtype doc-dsubtype
-                                  :subject subject
+                                  :subject (:id product)
                                   :descr doc-descr
                                   :notes doc-notes
                                   :form-id id

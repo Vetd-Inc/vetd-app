@@ -156,18 +156,6 @@
            :fields [:prompt :users]
            :cols [:prompt_id :id]
            :rel :many-one}
-
-          {:tables [:vetd :responses
-                    :vetd :prompts]
-           :fields [:prompt :responses]
-           :cols [:prompt_id :id]
-           :rel :many-one}
-
-          {:tables [:vetd :responses
-                    :vetd :users]
-           :fields [:user :responses]
-           :cols [:user_id :id]
-           :rel :many-one}
           
           {:tables [:vetd :responses
                     :vetd :resp_fields]

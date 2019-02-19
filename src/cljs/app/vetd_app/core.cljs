@@ -8,6 +8,7 @@
             [vetd-app.pages.home :as p-home]
             [vetd-app.pages.buyers.b-search :as p-b-search]
             [vetd-app.pages.buyers.b-home :as p-bhome]
+            [vetd-app.pages.buyers.b-preposals :as p-bpreposals]
             [vetd-app.pages.vendors.v-home :as p-vhome]
             [vetd-app.pages.signup :as p-signup]
             [vetd-app.pages.login :as p-login]
@@ -33,7 +34,8 @@
                  :pub/signup #'p-signup/signup-page
                  :pub/login #'p-login/login-page
                  :b/home #'p-bhome/c-page
-                 :b/search #'p-b-search/c-page   
+                 :b/search #'p-b-search/c-page
+                 :b/preposals #'p-bpreposals/c-page   
                  :v/home #'p-vhome/c-page})
 
 (hks/reg-hooks! hks/c-container
@@ -41,6 +43,7 @@
                  :pub/signup #'pub-fix/container
                  :b/home #'b-fix/container
                  :b/search #'b-fix/container
+                 :b/preposals #'b-fix/container
                  :v/home #'v-fix/container})
 
 
@@ -189,6 +192,9 @@ hks/c-container
 
 (sec/defroute buyers-home "/b/home/" [query-params]
   (rf/dispatch [:b/route-home query-params]))
+
+(sec/defroute buyers-preposals "/b/preposals/" [query-params]
+  (rf/dispatch [:b/route-preposals query-params]))
 
 (sec/defroute vendors-home "/v/home/" [query-params]
   (do (.log js/console "nav vendors")
