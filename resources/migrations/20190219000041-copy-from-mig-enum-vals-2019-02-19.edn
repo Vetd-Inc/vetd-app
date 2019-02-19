@@ -1,0 +1,3 @@
+{:ns com.vetd.app.migrations,
+ :up-fn mig-enum-vals-2019-02-19-up,
+ :down-fn mig-enum-vals-2019-02-19-down}

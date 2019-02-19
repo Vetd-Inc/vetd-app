@@ -5,6 +5,19 @@
 
 #_(vreset! hook-registry {})
 
+#_ (cljs.pprint/pprint @hook-registry)
+
+(defn defhook* [hook-kw default]
+  (with-meta 
+    (fn [& handles]
+      (let [reg @hook-registry]
+        (or (->> handles
+                 (map #(get-in reg
+                               [hook-kw %]))
+                 (remove nil?)
+                 first)
+            default)))
+    {::type hook-kw}))
 
 
 (defn reg-hook! [hook-fn handle f]
@@ -26,5 +39,8 @@
 
 (vetd-app.hooks/defhook c-admin (constantly nil))
 
-(vetd-app.hooks/defhook init! (constantly nil))
+(vetd-app.hooks/defhook c-prompt (constantly nil))
 
+(vetd-app.hooks/defhook c-prompt-field (constantly nil))
+
+(vetd-app.hooks/defhook init! (constantly nil))

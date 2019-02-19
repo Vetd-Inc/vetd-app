@@ -85,6 +85,22 @@
    {:delete-from :prompt_fields
     :where [:between :id 370382503630 370382503634]}))
 
+(def mig-enums-2019-02-19-up
+  (mig/mk-copy-from-up-fn "mig-enums-2019-02-19.sql"))
+
+(def mig-enums-2019-02-19-down
+  (mig/mk-exe-honeysql-fn
+   {:delete-from :enums
+    :where [:= :id 426702348930]}))
+
+(def mig-enum-vals-2019-02-19-up
+  (mig/mk-copy-from-up-fn "mig-enum-vals-2019-02-19.sql"))
+
+(def mig-enum-vals-2019-02-19-down
+  (mig/mk-exe-honeysql-fn
+   {:delete-from :enum_vals
+    :where [:between :id 426719628931 426719728932]}))
+
 
 (def migrations
   [[[2019 2 4 00 00]
@@ -441,7 +457,7 @@
                               :created [:timestamp :with :time :zone]
                               :updated [:timestamp :with :time :zone]
                               :deleted [:timestamp :with :time :zone]
-                              :ftype [:text]
+                              :fsubtype [:text]
                               :descr [:text]}
                     :owner :vetd
                     :grants {:hasura [:SELECT]}}]
@@ -454,7 +470,9 @@
                               :updated [:timestamp :with :time :zone]
                               :deleted [:timestamp :with :time :zone]
                               :enum_id [:bigint]
-                              :value [:text]}
+                              :fsubtype [:text]
+                              :value [:text]
+                              :label [:text]}
                     :owner :vetd
                     :grants {:hasura [:SELECT]}}]
 
@@ -594,7 +612,18 @@
                                         [:= :d.deleted nil]]]
                            :where [:= :f.deleted nil]}
                    :owner :vetd
-                   :grants {:hasura [:SELECT]}}]]])
+                   :grants {:hasura [:SELECT]}}]]
+
+   [[2019 2 19 00 00]
+    [:copy-from '{:name :mig-enums-2019-02-19
+                  :ns com.vetd.app.migrations
+                  :up-fn mig-enums-2019-02-19-up
+                  :down-fn mig-enums-2019-02-19-down}]
+
+    [:copy-from '{:name :mig-enum-vals-2019-02-19
+                  :ns com.vetd.app.migrations
+                  :up-fn mig-enum-vals-2019-02-19-up
+                  :down-fn mig-enum-vals-2019-02-19-down}]]])
 
 #_(mig/mk-migration-files migrations
                           "migrations")
