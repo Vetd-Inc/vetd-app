@@ -21,7 +21,6 @@
 (rf/reg-event-fx
  :gql/q
  (fn [{:keys [db ws]} [_ q sub-id]]
-   (println "gql/q")
    {:ws-send {:payload {:cmd :graphql
                         :return {:handler :gql/data
                                  :sub-id sub-id}
