@@ -7,6 +7,17 @@
             [re-com.core :as rc]))
 
 
+(defn get-enums
+  [fsubtype]
+  (->> @(rf/subscribe [:gql/q
+                       {:queries
+                        [[:enum-vals {:fsubtype fsubtype}
+                          [:id :value :label]]]}])
+       :enum-vals
+       (mapv (fn [{:keys [value label]}]
+               {:id value
+                :label label}))))
+
 (defn walk-deref-ratoms
   [frm]
   (clojure.walk/postwalk
@@ -66,7 +77,7 @@
   ;; TODO support multiple response fields (for where list? = true)
   (def pf1 prompt-field)
   (let [value& (some-> response first :state)]
-    [:div
+    [:div.prompt-field
      (when-not (= fname "value")
        fname)
      [rc/input-text
@@ -77,7 +88,7 @@
   [{:keys [fname ftype fsubtype list? response] :as prompt-field}]
   ;; TODO support multiple response fields (for where list? = true)
   (let [value& (some-> response first :state)]
-    [:div
+    [:div.prompt-field
      (when-not (= fname "value")
        fname)     
      [rc/input-textarea
@@ -88,7 +99,7 @@
   [{:keys [fname ftype fsubtype list? response] :as prompt-field}]
   ;; TODO support multiple response fields (for where list? = true)
   (let [value& (some-> response first :state)]
-    [:div
+    [:div.prompt-field
      (when-not (= fname "value")
        fname)
      [rc/input-text
@@ -96,11 +107,28 @@
       :on-change #(reset! value& %)
       :validation-regex #"^\d*$"]]))
 
+(defn c-prompt-field-enum
+  [{:keys [fname ftype fsubtype list? response] :as prompt-field}]
+  ;; TODO support multiple response fields (for where list? = true)
+  (let [value& (some-> response first :state)
+        enum-vals (get-enums fsubtype)]
+    (fn [{:keys [fname ftype fsubtype list? response] :as prompt-field}]
+      [:div.prompt-field
+       (when-not (= fname "value")
+         fname)
+       [rc/single-dropdown
+        :model value&
+        :on-change #(reset! value& %)
+        :choices enum-vals]])))
+
+
+
 (defn c-prompt-default
   [{:keys [prompt descr fields]}]
-  [flx/col #{:preposal}
-   [:div prompt]
-   [:div descr]   
+  [flx/col #{:prompt}
+   [:div.prompt-text prompt
+    (when descr
+      [rc/info-button :info descr])]
    (for [{:keys [idstr ftype fsubtype] :as f} fields]
      ^{:key (str "field" (:id f))}
      [(hks/c-prompt-field idstr [ftype fsubtype] ftype :default)
@@ -125,13 +153,14 @@
 
 (defn c-form-maybe-doc
   [{:keys [id title product from-org from-user doc-id doc-title prompts] :as form-doc}]
-  [flx/col #{:preposal}
-   [:div (or doc-title title)]
+  (def ps1 prompts)
+  [flx/col #{:form-maybe-doc}
+   [:div#title (or doc-title title)]
    [flx/row
-    [:div (:pname product)]
-    [:div (:oname from-org)]
-    [:div (:uname from-user)]]
-   (for [p prompts]
+    [:div.product-name (:pname product)]
+    [:div.org-name (:oname from-org)]
+    [:div.user-name (:uname from-user)]]
+   (for [p (sort-by :sort prompts)]
      ^{:key (str "prompt" (:id p))}
      [(hks/c-prompt :default) p])
    [rc/button
@@ -146,49 +175,5 @@
 (hks/reg-hooks! hks/c-prompt-field
                 {:default #'c-prompt-field-default
                  ["s" "multi"] #'c-prompt-field-textarea
-                 ["n" "int"] #'c-prompt-field-int})
-
-
-
-
-
-#_(defn new-preposal [{:keys [id title product from-org from-user docs] :as preq}]
-  (let [pitch& (r/atom {})
-        org-user& (r/atom nil)
-        pitch& (r/atom "")
-        price-val& (r/atom "")
-        price-unit& (r/atom :year)
-        orgs& (rf/subscribe [:gql/q
-                             {:queries
-                              [[:orgs {:buyer? true}
-                                [:id :oname :idstr :short-desc
-                                 [:memberships
-                                  [:id
-                                   [:user
-                                    [:id :idstr :uname]]]]]]]}])]
-    (fn []
-      [:div "NEW PREPOSAL"
-       [:div "Pitch"
-        [rc/input-textarea
-         :model pitch&
-         :on-change #(reset! pitch& %)]]
-       "Price Estimate "
-       [rc/input-text
-        :model price-val&
-        :on-change #(reset! price-val& %)
-        :validation-regex #"^\d*$"]
-       " per "
-       [rc/single-dropdown
-        :model price-unit&
-        :on-change #(reset! price-unit& %)
-        :choices [{:id :year :label "year"}
-                  {:id :month :label "month"}]]
-       [rc/button
-        :label "Save"
-        :on-click (fn []
-                    (let [{:keys [org-id user-id]} @org-user&]
-                      (rf/dispatch [:v/create-preposal {:buyer-org-id org-id
-                                                        :buyer-user-id user-id
-                                                        :pitch @pitch&
-                                                        :price-val @price-val&
-                                                        :price-unit @price-unit&}])))]])))
+                 ["n" "int"] #'c-prompt-field-int
+                 "e" #'c-prompt-field-enum})

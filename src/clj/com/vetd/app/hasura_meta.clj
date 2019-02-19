@@ -169,12 +169,6 @@
            :cols [:user_id :id]
            :rel :many-one}
           
-#_          {:tables [:vetd :responses
-                    :vetd :orgs]
-           :fields [:org :responses]
-           :cols [:org_id :id]
-           :rel :many-one}
-
           {:tables [:vetd :responses
                     :vetd :resp_fields]
            :fields [:fields :response]
@@ -191,6 +185,12 @@
                     :vetd :prompts_by_template]
            :fields [:prompts]
            :cols [:id :form_templates]
+           :rel :one-many}
+
+          {:tables [:vetd :enums
+                    :vetd :enum_vals]
+           :fields [:vals :enum]
+           :cols [:id :enum_id]
            :rel :one-many}]})
 
 

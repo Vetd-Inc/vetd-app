@@ -269,13 +269,39 @@ body, *{
     width: 75%;
 }
 
-.preposal-req {
+.form-maybe-doc {
     border: solid 1px; #AAA;
     margin: 20px;
     padding: 10px;
     max-width: 500px;
 }
 
-.preposal-req .info {
-    margin: 5px
+.form-maybe-doc .title,
+.form-maybe-doc .product-name,
+.form-maybe-doc .org-name,
+.form-maybe-doc .user-name
+{
+    margin: 10px
+}
+
+.form-maybe-doc .prompt
+{
+    margin: 10px
+}
+
+.prompt .prompt-text{
+    font-size: 20px;
+}
+
+.prompt textarea{
+    width: 400px;
+    height: 200px;
+}
+
+.prompt .rc-dropdown{
+    min-width: 100px;
+}
+
+.prompt .prompt-field{
+    margin: 5px;
 }

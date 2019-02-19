@@ -32,9 +32,10 @@
                                       [:to-org [:id :oname]]
                                       [:to-user [:id :uname]]
                                       [:prompts
-                                       [:id :idstr :prompt :descr
+                                       [:id :idstr :prompt :descr #_:sort ;; TODO sort
                                         [:fields
-                                         [:id :idstr :fname :ftype :fsubtype :list?]]]]
+                                         [:id :idstr :fname :ftype
+                                          :fsubtype :list? #_:sort]]]]
                                       [:responses
                                        [:id :prompt-id :notes
                                         [:fields [:id :pf-id :idx :sval :nval :dval]]]]]]]}])]

@@ -498,6 +498,7 @@
                    :name :prompts_by_form
                    :honey {:select [[:rp.id :rpid]
                                     :rp.form_id
+                                    :rp.sort
                                     :p.id
                                     :p.idstr                                    
                                     :p.created
