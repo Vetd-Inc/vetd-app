@@ -6,9 +6,20 @@
             [taoensso.timbre :as log]
             [honeysql.core :as hs]))
 
-(defn create-doc [])
-
-(defn create-form-template [])
+;; TODO use prompt-field data type
+(defn convert-field-val
+  [v ftype fsubtype]
+  (case ftype
+    "n" {:sval (str v)
+         :nval (ut/->long v)
+         :dval nil}
+    "s" {:sval v
+         :nval nil
+         :dval nil}
+    "e" {:sval v
+         :nval nil
+         :dval nil}
+    "d" (throw (Exception. "TODO convert-field-val does not support dates"))))
 
 (defn insert-form
   [{:keys [form-temp-id title descr notes from-org-id
@@ -37,7 +48,8 @@
 
 (defn insert-doc
   [{:keys [title dtype descr notes from-org-id
-           from-user-id to-org-id to-user-id]}]
+           from-user-id to-org-id to-user-id
+           dtype dsubtype form-id]}]
   (let [[id idstr] (ut/mk-id&str)]
     (-> (db/insert! :docs
                     {:id id
@@ -46,8 +58,11 @@
                      :updated (ut/now-ts)
                      :deleted nil
                      :title title
+                     :dtype dtype
+                     :dsubtype dsubtype
                      :descr descr
                      :notes notes
+                     :form_id form-id
                      :from_org_id from-org-id
                      :from_user_id from-user-id
                      :to_org_id to-org-id
@@ -68,6 +83,63 @@
                      :sort sort'})
         first)))
 
+(defn insert-response
+  [{:keys [org-id prompt-id notes user-id]}]
+  (let [[id idstr] (ut/mk-id&str)]
+    (-> (db/insert! :responses
+                    {:id id
+                     :idstr idstr
+                     :created (ut/now-ts)
+                     :updated (ut/now-ts)
+                     :deleted nil
+                     :prompt_id prompt-id
+                     :notes notes
+                     :user_id user-id})
+        first)))
+
+(defn insert-doc-response
+  [doc-id resp-id]
+  (let [[id idstr] (ut/mk-id&str)]
+    (-> (db/insert! :doc_resp
+                    {:id id
+                     :idstr idstr
+                     :created (ut/now-ts)
+                     :updated (ut/now-ts)
+                     :deleted nil
+                     :doc_id doc-id
+                     :resp_id resp-id})
+        first)))
+
+(defn insert-response-field
+  [resp-id {:keys [prompt-field-id idx sval nval dval response ftype fsubtype]}]
+  (let [[id idstr] (ut/mk-id&str)]
+    (->> (merge {:id id
+                 :idstr idstr
+                 :created (ut/now-ts)
+                 :updated (ut/now-ts)
+                 :deleted nil
+                 :pf_id prompt-field-id
+                 :idx idx
+                 :sval sval
+                 :nval nval
+                 :dval dval
+                 :resp_id resp-id}
+                  ;; TODO support multiple response fields (for where list? = true)
+                (when-let [v (-> response first :state)]
+                  (convert-field-val v ftype fsubtype)))
+         (db/insert! :resp_fields)
+         first)))
+
+(defn create-attached-doc-response
+  [doc-id {:keys [org-id prompt-id notes user-id fields] :as resp}]
+  (let [{resp-id :id} (insert-response resp)]
+    (insert-doc-response doc-id resp-id)
+    (doseq [{:keys [id] :as f} fields]
+      (insert-response-field resp-id
+                             (assoc f
+                                    :prompt-field-id
+                                    id)))))
+
 (defn create-form-from-template
   [{:keys [form-temp-id from-org-id from-user-id
            title descr status notes to-org-id
@@ -87,7 +159,8 @@
       (insert-form-prompt form-id prompt-id sort'))
     form))
 
-(defn create-form&preposal
+;; necessary? not used - Bill
+(defn create-form&doc
   [{:keys [form-temp-id buyer-org-id buyer-user-id
            pitch price-val price-unit form-title form-descr
            form-notes vendor-org-id vendor-user-id
@@ -134,19 +207,26 @@
 (defn create-doc-from-form-doc
   [{:keys [id doc-title prompts from-org from-user to-org to-user
            doc-descr doc-notes doc-dtype doc-dsubtype subject]}]
-  (insert-doc {:title doc-title
-               :dtype doc-dtype
-               :dsubtype doc-dsubtype
-               :subject subject
-               :descr doc-descr
-               :notes doc-notes
-               :form-id id
-               ;; fields below are reveresed intentionally
-               :from-org-id (:id to-org)
-               :from-user-id (:id to-user)
-               :to-org-id (:id from-org)
-               :to-user-id (:id from-user)}))
+  (let [{doc-id :id} (insert-doc {:title doc-title
+                                  :dtype doc-dtype
+                                  :dsubtype doc-dsubtype
+                                  :subject subject
+                                  :descr doc-descr
+                                  :notes doc-notes
+                                  :form-id id
+                                  ;; fields below are reveresed intentionally
+                                  :from-org-id (:id to-org)
+                                  :from-user-id (:id to-user)
+                                  :to-org-id (:id from-org)
+                                  :to-user-id (:id from-user)})]
+    (doseq [{prompt-id :id :keys [response fields]} prompts]
+      (create-attached-doc-response doc-id
+                                    {:org-id (:id to-org)
+                                     :user-id (:id to-user)
+                                     :prompt-id prompt-id
+                                     :fields fields}))))
 
+(defn update-doc-from-form-doc [form-doc])
 
 #_(clojure.pprint/pprint 
  (ha/sync-query [[:form-templates {:ftype "preposal"}

@@ -414,7 +414,6 @@
                               :deleted [:timestamp :with :time :zone]
                               :prompt_id [:bigint]
                               :user_id [:bigint]
-                              :org_id [:bigint]
                               :notes [:text]}
                     :owner :vetd
                     :grants {:hasura [:SELECT]}}]
@@ -470,7 +469,7 @@
                                     :r.deleted
                                     :r.prompt_id
                                     :r.user_id
-                                    :r.org_id]
+                                    :r.notes]
                            :from [[:doc_resp :dr]]
                            :join [[:responses :r]
                                   [:= :r.id :dr.resp_id]]}

@@ -77,39 +77,54 @@
 
 (rf/reg-event-fx
  :save-form-doc
- (fn [{:keys [db]} form-doc]
+ (fn [{:keys [db]} [_ form-doc]]
    (def fd1 (walk-deref-ratoms form-doc))
-   (cljs.pprint/pprint (walk-deref-ratoms form-doc))
-#_   {:ws-send {:payload {:cmd :save-form-doc
+#_   (cljs.pprint/pprint fd1)
+   {:ws-send {:payload {:cmd :save-form-doc
                         :return nil
                         :form-doc (walk-deref-ratoms form-doc)}}}))
 
-
-
+  ;; TODO support multiple response fields (for where list? = true)
 (defn mk-form-doc-prompt-field-state
-  [field]
-  (assoc field
-         :response
-         {:state (r/atom "default value????")}))
+  [fields {:keys [id] :as prompt-field}]
+  (let [{:keys [sval nval dval] :as resp-field} (some-> id fields first)
+        resp-field' (merge resp-field
+                           {:state (r/atom (str (or dval nval sval
+                                                    "")))})]
+    (assoc prompt-field
+           :response
+           [resp-field'])))
 
 (defn mk-form-doc-prompt-state
-  [prompt]
-  (-> prompt
-      (assoc :response {:note-state (r/atom "")})
-      (update :fields
-              (partial mapv mk-form-doc-prompt-field-state))))
+  [responses {:keys [id] :as prompt}]
+  (let [{:keys [fields notes] :as response} (responses id)
+        response' (merge response
+                         {:notes-state (r/atom (or notes ""))})
+        fields' (group-by :pf-id
+                          fields)]
+    (-> prompt
+        (assoc :response response')
+        (update :fields
+                (partial mapv
+                         (partial mk-form-doc-prompt-field-state
+                                  fields'))))))
 
 (defn mk-form-doc-state
-  [form-doc]
-  (update form-doc
-          :prompts
-          (partial mapv mk-form-doc-prompt-state)))
-
-
+  [{:keys [responses] :as form-doc}]
+  (let [responses' (->> responses
+                        (group-by :prompt-id)
+                        (ut/fmap first))]
+    (update form-doc
+            :prompts
+            (partial mapv
+                     (partial mk-form-doc-prompt-state
+                              responses')))))
 
 (defn c-prompt-field
-  [{:keys [fname ftype fsubtype list? response]}]
-  (let [value& (:state response)]
+  [{:keys [fname ftype fsubtype list? response] :as prompt-field}]
+  ;; TODO support multiple response fields (for where list? = true)
+  (def pf1 prompt-field)
+  (let [value& (some-> response first :state)]
     [:div
      fname
      [rc/input-text
@@ -176,7 +191,8 @@
                                         [:fields
                                          [:id :fname :ftype :fsubtype :list?]]]]
                                       [:responses
-                                       [:id :prompt-id]]]]]}])]
+                                       [:id :prompt-id :notes
+                                        [:fields [:id :pf-id :idx :sval :nval :dval]]]]]]]}])]
     (fn []
       (def preq1 @prep-reqs&)
       [:div
@@ -185,3 +201,23 @@
          [c-form-maybe-doc (mk-form-doc-state preq)])])))
 
 #_ (cljs.pprint/pprint preq1)
+
+#_
+(cljs.pprint/pprint @(rf/subscribe [:gql/q
+                                    {:queries
+                                     [[:form-docs {:ftype "preposal"
+                                                   :to-org-id @(rf/subscribe [:org-id])}
+                                       [:id :title
+                                        :doc-id :doc-title
+                                        [:product [:id :pname]]
+                                        [:from-org [:id :oname]]
+                                        [:from-user [:id :uname]]
+                                        [:to-org [:id :oname]]
+                                        [:to-user [:id :uname]]
+                                        [:prompts
+                                         [:id :prompt :descr
+                                          [:fields
+                                           [:id :fname :ftype :fsubtype :list?]]]]
+                                        [:responses
+                                         [:id :prompt-id :notes
+                                          [:fields [:id :idx :sval :nval :dval]]]]]]]}]))

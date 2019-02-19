@@ -13,6 +13,8 @@
             clojure.edn
             clojure.pprint))
 
+;; TODO make primary keys
+
 (defn date-vec->int
   [[yr mo da hr mi]]
   (+ (* yr 10000000000)

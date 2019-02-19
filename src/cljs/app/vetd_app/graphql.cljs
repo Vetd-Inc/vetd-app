@@ -7,13 +7,13 @@
 
 (def q->sub-id& (atom {}))
 
-#_ (println @q->sub-id&)
+#_ (cljs.pprint/pprint @q->sub-id&)
 
 (def sub-id->ratom& (atom {}))
 
 #_ (println @sub-id->ratom&)
 
-(def last-sub-id& (atom 0))
+(def last-sub-id& (atom (mod (ut/now) 10000)))
 
 (defn get-next-sub-id []
   (swap! last-sub-id& inc))
@@ -21,6 +21,7 @@
 (rf/reg-event-fx
  :gql/q
  (fn [{:keys [db ws]} [_ q sub-id]]
+   (println "gql/q")
    {:ws-send {:payload {:cmd :graphql
                         :return {:handler :gql/data
                                  :sub-id sub-id}
@@ -84,9 +85,9 @@
  (fn [[_ query]]
    (let [q->sub-id @q->sub-id&
          sub-id (q->sub-id query)]
-     (rf/dispatch-sync [:gql/q query sub-id]) ;; TODO do not re-send query
-     {:computation identity
-      :on-dispose #(rf/dispatch [:gql/unsubscribe query sub-id])})))
+     (rf/dispatch-sync [:gql/q query sub-id]) 
+     {:computation identity  ;; TODO re-dispatch query after timeout
+      })))
 
 
 (ut/reg-sub-special

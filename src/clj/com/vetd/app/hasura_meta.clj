@@ -64,7 +64,7 @@
           {:tables [:vetd :form_docs
                     :vetd :responses_by_doc]
            :fields [:responses]
-           :cols [:id :doc_id]
+           :cols [:doc_id :doc_id]
            :rel :many-many}
           
           {:tables [:vetd :docs
@@ -169,7 +169,7 @@
            :cols [:user_id :id]
            :rel :many-one}
           
-          {:tables [:vetd :responses
+#_          {:tables [:vetd :responses
                     :vetd :orgs]
            :fields [:org :responses]
            :cols [:org_id :id]
