@@ -45,15 +45,11 @@
        (partition-by :date-int)
        (mapcat (partial map-indexed ->mig-steps**))))
 
-(clojure.pprint/pprint 
- (->mig-steps com.vetd.app.migrations2/migrations))
-
-
 (defmulti mk-migration-file-contents
   (fn [{[cmd] :step}] cmd))
 
 
-(defmethod mk-migration-file-contents :table&view
+#_(defmethod mk-migration-file-contents :table&view
   )
 
 

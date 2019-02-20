@@ -59,16 +59,17 @@
   (j/insert! pg-db table row {:entities #(format "\"%s\"" %)}))
 
 (defn query [q & [return-ex?]]
-#_ (clojure.pprint/pprint q)
-  (try
-    (j/query pg-db q)
-    (catch Exception e
-      (def e1 e)
-      (clojure.pprint/pprint q)
-      (log/error e)
-      (if return-ex?
-        (.getMessage e)
-        (throw e)))))
+  #_ (clojure.pprint/pprint q)
+  (when-not env/building?
+    (try
+      (j/query pg-db q)
+      (catch Exception e
+        (def e1 e)
+        (clojure.pprint/pprint q)
+        (log/error e)
+        (if return-ex?
+          (.getMessage e)
+          (throw e))))))
 
 (defn hs-query [sql-map & [return-ex?]]
   (-> sql-map
