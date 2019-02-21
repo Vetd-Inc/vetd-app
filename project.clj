@@ -105,7 +105,8 @@
 
    :project/dev  {:jvm-opts ["-Dconf=dev-config.edn"]
                   :dependencies [[binaryage/devtools "0.9.10"]
-                                 [cider/piggieback "0.3.10"]
+                                 [nrepl "0.6.0"]
+                                 [cider/piggieback "0.4.0"]
                                  [day8.re-frame/re-frame-10x "0.3.3-react16"]
                                  [doo "0.1.10"]
                                  [figwheel-sidecar "0.5.18"]
