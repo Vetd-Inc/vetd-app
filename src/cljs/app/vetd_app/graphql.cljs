@@ -85,9 +85,10 @@
    (let [q->sub-id @q->sub-id&
          sub-id (q->sub-id query)]
      (rf/dispatch-sync [:gql/q query sub-id]) 
-     {:computation identity  ;; TODO re-dispatch query after timeout
-      })))
-
+     {:computation (fn [r]
+                     (ut/dispatch-debounce [:gql/q query sub-id]
+                                           5000)
+                     r)})))
 
 (ut/reg-sub-special
  :gql/sub

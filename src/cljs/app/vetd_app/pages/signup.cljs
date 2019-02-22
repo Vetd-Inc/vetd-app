@@ -16,7 +16,6 @@
 (rf/reg-event-fx
  :pub/nav-signup
  (fn [_ _]
-   (println "pub/nav-signup")
    {:nav {:path "/signup"}}))
 
 (rf/reg-event-fx

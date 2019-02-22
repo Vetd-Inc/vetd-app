@@ -42,6 +42,7 @@
                  :user user
                  :session-token session-token
                  :memberships memberships
+                 :active-memb-id (some-> memberships first :id)
                  :admin? admin?
                  ;; TODO support users with multi-orgs
                  :org-id (-> memberships first :org-id))

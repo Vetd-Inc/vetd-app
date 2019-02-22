@@ -78,6 +78,8 @@
         first
         :org)))
 
+@(rf/subscribe [:active-org])
+
 (rf/reg-sub
  :org-id
  :<- [:active-org] 

@@ -6,17 +6,19 @@
             [re-frame.core :as rf]
             [re-com.core :as rc]))
 
-
-(defn get-enums
-  [fsubtype]
-  (->> @(rf/subscribe [:gql/q
-                       {:queries
-                        [[:enum-vals {:fsubtype fsubtype}
-                          [:id :value :label]]]}])
-       :enum-vals
-       (mapv (fn [{:keys [value label]}]
-               {:id value
-                :label label}))))
+(rf/reg-sub
+ :docs/enums
+ (fn [[_ fsubtype]]
+   (rf/subscribe [:gql/q
+                  {:queries
+                   [[:enum-vals {:fsubtype fsubtype}
+                     [:id :value :label]]]}]))
+ (fn [r _]
+   (->> r
+        :enum-vals
+        (mapv (fn [{:keys [value label]}]
+                {:id value
+                 :label label})))))
 
 (defn walk-deref-ratoms
   [frm]
@@ -111,7 +113,7 @@
   [{:keys [fname ftype fsubtype list? response] :as prompt-field}]
   ;; TODO support multiple response fields (for where list? = true)
   (let [value& (some-> response first :state)
-        enum-vals (get-enums fsubtype)]
+        enum-vals (rf/subscribe [:docs/enums fsubtype])]
     (fn [{:keys [fname ftype fsubtype list? response] :as prompt-field}]
       [:div.prompt-field
        (when-not (= fname "value")
@@ -119,7 +121,7 @@
        [rc/single-dropdown
         :model value&
         :on-change #(reset! value& %)
-        :choices enum-vals]])))
+        :choices @enum-vals]])))
 
 
 

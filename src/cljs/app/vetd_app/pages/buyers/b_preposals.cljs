@@ -56,3 +56,5 @@
              ^{:key (:id p)}
              [c-preposal p])))])))
 
+
+#_ (cljs.pprint/pprint p1)

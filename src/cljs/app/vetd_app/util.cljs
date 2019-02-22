@@ -1,9 +1,30 @@
 (ns vetd-app.util
   (:require [clojure.string]
             [clojure.set]
+            [re-frame.core :as rf]
             [re-frame.interop :refer [deref? reagent-id]]
             [reagent.ratom :as rr]
-            [re-frame.registrar :as rf-reg]))
+            [re-frame.registrar :as rf-reg])
+  (:import [goog.functions]))
+
+(defonce dispatch-debounce-cache& (atom {}))
+
+(defn mk-dispatch-debounce
+  [dispatch-vec ms]
+  (goog.functions.debounce
+   (fn []
+     (swap! dispatch-debounce-cache&
+            dissoc dispatch-vec)
+     (rf/dispatch dispatch-vec))
+   ms))
+
+(defn dispatch-debounce [dispatch-vec ms]
+  (if-let [f (@dispatch-debounce-cache& dispatch-vec)]
+    (f)
+    (let [f (mk-dispatch-debounce dispatch-vec ms)]
+      (swap! dispatch-debounce-cache&
+             assoc dispatch-vec f)
+      (f))))
 
 (defn now [] (.getTime (js/Date.)))
 
