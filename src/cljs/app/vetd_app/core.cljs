@@ -142,8 +142,7 @@
  :ws-get-session-user
  [(rf/inject-cofx :local-store [:session-token])] 
  (fn [{:keys [db local-store]} [_ [email pwd]]]
-   {:ws-send {:ws (:ws db)
-              :payload {:cmd :auth-by-session
+   {:ws-send {:payload {:cmd :auth-by-session
                         :return :ws/req-session
                         :session-token (:session-token local-store)}}}))
 

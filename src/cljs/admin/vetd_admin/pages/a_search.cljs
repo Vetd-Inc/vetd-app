@@ -60,6 +60,16 @@
                           :user-id user-id
                           :org-id org-id}}})))
 
+(rf/reg-event-fx
+ :a/delete-membership
+ (fn [{:keys [db]} [_ memb-id]]
+   (let [qid (get-next-query-id)]
+     {:db (assoc db
+                 :buyer-qid qid)
+      :ws-send {:payload {:cmd :delete-membership
+                          :return nil
+                          :id memb-id}}})))
+
 (rf/reg-sub
  :a/search-result-ids
   (fn [db _]
@@ -87,9 +97,15 @@
          [rc/button
           :label "Join Org"
           :on-click #(rf/dispatch [:a/create-membership @user-id& id])]
-         [rc/button
-          :label "Login as Support User"
-          :on-click #(rf/dispatch [:a/login-as-support id])])])))
+         [:div
+          [rc/button
+           :label "Login as Support User"
+           :on-click #(rf/dispatch [:a/login-as-support id])]
+          [rc/button
+           :label "Leave Org"
+           :on-click #(rf/dispatch [:a/delete-membership (->> memberships
+                                                              first
+                                                              :id)])]])])))
 
 (defn c-search-results []
   (let [user-id @(rf/subscribe [:user-id])

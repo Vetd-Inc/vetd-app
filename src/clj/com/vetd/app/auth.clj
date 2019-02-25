@@ -130,6 +130,11 @@
                      :org_id org-id})
         first)))
 
+(defn delete-memb
+  [memb-id]
+  (db/hs-exe! {:delete-from :memberships
+               :where [:= :id memb-id]}))
+
 (defn create-or-find-memb
   [user-id org-id]
   (if (select-memb-by-ids user-id org-id)
@@ -248,5 +253,9 @@
 (defmethod com/handle-ws-inbound :create-membership
   [{:keys [user-id org-id]} ws-id sub-fn]
   (create-or-find-memb user-id org-id))
+
+(defmethod com/handle-ws-inbound :delete-membership
+  [{:keys [id]} ws-id sub-fn]
+  (delete-memb id))
 
 ;; TODO logout!!!!!!!!!!!!!!!
