@@ -78,8 +78,6 @@
         first
         :org)))
 
-@(rf/subscribe [:active-org])
-
 (rf/reg-sub
  :org-id
  :<- [:active-org] 
@@ -172,8 +170,6 @@
       [(hks/c-admin page)]]
      [(hks/c-container page)
       [(hks/c-page page)]]]))
-
-hks/c-container
 
 (defn mount-components []
   (.log js/console "mount-components STARTED")
