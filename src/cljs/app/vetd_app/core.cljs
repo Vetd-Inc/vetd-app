@@ -2,8 +2,7 @@
   (:require [vetd-app.util :as ut]
             [vetd-app.hooks :as hks]   
             [vetd-app.websockets :as ws]
-            [vetd-app.graphql :as graphql]            
-            [vetd-app.db-plus :as db+]
+            [vetd-app.graphql :as graphql]
             [vetd-app.blocker :as bl]                        
             [vetd-app.pages.home :as p-home]
             [vetd-app.pages.buyers.b-search :as p-b-search]
@@ -221,7 +220,6 @@
       (println "init! START")
       (vreset! init-done? true)
       (rf/dispatch-sync [:init-db])
-      #_      (db+/reset-db!)
       (rf/dispatch-sync [:ws-init])
       (config-acct)
       (acct/dispatch-current!)
@@ -231,6 +229,7 @@
 
 #_ (init!)
 
+;; for dev
 (defn re-init! []
   (vreset! init-done? false)
   (init!))
