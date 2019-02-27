@@ -1,6 +1,5 @@
 (ns vetd-admin.admin
-  (:require [vetd-app.common :as com]
-            [vetd-app.hooks :as hks]   
+  (:require [vetd-app.hooks :as hks]   
             [vetd-app.util :as ut]
             [vetd-admin.pages.a-home :as p-a-home]
             [vetd-admin.pages.a-search :as p-a-search]
@@ -12,8 +11,6 @@
             [secretary.core :as sec]))
 
 (println "START ADMIN")
-
-(reset! com/admin-present? true)
 
 (def show-admin?& (r/atom true #_false))
 

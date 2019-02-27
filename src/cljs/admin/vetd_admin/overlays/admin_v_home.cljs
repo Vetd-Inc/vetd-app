@@ -21,8 +21,7 @@
           :user-id (:id user)})
        (filter (fn [{:keys [label]}]
                  (re-find (re-pattern (str "(?i)" q))
-                          label))))
-  #_[{:label "hello" :value 44}])
+                          label)))))
 
 (defn prods->choices [prods]
   (for [{:keys [id pname]} prods]

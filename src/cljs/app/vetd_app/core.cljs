@@ -2,8 +2,7 @@
   (:require [vetd-app.util :as ut]
             [vetd-app.hooks :as hks]   
             [vetd-app.websockets :as ws]
-            [vetd-app.graphql :as graphql]            
-            [vetd-app.db-plus :as db+]
+            [vetd-app.graphql :as graphql]
             [vetd-app.blocker :as bl]                        
             [vetd-app.pages.home :as p-home]
             [vetd-app.pages.buyers.b-search :as p-b-search]
@@ -77,8 +76,6 @@
         (filter #(-> % :id (= active-memb-id)))
         first
         :org)))
-
-@(rf/subscribe [:active-org])
 
 (rf/reg-sub
  :org-id
@@ -173,8 +170,6 @@
      [(hks/c-container page)
       [(hks/c-page page)]]]))
 
-hks/c-container
-
 (defn mount-components []
   (.log js/console "mount-components STARTED")
   (rf/clear-subscription-cache!)
@@ -225,7 +220,6 @@ hks/c-container
       (println "init! START")
       (vreset! init-done? true)
       (rf/dispatch-sync [:init-db])
-      #_      (db+/reset-db!)
       (rf/dispatch-sync [:ws-init])
       (config-acct)
       (acct/dispatch-current!)
@@ -235,6 +229,7 @@ hks/c-container
 
 #_ (init!)
 
+;; for dev
 (defn re-init! []
   (vreset! init-done? false)
   (init!))
