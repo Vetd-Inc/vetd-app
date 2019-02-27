@@ -308,11 +308,33 @@ body, * {
   display: flex;
   flex-direction: row;
   align-items: flex-start;
+  margin: 20px;
 }
 .list-item > img {
-  margin: 20px;
+  margin: 0 20px 0 0;
   width: 115px;
 }
 .list-item .details {
   flex: 1;
+}
+.list-item .details .details-heading {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}
+.list-item .details .details-heading h3 {
+  margin: 5px 0 15px 0;
+  padding: 0;
+}
+.list-item .price {
+  margin-top: 15px;
+}
+
+
+
+.btn-category {
+  background-color: #eee;
+}
+.btn-category:hover {
+  background-color: #f7f7f7;
 }

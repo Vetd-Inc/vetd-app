@@ -2,6 +2,7 @@
   (:require [vetd-app.util :as ut]
             [vetd-app.flexer :as flx]
             [reagent.core :as r]
+            [reagent.format :as format]
             [re-frame.core :as rf]
             [re-com.core :as rc]))
 
@@ -18,6 +19,7 @@
           :query-params query-params)))
 
 (defn c-preposal
+  "Component to display Preposal as a list item."
   [{:keys [id idstr product from-org from-user responses] :as args}]
   (let [get-prompt-field-key-value (fn [prompt field k]
                                      (-> (group-by (comp :prompt :prompt) responses)
@@ -28,15 +30,26 @@
                                          (get field)
                                          first
                                          (get k)))]
-    ;; (println (str args))
     [:div.list-item
-     
-     [:img {:src "https://s3.amazonaws.com/vetd-logos/1e20fc47f430315c72f4c7e5328601be.png"}]
+     [:img {:src (str "https://s3.amazonaws.com/vetd-logos/" ; todo: make config var
+                      (:logo product))}]
      [:div.details
-      [:h3 "Product Name" [:small " by " (:oname from-org)]]
-      [:div (get-prompt-field-key-value "Pitch" "value" :sval)]]]))
-
-
+      [:div.details-heading
+       [:h3 (:pname product) " " [:small " by " (:oname from-org)]]
+       [:div.categories
+        (for [c (:categories product)]
+          ^{:key (:id c)}
+          [rc/button
+           :label (:cname c)
+           :class "btn-category btn-sm"])]]
+      [:div (get-prompt-field-key-value "Pitch" "value" :sval)]
+      [:div.price
+       (format/currency-format
+        (get-prompt-field-key-value "Pricing Estimate" "value" :nval))
+       " / "
+       (get-prompt-field-key-value "Pricing Estimate" "unit" :sval)
+       " "
+       [:small "(estimate)"]]]]))
 
 (defn c-page []
   (let [org-id& (rf/subscribe [:org-id])
@@ -45,7 +58,8 @@
                                [[:docs {:dtype "preposal"
                                         :to-org-id @org-id&}
                                  [:id :idstr :title
-                                  [:product [:id :pname]]
+                                  [:product [:id :pname :logo
+                                             [:categories [:id :idstr :cname]]]]
                                   [:from-org [:id :oname]]
                                   [:from-user [:id :uname]]
                                   [:to-org [:id :oname]]
