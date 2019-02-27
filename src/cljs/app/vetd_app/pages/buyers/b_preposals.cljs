@@ -7,7 +7,7 @@
 
 (rf/reg-event-fx
  :b/nav-preposals
- (fn [{:keys [db]} _]
+ (fn []
    {:nav {:path "/b/preposals/"}}))
 
 (rf/reg-event-db
@@ -18,14 +18,25 @@
           :query-params query-params)))
 
 (defn c-preposal
-  [{:keys [id idstr product from-org from-user responses]}]
-  [flx/col
-   [:div id]
-   [:div idstr]
-   [:div (:pname product)]
-   [:div (:oname from-org)]
-   [:div (:uname from-user)]
-   [:div (str responses)]])
+  [{:keys [id idstr product from-org from-user responses] :as args}]
+  (let [get-prompt-field-key-value (fn [prompt field k]
+                                     (-> (group-by (comp :prompt :prompt) responses)
+                                         (get prompt)
+                                         first
+                                         :fields
+                                         (->> (group-by (comp :fname :prompt-field)))
+                                         (get field)
+                                         first
+                                         (get k)))]
+    ;; (println (str args))
+    [:div.list-item
+     
+     [:img {:src "https://s3.amazonaws.com/vetd-logos/1e20fc47f430315c72f4c7e5328601be.png"}]
+     [:div.details
+      [:h3 "Product Name" [:small " by " (:oname from-org)]]
+      [:div (get-prompt-field-key-value "Pitch" "value" :sval)]]]))
+
+
 
 (defn c-page []
   (let [org-id& (rf/subscribe [:org-id])
@@ -36,7 +47,6 @@
                                  [:id :idstr :title
                                   [:product [:id :pname]]
                                   [:from-org [:id :oname]]
-                                  [:product [:id :pname]]
                                   [:from-user [:id :uname]]
                                   [:to-org [:id :oname]]
                                   [:to-user [:id :uname]]
@@ -50,11 +60,7 @@
     (fn []
       [flx/col
        (let [preps @preps&]
-         (def p1 preps)
          (when-not (= :loading preps)
            (for [p (:docs preps)]
              ^{:key (:id p)}
              [c-preposal p])))])))
-
-
-#_ (cljs.pprint/pprint p1)
