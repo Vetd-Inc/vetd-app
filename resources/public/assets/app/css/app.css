@@ -1,23 +1,22 @@
 /*
-Blue #27AAE0
-Green #60D1AB
-
+Blue   #27AAE0
+Green  #60D1AB
 */
 
-body, *{
+body, * {
     font-family: 'Raleway', san-serif;
     font-size: 14px;
     letter-spacing: 0.8px;
     color: #444;
 }
 
-.btn-default{
+.btn-default {
     color: white;
     background-color: #444;
     font-weight: bold;
 }
 
-#app{
+#app {
     height: 100%;
     width: 100%;
 }
@@ -49,7 +48,7 @@ body, *{
 }
 
 
-#full-header .logo{
+#full-header .logo {
     margin-top: 39px;
     margin-left: -42px;   /* fix centering?? I don't know -- Bill */
 }
@@ -67,7 +66,7 @@ body, *{
     flex-direction: column;
 }
 
-#header{
+#header {
     height: 105px;
     font-size: 17px;
     margin-bottom: 20px;
@@ -77,12 +76,12 @@ body, *{
     flex-direction: row;
 }
 
-#header-left{
+#header-left {
     flex-grow: 0;
     margin: 20px;
 }
 
-#header-middle{
+#header-middle {
     flex-grow: 1;    
     margin: 40px;
     display: flex;
@@ -91,7 +90,7 @@ body, *{
     flex-direction: row;
 }
 
-#header-right{
+#header-right {
     flex-grow: 0;    
     margin: 12px 30px;
     display: flex;
@@ -122,14 +121,14 @@ body, *{
     width: 100%;
 }
 
-#sidebar a{
+#sidebar a {
     font-weight: bold;
     color: black;
     text-decoration: none;
 }
     
 
-#sidebar .tab{
+#sidebar .tab {
     cursor: pointer;
     margin: 5px 0;
     padding: 5px;
@@ -137,7 +136,7 @@ body, *{
 }
 
 
-#sidebar .tab.selected{
+#sidebar .tab.selected {
     color: white;
     background-color:  #27AAE0;
 }
@@ -152,7 +151,7 @@ body, *{
   animation: 2s infinite pulse;
 }
 
-.prod-logo{
+.prod-logo {
     width: 95px;
     margin-right: 20px;
     display: flex;
@@ -184,7 +183,7 @@ body, *{
     padding: 5px;
 }
 
-#signup-form{
+#signup-form {
     border: solid 1px #999;
     width: 330px;
     padding: 20px;
@@ -193,12 +192,12 @@ body, *{
     margin-top: 50px;
 }
 
-#signup-form input{
+#signup-form input {
     margin: 10px;
 }
 
 
-#login-form{
+#login-form {
     width: 330px;
     padding: 20px;
     margin-left: auto;
@@ -206,11 +205,11 @@ body, *{
     margin-top: 50px;
 }
 
-#login-form input{
+#login-form input {
     margin: 10px;
 }
 
-#login-form button{
+#login-form button {
     margin: 10px;
 }
 
@@ -247,7 +246,6 @@ body, *{
     cursor: pointer;
 }
 
-
 .product-search-result .header {
     border-bottom: solid 1px #ccc;
     margin-bottom: 15px;
@@ -261,7 +259,6 @@ body, *{
     align-items: stretch;
     justify-content: stretch;
 }
-
 
 .org-search-result {
     margin: 20px;
@@ -279,29 +276,65 @@ body, *{
 .form-maybe-doc .title,
 .form-maybe-doc .product-name,
 .form-maybe-doc .org-name,
-.form-maybe-doc .user-name
-{
+.form-maybe-doc .user-name {
     margin: 10px
 }
 
-.form-maybe-doc .prompt
-{
+.form-maybe-doc .prompt {
     margin: 10px
 }
 
-.prompt .prompt-text{
+.prompt .prompt-text {
     font-size: 20px;
 }
 
-.prompt textarea{
+.prompt textarea {
     width: 400px;
     height: 200px;
 }
 
-.prompt .rc-dropdown{
+.prompt .rc-dropdown {
     min-width: 100px;
 }
 
-.prompt .prompt-field{
+.prompt .prompt-field {
     margin: 5px;
+}
+
+
+
+
+.list-item {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  margin: 20px;
+}
+.list-item > img {
+  margin: 0 20px 0 0;
+  width: 115px;
+}
+.list-item .details {
+  flex: 1;
+}
+.list-item .details .details-heading {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}
+.list-item .details .details-heading h3 {
+  margin: 5px 0 15px 0;
+  padding: 0;
+}
+.list-item .price {
+  margin-top: 15px;
+}
+
+
+
+.btn-category {
+  background-color: #eee;
+}
+.btn-category:hover {
+  background-color: #f7f7f7;
 }

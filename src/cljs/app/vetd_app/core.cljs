@@ -120,7 +120,6 @@
         "/v/home/")
       "/")))
 
-;; TODO rename
 (rf/reg-event-fx
  :nav-home
  (fn [{:keys [db]} _]

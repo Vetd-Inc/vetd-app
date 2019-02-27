@@ -34,6 +34,7 @@
                  [ring-webjars "0.2.0"]
                  [re-frame "0.10.5"]
                  [reagent "0.8.1"]
+                 [reagent-utils "0.3.2"]
                  [re-frisk "0.4.5"]
                  [re-com/re-com "2.1.0"]
                  [clj-commons/secretary "1.2.4"]
