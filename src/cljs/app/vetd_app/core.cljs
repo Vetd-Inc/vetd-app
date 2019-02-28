@@ -1,9 +1,6 @@
 (ns vetd-app.core
-  (:require [vetd-app.util :as ut]
-            [vetd-app.hooks :as hks]   
+  (:require [vetd-app.hooks :as hooks]
             [vetd-app.websockets :as ws]
-            [vetd-app.graphql :as graphql]
-            [vetd-app.blocker :as bl]                        
             [vetd-app.pages.home :as p-home]
             [vetd-app.pages.buyers.b-search :as p-b-search]
             [vetd-app.pages.buyers.b-home :as p-bhome]
@@ -16,19 +13,17 @@
             [vetd-app.public-fixtures :as pub-fix]            
             vetd-app.localstore
             vetd-app.cookies
+            vetd-app.graphql
             [reagent.core :as r]
             [re-frame.core :as rf]
-            [goog.events :as events]
             [secretary.core :as sec]
-            [accountant.core :as acct]
-            [cognitect.transit :as t]))
-
+            [accountant.core :as acct]))
 
 (println "START core")
 
-(defonce init-done? (volatile! false))
 
-(hks/reg-hooks! hks/c-page
+
+(hooks/reg-hooks! hooks/c-page
                 {:home #'p-home/home-page
                  :pub/signup #'p-signup/signup-page
                  :pub/login #'p-login/login-page
@@ -37,7 +32,7 @@
                  :b/preposals #'p-bpreposals/c-page   
                  :v/home #'p-vhome/c-page})
 
-(hks/reg-hooks! hks/c-container
+(hooks/reg-hooks! hooks/c-container
                 {:pub/login #'pub-fix/container
                  :pub/signup #'pub-fix/container
                  :b/home #'b-fix/container
@@ -48,8 +43,7 @@
 
 (rf/reg-event-db
  :init-db
- (fn [_ _]
-   {}))
+ (fn [] {}))
 
 (rf/reg-event-db
  :route-home
@@ -164,10 +158,10 @@
 (defn c-page []
   (let [page @(rf/subscribe [:page])]
     [:div#page
-     [(hks/c-container :admin-overlay)
-      [(hks/c-admin page)]]
-     [(hks/c-container page)
-      [(hks/c-page page)]]]))
+     [(hooks/c-container :admin-overlay)
+      [(hooks/c-admin page)]]
+     [(hooks/c-container page)
+      [(hooks/c-page page)]]]))
 
 (defn mount-components []
   (.log js/console "mount-components STARTED")
@@ -212,6 +206,9 @@
                                :path-exists? sec/locate-route
                                :reload-same-path? false}))
 
+
+(defonce init-done? (volatile! false))
+
 (defn init! []
   (if @init-done?
     (println "init! SKIPPED")
@@ -225,8 +222,6 @@
       (rf/dispatch-sync [:ws-get-session-user])
       (mount-components)
       (println "init! END"))))
-
-#_ (init!)
 
 ;; for dev
 (defn re-init! []

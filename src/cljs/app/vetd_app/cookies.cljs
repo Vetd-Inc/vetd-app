@@ -1,8 +1,7 @@
 (ns vetd-app.cookies
   (:require [re-frame.core :as rf]
-            [vetd-app.util :as ut]
+            [vetd-app.util :refer [kw->str]]
             goog.net.cookies))
-
 
 (defn set-cookie!
   "sets a cookie, the max-age for session cookie
@@ -10,10 +9,9 @@
    :max-age - defaults to -1
    :path - path of the cookie, defaults to the full request path
    :domain - domain of the cookie, when null the browser will use the full request host name
-   :secure? - boolean specifying whether the cookie should only be sent over a secure channel
-  "
+   :secure? - boolean specifying whether the cookie should only be sent over a secure channel"
   [k content & [{:keys [max-age path domain secure?]} :as opts]]
-  (let [k' (ut/kw->str k)
+  (let [k' (kw->str k)
         content' (clj->js content)]
     (if-not opts
       (.set goog.net.cookies k' content')
@@ -23,7 +21,7 @@
  :cookies
  (fn [cofx local-store-keys]
    (->> (for [k local-store-keys]
-          [k (js->clj (.get goog.net.cookies (ut/kw->str k)))])
+          [k (js->clj (.get goog.net.cookies (kw->str k)))])
         (into {})
         (assoc cofx :local-store))))
 

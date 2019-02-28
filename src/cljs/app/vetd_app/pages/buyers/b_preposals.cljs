@@ -20,7 +20,7 @@
 
 (defn c-preposal
   "Component to display Preposal as a list item."
-  [{:keys [id idstr product from-org from-user responses] :as args}]
+  [{:keys [id product from-org responses] :as args}]
   (let [get-prompt-field-key-value (fn [prompt field k]
                                      (-> (group-by (comp :prompt :prompt) responses)
                                          (get prompt)
