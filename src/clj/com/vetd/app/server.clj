@@ -123,11 +123,9 @@
                                    "")))  
        (c/GET "/js*" [] (fn [{:keys [uri]}] (get-public-resource uri)))
        (c/GET "/-reset-db-" [] (fn [{:keys [cookies]}]
-                                 (if (admin-session? cookies)
-                                   (do (future (mig/reset {:store :database
-                                                           :db env/pg-db}))
-                                       "DOING IT")
-                                   "")))
+                                 (do (future (mig/reset {:store :database
+                                                         :db env/pg-db}))
+                                     "DOING IT")))
        (c/GET "*" [] (fn [{:keys [cookies]}]
                        (-> (if (admin-session? cookies)
                              "public/admin.html"
