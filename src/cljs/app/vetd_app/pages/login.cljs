@@ -29,7 +29,6 @@
 (rf/reg-event-fx
  :ws/login
  (fn [{:keys [db]} [_ {:keys [logged-in? user session-token memberships admin?] :as results}]]
-   (def res1 results)
    (if logged-in?
      {:db (assoc db
                  :login-failed? false
