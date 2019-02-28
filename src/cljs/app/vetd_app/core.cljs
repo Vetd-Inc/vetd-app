@@ -11,7 +11,7 @@
             [vetd-app.buyer-fixtures :as b-fix]
             [vetd-app.vendor-fixtures :as v-fix]
             [vetd-app.public-fixtures :as pub-fix]            
-            vetd-app.localstore
+            vetd-app.local-store
             vetd-app.cookies
             vetd-app.graphql
             [reagent.core :as r]

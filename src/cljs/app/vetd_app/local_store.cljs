@@ -1,4 +1,4 @@
-(ns vetd-app.localstore
+(ns vetd-app.local-store
   (:require [re-frame.core :as rf]
             [vetd-app.util :refer [kw->str]]))
 
@@ -14,7 +14,5 @@
  :local-store
  (fn [m]
    (doseq [[k v] m]
-     (.setItem js/localStorage
-               (kw->str k)
-               (clj->js v)))))
+     (.setItem js/localStorage (kw->str k) (clj->js v)))))
 
