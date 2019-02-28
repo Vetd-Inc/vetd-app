@@ -17,16 +17,16 @@
   (log/info "Waiting for server to close...")
   (try
     (.wait_for_close s)
-    (finally
-      (log/info "Calling EXIT...")
-      (.exit (Runtime/getRuntime) 0)
-      (log/info "Called EXIT"))))
+    (log/info "Server closed.")
+    (catch Throwable t
+      (log/error "Exception waiting for server to close." t))))
 
 (defn shutdown []
   (try
     (log/info "Starting shutdown hook")
     (when-let [svr (svr/stop-server)]
-      (wait-to-exit svr))
+      (wait-to-exit svr)
+      (log/info "Completed `wait-to-exit`"))
     (catch Throwable t
       (log/error t))
     (finally
