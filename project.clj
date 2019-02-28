@@ -147,9 +147,10 @@
                       :closure-defines {"re_frame.trace.trace_enabled_QMARK_" true}
                       :preloads [devtools.preload day8.re-frame-10x.preload]}}]}
                   :doo {:build "test"}
-                  :source-paths ["env/dev/clj"]
+                  :source-paths ["dev/clj" "env/dev/clj"]
                   :resource-paths ["env/dev/resources"]
-                  :repl-options {:nrepl-middleware [cider.piggieback/wrap-cljs-repl]}
+                  :repl-options {:nrepl-middleware [cider.piggieback/wrap-cljs-repl]
+                                 :init-ns repl-init}
                   :injections [(require 'pjstadig.humane-test-output)
                                (pjstadig.humane-test-output/activate!)]}
    :project/test {:jvm-opts ["-Dconf=test-config.edn"]
