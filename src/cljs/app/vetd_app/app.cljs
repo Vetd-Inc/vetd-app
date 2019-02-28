@@ -15,5 +15,4 @@
     (enable-console-print!)
     (core/init!)))
 
-
 (load-app)

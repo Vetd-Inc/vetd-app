@@ -1,15 +1,15 @@
-(ns vetd-app.flexer)
-
+(ns vetd-app.flexer
+  (:require [clojure.set :refer [rename-keys]]))
 
 (defn flx-xfrm-style
   [style]
-  (clojure.set/rename-keys style
-   {:f/dir :flex-direction
-    :f/wrap :flex-wrap
-    :f/flow :flex-flow
-    :f/grow :flex-grow
-    :f/shrink :flex-shrink
-    :f/basis :flex-basis}))
+  (rename-keys style
+               {:f/dir :flex-direction
+                :f/wrap :flex-wrap
+                :f/flow :flex-flow
+                :f/grow :flex-grow
+                :f/shrink :flex-shrink
+                :f/basis :flex-basis}))
 
 (defn flx-class [c]
   (->> c
