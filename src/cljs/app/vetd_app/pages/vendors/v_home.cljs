@@ -1,6 +1,5 @@
 (ns vetd-app.pages.vendors.v-home
-  (:require [vetd-app.util :as ut]
-            [vetd-app.flexer :as flx]
+  (:require [vetd-app.flexer :as flx]
             [vetd-app.docs :as docs]
             [reagent.core :as r]
             [re-frame.core :as rf]

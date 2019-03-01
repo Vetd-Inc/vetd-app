@@ -1,11 +1,7 @@
 (ns vetd-app.pages.login
-  (:require [vetd-app.util :as ut]
-            [vetd-app.blocker :as bl]
-            [vetd-app.websockets :as ws]
-            [reagent.core :as r]
+  (:require [reagent.core :as r]
             [re-frame.core :as rf]
             [re-com.core :as rc]))
-
 
 (rf/reg-sub
  :login-failed?
@@ -19,9 +15,8 @@
 
 (rf/reg-event-fx
  :pub/nav-login
- (fn [_ _]
+ (fn []
    {:nav {:path "/login"}}))
-
 
 (rf/reg-event-fx
  :login
@@ -34,7 +29,6 @@
 (rf/reg-event-fx
  :ws/login
  (fn [{:keys [db]} [_ {:keys [logged-in? user session-token memberships admin?] :as results}]]
-   (def res1 results)
    (if logged-in?
      {:db (assoc db
                  :login-failed? false

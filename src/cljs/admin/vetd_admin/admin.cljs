@@ -1,6 +1,5 @@
 (ns vetd-admin.admin
-  (:require [vetd-app.hooks :as hks]   
-            [vetd-app.util :as ut]
+  (:require [vetd-app.hooks :as hooks]
             [vetd-admin.pages.a-home :as p-a-home]
             [vetd-admin.pages.a-search :as p-a-search]
             [vetd-admin.admin-fixtures :as a-fix]
@@ -47,17 +46,17 @@
 (defn init! []
   (println "init! ADMIN"))
 
-(hks/reg-hook! hks/init! :admin init!)
+(hooks/reg-hook! hooks/init! :admin init!)
 
-(hks/reg-hook! hks/c-page :a/home p-a-home/c-page)
-(hks/reg-hook! hks/c-page :a/search p-a-search/c-page)
+(hooks/reg-hook! hooks/c-page :a/home p-a-home/c-page)
+(hooks/reg-hook! hooks/c-page :a/search p-a-search/c-page)
 
-(hks/reg-hook! hks/c-container :admin-overlay c-admin-overlay-container)
+(hooks/reg-hook! hooks/c-container :admin-overlay c-admin-overlay-container)
 
-(hks/reg-hook! hks/c-container :a/home a-fix/container)
-(hks/reg-hook! hks/c-container :a/search a-fix/container)
+(hooks/reg-hook! hooks/c-container :a/home a-fix/container)
+(hooks/reg-hook! hooks/c-container :a/search a-fix/container)
 
-(hks/reg-hook! hks/c-admin :v/home ovr-v-home/c-overlay)
+(hooks/reg-hook! hooks/c-admin :v/home ovr-v-home/c-overlay)
 
 
 (println "END ADMIN")

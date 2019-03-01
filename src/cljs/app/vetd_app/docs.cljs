@@ -1,7 +1,7 @@
 (ns vetd-app.docs
-  (:require [vetd-app.util :as ut]
+  (:require [vetd-app.util :as util]
             [vetd-app.flexer :as flx]
-            [vetd-app.hooks :as hks]
+            [vetd-app.hooks :as hooks]
             [reagent.core :as r]
             [re-frame.core :as rf]
             [re-com.core :as rc]))
@@ -67,7 +67,7 @@
   [{:keys [responses] :as form-doc}]
   (let [responses' (->> responses
                         (group-by :prompt-id)
-                        (ut/fmap first))]
+                        (util/fmap first))]
     (update form-doc
             :prompts
             (partial mapv
@@ -133,7 +133,7 @@
       [rc/info-button :info descr])]
    (for [{:keys [idstr ftype fsubtype] :as f} fields]
      ^{:key (str "field" (:id f))}
-     [(hks/c-prompt-field idstr [ftype fsubtype] ftype :default)
+     [(hooks/c-prompt-field idstr [ftype fsubtype] ftype :default)
       f])])
 
 (defn prep-preposal-form-doc
@@ -164,17 +164,17 @@
     [:div.user-name (:uname from-user)]]
    (for [p (sort-by :sort prompts)]
      ^{:key (str "prompt" (:id p))}
-     [(hks/c-prompt :default) p])
+     [(hooks/c-prompt :default) p])
    [rc/button
     :label "Submit"
     :on-click #(rf/dispatch [:save-form-doc
                              (prep-preposal-form-doc form-doc)])]])
 
 
-(hks/reg-hooks! hks/c-prompt
+(hooks/reg-hooks! hooks/c-prompt
                 {:default #'c-prompt-default})
 
-(hks/reg-hooks! hks/c-prompt-field
+(hooks/reg-hooks! hooks/c-prompt-field
                 {:default #'c-prompt-field-default
                  ["s" "multi"] #'c-prompt-field-textarea
                  ["n" "int"] #'c-prompt-field-int
