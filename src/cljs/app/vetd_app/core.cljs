@@ -21,8 +21,6 @@
 
 (println "START core")
 
-
-
 (hooks/reg-hooks! hooks/c-page
                 {:home #'p-home/home-page
                  :pub/signup #'p-signup/signup-page
