@@ -25,18 +25,13 @@
                  [aleph "0.4.6"]
                  [ring/ring-core "1.5.1"]
                  [javax.servlet/servlet-api "2.5"]
-
-                 [org.webjars.bower/tether "1.4.4"]
-                 [org.webjars/bootstrap "4.1.1"]
-                 [org.webjars/font-awesome "5.1.0"]
-                 [org.webjars/webjars-locator "0.34"]
                  
-                 [ring-webjars "0.2.0"]
                  [re-frame "0.10.5"]
                  [reagent "0.8.1"]
                  [reagent-utils "0.3.2"]
                  [re-frisk "0.4.5"]
                  [re-com/re-com "2.1.0"]
+                 [cljsjs/semantic-ui-react "0.84.0-0"]
                  [clj-commons/secretary "1.2.4"]
                  [venantius/accountant "0.2.4"]
 
