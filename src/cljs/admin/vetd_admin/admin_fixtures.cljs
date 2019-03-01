@@ -1,11 +1,8 @@
 (ns vetd-admin.admin-fixtures
-  (:require [vetd-app.util :as ut]
-            [vetd-app.flexer :as flx]
+  (:require [vetd-app.flexer :as flx]
             [reagent.core :as r]
             [re-frame.core :as rf]
             [re-com.core :as rc]))
-
-
 
 (defn header []
   (let [user-name& (rf/subscribe [:user-name])

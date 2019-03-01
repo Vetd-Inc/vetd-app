@@ -1,6 +1,5 @@
 (ns vetd-app.pages.buyers.b-preposals
-  (:require [vetd-app.util :as ut]
-            [vetd-app.flexer :as flx]
+  (:require [vetd-app.flexer :as flx]
             [reagent.core :as r]
             [reagent.format :as format]
             [re-frame.core :as rf]

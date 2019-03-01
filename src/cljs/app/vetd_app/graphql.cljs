@@ -1,5 +1,5 @@
 (ns vetd-app.graphql
-  (:require [vetd-app.util :refer [now reg-sub-special dispatch-debounce]]
+  (:require [vetd-app.util :as util]
             [re-frame.core :as rf]
             [reagent.core :as r]))
 
@@ -13,7 +13,7 @@
 
 #_ (println @sub-id->ratom&)
 
-(def last-sub-id& (atom (mod (now) 10000)))
+(def last-sub-id& (atom (mod (util/now) 10000)))
 
 (defn get-next-sub-id []
   (swap! last-sub-id& inc))
@@ -69,7 +69,7 @@
                         :stop true
                         :sub-id sub-id}}}))
 
-(reg-sub-special
+(util/reg-sub-special
  :gql/q
  (fn [[_ query]]
    (let [q->sub-id @q->sub-id&
@@ -86,11 +86,11 @@
          sub-id (q->sub-id query)]
      (rf/dispatch-sync [:gql/q query sub-id]) 
      {:computation (fn [r]
-                     (dispatch-debounce [:gql/q query sub-id]
+                     (util/dispatch-debounce [:gql/q query sub-id]
                                            5000)
                      r)})))
 
-(reg-sub-special
+(util/reg-sub-special
  :gql/sub
  (fn [[_ query]]
    (let [q->sub-id @q->sub-id&

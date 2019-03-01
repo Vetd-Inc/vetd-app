@@ -1,6 +1,6 @@
 (ns vetd-app.cookies
   (:require [re-frame.core :as rf]
-            [vetd-app.util :refer [kw->str]]
+            [vetd-app.util :as util]
             goog.net.cookies))
 
 (defn set-cookie!
@@ -12,7 +12,7 @@
    :secure? - boolean specifying whether the cookie should only be 
               sent over a secure channel"
   [k content & [{:keys [max-age path domain secure?]} :as opts]]
-  (let [k' (kw->str k)
+  (let [k' (util/kw->str k)
         content' (clj->js content)]
     (if-not opts
       (.set goog.net.cookies k' content')
@@ -22,7 +22,7 @@
  :cookies
  (fn [cofx cookies-keys]
    (->> (for [k cookies-keys]
-          [k (js->clj (.get goog.net.cookies (kw->str k)))])
+          [k (js->clj (.get goog.net.cookies (util/kw->str k)))])
         (into {})
         (assoc cofx :cookies))))
 

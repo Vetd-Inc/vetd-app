@@ -1,5 +1,5 @@
 (ns vetd-app.docs
-  (:require [vetd-app.util :as ut]
+  (:require [vetd-app.util :as util]
             [vetd-app.flexer :as flx]
             [vetd-app.hooks :as hooks]
             [reagent.core :as r]
@@ -67,7 +67,7 @@
   [{:keys [responses] :as form-doc}]
   (let [responses' (->> responses
                         (group-by :prompt-id)
-                        (ut/fmap first))]
+                        (util/fmap first))]
     (update form-doc
             :prompts
             (partial mapv

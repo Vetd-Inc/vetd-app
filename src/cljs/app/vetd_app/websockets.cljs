@@ -1,5 +1,5 @@
 (ns vetd-app.websockets
-  (:require [vetd-app.util :as ut]
+  (:require [vetd-app.util :as util]
             [re-frame.core :as rf]
             [cognitect.transit :as t]))
 
@@ -104,6 +104,6 @@
 (rf/reg-fx
  :ws-send
  (fn [rs]
-   (doseq [r (ut/->vec rs)]
+   (doseq [r (util/->vec rs)]
      (ws-send r))))
 

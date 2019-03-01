@@ -1,6 +1,5 @@
 (ns vetd-app.pages.buyers.b-home
-  (:require [vetd-app.util :as ut]
-            [reagent.core :as r]
+  (:require [reagent.core :as r]
             [re-frame.core :as rf]
             [re-com.core :as rc]))
 
