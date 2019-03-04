@@ -197,44 +197,6 @@ body, * {
     margin: 10px;
 }
 
-.search-results {
-    margin: 20px;
-    padding: 10px;
-    width: 75%;
-}
-
-.vendor-search-results {}
-
-.product-search-result {
-    margin: 20px;
-    padding: 10px;
-    width: 75%;
-}
-
-.product-search-result .product-name {
-    font-size: 17px;
-}
-
-.product-search-result .org-name {
-    font-size: 17px;    
-}
-
-.category-search-result .category-name {
-    font-size: 17px;
-    padding: 10px;
-}
-
-.product-search-result .vendor-name:hover,
-.product-search-result .org-name:hover {
-    color: #d80;
-    cursor: pointer;
-}
-
-.product-search-result .header {
-    border-bottom: solid 1px #ccc;
-    margin-bottom: 15px;
-}
-
 .category-search-result {
     border-top: solid 1px #444;
     margin: 20px;
@@ -324,40 +286,67 @@ body, * {
   display: flex;
   flex-direction: row;
 }
-.preposals > .refine {
+.refine {
   width: 199px !important;
 }
-.preposals > .refine > .item:first-child {
+.refine > .item:first-child {
   padding-top: 0 !important;
 }
-.preposals > .refine > .item > .menu {
+.refine > .item > .menu {
   margin: 7px 0 0 0 !important;
 }
-.preposals > .refine > .item > .menu > .item {
+.refine > .item > .menu > .item {
   padding-left: 0 !important;
   padding-right: 0 !important;
 }
-.preposals > .results  {
+.preposals > .results {
   flex: 1;
+}
+
+.results  { 
   margin-top: 0 !important;
 }
-.preposals > .results > .item  {
-  padding: 15px 12px;
-  background: #fff;
-  box-shadow: 0 1px 3px 0 rgba(0,0,0,0.08), 0 2px 14px 0 rgba(50,50,93,0.14);
-  border-radius: 8px;
-  transition: transform .3s ease-out;
-  cursor: pointer;
+.results > .item  {
+  padding: 15px 12px !important;
+  background: #fff !important;
+  box-shadow: 0 1px 3px 0 rgba(0,0,0,0.08), 0 2px 14px 0 rgba(50,50,93,0.14) !important;
+  border-radius: 8px !important;
+  transition: transform .3s ease-out !important;
+  cursor: pointer !important;
 }
-.preposals > .results > .item:hover  {
-  transform: scale(1.01);
-  transition: transform .05s ease-out;
+.results > .item:hover  {
+  transform: scale(1.01) !important;
+  transition: transform .05s ease-out !important;
 }
-.preposals > .results > .item > .product-logo {
+.results > .item > .product-logo {
   width: 128px !important;
+  height: 128px !important;
+  display: flex !important;
+}
+.results > .item > .product-logo > img {
+  align-self: center;
+}
+.results > .item > .content {
+  display: flex !important;
+  flex-direction: column !important;
+}
+.results > .item > .content > .description {
+  flex: 1 !important;
+}
+.results > .item > .content > .extra > .category-tag {
+  position: absolute;
+  bottom: 0px;
 }
 
 .category-tag {
   background: #fff !important;
   border: 1px solid #ddd !important;
+}
+.category-tag:hover {
+  border-color: #777 !important;
+  color: #777 !important;
+}
+
+.product-search {
+  width: 100%;
 }

@@ -26,13 +26,13 @@
 (def Container (component "Container"))
 (def Segment (component "Segment"))
 
-
 (def Button (component "Button"))
 (def Input (component "Input"))
 (def Icon (component "Icon"))
 (def Label (component "Label"))
 (def Image (component "Image"))
 
+(def Loader (component "Loader"))
 
 (def Item (component "Item"))
 (def ItemGroup (component "ItemGroup"))

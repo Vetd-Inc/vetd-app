@@ -49,8 +49,10 @@
         pricing-estimate-unit
         " "
         [:small "(estimate)"]]]
-      [:> ui/ItemDescription
-       (get-prompt-field-key-value "Pitch" "value" :sval)]
+      ;; Pitch
+      ;; [:> ui/ItemDescription
+      ;;  (get-prompt-field-key-value "Pitch" "value" :sval)]
+      [:> ui/ItemDescription (:short-desc product)]
       [:> ui/ItemExtra
        (for [c (:categories product)]
          ^{:key (:id c)}
@@ -68,7 +70,7 @@
                                [[:docs {:dtype "preposal"
                                         :to-org-id @org-id&}
                                  [:id :idstr :title
-                                  [:product [:id :pname :logo
+                                  [:product [:id :pname :logo :short-desc
                                              [:categories [:id :idstr :cname]]]]
                                   [:from-org [:id :oname]]
                                   [:from-user [:id :uname]]
@@ -87,7 +89,7 @@
                     :vertical true
                     :secondary true}
         [:> ui/MenuItem
-         "Select Category"
+         "Filter By Category"
          [:> ui/MenuMenu
           [:> ui/MenuItem {:active false
                            :onClick #(rf/dispatch [:b/nav-home])}
@@ -98,11 +100,11 @@
           [:> ui/MenuItem {:active false
                            :onClick #(rf/dispatch [:b/nav-home])}
            "Analytics"]]]]
-       [:> ui/ItemGroup {:class "results"
-                         ;; :divided true
-                         }
+       [:> ui/ItemGroup {:class "results"}
         (let [preps @preps&]
-          (when-not (= :loading preps)
+          (if (= :loading preps)
+            [:> ui/Loader {:active true
+                           :inline true}]
             (for [p (:docs preps)]
               ^{:key (:id p)}
               [c-preposal p])))]])))
