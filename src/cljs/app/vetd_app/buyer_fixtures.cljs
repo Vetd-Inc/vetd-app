@@ -61,10 +61,12 @@
         ;; todo: use a config var for base url
         [:img {:src "https://s3.amazonaws.com/vetd-logos/vetd.svg"}]]
        (for [item [{:text "Preposals"
+                    :page :b/preposals
                     :event [:b/nav-preposals]}
                    {:text "Products & Categories"
+                    :page :b/search
                     :event [:b/nav-search]}]]
-         (menu-item (assoc item :active false)))
+         (menu-item (assoc item :active (= @page& (:page item)))))
        [:> ui/MenuMenu {:position "right"}
         #_[:> ui/MenuItem
            [:> ui/Input {:icon "search"
@@ -78,37 +80,3 @@
   [:> ui/Container {:class "main-container"}
    [top-nav]
    body])
-
-;; (defn container [body]
-;;   [:> ui/Container
-;;    [:> ui/Grid {:stackable true}
-;;     [:> ui/GridColumn {:width 16}
-;;      [menu]]
-;;     [:> ui/GridRow
-;;      [:> ui/GridColumn {:width 4}
-;;       [:> ui/Menu {:vertical true}
-;;        [:> ui/MenuItem
-;;         "Category"
-;;         [:> ui/MenuMenu
-;;          [:> ui/MenuItem {:active false
-;;                           :onClick #(rf/dispatch [:logout])}
-;;           "CRM"]
-;;          [:> ui/MenuItem {:active false
-;;                           :onClick #(rf/dispatch [:logout])}
-;;           "Marketing"]
-;;          [:> ui/MenuItem {:active false
-;;                           :onClick #(rf/dispatch [:logout])}
-;;           "Analytics"]]]]]
-;;      [:> ui/GridColumn {:width 12}
-;;       body]]]]
-;;   #_[:div.main-container
-;;      ]  
-
-;;   #_[flx/col :container #{:buyer}
-;;      [{:width "100%"} [header]]
-;;      [flx/row {:height "100%"
-;;                :width "100%"}
-;;       [sidebar]
-;;       [{:flex-grow 1
-;;         :margin "10px"}
-;;        body]]])

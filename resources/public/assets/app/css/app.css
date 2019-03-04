@@ -3,6 +3,9 @@ Blue   #27AAE0
 Green  #60D1AB
 */
 
+body {
+  background: #fafafa;
+}
 body, * {
     font-family: 'Raleway', san-serif;
     font-size: 14px;
@@ -289,11 +292,11 @@ body, * {
 }
 
 .top-nav {
-  margin-bottom: 20px !important;
+  margin-bottom: 30px !important;
 }
 .top-nav .logo {
-  margin-top: -35px !important;
-  padding: 0 50px 0 0 !important;
+  margin-top: -17px !important;
+  padding: 0 61px 0 0 !important;
   /* no hover bg change */
   background: inherit !important;
 }
@@ -340,6 +343,7 @@ body, * {
 }
 .preposals > .results > .item  {
   padding: 15px 12px;
+  background: #fff;
   box-shadow: 0 1px 3px 0 rgba(0,0,0,0.08), 0 2px 14px 0 rgba(50,50,93,0.14);
   border-radius: 8px;
   transition: transform .3s ease-out;
@@ -353,4 +357,7 @@ body, * {
   width: 128px !important;
 }
 
-
+.category-tag {
+  background: #fff !important;
+  border: 1px solid #ddd !important;
+}

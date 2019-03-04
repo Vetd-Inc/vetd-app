@@ -56,6 +56,7 @@
          ^{:key (:id c)}
          [:> ui/Label
           {:as "a"
+           :class "category-tag"
            ;; :onClick #(println "category search: " (:id c))
            }
           (:cname c)])]]]))
@@ -89,13 +90,13 @@
          "Select Category"
          [:> ui/MenuMenu
           [:> ui/MenuItem {:active false
-                           :onClick #(rf/dispatch [:logout])}
+                           :onClick #(rf/dispatch [:b/nav-home])}
            "CRM"]
           [:> ui/MenuItem {:active false
-                           :onClick #(rf/dispatch [:logout])}
+                           :onClick #(rf/dispatch [:b/nav-home])}
            "Marketing"]
           [:> ui/MenuItem {:active false
-                           :onClick #(rf/dispatch [:logout])}
+                           :onClick #(rf/dispatch [:b/nav-home])}
            "Analytics"]]]]
        [:> ui/ItemGroup {:class "results"
                          ;; :divided true
