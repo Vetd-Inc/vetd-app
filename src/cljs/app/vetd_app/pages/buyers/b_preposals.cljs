@@ -36,10 +36,11 @@
         pricing-estimate-unit (get-prompt-field-key-value "Pricing Estimate"
                                                           "unit"
                                                           :sval)]    
-    [:> ui/Item                  ; todo: make config var 's3-base-url'
-     [:> ui/ItemImage {:src (str "https://s3.amazonaws.com/vetd-logos/" (:logo product))}]
+    [:> ui/Item {:onClick #(println "go to this preposal")}  ; todo: make config var 's3-base-url'
+     [:> ui/ItemImage {:class "product-logo"
+                       :src (str "https://s3.amazonaws.com/vetd-logos/" (:logo product))}]
      [:> ui/ItemContent
-      [:> ui/ItemHeader {:as "a"}
+      [:> ui/ItemHeader
        (:pname product) " " [:small " by " (:oname from-org)]]
       [:> ui/ItemMeta
        [:span
@@ -55,7 +56,8 @@
          ^{:key (:id c)}
          [:> ui/Label
           {:as "a"
-           :onClick #(println "category search: " (:id c))}
+           ;; :onClick #(println "category search: " (:id c))
+           }
           (:cname c)])]]]))
 
 (defn c-page []
@@ -79,9 +81,27 @@
                                      [:id :pf-id :idx :sval :nval :dval
                                       [:prompt-field [:id :fname]]]]]]]]]}])]
     (fn []
-      [:> ui/ItemGroup {:divided true}
-       (let [preps @preps&]
-         (when-not (= :loading preps)
-           (for [p (:docs preps)]
-             ^{:key (:id p)}
-             [c-preposal p])))])))
+      [:div.preposals
+       [:> ui/Menu {:class "refine"
+                    :vertical true
+                    :secondary true}
+        [:> ui/MenuItem
+         "Select Category"
+         [:> ui/MenuMenu
+          [:> ui/MenuItem {:active false
+                           :onClick #(rf/dispatch [:logout])}
+           "CRM"]
+          [:> ui/MenuItem {:active false
+                           :onClick #(rf/dispatch [:logout])}
+           "Marketing"]
+          [:> ui/MenuItem {:active false
+                           :onClick #(rf/dispatch [:logout])}
+           "Analytics"]]]]
+       [:> ui/ItemGroup {:class "results"
+                         ;; :divided true
+                         }
+        (let [preps @preps&]
+          (when-not (= :loading preps)
+            (for [p (:docs preps)]
+              ^{:key (:id p)}
+              [c-preposal p])))]])))

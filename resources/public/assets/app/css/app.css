@@ -26,26 +26,7 @@ body, * {
     width: 100%;
 }
 
-.logo {
-    background-image: url(https://s3.amazonaws.com/vetd-logos/vetd.svg);
-    background-size: 141px 60px;
-    height: 60px;
-    width: 141px;
-}
 
-.logo:hover {
-    animation-timing-function: linear;
-    animation: 1s infinite party;
-}
-
-@keyframes party {
-  0% {
-      filter: hue-rotate(0);
-  }
-  100% {
-      filter: hue-rotate(360deg);
-  }
-}
 
 
 #full-header .logo {
@@ -300,3 +281,76 @@ body, * {
 .prompt .prompt-field {
     margin: 5px;
 }
+
+
+
+.main-container {
+  margin-top: 35px;
+}
+
+.top-nav {
+  margin-bottom: 20px !important;
+}
+.top-nav .logo {
+  margin-top: -35px !important;
+  padding: 0 50px 0 0 !important;
+  /* no hover bg change */
+  background: inherit !important;
+}
+.top-nav .logo img {
+  height: 50px !important;
+  width: auto !important;
+}
+.top-nav .logo img:hover {
+    animation-timing-function: linear;
+    animation: 1s infinite party;
+}
+@keyframes party {
+  0% {
+      filter: hue-rotate(0);
+  }
+  100% {
+      filter: hue-rotate(360deg);
+  }
+}
+
+
+
+
+.preposals {
+  display: flex;
+  flex-direction: row;
+}
+.preposals > .refine {
+  width: 199px !important;
+}
+.preposals > .refine > .item:first-child {
+  padding-top: 0 !important;
+}
+.preposals > .refine > .item > .menu {
+  margin: 7px 0 0 0 !important;
+}
+.preposals > .refine > .item > .menu > .item {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+.preposals > .results  {
+  flex: 1;
+  margin-top: 0 !important;
+}
+.preposals > .results > .item  {
+  padding: 15px 12px;
+  box-shadow: 0 1px 3px 0 rgba(0,0,0,0.08), 0 2px 14px 0 rgba(50,50,93,0.14);
+  border-radius: 8px;
+  transition: transform .3s ease-out;
+  cursor: pointer;
+}
+.preposals > .results > .item:hover  {
+  transform: scale(1.01);
+  transition: transform .05s ease-out;
+}
+.preposals > .results > .item > .product-logo {
+  width: 128px !important;
+}
+
+
