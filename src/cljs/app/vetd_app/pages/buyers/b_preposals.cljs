@@ -6,6 +6,7 @@
             [re-frame.core :as rf]
             [re-com.core :as rc]))
 
+;; Events
 (rf/reg-event-fx
  :b/nav-preposals
  (fn []
@@ -18,6 +19,7 @@
           :page :b/preposals
           :query-params query-params)))
 
+;; Components
 (defn c-preposal
   "Component to display Preposal as a list item."
   [{:keys [id product from-org responses] :as args}]
@@ -36,7 +38,7 @@
         pricing-estimate-unit (get-prompt-field-key-value "Pricing Estimate"
                                                           "unit"
                                                           :sval)]    
-    [:> ui/Item {:onClick #(println "go to this preposal")}  ; todo: make config var 's3-base-url'
+    [:> ui/Item {:onClick #(println "go to this preposal")} ; todo: make config var 's3-base-url'
      [:> ui/ItemImage {:class "product-logo"
                        :src (str "https://s3.amazonaws.com/vetd-logos/" (:logo product))}]
      [:> ui/ItemContent

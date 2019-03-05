@@ -10,6 +10,7 @@
 (defn get-next-query-id []
   (swap! last-query-id inc))
 
+;; Events
 (rf/reg-event-fx
  :b/nav-search
  (fn [_ _]
@@ -40,11 +41,6 @@
                           :buyer-id (:org-id db)
                           :qid qid}}})))
 
-(rf/reg-sub
- :b/search-result-ids
- (fn [db _]
-   (:b/search-result-ids db)))
-
 (rf/reg-event-fx
  :b/ws-search-result-ids
  (fn [{:keys [db]} [_ results {:keys [return]}]]
@@ -67,9 +63,16 @@
                           :buyer-id (:org-id db)
                           :eid eid}}})))
 
+;; Subscriptions
+(rf/reg-sub
+ :b/search-result-ids
+ (fn [db _]
+   (:b/search-result-ids db)))
+
+
+;; Components
 
 ;; TODO link to request preposal <==================
-
 (defn rndr-preposal
   [{:keys [vendor-name pitch created]}]
   [:div {:style {:border "solid 1px #AAA"}}
@@ -106,7 +109,7 @@
                                 :icon true
                                 :labelPosition "right"
                                 :floated "right"}
-                  "Start Round"
+                  "Start VetdRound"
                   [:> ui/Icon {:name "right arrow"}]])
      (for [c categories]
        ^{:key (:id c)}
@@ -136,7 +139,7 @@
       [:> ui/Button {:on-click #(rf/dispatch [:start-round :category id])
                      :icon true
                      :labelPosition "right"}
-       "Start Round for Category"
+       "Start VetdRound for Category"
        [:> ui/Icon {:name "right arrow"}]]
       "[In active round]")]])
 

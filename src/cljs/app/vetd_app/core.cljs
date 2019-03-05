@@ -22,21 +22,21 @@
 (println "START core")
 
 (hooks/reg-hooks! hooks/c-page
-                {:home #'p-home/home-page
-                 :pub/signup #'p-signup/signup-page
-                 :pub/login #'p-login/login-page
-                 :b/home #'p-bhome/c-page
-                 :b/search #'p-b-search/c-page
-                 :b/preposals #'p-bpreposals/c-page   
-                 :v/home #'p-vhome/c-page})
+                  {:home #'p-home/home-page
+                   :pub/signup #'p-signup/signup-page
+                   :pub/login #'p-login/login-page
+                   :b/home #'p-bhome/c-page
+                   :b/search #'p-b-search/c-page
+                   :b/preposals #'p-bpreposals/c-page   
+                   :v/home #'p-vhome/c-page})
 
 (hooks/reg-hooks! hooks/c-container
-                {:pub/login #'pub-fix/container
-                 :pub/signup #'pub-fix/container
-                 :b/home #'b-fix/container
-                 :b/search #'b-fix/container
-                 :b/preposals #'b-fix/container
-                 :v/home #'v-fix/container})
+                  {:pub/login #'pub-fix/container
+                   :pub/signup #'pub-fix/container
+                   :b/home #'b-fix/container
+                   :b/search #'b-fix/container
+                   :b/preposals #'b-fix/container
+                   :v/home #'v-fix/container})
 
 
 (rf/reg-event-db
