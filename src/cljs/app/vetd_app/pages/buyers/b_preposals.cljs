@@ -84,17 +84,21 @@
                                      [:id :prompt]]
                                     [:fields
                                      [:id :pf-id :idx :sval :nval :dval
-                                      [:prompt-field [:id :fname]]]]]]]]]}])]
+                                      [:prompt-field [:id :fname]]]]]]]]]}])
+        ]
     (fn []
       [:div.preposals
        [:div.refine
         "Filter By Category"
-        [:> ui/Checkbox {:label "Marketing (12)"}]
-        [:> ui/Checkbox {:label "CRM (5)"}]
-        [:> ui/Checkbox {:label "Mail Send Service (8)"}]
-        [:> ui/Checkbox {:label "Live Chat Software (24)"}]
-        
-        ]
+        (let [categories (->> @preps&
+                              :docs
+                              (map (comp :categories :product))
+                              flatten
+                              (map #(select-keys % [:id :cname]))
+                              (group-by :id))]
+          (for [[id v] categories]
+            ^{:key id} 
+            [:> ui/Checkbox {:label (str (-> v first :cname) " (" (count v) ")")}]))]
        [:> ui/ItemGroup {:class "results"}
         (let [preps @preps&]
           (if (= :loading preps)

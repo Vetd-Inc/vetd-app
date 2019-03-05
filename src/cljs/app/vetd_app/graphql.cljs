@@ -58,9 +58,6 @@
 (rf/reg-event-fx
  :gql/unsubscribe
  (fn [{:keys [db]} [_ query sub-id]]
-#_   (println "gql/unsubscribe")
-#_   (println sub-id)
-#_   (println query)   
    (swap! q->sub-id& dissoc query)
    (swap! sub-id->ratom& dissoc sub-id)
    {:ws-send {:payload {:cmd :graphql
