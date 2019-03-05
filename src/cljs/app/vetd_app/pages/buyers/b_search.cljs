@@ -1,5 +1,6 @@
 (ns vetd-app.pages.buyers.b-search
   (:require [vetd-app.flexer :as flx]
+            [vetd-app.ui :as ui]
             [reagent.core :as r]
             [re-frame.core :as rf]
             [re-com.core :as rc]))
@@ -9,6 +10,7 @@
 (defn get-next-query-id []
   (swap! last-query-id inc))
 
+;; Events
 (rf/reg-event-fx
  :b/nav-search
  (fn [_ _]
@@ -39,11 +41,6 @@
                           :buyer-id (:org-id db)
                           :qid qid}}})))
 
-(rf/reg-sub
- :b/search-result-ids
-  (fn [db _]
-    (:b/search-result-ids db)))
-
 (rf/reg-event-fx
  :b/ws-search-result-ids
  (fn [{:keys [db]} [_ results {:keys [return]}]]
@@ -66,9 +63,16 @@
                           :buyer-id (:org-id db)
                           :eid eid}}})))
 
+;; Subscriptions
+(rf/reg-sub
+ :b/search-result-ids
+ (fn [db _]
+   (:b/search-result-ids db)))
+
+
+;; Components
 
 ;; TODO link to request preposal <==================
-
 (defn rndr-preposal
   [{:keys [vendor-name pitch created]}]
   [:div {:style {:border "solid 1px #AAA"}}
@@ -89,25 +93,36 @@
   [:div "Preposal Requested " (str created)])
 
 (defn c-product-search-result
-  [{:keys [id pname short-desc preposals logo rounds categories]} org-name ]
-  [flx/row #{:product-search-result}
-   [#{:prod-logo} [:img {:src (str "https://s3.amazonaws.com/vetd-logos/" logo)}]]
-   [#{:content} [flx/row #{:header}
-                 [#{:product-name} pname]
-                 " by "
-                 [#{:org-name} org-name]
-                 (str (mapv :cname categories))]
-    [:div {:class :body}
-     [:div {:class :product-short-desc} short-desc]
+  [{:keys [id pname short-desc preposals logo rounds categories]} org-name]
+
+  [:> ui/Item {:onClick #(println "go to this product")}
+   [:> ui/ItemImage {:class "product-logo"
+                     :src (str "https://s3.amazonaws.com/vetd-logos/" logo)}]
+   [:> ui/ItemContent
+    [:> ui/ItemHeader
+     pname " " [:small " by " org-name]]
+    [:> ui/ItemDescription short-desc]
+    [:> ui/ItemExtra
      (cond (not-empty rounds) (for [r rounds]
                                 [c-round-search-result r])
-           :else [rc/button
-                  :on-click #(rf/dispatch [:start-round :product id])
-                  :label "Start Round"])]]])
+           :else [:> ui/Button {:onClick #(rf/dispatch [:start-round :product id])
+                                :icon true
+                                :labelPosition "right"
+                                :floated "right"}
+                  "Start VetdRound"
+                  [:> ui/Icon {:name "right arrow"}]])
+     (for [c categories]
+       ^{:key (:id c)}
+       [:> ui/Label
+        {:as "a"
+         :class "category-tag"
+         ;; :onClick #(println "category search: " (:id c))
+         }
+        (:cname c)])]]])
 
 (defn c-vendor-search-results
   [v]
-  [:div {:class :vendor-search-results}
+  [:> ui/ItemGroup {:class "results"}
    (for [p (:products v)]
      ^{:key (:id p)}
      [c-product-search-result p (:oname v)])])
@@ -121,8 +136,11 @@
                   :align-items :center
                   :justify-content :flex-end}}
     (if (empty? rounds)
-      [rc/button :on-click #(rf/dispatch [:start-round :category id])
-       :label "Start Round for Category"]
+      [:> ui/Button {:on-click #(rf/dispatch [:start-round :category id])
+                     :icon true
+                     :labelPosition "right"}
+       "Start VetdRound for Category"
+       [:> ui/Icon {:name "right arrow"}]]
       "[In active round]")]])
 
 (defn c-search-results []
@@ -166,16 +184,22 @@
 (defn c-page []
   (let [search-query (r/atom "")]
     (fn []
-      [rc/v-box
-       :style {:align-items :center}
-       :children [[rc/input-text
-                   :model search-query
-                   :attr {:auto-focus true}
-                   :width "50%"
-                   :on-change #(do
-                                 (dispatch-search-DB %)
-                                 (reset! search-query %))
-                   :change-on-blur? false
-                   :placeholder "Search products and categories"]
-
-                  [c-search-results]]])))
+      [:> ui/Grid
+       [:> ui/GridRow {:columns 3}
+        [:> ui/GridColumn {:width 4}]
+        [:> ui/GridColumn {:width 8}
+         [:> ui/Input {:class "product-search"
+                       :value @search-query
+                       :size "big"
+                       :icon "search"
+                       :autoFocus true
+                       :onChange #(let [value (-> % .-target .-value)]
+                                    (dispatch-search-DB value)
+                                    (reset! search-query value))
+                       :placeholder "Search products & categories..."}]]
+        [:> ui/GridColumn {:width 4}]]
+       [:> ui/GridRow {:columns 3}
+        [:> ui/GridColumn {:width 2}]
+        [:> ui/GridColumn {:width 12}
+         [c-search-results]]
+        [:> ui/GridColumn {:width 2}]]])))
