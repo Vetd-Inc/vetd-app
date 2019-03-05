@@ -13,3 +13,7 @@ profiles.clj
 .nrepl-port
 /log
 figwheel_server.log
+
+# OSX
+.DS_Store
+._*
