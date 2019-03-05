@@ -43,6 +43,7 @@
     {:status 404
      :body "NOT FOUND"}))
 
+
 (defn ->transit
   [v]
   (def v1 v)
@@ -116,7 +117,8 @@
 (def app
   (-> (c/routes
        (c/GET "/ws" [] #'ws-handler)
-       (c/GET "/assets*" [] (fn [{:keys [uri]}] (get-public-resource uri)))
+       (cr/resources "/assets" {:root "public/assets"})
+       (c/GET "/assets*" [] cr/not-found)
        (c/GET "/js/full.js" [] (fn [{:keys [uri cookies]}]
                                  (if (admin-session? cookies)
                                    (get-public-resource uri)
