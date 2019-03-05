@@ -117,10 +117,14 @@
   (-> (c/routes
        (c/GET "/ws" [] #'ws-handler)
        (c/GET "/assets*" [] (fn [{:keys [uri]}] (get-public-resource uri)))
+       (c/GET "/js/app.js" [] (fn [{:keys [uri cookies]}]
+                                (if env/prod?
+                                  (get-public-resource uri)
+                                  (get-public-resource "/js/full.js"))))
        (c/GET "/js/full.js" [] (fn [{:keys [uri cookies]}]
                                  (if (admin-session? cookies)
                                    (get-public-resource uri)
-                                   "")))  
+                                   "")))
        (c/GET "/js*" [] (fn [{:keys [uri]}] (get-public-resource uri)))
        (c/GET "/-reset-db-" [] (fn [{:keys [cookies]}]
                                  (do (future (mig/reset {:store :database
