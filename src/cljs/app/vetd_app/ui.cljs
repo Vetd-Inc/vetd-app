@@ -20,7 +20,6 @@
 
 (def Menu (component "Menu"))
 (def MenuItem (component "Menu" "Item"))
-(def GridRow (component "Grid" "Row"))
 (def MenuMenu (component "Menu" "Menu"))
 
 (def Container (component "Container"))
