@@ -87,21 +87,14 @@
                                       [:prompt-field [:id :fname]]]]]]]]]}])]
     (fn []
       [:div.preposals
-       [:> ui/Menu {:class "refine"
-                    :vertical true
-                    :secondary true}
-        [:> ui/MenuItem
-         "Filter By Category"
-         [:> ui/MenuMenu
-          [:> ui/MenuItem {:active false
-                           :onClick #(rf/dispatch [:b/nav-home])}
-           "CRM"]
-          [:> ui/MenuItem {:active false
-                           :onClick #(rf/dispatch [:b/nav-home])}
-           "Marketing"]
-          [:> ui/MenuItem {:active false
-                           :onClick #(rf/dispatch [:b/nav-home])}
-           "Analytics"]]]]
+       [:div.refine
+        "Filter By Category"
+        [:> ui/Checkbox {:label "Marketing (12)"}]
+        [:> ui/Checkbox {:label "CRM (5)"}]
+        [:> ui/Checkbox {:label "Mail Send Service (8)"}]
+        [:> ui/Checkbox {:label "Live Chat Software (24)"}]
+        
+        ]
        [:> ui/ItemGroup {:class "results"}
         (let [preps @preps&]
           (if (= :loading preps)
