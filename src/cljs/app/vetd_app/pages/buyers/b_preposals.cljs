@@ -62,6 +62,16 @@
            }
           (:cname c)])]]]))
 
+
+(defn filter-preposals
+  [preposals selected-categories]
+  (->> (for [{:keys [product] :as preposal} preposals
+             category (:categories product)]
+         (when (selected-categories (:id category))
+           preposal))
+       (remove nil?)
+       distinct))
+
 (defn c-page []
   (let [org-id& (rf/subscribe [:org-id])
         preps& (rf/subscribe [:gql/sub
@@ -81,7 +91,10 @@
                                      [:id :prompt]]
                                     [:fields
                                      [:id :pf-id :idx :sval :nval :dval
-                                      [:prompt-field [:id :fname]]]]]]]]]}])]
+                                      [:prompt-field [:id :fname]]]]]]]]]}])
+        ;; a set of category ID's to allow through filter
+        ;; if empty, let all categories through
+        selected-categories (r/atom #{})]
     (fn []
       [:div.preposals
        [:div.refine
@@ -94,12 +107,16 @@
                               (group-by :id))]
           (for [[id v] categories]
             ^{:key id} 
-            [:> ui/Checkbox {:label (str (-> v first :cname) " (" (count v) ")")}]))]
+            [:> ui/Checkbox {:label (str (-> v first :cname) " (" (count v) ")")
+                             :onChange (fn [_ this]
+                                         (if (.-checked this)
+                                           (swap! selected-categories conj id)
+                                           (swap! selected-categories disj id)))}]))]
        [:> ui/ItemGroup {:class "results"}
-        (let [preps @preps&]
-          (if (= :loading preps)
-            [:> ui/Loader {:active true
-                           :inline true}]
-            (for [p (:docs preps)]
-              ^{:key (:id p)}
-              [c-preposal p])))]])))
+        (if (= :loading @preps&)
+          [:> ui/Loader {:active true :inline true}]
+          (for [preposal (cond-> (:docs @preps&)
+                           (seq @selected-categories) (filter-preposals
+                                                       @selected-categories))]
+            ^{:key (:id preposal)}
+            [c-preposal preposal]))]])))
