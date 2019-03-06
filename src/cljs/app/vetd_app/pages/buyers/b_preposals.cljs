@@ -51,9 +51,6 @@
         pricing-estimate-unit
         " "
         [:small "(estimate)"]]]
-      ;; Pitch
-      ;; [:> ui/ItemDescription
-      ;;  (get-prompt-field-key-value "Pitch" "value" :sval)]
       [:> ui/ItemDescription (:short-desc product)]
       [:> ui/ItemExtra
        (for [c (:categories product)]
@@ -84,8 +81,7 @@
                                      [:id :prompt]]
                                     [:fields
                                      [:id :pf-id :idx :sval :nval :dval
-                                      [:prompt-field [:id :fname]]]]]]]]]}])
-        ]
+                                      [:prompt-field [:id :fname]]]]]]]]]}])]
     (fn []
       [:div.preposals
        [:div.refine

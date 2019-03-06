@@ -242,8 +242,8 @@ body, * {
   flex: 1;
 }
 .refine {
-  width: 180px;
-  margin-right: 20px;
+  width: 175px;
+  margin-right: 15px;
   font-weight: 400 !important;
 }
 .refine > .checkbox {
