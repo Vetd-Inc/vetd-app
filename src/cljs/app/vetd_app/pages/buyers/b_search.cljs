@@ -193,9 +193,9 @@
                        :size "big"
                        :icon "search"
                        :autoFocus true
-                       :onChange #(let [value (-> % .-target .-value)]
-                                    (dispatch-search-DB value)
-                                    (reset! search-query value))
+                       :onChange (fn [_ this]
+                                   (dispatch-search-DB (.-value this))
+                                   (reset! search-query (.-value this)))
                        :placeholder "Search products & categories..."}]]
         [:> ui/GridColumn {:width 4}]]
        [:> ui/GridRow {:columns 3}

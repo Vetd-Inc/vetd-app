@@ -7,9 +7,10 @@ body {
   background: #fafafa;
 }
 body, * {
-    font-family: 'Raleway', san-serif;
+    font-family: 'Montserrat', sans-serif;
     font-size: 14px;
-    letter-spacing: 0.8px;
+    font-weight: 300;
+    /* letter-spacing: 0.8px; */
     color: #444;
 }
 
@@ -206,17 +207,20 @@ body, * {
 .top-nav {
   margin-bottom: 30px !important;
 }
-.top-nav .logo {
+.top-nav > .item {
+  font-weight: 600 !important;
+}
+.top-nav > .logo {
   margin-top: -17px !important;
   padding: 0 61px 0 0 !important;
   /* no hover bg change */
   background: inherit !important;
 }
-.top-nav .logo img {
+.top-nav > .logo img {
   height: 50px !important;
   width: auto !important;
 }
-.top-nav .logo img:hover {
+.top-nav > .logo img:hover {
     animation-timing-function: linear;
     animation: 1s infinite party;
 }
@@ -234,22 +238,23 @@ body, * {
   display: flex;
   flex-direction: row;
 }
-.refine {
-  width: 199px !important;
-}
-.refine > .item:first-child {
-  padding-top: 0 !important;
-}
-.refine > .item > .menu {
-  margin: 7px 0 0 0 !important;
-}
-.refine > .item > .menu > .item {
-  padding-left: 0 !important;
-  padding-right: 0 !important;
-}
 .preposals > .results {
   flex: 1;
 }
+.refine {
+  width: 175px;
+  margin-right: 15px;
+  font-weight: 400 !important;
+}
+.refine > .checkbox {
+  display: block;
+}
+.refine > .checkbox > label {
+  font-size: 12px;
+  font-weight: 300;
+}
+
+
 
 
 /* Products & Categories page */

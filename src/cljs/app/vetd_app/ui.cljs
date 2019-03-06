@@ -20,16 +20,22 @@
 
 (def Menu (component "Menu"))
 (def MenuItem (component "Menu" "Item"))
-(def GridRow (component "Grid" "Row"))
 (def MenuMenu (component "Menu" "Menu"))
 
 (def Container (component "Container"))
 (def Segment (component "Segment"))
 
+(def Header (component "Header"))
+
 (def Button (component "Button"))
 (def Input (component "Input"))
+(def Checkbox (component "Checkbox"))
+
 (def Icon (component "Icon"))
+
 (def Label (component "Label"))
+(def LabelDetail (component "Label" "Detail"))
+
 (def Image (component "Image"))
 
 (def Loader (component "Loader"))

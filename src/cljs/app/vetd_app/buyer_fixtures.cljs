@@ -6,7 +6,7 @@
 ;; Events
 (rf/reg-event-fx
  :logout
- (fn []
+ (constantly
   {:local-store {:session-token nil}
    :cookies {:admin-token [nil {:max-age 60
                                 :path "/"}]}
