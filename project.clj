@@ -115,20 +115,7 @@
                                  [lein-figwheel "0.5.18"]]
                   :cljsbuild
                   {:builds
-                   [{:id "dev-public"
-                     :source-paths ["src/cljs/app" "src/cljc" "env/dev/cljs"]
-                     :figwheel {:on-jsload "vetd-app.core/mount-components"}
-                     :compiler
-                     {:main "vetd-app.app"
-                      :asset-path "/js/public-out"
-                      :output-to "target/cljsbuild/public/js/app.js"
-                      :output-dir "target/cljsbuild/public/js/public-out"
-                      :source-map true
-                      :optimizations :none
-                      :pretty-print true
-                      :closure-defines {"re_frame.trace.trace_enabled_QMARK_" true}
-                      :preloads [devtools.preload day8.re-frame-10x.preload]}}
-                    {:id "dev-full"
+                   [{:id "dev-full"
                      :source-paths ["src/cljs/admin" "src/cljs/app" "src/cljc" "env/dev/cljs"]
                      :figwheel {:on-jsload "vetd-app.core/mount-components"}
                      :compiler
@@ -148,6 +135,7 @@
                                  :init-ns repl-init}
                   :injections [(require 'pjstadig.humane-test-output)
                                (pjstadig.humane-test-output/activate!)]}
+
    :project/test {:jvm-opts ["-Dconf=test-config.edn"]
                   :resource-paths ["env/test/resources"]
                   :cljsbuild
