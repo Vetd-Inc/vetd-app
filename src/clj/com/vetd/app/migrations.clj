@@ -102,6 +102,51 @@
     :where [:between :id 426719628931 426719728932]}))
 
 
+
+
+(def mig-prompts-2019-03-06-up
+  (mig/mk-copy-from-up-fn "mig-prompts-2019-03-06.sql"))
+
+(def mig-prompts-2019-03-06-down
+  (mig/mk-exe-honeysql-fn
+   {:delete-from :prompts
+    :where [:between :id 558587521452 558587751456]}))
+
+(def mig-prompt-fields-2019-03-06-up
+  (mig/mk-copy-from-up-fn "mig-prompt-fields-2019-03-06.sql"))
+
+(def mig-prompt-fields-2019-03-06-down
+  (mig/mk-exe-honeysql-fn
+   {:delete-from :prompts
+    :where [:between :id 558587801457 558588011461]}))
+
+(def mig-form-template-prompt-2019-03-06-up
+  (mig/mk-copy-from-up-fn "mig-form-template-prompt-2019-03-06.sql"))
+
+(def mig-form-template-prompt-2019-03-06-down
+  (mig/mk-exe-honeysql-fn
+   {:delete-from :form_template_prompt
+    :where [:between :id 558733711465 558810631469]}))
+
+(def mig-enums-2019-03-06-up
+  (mig/mk-copy-from-up-fn "mig-enums-2019-03-06.sql"))
+
+(def mig-enums-2019-03-06-down
+  (mig/mk-exe-honeysql-fn
+   {:delete-from :enum_vals
+    :where [:= :id 558733581462]}))
+
+(def mig-enum-vals-2019-03-06-up
+  (mig/mk-copy-from-up-fn "mig-enum-vals-2019-03-06.sql"))
+
+(def mig-enum-vals-2019-03-06-down
+  (mig/mk-exe-honeysql-fn
+   {:delete-from :enum_vals
+    :where [:between :id 558733621463 558733661464]}))
+
+
+
+
 (def migrations
   [[[2019 2 4 00 00]
     [:create-table {:schema :vetd
@@ -624,7 +669,33 @@
     [:copy-from '{:name :mig-enum-vals-2019-02-19
                   :ns com.vetd.app.migrations
                   :up-fn mig-enum-vals-2019-02-19-up
-                  :down-fn mig-enum-vals-2019-02-19-down}]]])
+                  :down-fn mig-enum-vals-2019-02-19-down}]]
+
+   [[2019 3 6 00 00]
+    [:copy-from '{:name :mig-prompts-2019-03-06
+                  :ns com.vetd.app.migrations
+                  :up-fn mig-prompts-2019-03-06-up
+                  :down-fn mig-prompts-2019-03-06-down}]
+
+    [:copy-from '{:name :mig-prompt-fields-2019-03-06
+                  :ns com.vetd.app.migrations
+                  :up-fn mig-prompt-fields-2019-03-06-up
+                  :down-fn mig-prompt-fields-2019-03-06-down}]
+
+    [:copy-from '{:name :mig-form-template-prompt-2019-03-06
+                  :ns com.vetd.app.migrations
+                  :up-fn mig-form-template-prompt-2019-03-06-up
+                  :down-fn mig-form-template-prompt-2019-03-06-down}]
+
+    [:copy-from '{:name :mig-enums-2019-03-06
+                  :ns com.vetd.app.migrations
+                  :up-fn mig-enums-2019-03-06-up
+                  :down-fn mig-enums-2019-03-06-down}]
+
+    [:copy-from '{:name :mig-enum-vals-2019-03-06
+                  :ns com.vetd.app.migrations
+                  :up-fn mig-enum-vals-2019-03-06-up
+                  :down-fn mig-enum-vals-2019-03-06-down}]]])
 
 #_(mig/mk-migration-files migrations
                           "migrations")
