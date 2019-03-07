@@ -298,17 +298,25 @@ body, * {
   flex: 1 !important;
 }
 .results > .item > .content > .extra > .category-tag {
-  position: absolute;
-  bottom: 0px;
+  margin-top: 11px; /* todo: this is kind of hacky */
+}
+.results > .item > .content > .extra > .free-trial-tag {
+  margin-left: 15px;
 }
 
+/* todo, put this as less variable */
+.ui.teal.label, .ui.teal.labels .label {
+    background-color: #4ec2c4 !important;
+    border-color: #4ec2c4 !important;
+    color: #fff !important;
+}
 
 /* Miscellaneous */
 .category-tag {
   background: #fff !important;
   border: 1px solid #ddd !important;
 }
-.category-tag:hover {
+a.category-tag:hover {
   border-color: #777 !important;
   color: #777 !important;
 }
