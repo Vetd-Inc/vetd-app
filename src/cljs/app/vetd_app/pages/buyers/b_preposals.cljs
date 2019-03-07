@@ -37,7 +37,11 @@
                                                            :nval)
         pricing-estimate-unit (get-prompt-field-key-value "Pricing Estimate"
                                                           "unit"
-                                                          :sval)]    
+                                                          :sval)
+        free-trial? (= "yes"
+                       (get-prompt-field-key-value "Do you offer a free trial?"
+                                                   "value"
+                                                   :sval))]    
     [:> ui/Item {:onClick #(println "go to this preposal")} ; todo: make config var 's3-base-url'
      [:> ui/ItemImage {:class "product-logo"
                        :src (str "https://s3.amazonaws.com/vetd-logos/" (:logo product))}]
@@ -56,11 +60,17 @@
        (for [c (:categories product)]
          ^{:key (:id c)}
          [:> ui/Label
-          {:as "a"
-           :class "category-tag"
+          {:class "category-tag"
+           ;; use the below two keys when we make category tags clickable
+           ;; :as "a"
            ;; :onClick #(println "category search: " (:id c))
            }
-          (:cname c)])]]]))
+          (:cname c)])
+       (when free-trial? [:> ui/Label {:class "free-trial-tag"
+                                       :color "teal"
+                                       :size "small"
+                                       :tag true}
+                          "Free Trial"])]]]))
 
 
 (defn filter-preposals
