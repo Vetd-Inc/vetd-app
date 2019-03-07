@@ -32,13 +32,12 @@
  :b/search
  (fn [{:keys [db ws]} [_ q-str q-type]]
    (let [qid (get-next-query-id)]
-     {:db (assoc db
-                 :buyer-qid qid)
+     {:db (assoc db :buyer-qid qid)
       :ws-send {:payload {:cmd :b/search
                           :return {:handler :b/ws-search-result-ids
                                    :qid qid}
                           :query q-str
-                          :buyer-id (:org-id db)
+                          :buyer-id (-> db :memberships first :org-id)
                           :qid qid}}})))
 
 (rf/reg-event-fx
@@ -48,20 +47,18 @@
    #_ (println res1)
    (def ret1 return)
    (if (= (:buyer-qid db) (:qid return))
-     {:db (assoc db
-                 :b/search-result-ids
-                 results)}
+     {:db (assoc db :b/search-result-ids results)}
      {})))
 
 (rf/reg-event-fx
  :start-round
  (fn [{:keys [db]} [_ etype eid]]
    (let [qid (get-next-query-id)]
-     {:ws-send {:payload {:cmd :start-round
+     {:ws-send {:payload {:cmd :b/start-round
                           :return nil
                           :etype etype
-                          :buyer-id (:org-id db)
-                          :eid eid}}})))
+                          :eid eid
+                          :buyer-id (-> db :memberships first :org-id)}}})))
 
 ;; Subscriptions
 (rf/reg-sub
@@ -103,14 +100,13 @@
      pname " " [:small " by " org-name]]
     [:> ui/ItemDescription short-desc]
     [:> ui/ItemExtra
-     (cond (not-empty rounds) (for [r rounds]
-                                [c-round-search-result r])
-           :else [:> ui/Button {:onClick #(rf/dispatch [:start-round :product id])
-                                :icon true
-                                :labelPosition "right"
-                                :floated "right"}
-                  "Start VetdRound"
-                  [:> ui/Icon {:name "right arrow"}]])
+     (when (empty? rounds)
+       [:> ui/Button {:onClick #(rf/dispatch [:start-round :product id])
+                      :icon true
+                      :labelPosition "right"
+                      :floated "right"}
+        "Start VetdRound"
+        [:> ui/Icon {:name "right arrow"}]])
      (for [c categories]
        ^{:key (:id c)}
        [:> ui/Label
@@ -118,7 +114,11 @@
          :class "category-tag"
          ;; :onClick #(println "category search: " (:id c))
          }
-        (:cname c)])]]])
+        (:cname c)])]]
+   (when (not-empty rounds)
+     [:> ui/Label {:color "red"
+                   :attached "bottom right"}
+      "VetdRound In Progress"])])
 
 (defn c-vendor-search-results
   [v]

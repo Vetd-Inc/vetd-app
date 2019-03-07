@@ -277,6 +277,8 @@ body, * {
   border-radius: 8px !important;
   transition: transform .3s ease-out !important;
   cursor: pointer !important;
+  /* hack to fix bug that hides 'attached' labels */
+  transform: scale(1) !important;
 }
 .results > .item:hover  {
   transform: scale(1.01) !important;
