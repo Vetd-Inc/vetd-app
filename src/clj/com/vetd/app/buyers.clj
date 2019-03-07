@@ -16,18 +16,6 @@
                                              {:access-key-id "AKIAIJN3D74NBHJIAARQ"
                                               :secret-access-key "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"})}))
 
-(aws/validate-requests sns true)
-
-(clojure.pprint/pprint  (aws/ops sns))
-
-#_
-(clojure.pprint/pprint 
- (aws/invoke sns {:op :Publish
-                  :request {:TopicArn "arn:aws:sns:us-east-1:744151627940:ui-req-new-prod-cat"
-                            :Message "HI"}}))
-
-(aws/doc sns :Publish)
-
 (defn search-prods-vendors->ids
   [q]
   (if (not-empty q)
