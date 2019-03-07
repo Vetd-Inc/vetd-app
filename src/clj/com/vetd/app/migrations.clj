@@ -117,7 +117,7 @@
 
 (def mig-prompt-fields-2019-03-06-down
   (mig/mk-exe-honeysql-fn
-   {:delete-from :prompts
+   {:delete-from :prompt_fields
     :where [:between :id 558587801457 558588011461]}))
 
 (def mig-form-template-prompt-2019-03-06-up
@@ -143,6 +143,32 @@
   (mig/mk-exe-honeysql-fn
    {:delete-from :enum_vals
     :where [:between :id 558733621463 558733661464]}))
+
+
+
+(def mig-prompts-2019-03-07-up
+  (mig/mk-copy-from-up-fn "mig-prompts-2019-03-07.sql"))
+
+(def mig-prompts-2019-03-07-down
+  (mig/mk-exe-honeysql-fn
+   {:delete-from :prompts
+    :where [:between :id 567926257446 567926257448]}))
+
+(def mig-prompt-fields-2019-03-07-up
+  (mig/mk-copy-from-up-fn "mig-prompt-fields-2019-03-07.sql"))
+
+(def mig-prompt-fields-2019-03-07-down
+  (mig/mk-exe-honeysql-fn
+   {:delete-from :prompt_fields
+    :where [:between :id 567926257449 567926257451]}))
+
+(def mig-form-template-prompt-2019-03-07-up
+  (mig/mk-copy-from-up-fn "mig-form-template-prompt-2019-03-07.sql"))
+
+(def mig-form-template-prompt-2019-03-07-down
+  (mig/mk-exe-honeysql-fn
+   {:delete-from :form_template_prompt
+    :where [:between :id 567926257452 567926257454]}))
 
 
 
@@ -695,7 +721,23 @@
     [:copy-from '{:name :mig-enum-vals-2019-03-06
                   :ns com.vetd.app.migrations
                   :up-fn mig-enum-vals-2019-03-06-up
-                  :down-fn mig-enum-vals-2019-03-06-down}]]])
+                  :down-fn mig-enum-vals-2019-03-06-down}]]
+
+   [[2019 3 7 00 00]
+    [:copy-from '{:name :mig-prompts-2019-03-07
+                  :ns com.vetd.app.migrations
+                  :up-fn mig-prompts-2019-03-07-up
+                  :down-fn mig-prompts-2019-03-07-down}]
+
+    [:copy-from '{:name :mig-prompt-fields-2019-03-07
+                  :ns com.vetd.app.migrations
+                  :up-fn mig-prompt-fields-2019-03-07-up
+                  :down-fn mig-prompt-fields-2019-03-07-down}]
+
+    [:copy-from '{:name :mig-form-template-prompt-2019-03-07
+                  :ns com.vetd.app.migrations
+                  :up-fn mig-form-template-prompt-2019-03-07-up
+                  :down-fn mig-form-template-prompt-2019-03-07-down}]]])
 
 #_(mig/mk-migration-files migrations
                           "migrations")
