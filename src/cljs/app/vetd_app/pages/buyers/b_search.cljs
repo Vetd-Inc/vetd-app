@@ -71,14 +71,15 @@
 
 (rf/reg-event-fx
  :b/create-preposal-req
- (fn [{:keys [db]} [_ org-id product-id]]
+ (fn [{:keys [db]} [_ product-id]]
    (let [qid (get-next-query-id)]
      {:ws-send {:payload {:cmd :b/create-preposal-req
                           :return {:handler :b/create-preposal-req-success}
-                          :prep-req {:to-org-id (-> db :memberships first :org-id)
-                                     :to-user-id (-> db :user :id)
-                                     :from-org-id org-id
-                                     :from-user-id nil ; todo: how do I know this?
+                          :prep-req {:from-org-id (->> (:active-memb-id db)
+                                                       (get (group-by :id (:memberships db)))
+                                                       first
+                                                       :org-id)
+                                     :from-user-id (-> db :user :id)
                                      :prod-id product-id}}}})))
 
 (rf/reg-event-fx
@@ -136,7 +137,7 @@
           (docs/get-field-value preposal-responses "Pricing Estimate" "unit" :sval)
           " "
           [:small "(estimate)"]]
-         [:a {:onClick #(rf/dispatch [:b/create-preposal-req (:id org) id])}
+         [:a {:onClick #(rf/dispatch [:b/create-preposal-req id])}
           "Request a Preposal"])]
       [:> ui/ItemDescription short-desc]
       [:> ui/ItemExtra
