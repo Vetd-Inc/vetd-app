@@ -27,8 +27,11 @@
 (def Container (component "Container"))
 (def Segment (component "Segment"))
 (def SegmentInline (component "Segment" "Inline"))
-
+(def Divider (component "Divider"))
 (def Header (component "Header"))
+
+(def Form (component "Form"))
+(def FormField (component "Form" "Field"))
 
 (def Button (component "Button"))
 (def Input (component "Input"))
