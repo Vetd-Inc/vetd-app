@@ -127,6 +127,24 @@
     (case etype
       :product (insert-round-product id eid)
       :category (insert-round-category id eid))
+    (try
+      (let [msg (with-out-str
+                  (clojure.pprint/with-pprint-dispatch clojure.pprint/code-dispatch
+                    (-> [[:rounds {:id id}
+                          [:id :created
+                           [:buyer [:oname]]
+                           [:products [:pname]]
+                           [:categories [:cname]]]]]
+                        ha/sync-query
+                        vals
+                        ffirst
+                        clojure.pprint/pprint)))]
+        ;; TODO make msg human friendly
+        (aws/invoke sns {:op :Publish
+                         :request {:TopicArn "arn:aws:sns:us-east-1:744151627940:ui-req-new-prod-cat"
+                                   :Subject "Vetd Round Started"
+                                   :Message msg}}))
+      (catch Throwable t))
     r))
 
 (defn send-new-prod-cat-req [uid oid req]
@@ -158,6 +176,7 @@ User '%s'
   [{:keys [prep-req]} ws-id sub-fn]
   (docs/create-preposal-req-form prep-req))
 
+;; TODO record which user started round
 (defmethod com/handle-ws-inbound :b/start-round
   [{:keys [etype buyer-id eid]} ws-id sub-fn]
   (create-round buyer-id eid etype))

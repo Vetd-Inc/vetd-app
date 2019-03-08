@@ -10,15 +10,29 @@
               [:vetd :prompts_by_template] [[:vetd :prompts]]
               [:vetd :rounds_by_category] [[:vetd :rounds]]
               [:vetd :rounds_by_product] [[:vetd :rounds]]
+              [:vetd :products_by_round] [[:vetd :products]]
               [:vetd :categories_by_product] [[:vetd :categories]]
+              [:vetd :categories_by_round] [[:vetd :categories]]              
               [:vetd :responses_by_doc] [[:vetd :responses]]
               [:vetd :form_docs] [[:vetd :forms]]}
-   :rels [{:tables [:vetd :categories
-                    :vetd :rounds_by_category]
-           :fields [:rounds]
-           :cols [:id :category_id]
+   :rels [{:tables [:vetd :rounds
+                    :vetd :categories_by_round]
+           :fields [:categories]
+           :cols [:id :round_id]
            :rel :one-many}
 
+          {:tables [:vetd :rounds
+                    :vetd :products_by_round]
+           :fields [:products]
+           :cols [:id :round_id]
+           :rel :one-many}
+
+          {:tables [:vetd :rounds
+                    :vetd :orgs]
+           :fields [:buyer :rounds-out]
+           :cols [:buyer_id :id]
+           :rel :many-one}
+          
           {:tables [:vetd :orgs
                     :vetd :memberships]
            :fields [:memberships :org]
