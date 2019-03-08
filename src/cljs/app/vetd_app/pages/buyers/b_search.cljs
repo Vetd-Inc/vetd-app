@@ -244,7 +244,8 @@
                                          [:rounds {:buyer-id org-id
                                                    :status "active"}
                                           [:id :created :status]]]]]}])
-                     [])]
+                     [])
+        prod-cat-suggestion (r/atom "")]
     (if (not-empty (concat product-ids vendor-ids))
       [:div
        [:div.categories
@@ -262,20 +263,22 @@
         [:> ui/Input {:label {:icon "asterisk"}
                       :labelPosition "left corner"
                       :placeholder "Product / Category . . ."
-                      :action {:color "blue"
-                               :content "Request It!"
-                               :onClick #(rf/dispatch [:b/req-new-prod-cat (.-value %2)])}}
-         #_[:> ui/Select {:compact true
-                          :options [{:text "Product"
-                                     :value "product"
-                                     :key "product"}
-                                    {:text "Category"
-                                     :value "category"
-                                     :key "category"}]
-                          :defaultValue "product"}]
-         #_[:> ui/Button {:color "blue"}
-            "Request It!"]
-         ]]])))
+                      :style {:position "relative"
+                              :top 1
+                              :marginRight 15}
+                      :onChange (fn [_ this]
+                                  (reset! prod-cat-suggestion (.-value this)))}]
+        #_[:> ui/Select {:compact true
+                         :options [{:text "Product"
+                                    :value "product"
+                                    :key "product"}
+                                   {:text "Category"
+                                    :value "category"
+                                    :key "category"}]
+                         :defaultValue "product"}]
+        [:> ui/Button {:color "blue"
+                       :onClick #(rf/dispatch [:b/req-new-prod-cat @prod-cat-suggestion])}
+         "Request It!"]]])))
 
 (defn c-page []
   (let [search-query (r/atom "")]
