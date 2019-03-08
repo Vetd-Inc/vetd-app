@@ -108,7 +108,7 @@
     "/a/home/"
     (if-let [{{:keys [id buyer? vendor?]} :org} (first membs)]
       (if buyer?
-        "/b/home/"
+        "/b/preposals/"
         "/v/home/")
       "/")))
 
