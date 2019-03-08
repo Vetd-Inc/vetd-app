@@ -27,8 +27,47 @@
  (fn [{:keys [preposal-idstr]}] preposal-idstr))
 
 ;; Components
+(defn c-rounds
+  "Given a preposal map, display the Round data."
+  [{:keys [product]}]
+  (if (not-empty (:rounds product))
+    [:> ui/Label {:color "teal"
+                  :size "medium"
+                  :ribbon "top left"}
+     "VetdRound In Progress"]
+    [:> ui/Button {:onClick #(rf/dispatch [:b/start-round :product (:id product)])
+                   :color "blue"
+                   :icon true
+                   :labelPosition "right"
+                   :style {:marginRight 15}}
+     "Start VetdRound"
+     [:> ui/Icon {:name "right arrow"}]]))
+
+(defn c-categories
+  "Given a preposal map, display the categories as tags."
+  [{:keys [product]}]
+  [:<>
+   (for [c (:categories product)]
+     ^{:key (:id c)}
+     [:> ui/Label {:class "category-tag"}
+      (:cname c)])])
+
+(defn c-free-trial-tag []
+  [:> ui/Label {:class "free-trial-tag"
+                :color "gray"
+                :size "small"
+                :tag true}
+   "Free Trial"])
+
+(defn c-display-field
+  [props field-key field-value] 
+  [:> ui/GridColumn props
+   [:> ui/Segment {:style {:padding "40px 20px 10px 20px"}}
+    [:> ui/Label {:attached "top"} field-key]
+    field-value]])
+
 (defn c-preposal
-  "Component to display preposal details."
+  "Component to display Preposal details."
   [{:keys [id product from-org responses] :as preposal}]
   (let [pricing-estimate-value (docs/get-field-value responses "Pricing Estimate" "value" :nval)
         pricing-estimate-unit (docs/get-field-value responses "Pricing Estimate" "unit" :sval)
@@ -41,74 +80,28 @@
     [:div.detail-container
      [:> ui/Header {:size "huge"}
       (:pname product) " " [:small " by " (:oname from-org)]]
-     [:> ui/Image {:class "product-logo" ; todo: make config var 's3-base-url'
-                   :style {:position "absolute"
-                           :right 0
-                           :top 0
-                           :padding 12}
+     [:> ui/Image {:class "product-logo"
                    :src (str "https://s3.amazonaws.com/vetd-logos/" (:logo product))}]
-     (if (not-empty (:rounds product))
-       [:> ui/Label {:color "teal"
-                     :size "medium"
-                     :ribbon "top left"}
-        "VetdRound In Progress"]
-       [:> ui/Button {:onClick #(rf/dispatch [:b/start-round :product (:id product)])
-                      :color "blue"
-                      :icon true
-                      :labelPosition "right"
-                      :style {:marginRight 15}}
-        "Start VetdRound"
-        [:> ui/Icon {:name "right arrow"}]])
-     (for [c (:categories product)]
-       ^{:key (:id c)}
-       [:> ui/Label {:class "category-tag"}
-        (:cname c)])
-     (when free-trial? [:> ui/Label {:class "free-trial-tag"
-                                     :color "gray"
-                                     :size "small"
-                                     :tag true}
-                        "Free Trial"])
+     [c-rounds preposal]
+     [c-categories preposal]
+     (when free-trial? [c-free-trial-tag])
      [:> ui/Grid {:columns "equal"
                   :style {:margin "20px 0 0 0"}}
       [:> ui/GridRow
-       [:> ui/GridColumn {:width 10}
-        [:> ui/Segment {:style {:padding "40px 20px 10px 20px"}}
-         [:> ui/Label {:attached "top"
-                       :align "left"}
-          "Pitch"]
-         pitch]]]
+       [c-display-field {:width 10} "Pitch" pitch]]
       [:> ui/GridRow
-       [:> ui/GridColumn {:width 16}
-        [:> ui/Segment {:style {:padding "40px 20px 10px 20px"}}
-         [:> ui/Label {:attached "top"}
-          "Product Description"]
-         (:long-desc product)]]]
+       [c-display-field {:width 16} "Product Description" (:long-desc product)]]
       [:> ui/GridRow
-       [:> ui/GridColumn {:width 4}
-        [:> ui/Segment {:style {:padding "40px 20px 10px 20px"}}
-         [:> ui/Label {:attached "top"}
-          "Estimated Price"]
-         (format/currency-format pricing-estimate-value)
-         " / "
-         pricing-estimate-unit]]
+       [c-display-field {:width 4} "Estimated Price"
+        [:<> (format/currency-format pricing-estimate-value) " / " pricing-estimate-unit]]
        (when (not= "" free-trial-terms)
-         [:> ui/GridColumn {:width 6}
-          [:> ui/Segment {:style {:padding "40px 20px 10px 20px"}}
-           [:> ui/Label {:attached "top"}
-            "Free Trial Terms"]
-           free-trial-terms]])
+         [c-display-field {:width 6} "Free Trial Terms" free-trial-terms])
        (when (not= "" pricing-model)
-         [:> ui/GridColumn {:width 6}
-          [:> ui/Segment {:style {:padding "40px 20px 10px 20px"}}
-           [:> ui/Label {:attached "top"}
-            "Pricing Model"]
-           pricing-model]])]
+         [c-display-field {:width 6} "Pricing Model" pricing-model])]
       [:> ui/GridRow
-       [:> ui/GridColumn
-        [:> ui/Segment {:style {:padding "40px 20px 10px 20px"}}
-         [:> ui/Label {:attached "top"}
-          (str "About " (:oname from-org))]
-         (when (not= "" website) ; todo: better design on these fields
+       [c-display-field nil (str "About " (:oname from-org))
+        [:<>
+         (when (not= "" website)
            [:span "Website: " website [:br]])
          (when (not= "" employee-count)
            [:span "Number of Employees: " employee-count])]]]]]))
