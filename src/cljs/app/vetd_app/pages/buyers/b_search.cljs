@@ -53,7 +53,7 @@
      {})))
 
 (rf/reg-event-fx
- :start-round
+ :b/start-round
  (fn [{:keys [db]} [_ etype eid]]
    (let [qid (get-next-query-id)]
      {:ws-send {:payload {:cmd :b/start-round
@@ -70,6 +70,26 @@
  (constantly
   {:toast {:type "success"
            :title "Your VetdRound has begun!"
+           :message "We'll be in touch with next steps."}}))
+
+(rf/reg-event-fx
+ :b/create-preposal-req
+ (fn [{:keys [db]} [_ product-id]]
+   (let [qid (get-next-query-id)]
+     {:ws-send {:payload {:cmd :b/create-preposal-req
+                          :return {:handler :b/create-preposal-req-success}
+                          :prep-req {:from-org-id (->> (:active-memb-id db)
+                                                       (get (group-by :id (:memberships db)))
+                                                       first
+                                                       :org-id)
+                                     :from-user-id (-> db :user :id)
+                                     :prod-id product-id}}}})))
+
+(rf/reg-event-fx
+ :b/create-preposal-req-success
+ (constantly
+  {:toast {:type "success"
+           :title "Preposal Requested"
            :message "We'll be in touch with next steps."}}))
 
 (rf/reg-event-fx
@@ -119,14 +139,15 @@
   [:div "Preposal Requested " (str created)])
 
 (defn c-product-search-result
-  [{:keys [id pname short-desc preposals logo rounds categories docs]} org-name]
-  (let [preposal-responses (-> docs first :responses)]
+  [{:keys [id pname short-desc logo rounds categories forms docs]} org]
+  (let [preposal-responses (-> docs first :responses)
+        requested-preposal? (not-empty forms)]
     [:> ui/Item {:onClick #(println "go to this product")}
      [:> ui/ItemImage {:class "product-logo"
                        :src (str "https://s3.amazonaws.com/vetd-logos/" logo)}]
      [:> ui/ItemContent
       [:> ui/ItemHeader
-       pname " " [:small " by " org-name]]
+       pname " " [:small " by " (:oname org)]]
       [:> ui/ItemMeta
        (if preposal-responses
          [:span
@@ -136,7 +157,10 @@
           (docs/get-field-value preposal-responses "Pricing Estimate" "unit" :sval)
           " "
           [:small "(estimate)"]]
-         "Request Preposal")]
+         (if requested-preposal?
+           "Preposal Requested"
+           [:a {:onClick #(rf/dispatch [:b/create-preposal-req id])}
+            "Request a Preposal"]))]
       [:> ui/ItemDescription short-desc]
       [:> ui/ItemExtra
        (for [c categories]
@@ -165,13 +189,13 @@
   [:> ui/ItemGroup {:class "results"}
    (for [p (:products v)]
      ^{:key (:id p)}
-     [c-product-search-result p (:oname v)])])
+     [c-product-search-result p v])])
 
 (defn c-category-search-results
   [{:keys [cname id idstr rounds] :as cat}]
   [:div.category-search-result
    (if (empty? rounds)
-     [:> ui/Button {:on-click #(rf/dispatch [:start-round :category id])
+     [:> ui/Button {:on-click #(rf/dispatch [:b/start-round :category id])
                     :icon true
                     :labelPosition "right"}
       (str "Start VetdRound for \"" cname "\"")
@@ -190,6 +214,9 @@
                                    [:id :oname :idstr :short-desc
                                     [:products {:id product-ids}
                                      [:id :pname :idstr :short-desc :logo
+                                      [:forms {:ftype "preposal" ; preposal requests
+                                               :from-org-id org-id}
+                                       [:id]]
                                       [:docs {:dtype "preposal"
                                               :to-org-id org-id}
                                        [:id :idstr :title
@@ -217,7 +244,8 @@
                                          [:rounds {:buyer-id org-id
                                                    :status "active"}
                                           [:id :created :status]]]]]}])
-                     [])]
+                     [])
+        prod-cat-suggestion (r/atom "")]
     (if (not-empty (concat product-ids vendor-ids))
       [:div
        [:div.categories
@@ -235,20 +263,22 @@
         [:> ui/Input {:label {:icon "asterisk"}
                       :labelPosition "left corner"
                       :placeholder "Product / Category . . ."
-                      :action {:color "blue"
-                               :content "Request It!"
-                               :onClick #(rf/dispatch [:b/req-new-prod-cat (.-value %2)])}}
-         #_[:> ui/Select {:compact true
-                          :options [{:text "Product"
-                                     :value "product"
-                                     :key "product"}
-                                    {:text "Category"
-                                     :value "category"
-                                     :key "category"}]
-                          :defaultValue "product"}]
-         #_[:> ui/Button {:color "blue"}
-            "Request It!"]
-         ]]])))
+                      :style {:position "relative"
+                              :top 1
+                              :marginRight 15}
+                      :onChange (fn [_ this]
+                                  (reset! prod-cat-suggestion (.-value this)))}]
+        #_[:> ui/Select {:compact true
+                         :options [{:text "Product"
+                                    :value "product"
+                                    :key "product"}
+                                   {:text "Category"
+                                    :value "category"
+                                    :key "category"}]
+                         :defaultValue "product"}]
+        [:> ui/Button {:color "blue"
+                       :onClick #(rf/dispatch [:b/req-new-prod-cat @prod-cat-suggestion])}
+         "Request It!"]]])))
 
 (defn c-page []
   (let [search-query (r/atom "")]
