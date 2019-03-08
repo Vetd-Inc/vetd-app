@@ -119,9 +119,9 @@
   [:div "Preposal Requested " (str created)])
 
 (defn c-product-search-result
-  [{:keys [id pname short-desc logo rounds categories docs]} org]
+  [{:keys [id pname short-desc logo rounds categories forms docs]} org]
   (let [preposal-responses (-> docs first :responses)
-        _ (println docs)]
+        requested-preposal? (not-empty forms)]
     [:> ui/Item {:onClick #(println "go to this product")}
      [:> ui/ItemImage {:class "product-logo"
                        :src (str "https://s3.amazonaws.com/vetd-logos/" logo)}]
@@ -137,8 +137,10 @@
           (docs/get-field-value preposal-responses "Pricing Estimate" "unit" :sval)
           " "
           [:small "(estimate)"]]
-         [:a {:onClick #(rf/dispatch [:b/create-preposal-req id])}
-          "Request a Preposal"])]
+         (if requested-preposal?
+           "Preposal Requested"
+           [:a {:onClick #(rf/dispatch [:b/create-preposal-req id])}
+            "Request a Preposal"]))]
       [:> ui/ItemDescription short-desc]
       [:> ui/ItemExtra
        (for [c categories]
@@ -192,6 +194,9 @@
                                    [:id :oname :idstr :short-desc
                                     [:products {:id product-ids}
                                      [:id :pname :idstr :short-desc :logo
+                                      [:forms {:ftype "preposal" ; preposal requests
+                                               :from-org-id org-id}
+                                       [:id]]
                                       [:docs {:dtype "preposal"
                                               :to-org-id org-id}
                                        [:id :idstr :title
