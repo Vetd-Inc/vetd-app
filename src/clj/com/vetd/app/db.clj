@@ -14,8 +14,7 @@
 
 #_(mig/migrate
  {:store :database
-  :db (assoc env/pg-db
-             :dbname "vetd1")})
+  :db env/pg-db})
 
 #_ (mig/reset {:store :database
                :db env/pg-db})
