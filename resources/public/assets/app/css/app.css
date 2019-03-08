@@ -321,7 +321,8 @@ body, * {
     border-color: #4ec2c4 !important;
     color: #fff !important;
 }
-.ui.blue.label, .ui.blue.labels .label {
+.ui.blue.label, .ui.blue.labels .label,
+.ui.blue.button, .ui.blue.buttons .button {
     background-color: #32abde !important;
     border-color: #32abde !important;
     color: #fff !important;

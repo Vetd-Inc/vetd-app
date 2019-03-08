@@ -26,12 +26,14 @@
 
 (def Container (component "Container"))
 (def Segment (component "Segment"))
+(def SegmentInline (component "Segment" "Inline"))
 
 (def Header (component "Header"))
 
 (def Button (component "Button"))
 (def Input (component "Input"))
 (def Checkbox (component "Checkbox"))
+(def Select (component "Select"))
 
 (def Icon (component "Icon"))
 
