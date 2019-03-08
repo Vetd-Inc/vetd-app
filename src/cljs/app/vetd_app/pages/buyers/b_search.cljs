@@ -60,7 +60,10 @@
                           :return {:handler :b/start-round-success}
                           :etype etype
                           :eid eid
-                          :buyer-id (-> db :memberships first :org-id)}}})))
+                          :buyer-id (->> (:active-memb-id db)
+                                         (get (group-by :id (:memberships db)))
+                                         first
+                                         :org-id)}}})))
 
 (rf/reg-event-fx
  :b/start-round-success
