@@ -29,43 +29,89 @@
 ;; Components
 (defn c-preposal
   "Component to display preposal details."
-  [{:keys [id product from-org responses]}]
+  [{:keys [id product from-org responses] :as preposal}]
   (let [pricing-estimate-value (docs/get-field-value responses "Pricing Estimate" "value" :nval)
         pricing-estimate-unit (docs/get-field-value responses "Pricing Estimate" "unit" :sval)
-        free-trial? (= "yes" (docs/get-field-value responses "Do you offer a free trial?" "value" :sval))]    
-    [:div
-     [:> ui/ItemImage {:class "product-logo" ; todo: make config var 's3-base-url'
-                       :src (str "https://s3.amazonaws.com/vetd-logos/" (:logo product))}]
-     [:> ui/ItemContent
-      [:> ui/ItemHeader
-       (:pname product) " " [:small " by " (:oname from-org)]]
-      [:> ui/ItemMeta
-       [:span
-        (format/currency-format pricing-estimate-value)
-        " / "
-        pricing-estimate-unit
-        " "
-        [:small "(estimate)"]]]
-      [:> ui/ItemDescription (:short-desc product)]
-      [:> ui/ItemExtra
-       (for [c (:categories product)]
-         ^{:key (:id c)}
-         [:> ui/Label
-          {:class "category-tag"
-           ;; use the below two keys when we make category tags clickable
-           ;; :as "a"
-           ;; :onClick #(println "category search: " (:id c))
-           }
-          (:cname c)])
-       (when free-trial? [:> ui/Label {:class "free-trial-tag"
-                                       :color "teal"
-                                       :size "small"
-                                       :tag true}
-                          "Free Trial"])]]
-     (when (not-empty (:rounds product))
-       [:> ui/Label {:color "blue"
-                     :attached "bottom right"}
-        "VetdRound In Progress"])]))
+        pricing-model (docs/get-field-value responses "Pricing Model" "value" :sval)
+        free-trial? (= "yes" (docs/get-field-value responses "Do you offer a free trial?" "value" :sval))
+        free-trial-terms (docs/get-field-value responses "Please describe the terms of your trial" "value" :sval)
+        pitch (docs/get-field-value responses "Pitch" "value" :sval)
+        employee-count (docs/get-field-value responses "Employee Count" "value" :sval)
+        website (docs/get-field-value responses "Website" "value" :sval)]
+    [:div.detail-container
+     [:> ui/Header {:size "huge"}
+      (:pname product) " " [:small " by " (:oname from-org)]]
+     [:> ui/Image {:class "product-logo" ; todo: make config var 's3-base-url'
+                   :style {:position "absolute"
+                           :right 0
+                           :top 0
+                           :padding 12}
+                   :src (str "https://s3.amazonaws.com/vetd-logos/" (:logo product))}]
+     (if (not-empty (:rounds product))
+       [:> ui/Label {:color "teal"
+                     :size "medium"
+                     :ribbon "top left"}
+        "VetdRound In Progress"]
+       [:> ui/Button {:onClick #(rf/dispatch [:b/start-round :product (:id product)])
+                      :color "blue"
+                      :icon true
+                      :labelPosition "right"
+                      :style {:marginRight 15}}
+        "Start VetdRound"
+        [:> ui/Icon {:name "right arrow"}]])
+     (for [c (:categories product)]
+       ^{:key (:id c)}
+       [:> ui/Label {:class "category-tag"}
+        (:cname c)])
+     (when free-trial? [:> ui/Label {:class "free-trial-tag"
+                                     :color "gray"
+                                     :size "small"
+                                     :tag true}
+                        "Free Trial"])
+     [:> ui/Grid {:columns "equal"
+                  :style {:margin "20px 0 0 0"}}
+      [:> ui/GridRow
+       [:> ui/GridColumn {:width 10}
+        [:> ui/Segment {:style {:padding "40px 20px 10px 20px"}}
+         [:> ui/Label {:attached "top"
+                       :align "left"}
+          "Pitch"]
+         pitch]]]
+      [:> ui/GridRow
+       [:> ui/GridColumn {:width 16}
+        [:> ui/Segment {:style {:padding "40px 20px 10px 20px"}}
+         [:> ui/Label {:attached "top"}
+          "Product Description"]
+         (:long-desc product)]]]
+      [:> ui/GridRow
+       [:> ui/GridColumn {:width 4}
+        [:> ui/Segment {:style {:padding "40px 20px 10px 20px"}}
+         [:> ui/Label {:attached "top"}
+          "Estimated Price"]
+         (format/currency-format pricing-estimate-value)
+         " / "
+         pricing-estimate-unit]]
+       (when (not= "" free-trial-terms)
+         [:> ui/GridColumn {:width 6}
+          [:> ui/Segment {:style {:padding "40px 20px 10px 20px"}}
+           [:> ui/Label {:attached "top"}
+            "Free Trial Terms"]
+           free-trial-terms]])
+       (when (not= "" pricing-model)
+         [:> ui/GridColumn {:width 6}
+          [:> ui/Segment {:style {:padding "40px 20px 10px 20px"}}
+           [:> ui/Label {:attached "top"}
+            "Pricing Model"]
+           pricing-model]])]
+      [:> ui/GridRow
+       [:> ui/GridColumn
+        [:> ui/Segment {:style {:padding "40px 20px 10px 20px"}}
+         [:> ui/Label {:attached "top"}
+          (str "About " (:oname from-org))]
+         (when (not= "" website) ; todo: better design on these fields
+           [:span "Website: " website [:br]])
+         (when (not= "" employee-count)
+           [:span "Number of Employees: " employee-count])]]]]]))
 
 (defn c-page []
   (let [preposal-id& (rf/subscribe [:preposal-id])
@@ -75,7 +121,7 @@
                                [[:docs {:dtype "preposal"
                                         :id @preposal-id&}
                                  [:id :idstr :title
-                                  [:product [:id :pname :logo :short-desc
+                                  [:product [:id :pname :logo :short-desc :long-desc
                                              [:rounds {:buyer-id @org-id&
                                                        :status "active"}
                                               [:id :created :status]]
@@ -94,11 +140,12 @@
     (fn []
       [:div.container-with-sidebar
        [:div.sidebar
-        (when (empty? (-> @preps& :docs first :product :rounds))
-          [:> ui/Button {:onClick #(rf/dispatch [:b/start-round :product (-> @preps& :docs first :product :id)])
-                         :color "blue"}
-           "Start VetdRound"])
-        ]
+        [:> ui/Button {:on-click #(rf/dispatch [:b/nav-preposals])
+                       :color "gray"
+                       :icon true
+                       :labelPosition "left"}
+         "All Preposals"
+         [:> ui/Icon {:name "left arrow"}]]]
        [:> ui/Segment {:class "inner-container"}
         (if (= :loading @preps&)
           [:> ui/Loader {:active true :inline true}]

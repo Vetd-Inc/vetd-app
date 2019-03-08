@@ -307,8 +307,8 @@ body, * {
 .results > .item > .content > .extra > .category-tag {
   margin-top: 11px; /* todo: this is kind of hacky */
 }
-.results > .item > .content > .extra > .free-trial-tag {
-  margin-left: 15px;
+.free-trial-tag {
+  margin-left: 15px !important;
 }
 
 .categories {
@@ -320,17 +320,23 @@ body, * {
   margin-bottom: 15px;
 }
 
+
 /* todo, put this as less variable */
 .ui.teal.label, .ui.teal.labels .label {
-    background-color: #4ec2c4 !important;
-    border-color: #4ec2c4 !important;
-    color: #fff !important;
+  background-color: #4ec2c4 !important;
+  border-color: #4ec2c4 !important;
+  color: #fff !important;
 }
 .ui.blue.label, .ui.blue.labels .label,
 .ui.blue.button, .ui.blue.buttons .button {
-    background-color: #32abde !important;
-    border-color: #32abde !important;
-    color: #fff !important;
+  background-color: #32abde !important;
+  border-color: #32abde !important;
+  color: #fff !important;
+}
+.ui.blue.button .icon {
+  background-color: #1f94c5 !important;
+  border-color: #1f94c5 !important;
+  color: #fff !important;
 }
 
 /* Miscellaneous */
@@ -343,6 +349,13 @@ a.category-tag:hover {
   color: #777 !important;
 }
 
+/* bootstrap override */
+/* we need to delete bootstrap eventually */
+.label { 
+  text-align: left;
+}
+
+
 /* Toast Messages (toastr library) */
 #toast-container .toast-success {
   background-color: #32abde;
@@ -351,3 +364,4 @@ a.category-tag:hover {
 #toast-container .toast-message {
   color: #fff;
 }
+
