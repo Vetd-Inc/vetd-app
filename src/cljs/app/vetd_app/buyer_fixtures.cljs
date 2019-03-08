@@ -54,4 +54,5 @@
 (defn container [body]
   [:> ui/Container {:class "main-container"}
    [c-top-nav]
-   body])
+   body
+   [:div {:style {:height 100}}]])
