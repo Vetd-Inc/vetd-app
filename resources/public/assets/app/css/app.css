@@ -154,11 +154,11 @@ body, * {
     margin: 10px;
 }
 #login-form {
-    width: 330px;
-    padding: 20px;
+    width: 260px;
     margin-left: auto;
     margin-right: auto;
     margin-top: 50px;
+    text-align: center;
 }
 #login-form input {
     margin: 10px;
@@ -345,4 +345,12 @@ a.category-tag:hover {
 #toast-container .toast-title,
 #toast-container .toast-message {
   color: #fff;
+}
+
+
+
+
+
+#login-form .field {
+  margin-bottom: 0px;
 }
