@@ -190,8 +190,8 @@
 (sec/defroute buyers-preposals "/b/preposals/" [query-params]
   (rf/dispatch [:b/route-preposals query-params]))
 
-(sec/defroute buyers-preposal-detail "/b/preposals/:id" [id]
-  (rf/dispatch [:b/route-preposal-detail id]))
+(sec/defroute buyers-preposal-detail "/b/preposals/:idstr" [idstr]
+  (rf/dispatch [:b/route-preposal-detail idstr]))
 
 (sec/defroute vendors-home "/v/home/" [query-params]
   (do (.log js/console "nav vendors")

@@ -23,11 +23,11 @@
 ;; Components
 (defn c-preposal
   "Component to display Preposal as a list item."
-  [{:keys [id product from-org responses]}]
+  [{:keys [id idstr product from-org responses]}]
   (let [pricing-estimate-value (docs/get-field-value responses "Pricing Estimate" "value" :nval)
         pricing-estimate-unit (docs/get-field-value responses "Pricing Estimate" "unit" :sval)
         free-trial? (= "yes" (docs/get-field-value responses "Do you offer a free trial?" "value" :sval))]    
-    [:> ui/Item {:onClick #(rf/dispatch [:b/nav-preposal-detail id])} 
+    [:> ui/Item {:onClick #(rf/dispatch [:b/nav-preposal-detail idstr])} 
      [:> ui/ItemImage {:class "product-logo" ; todo: make config var 's3-base-url'
                        :src (str "https://s3.amazonaws.com/vetd-logos/" (:logo product))}]
      [:> ui/ItemContent

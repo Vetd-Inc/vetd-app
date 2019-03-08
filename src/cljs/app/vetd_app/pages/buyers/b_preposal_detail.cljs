@@ -10,21 +10,21 @@
 ;; Events
 (rf/reg-event-fx
  :b/nav-preposal-detail
- (fn [_ [_ preposal-id]]
-   {:nav {:path (str "/b/preposals/" preposal-id)}}))
+ (fn [_ [_ preposal-idstr]]
+   {:nav {:path (str "/b/preposals/" preposal-idstr)}}))
 
 (rf/reg-event-db
  :b/route-preposal-detail
- (fn [db [_ preposal-id]]
+ (fn [db [_ preposal-idstr]]
    (assoc db
           :page :b/preposal-detail
-          :page-params {:preposal-id preposal-id})))
+          :page-params {:preposal-idstr preposal-idstr})))
 
 ;; Subscriptions
 (rf/reg-sub
- :preposal-id
+ :preposal-idstr
  :<- [:page-params] 
- (fn [{:keys [preposal-id]}] preposal-id))
+ (fn [{:keys [preposal-idstr]}] preposal-idstr))
 
 ;; Components
 (defn c-preposal
@@ -114,12 +114,12 @@
            [:span "Number of Employees: " employee-count])]]]]]))
 
 (defn c-page []
-  (let [preposal-id& (rf/subscribe [:preposal-id])
+  (let [preposal-idstr& (rf/subscribe [:preposal-idstr])
         org-id& (rf/subscribe [:org-id])
         preps& (rf/subscribe [:gql/sub
                               {:queries
                                [[:docs {:dtype "preposal"
-                                        :id @preposal-id&}
+                                        :idstr @preposal-idstr&}
                                  [:id :idstr :title
                                   [:product [:id :pname :logo :short-desc :long-desc
                                              [:rounds {:buyer-id @org-id&
