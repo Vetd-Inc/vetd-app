@@ -10,8 +10,8 @@
 ;; Events
 (rf/reg-event-fx
  :b/nav-preposals
- (fn []
-   {:nav {:path "/b/preposals/"}}))
+ (constantly
+  {:nav {:path "/b/preposals/"}}))
 
 (rf/reg-event-db
  :b/route-preposals
@@ -27,8 +27,8 @@
   (let [pricing-estimate-value (docs/get-field-value responses "Pricing Estimate" "value" :nval)
         pricing-estimate-unit (docs/get-field-value responses "Pricing Estimate" "unit" :sval)
         free-trial? (= "yes" (docs/get-field-value responses "Do you offer a free trial?" "value" :sval))]    
-    [:> ui/Item {:onClick #(println "go to this preposal")} ; todo: make config var 's3-base-url'
-     [:> ui/ItemImage {:class "product-logo"
+    [:> ui/Item {:onClick #(rf/dispatch [:b/nav-preposal-detail id])} 
+     [:> ui/ItemImage {:class "product-logo" ; todo: make config var 's3-base-url'
                        :src (str "https://s3.amazonaws.com/vetd-logos/" (:logo product))}]
      [:> ui/ItemContent
       [:> ui/ItemHeader
