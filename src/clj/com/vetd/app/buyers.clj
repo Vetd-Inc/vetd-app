@@ -1,9 +1,20 @@
 (ns com.vetd.app.buyers
   (:require [com.vetd.app.db :as db]
             [com.vetd.app.hasura :as ha]
+            [com.vetd.app.auth :as auth]
             [com.vetd.app.common :as com]
             [com.vetd.app.util :as ut]
+            [com.vetd.app.docs :as docs]
+            [cognitect.aws.client.api :as aws]
+            [cognitect.aws.credentials :as aws-creds]
             [taoensso.timbre :as log]))
+
+(def sns (aws/client {:api :sns
+                      :region "us-east-1"
+                      :credentials-provider (aws-creds/basic-credentials-provider
+                                             ;; TODO cycle creds and keep in env
+                                             {:access-key-id "AKIAIJN3D74NBHJIAARQ"
+                                              :secret-access-key "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"})}))
 
 (defn search-prods-vendors->ids
   [q]
@@ -118,6 +129,21 @@
       :category (insert-round-category id eid))
     r))
 
+(defn send-new-prod-cat-req [uid oid req]
+  (let [user-name (-> uid auth/select-user-by-id :uname)
+        org-name (-> oid auth/select-org-by-id :oname)]
+    (aws/invoke sns {:op :Publish
+                     :request {:TopicArn "arn:aws:sns:us-east-1:744151627940:ui-req-new-prod-cat"
+                               :Subject "New Product/Category Request"
+                               :Message (format
+                                         "New Product/Category Request
+Request Text '%s'
+Org '%s'
+User '%s'
+"
+                                         req org-name user-name)}})))
+
+
 ;; TODO there could be multiple preposals/rounds per buyer-vendor pair
 
 ;; TODO use session-id to verify permissions!!!!!!!!!!!!
@@ -128,10 +154,14 @@
       (assoc :category-ids
              (search-category-ids query))))
 
-(defmethod com/handle-ws-inbound :b/request-preposal
-  [{:keys [buyer-id vendor-id]} ws-id sub-fn]
-  (insert-preposal-req buyer-id vendor-id))
+(defmethod com/handle-ws-inbound :b/create-preposal-req
+  [{:keys [prep-req]} ws-id sub-fn]
+  (docs/create-preposal-req-form prep-req))
 
 (defmethod com/handle-ws-inbound :b/start-round
   [{:keys [etype buyer-id eid]} ws-id sub-fn]
   (create-round buyer-id eid etype))
+
+(defmethod com/handle-ws-inbound :b/req-new-prod-cat
+  [{:keys [user-id org-id req]} ws-id sub-fn]
+  (send-new-prod-cat-req user-id org-id req))

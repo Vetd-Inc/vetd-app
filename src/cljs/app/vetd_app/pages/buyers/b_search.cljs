@@ -1,7 +1,9 @@
 (ns vetd-app.pages.buyers.b-search
   (:require [vetd-app.flexer :as flx]
             [vetd-app.ui :as ui]
+            [vetd-app.docs :as docs]
             [reagent.core :as r]
+            [reagent.format :as format]
             [re-frame.core :as rf]
             [re-com.core :as rc]))
 
@@ -32,13 +34,12 @@
  :b/search
  (fn [{:keys [db ws]} [_ q-str q-type]]
    (let [qid (get-next-query-id)]
-     {:db (assoc db
-                 :buyer-qid qid)
+     {:db (assoc db :buyer-qid qid)
       :ws-send {:payload {:cmd :b/search
                           :return {:handler :b/ws-search-result-ids
                                    :qid qid}
                           :query q-str
-                          :buyer-id (:org-id db)
+                          :buyer-id (-> db :memberships first :org-id)
                           :qid qid}}})))
 
 (rf/reg-event-fx
@@ -48,20 +49,28 @@
    #_ (println res1)
    (def ret1 return)
    (if (= (:buyer-qid db) (:qid return))
-     {:db (assoc db
-                 :b/search-result-ids
-                 results)}
+     {:db (assoc db :b/search-result-ids results)}
      {})))
 
 (rf/reg-event-fx
  :start-round
  (fn [{:keys [db]} [_ etype eid]]
    (let [qid (get-next-query-id)]
-     {:ws-send {:payload {:cmd :start-round
-                          :return nil
+     {:ws-send {:payload {:cmd :b/start-round
+                          :return {:handler :b/start-round-success}
                           :etype etype
-                          :buyer-id (:org-id db)
-                          :eid eid}}})))
+                          :eid eid
+                          :buyer-id (->> (:active-memb-id db)
+                                         (get (group-by :id (:memberships db)))
+                                         first
+                                         :org-id)}}})))
+
+(rf/reg-event-fx
+ :b/start-round-success
+ (constantly
+  {:toast {:type "success"
+           :title "Your VetdRound has begun!"
+           :message "We'll be in touch with next steps."}}))
 
 ;; Subscriptions
 (rf/reg-sub
@@ -93,32 +102,46 @@
   [:div "Preposal Requested " (str created)])
 
 (defn c-product-search-result
-  [{:keys [id pname short-desc preposals logo rounds categories]} org-name]
-
-  [:> ui/Item {:onClick #(println "go to this product")}
-   [:> ui/ItemImage {:class "product-logo"
-                     :src (str "https://s3.amazonaws.com/vetd-logos/" logo)}]
-   [:> ui/ItemContent
-    [:> ui/ItemHeader
-     pname " " [:small " by " org-name]]
-    [:> ui/ItemDescription short-desc]
-    [:> ui/ItemExtra
-     (cond (not-empty rounds) (for [r rounds]
-                                [c-round-search-result r])
-           :else [:> ui/Button {:onClick #(rf/dispatch [:start-round :product id])
-                                :icon true
-                                :labelPosition "right"
-                                :floated "right"}
-                  "Start VetdRound"
-                  [:> ui/Icon {:name "right arrow"}]])
-     (for [c categories]
-       ^{:key (:id c)}
-       [:> ui/Label
-        {:as "a"
-         :class "category-tag"
-         ;; :onClick #(println "category search: " (:id c))
-         }
-        (:cname c)])]]])
+  [{:keys [id pname short-desc preposals logo rounds categories docs]} org-name]
+  (let [preposal-responses (-> docs first :responses)]
+    [:> ui/Item {:onClick #(println "go to this product")}
+     [:> ui/ItemImage {:class "product-logo"
+                       :src (str "https://s3.amazonaws.com/vetd-logos/" logo)}]
+     [:> ui/ItemContent
+      [:> ui/ItemHeader
+       pname " " [:small " by " org-name]]
+      [:> ui/ItemMeta
+       (if preposal-responses
+         [:span
+          (format/currency-format
+           (docs/get-field-value preposal-responses "Pricing Estimate" "value" :nval))
+          " / "
+          (docs/get-field-value preposal-responses "Pricing Estimate" "unit" :sval)
+          " "
+          [:small "(estimate)"]]
+         "Request Preposal")]
+      [:> ui/ItemDescription short-desc]
+      [:> ui/ItemExtra
+       (for [c categories]
+         ^{:key (:id c)}
+         [:> ui/Label
+          {:class "category-tag"
+           ;; use the below two keys when we make category tags clickable
+           ;; :as "a"
+           ;; :onClick #(println "category search: " (:id c))
+           }
+          (:cname c)])
+       (when (and preposal-responses
+                  (= "yes" (docs/get-field-value preposal-responses "Do you offer a free trial?" "value" :sval)))
+         [:> ui/Label {:class "free-trial-tag"
+                       :color "teal"
+                       :size "small"
+                       :tag true}
+          "Free Trial"])]]
+     (when (not-empty rounds)
+       [:> ui/Label {:color "blue"
+                     :attached "bottom right"}
+        "VetdRound In Progress"])]))
 
 (defn c-vendor-search-results
   [v]
@@ -129,19 +152,16 @@
 
 (defn c-category-search-results
   [{:keys [cname id idstr rounds] :as cat}]
-  [:div {:class :category-search-result}
-   [:div.category-name cname]
-   [:div {:style {:flex-grow 1
-                  :display :flex
-                  :align-items :center
-                  :justify-content :flex-end}}
-    (if (empty? rounds)
-      [:> ui/Button {:on-click #(rf/dispatch [:start-round :category id])
-                     :icon true
-                     :labelPosition "right"}
-       "Start VetdRound for Category"
-       [:> ui/Icon {:name "right arrow"}]]
-      "[In active round]")]])
+  [:div.category-search-result
+   (if (empty? rounds)
+     [:> ui/Button {:on-click #(rf/dispatch [:start-round :category id])
+                    :icon true
+                    :labelPosition "right"}
+      (str "Start VetdRound for \"" cname "\"")
+      [:> ui/Icon {:name "right arrow"}]]
+     [:> ui/Label {:color "blue"
+                   :size "large"}
+      "VetdRound In Progress for \"" cname "\""])])
 
 (defn c-search-results []
   (let [org-id @(rf/subscribe [:org-id])
@@ -153,6 +173,20 @@
                                    [:id :oname :idstr :short-desc
                                     [:products {:id product-ids}
                                      [:id :pname :idstr :short-desc :logo
+                                      [:docs {:dtype "preposal"
+                                              :to-org-id org-id}
+                                       [:id :idstr :title
+                                        [:from-org [:id :oname]]
+                                        [:from-user [:id :uname]]
+                                        [:to-org [:id :oname]]
+                                        [:to-user [:id :uname]]
+                                        [:responses
+                                         [:id :prompt-id :notes
+                                          [:prompt
+                                           [:id :prompt]]
+                                          [:fields
+                                           [:id :pf-id :idx :sval :nval :dval
+                                            [:prompt-field [:id :fname]]]]]]]]
                                       [:rounds {:buyer-id org-id
                                                 :status "active"}
                                        [:id :created :status]]
@@ -167,19 +201,14 @@
                                                    :status "active"}
                                           [:id :created :status]]]]]}])
                      [])]
-    [:div {:class :search-results}
-     [:div {:class :categories}
+    [:div
+     [:div.categories
       (for [c (:categories categories)]
         ^{:key (:id c)}
         [c-category-search-results c])]
-     (when (and (-> categories :categories not-empty)
-                (-> prods :orgs not-empty))
-       [:div {:style {:height "30px"
-                      :border-top "solid 1px #444"}}])
-     [:div {:class :orgs}
-      (for [v (:orgs prods)]
-        ^{:key (:id v)}
-        [c-vendor-search-results v])]]))
+     (for [v (:orgs prods)]
+       ^{:key (:id v)}
+       [c-vendor-search-results v])]))
 
 (defn c-page []
   (let [search-query (r/atom "")]
@@ -193,6 +222,8 @@
                        :size "big"
                        :icon "search"
                        :autoFocus true
+                       :spellCheck false
+                       ;; :loading true ; todo: use this property
                        :onChange (fn [_ this]
                                    (dispatch-search-DB (.-value this))
                                    (reset! search-query (.-value this)))

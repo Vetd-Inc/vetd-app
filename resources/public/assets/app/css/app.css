@@ -277,6 +277,8 @@ body, * {
   border-radius: 8px !important;
   transition: transform .3s ease-out !important;
   cursor: pointer !important;
+  /* hack to fix bug that hides 'attached' labels */
+  transform: scale(1) !important;
 }
 .results > .item:hover  {
   transform: scale(1.01) !important;
@@ -304,10 +306,24 @@ body, * {
   margin-left: 15px;
 }
 
+.categories {
+  margin-bottom: 20px;
+}
+.category-search-result {
+  width: 100%;
+  text-align: center;
+  margin-bottom: 15px;
+}
+
 /* todo, put this as less variable */
 .ui.teal.label, .ui.teal.labels .label {
     background-color: #4ec2c4 !important;
     border-color: #4ec2c4 !important;
+    color: #fff !important;
+}
+.ui.blue.label, .ui.blue.labels .label {
+    background-color: #32abde !important;
+    border-color: #32abde !important;
     color: #fff !important;
 }
 
@@ -319,4 +335,13 @@ body, * {
 a.category-tag:hover {
   border-color: #777 !important;
   color: #777 !important;
+}
+
+/* Toast Messages (toastr library) */
+#toast-container .toast-success {
+  background-color: #32abde;
+}
+#toast-container .toast-title,
+#toast-container .toast-message {
+  color: #fff;
 }

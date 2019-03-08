@@ -1,6 +1,8 @@
 (ns vetd-app.ui
-  (:require [cljsjs.semantic-ui-react]
-            [goog.object]))
+  (:require cljsjs.semantic-ui-react
+            goog.object
+            cljsjs.toastr
+            [re-frame.core :as rf]))
 
 ;; handle to top-level extern from Semantic UI React
 (def semantic-ui js/semanticUIReact)
@@ -48,3 +50,26 @@
 (def ItemMeta (component "ItemMeta"))
 (def ItemDescription (component "ItemDescription"))
 (def ItemExtra (component "ItemExtra"))
+
+
+;; todo: add to init event? maybe not.
+(aset js/toastr "options"
+      (clj->js {:closeButton false,
+                :debug false,
+                :newestOnTop false,
+                :positionClass "toast-top-center",
+                :preventDuplicates false,
+                :showDuration "300",
+                :hideDuration "1000",
+                :timeOut "5000",
+                :extendedTimeOut "1000",
+                :showEasing "swing",
+                :hideEasing "linear",
+                :showMethod "fadeIn",
+                :hideMethod "fadeOut"}))
+
+
+(rf/reg-fx
+ :toast      ; todo: assumes "success"
+ (fn [{:keys [type title message]}]
+   (js/toastr.success message title)))

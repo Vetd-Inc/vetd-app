@@ -6,9 +6,6 @@
   :dependencies [[org.clojure/clojure "1.10.0"]
                  [org.clojure/clojurescript "1.10.516" :scope "provided"]
                  [org.clojure/core.async "0.4.474"]
-                 
-                 [compojure "1.6.1"]
-                 [metosin/muuntaja "0.5.0"]
 
                  [org.clojure/java.jdbc "0.7.5"]
                  [org.postgresql/postgresql "42.2.2"]
@@ -17,11 +14,17 @@
                  [district0x/graphql-query "1.0.5"]
                  [district0x/district-graphql-utils "1.0.5"]
 
+                 [com.cognitect.aws/api "0.8.273"]
+                 [com.cognitect.aws/endpoints "1.1.11.507"]
+                 [com.cognitect.aws/sns "697.2.391.0"]
+
                  [cheshire "5.8.0"]
                  [clj-http "3.9.1"]
                  [clj-time "0.14.4"]
                  [environ "1.1.0"]
 
+                 [compojure "1.6.1"]
+                 [metosin/muuntaja "0.5.0"]
                  [aleph "0.4.6"]
                  [ring/ring-core "1.5.1"]
                  [javax.servlet/servlet-api "2.5"]
@@ -30,8 +33,10 @@
                  [reagent "0.8.1"]
                  [reagent-utils "0.3.2"]
                  [re-frisk "0.4.5"]
+                 
                  [re-com/re-com "2.1.0"]
                  [cljsjs/semantic-ui-react "0.84.0-0"]
+                 [cljsjs/toastr "2.1.2-1"]
                  [clj-commons/secretary "1.2.4"]
                  [venantius/accountant "0.2.4"]
 
