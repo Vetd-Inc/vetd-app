@@ -55,10 +55,17 @@
  (fn [{:keys [db]} [_ etype eid]]
    (let [qid (get-next-query-id)]
      {:ws-send {:payload {:cmd :b/start-round
-                          :return nil
+                          :return {:handler :b/start-round-success}
                           :etype etype
                           :eid eid
                           :buyer-id (-> db :memberships first :org-id)}}})))
+
+(rf/reg-event-fx
+ :b/start-round-success
+ (constantly
+  {:toast {:type "success"
+           :title "Your VetdRound has begun!"
+           :message "We'll be in touch with next steps."}}))
 
 ;; Subscriptions
 (rf/reg-sub
@@ -116,7 +123,7 @@
          }
         (:cname c)])]]
    (when (not-empty rounds)
-     [:> ui/Label {:color "red"
+     [:> ui/Label {:color "blue"
                    :attached "bottom right"}
       "VetdRound In Progress"])])
 
@@ -129,19 +136,14 @@
 
 (defn c-category-search-results
   [{:keys [cname id idstr rounds] :as cat}]
-  [:div {:class :category-search-result}
-   [:div.category-name cname]
-   [:div {:style {:flex-grow 1
-                  :display :flex
-                  :align-items :center
-                  :justify-content :flex-end}}
-    (if (empty? rounds)
-      [:> ui/Button {:on-click #(rf/dispatch [:start-round :category id])
-                     :icon true
-                     :labelPosition "right"}
-       "Start VetdRound for Category"
-       [:> ui/Icon {:name "right arrow"}]]
-      "[In active round]")]])
+  [:div.category-search-result
+   (if (empty? rounds)
+     [:> ui/Button {:on-click #(rf/dispatch [:start-round :category id])
+                    :icon true
+                    :labelPosition "right"}
+      (str "Start VetdRound for \"" cname "\"")
+      [:> ui/Icon {:name "right arrow"}]]
+     "[In active round]")])
 
 (defn c-search-results []
   (let [org-id @(rf/subscribe [:org-id])
@@ -167,19 +169,14 @@
                                                    :status "active"}
                                           [:id :created :status]]]]]}])
                      [])]
-    [:div {:class :search-results}
-     [:div {:class :categories}
+    [:div
+     [:div.categories
       (for [c (:categories categories)]
         ^{:key (:id c)}
         [c-category-search-results c])]
-     (when (and (-> categories :categories not-empty)
-                (-> prods :orgs not-empty))
-       [:div {:style {:height "30px"
-                      :border-top "solid 1px #444"}}])
-     [:div {:class :orgs}
-      (for [v (:orgs prods)]
-        ^{:key (:id v)}
-        [c-vendor-search-results v])]]))
+     (for [v (:orgs prods)]
+       ^{:key (:id v)}
+       [c-vendor-search-results v])]))
 
 (defn c-page []
   (let [search-query (r/atom "")]
@@ -193,6 +190,7 @@
                        :size "big"
                        :icon "search"
                        :autoFocus true
+                       :spellCheck false
                        :onChange (fn [_ this]
                                    (dispatch-search-DB (.-value this))
                                    (reset! search-query (.-value this)))
