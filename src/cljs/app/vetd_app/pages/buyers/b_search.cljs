@@ -72,6 +72,23 @@
            :title "Your VetdRound has begun!"
            :message "We'll be in touch with next steps."}}))
 
+(rf/reg-event-fx
+ :b/req-new-prod-cat
+ (fn [{:keys [db]} [_ req]]
+   (let [qid (get-next-query-id)]
+     {:ws-send {:payload {:cmd :b/req-new-prod-cat
+                          :return {:handler :b/req-new-prod-cat-success}
+                          :org-id (-> db :memberships first :org-id)
+                          :user-id (-> db :user :id)
+                          :req req}}})))
+
+(rf/reg-event-fx
+ :b/req-new-prod-cat-success
+ (constantly
+  {:toast {:type "success"
+           :title "Thanks for the suggestion!"
+           :message "We'll let you know when we add it."}}))
+
 ;; Subscriptions
 (rf/reg-sub
  :b/search-result-ids
@@ -201,14 +218,37 @@
                                                    :status "active"}
                                           [:id :created :status]]]]]}])
                      [])]
-    [:div
-     [:div.categories
-      (for [c (:categories categories)]
-        ^{:key (:id c)}
-        [c-category-search-results c])]
-     (for [v (:orgs prods)]
-       ^{:key (:id v)}
-       [c-vendor-search-results v])]))
+    (if (not-empty (concat product-ids vendor-ids))
+      [:div
+       [:div.categories
+        (for [c (:categories categories)]
+          ^{:key (:id c)}
+          [c-category-search-results c])]
+       (for [v (:orgs prods)]
+         ^{:key (:id v)}
+         [c-vendor-search-results v])]
+      [:> ui/Segment {:placeholder true}
+       [:> ui/Header {:icon true}
+        [:> ui/Icon {:name "search"}]
+        "We don't have that product or category."]
+       [:> ui/SegmentInline
+        [:> ui/Input {:label {:icon "asterisk"}
+                      :labelPosition "left corner"
+                      :placeholder "Product / Category . . ."
+                      :action {:color "blue"
+                               :content "Request It!"
+                               :onClick #(rf/dispatch [:b/req-new-prod-cat (.-value %2)])}}
+         #_[:> ui/Select {:compact true
+                          :options [{:text "Product"
+                                     :value "product"
+                                     :key "product"}
+                                    {:text "Category"
+                                     :value "category"
+                                     :key "category"}]
+                          :defaultValue "product"}]
+         #_[:> ui/Button {:color "blue"}
+            "Request It!"]
+         ]]])))
 
 (defn c-page []
   (let [search-query (r/atom "")]
