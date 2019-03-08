@@ -53,7 +53,7 @@
      {})))
 
 (rf/reg-event-fx
- :start-round
+ :b/start-round
  (fn [{:keys [db]} [_ etype eid]]
    (let [qid (get-next-query-id)]
      {:ws-send {:payload {:cmd :b/start-round
@@ -67,6 +67,25 @@
  (constantly
   {:toast {:type "success"
            :title "Your VetdRound has begun!"
+           :message "We'll be in touch with next steps."}}))
+
+(rf/reg-event-fx
+ :b/create-preposal-req
+ (fn [{:keys [db]} [_ org-id product-id]]
+   (let [qid (get-next-query-id)]
+     {:ws-send {:payload {:cmd :b/create-preposal-req
+                          :return {:handler :b/create-preposal-req-success}
+                          :prep-req {:to-org-id (-> db :memberships first :org-id)
+                                     :to-user-id (-> db :user :id)
+                                     :from-org-id org-id
+                                     :from-user-id nil ; todo: how do I know this?
+                                     :prod-id product-id}}}})))
+
+(rf/reg-event-fx
+ :b/create-preposal-req-success
+ (constantly
+  {:toast {:type "success"
+           :title "Preposal Requested"
            :message "We'll be in touch with next steps."}}))
 
 ;; Subscriptions
@@ -99,14 +118,15 @@
   [:div "Preposal Requested " (str created)])
 
 (defn c-product-search-result
-  [{:keys [id pname short-desc preposals logo rounds categories docs]} org-name]
-  (let [preposal-responses (-> docs first :responses)]
+  [{:keys [id pname short-desc logo rounds categories docs]} org]
+  (let [preposal-responses (-> docs first :responses)
+        _ (println docs)]
     [:> ui/Item {:onClick #(println "go to this product")}
      [:> ui/ItemImage {:class "product-logo"
                        :src (str "https://s3.amazonaws.com/vetd-logos/" logo)}]
      [:> ui/ItemContent
       [:> ui/ItemHeader
-       pname " " [:small " by " org-name]]
+       pname " " [:small " by " (:oname org)]]
       [:> ui/ItemMeta
        (if preposal-responses
          [:span
@@ -116,7 +136,8 @@
           (docs/get-field-value preposal-responses "Pricing Estimate" "unit" :sval)
           " "
           [:small "(estimate)"]]
-         "Request Preposal")]
+         [:a {:onClick #(rf/dispatch [:b/create-preposal-req (:id org) id])}
+          "Request a Preposal"])]
       [:> ui/ItemDescription short-desc]
       [:> ui/ItemExtra
        (for [c categories]
@@ -145,13 +166,13 @@
   [:> ui/ItemGroup {:class "results"}
    (for [p (:products v)]
      ^{:key (:id p)}
-     [c-product-search-result p (:oname v)])])
+     [c-product-search-result p v])])
 
 (defn c-category-search-results
   [{:keys [cname id idstr rounds] :as cat}]
   [:div.category-search-result
    (if (empty? rounds)
-     [:> ui/Button {:on-click #(rf/dispatch [:start-round :category id])
+     [:> ui/Button {:on-click #(rf/dispatch [:b/start-round :category id])
                     :icon true
                     :labelPosition "right"}
       (str "Start VetdRound for \"" cname "\"")

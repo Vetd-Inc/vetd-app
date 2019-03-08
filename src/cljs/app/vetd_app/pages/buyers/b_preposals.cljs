@@ -43,7 +43,7 @@
       [:> ui/ItemDescription (:short-desc product)]
       [:> ui/ItemExtra
        (when (empty? (:rounds product))
-         [:> ui/Button {:onClick #(rf/dispatch [:start-round :product (:id product)])
+         [:> ui/Button {:onClick #(rf/dispatch [:b/start-round :product (:id product)])
                         :icon true
                         :labelPosition "right"
                         :floated "right"}
