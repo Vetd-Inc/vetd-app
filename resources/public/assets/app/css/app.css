@@ -233,28 +233,36 @@ body, * {
   }
 }
 
-/* Preposals */
-.preposals {
+/* used by:
+ *   Preposals & Preposal Detail */
+.container-with-sidebar {
   display: flex;
   flex-direction: row;
 }
-.preposals > .results {
+.container-with-sidebar > .inner-container {
   flex: 1;
+  margin-top: 0 !important;
 }
-.refine {
+.sidebar {
   width: 175px;
   margin-right: 15px;
   font-weight: 400 !important;
 }
-.refine > .checkbox {
+.sidebar > .checkbox {
   display: block;
 }
-.refine > .checkbox > label {
+.sidebar > .checkbox > label {
   font-size: 12px;
   font-weight: 300;
 }
 
-
+/* to make segment look the same as item results */
+/* .segment { */
+/*   padding: 15px 12px !important; */
+/*   background: #fff !important; */
+/*   box-shadow: 0 1px 3px 0 rgba(0,0,0,0.08), 0 2px 14px 0 rgba(50,50,93,0.14) !important; */
+/*   border-radius: 8px !important; */
+/* } */
 
 
 /* Products & Categories page */
@@ -267,9 +275,6 @@ body, * {
  * used by: Preposals page
  *          Products & Categories page
  */
-.results  { 
-  margin-top: 0 !important;
-}
 .results > .item  {
   padding: 15px 12px !important;
   background: #fff !important;

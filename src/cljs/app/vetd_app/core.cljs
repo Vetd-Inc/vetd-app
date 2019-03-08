@@ -38,6 +38,7 @@
                    :b/home #'b-fix/container
                    :b/search #'b-fix/container
                    :b/preposals #'b-fix/container
+                   :b/preposal-detail #'b-fix/container
                    :v/home #'v-fix/container})
 
 
@@ -62,6 +63,10 @@
            (public-pages page))
      page
      :pub/login)))
+
+(rf/reg-sub
+ :page-params
+ (fn [{:keys [page-params]}] page-params))
 
 (rf/reg-sub
  :active-org

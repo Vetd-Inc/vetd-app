@@ -175,12 +175,12 @@
        (when (and preposal-responses
                   (= "yes" (docs/get-field-value preposal-responses "Do you offer a free trial?" "value" :sval)))
          [:> ui/Label {:class "free-trial-tag"
-                       :color "teal"
+                       :color "gray"
                        :size "small"
                        :tag true}
           "Free Trial"])]]
      (when (not-empty rounds)
-       [:> ui/Label {:color "blue"
+       [:> ui/Label {:color "teal"
                      :attached "bottom right"}
         "VetdRound In Progress"])]))
 
@@ -196,11 +196,12 @@
   [:div.category-search-result
    (if (empty? rounds)
      [:> ui/Button {:on-click #(rf/dispatch [:b/start-round :category id])
+                    :color "blue"
                     :icon true
                     :labelPosition "right"}
       (str "Start VetdRound for \"" cname "\"")
       [:> ui/Icon {:name "right arrow"}]]
-     [:> ui/Label {:color "blue"
+     [:> ui/Label {:color "teal"
                    :size "large"}
       "VetdRound In Progress for \"" cname "\""])])
 
