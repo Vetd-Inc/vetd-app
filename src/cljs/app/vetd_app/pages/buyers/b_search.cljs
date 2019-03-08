@@ -119,13 +119,6 @@
          "Request Preposal")]
       [:> ui/ItemDescription short-desc]
       [:> ui/ItemExtra
-       (when (empty? rounds)
-         [:> ui/Button {:onClick #(rf/dispatch [:start-round :product id])
-                        :icon true
-                        :labelPosition "right"
-                        :floated "right"}
-          "Start VetdRound"
-          [:> ui/Icon {:name "right arrow"}]])
        (for [c categories]
          ^{:key (:id c)}
          [:> ui/Label

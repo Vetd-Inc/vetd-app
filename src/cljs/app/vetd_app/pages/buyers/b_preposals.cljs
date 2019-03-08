@@ -42,6 +42,13 @@
         [:small "(estimate)"]]]
       [:> ui/ItemDescription (:short-desc product)]
       [:> ui/ItemExtra
+       (when (empty? (:rounds product))
+         [:> ui/Button {:onClick #(rf/dispatch [:start-round :product (:id product)])
+                        :icon true
+                        :labelPosition "right"
+                        :floated "right"}
+          "Start VetdRound"
+          [:> ui/Icon {:name "right arrow"}]])
        (for [c (:categories product)]
          ^{:key (:id c)}
          [:> ui/Label
@@ -55,8 +62,11 @@
                                        :color "teal"
                                        :size "small"
                                        :tag true}
-                          "Free Trial"])]]]))
-
+                          "Free Trial"])]]
+     (when (not-empty (:rounds product))
+       [:> ui/Label {:color "blue"
+                     :attached "bottom right"}
+        "VetdRound In Progress"])]))
 
 (defn filter-preposals
   [preposals selected-categories]
@@ -75,6 +85,9 @@
                                         :to-org-id @org-id&}
                                  [:id :idstr :title
                                   [:product [:id :pname :logo :short-desc
+                                             [:rounds {:buyer-id @org-id&
+                                                       :status "active"}
+                                              [:id :created :status]]
                                              [:categories [:id :idstr :cname]]]]
                                   [:from-org [:id :oname]]
                                   [:from-user [:id :uname]]
