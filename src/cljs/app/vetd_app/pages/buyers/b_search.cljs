@@ -143,7 +143,9 @@
                     :labelPosition "right"}
       (str "Start VetdRound for \"" cname "\"")
       [:> ui/Icon {:name "right arrow"}]]
-     "[In active round]")])
+     [:> ui/Label {:color "blue"
+                   :size "large"}
+      "VetdRound In Progress for \"" cname "\""])])
 
 (defn c-search-results []
   (let [org-id @(rf/subscribe [:org-id])
