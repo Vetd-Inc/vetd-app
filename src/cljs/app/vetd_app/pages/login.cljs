@@ -1,5 +1,6 @@
 (ns vetd-app.pages.login
-  (:require [reagent.core :as r]
+  (:require [vetd-app.ui :as ui]
+            [reagent.core :as r]
             [re-frame.core :as rf]
             [re-com.core :as rc]))
 
@@ -55,19 +56,23 @@
         login-failed? (rf/subscribe [:login-failed?])]
     (fn []
       [:div {:id :login-form}
-       [:div (when @login-failed?
-               "LOGIN FAILED")]
-       [rc/input-text
-        :model email
-        :on-change #(reset! email %)
-        :placeholder "Your Email"]   
-       [rc/input-password
-        :model pwd
-        :on-change #(reset! pwd %)
-        :placeholder "Password"]
-       [rc/button
-        :on-click #(rf/dispatch [:login [@email @pwd]])
-        :label "Login"]
-       [rc/button
-        :on-click #(rf/dispatch [:pub/nav-signup])
-        :label "Sign Up"]])))
+       [:img {:src "https://s3.amazonaws.com/vetd-logos/vetd.svg"
+              :style {:width 210
+                      :marginBottom 30}}]
+       [:> ui/Form
+        [:div (when @login-failed?
+                "LOGIN FAILED")]
+        [:> ui/FormField
+         [:> ui/Input {:placeholder "Your Email"
+                       :onChange (fn [_ this]
+                                   (reset! email (.-value this)))}]]
+        [:> ui/FormField
+         [:> ui/Input {:placeholder "Password"
+                       :onChange (fn [_ this]
+                                   (reset! pwd (.-value this)))}]]
+        [:> ui/Button {:on-click #(rf/dispatch [:login [@email @pwd]])}
+         "Log In"]
+        [:> ui/Divider {:horizontal true} "Or"]
+        [:> ui/Button {:color "blue"
+                       :on-click #(rf/dispatch [:pub/nav-signup])}
+         "Sign Up"]]])))
