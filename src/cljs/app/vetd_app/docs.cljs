@@ -20,6 +20,18 @@
                 {:id value
                  :label label})))))
 
+(defn get-field-value
+  "Given a reponses map, get value for prompt->field->key"
+  [responses prompt field k]
+  (-> (group-by (comp :prompt :prompt) responses)
+      (get prompt)
+      first
+      :fields
+      (->> (group-by (comp :fname :prompt-field)))
+      (get field)
+      first
+      (get k)))
+
 (defn walk-deref-ratoms
   [frm]
   (clojure.walk/postwalk
@@ -33,12 +45,12 @@
  :save-form-doc
  (fn [{:keys [db]} [_ form-doc]]
    (def fd1 (walk-deref-ratoms form-doc))
-#_   (cljs.pprint/pprint fd1)
+   #_   (cljs.pprint/pprint fd1)
    {:ws-send {:payload {:cmd :save-form-doc
                         :return nil
                         :form-doc (walk-deref-ratoms form-doc)}}}))
 
-  ;; TODO support multiple response fields (for where list? = true)
+;; TODO support multiple response fields (for where list? = true)
 (defn mk-form-doc-prompt-field-state
   [fields {:keys [id] :as prompt-field}]
   (let [{:keys [sval nval dval] :as resp-field} (some-> id fields first)
@@ -172,10 +184,10 @@
 
 
 (hooks/reg-hooks! hooks/c-prompt
-                {:default #'c-prompt-default})
+                  {:default #'c-prompt-default})
 
 (hooks/reg-hooks! hooks/c-prompt-field
-                {:default #'c-prompt-field-default
-                 ["s" "multi"] #'c-prompt-field-textarea
-                 ["n" "int"] #'c-prompt-field-int
-                 "e" #'c-prompt-field-enum})
+                  {:default #'c-prompt-field-default
+                   ["s" "multi"] #'c-prompt-field-textarea
+                   ["n" "int"] #'c-prompt-field-int
+                   "e" #'c-prompt-field-enum})

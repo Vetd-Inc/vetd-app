@@ -1,6 +1,7 @@
 (ns vetd-app.pages.buyers.b-preposals
   (:require [vetd-app.flexer :as flx]
             [vetd-app.ui :as ui]
+            [vetd-app.docs :as docs]
             [reagent.core :as r]
             [reagent.format :as format]
             [re-frame.core :as rf]
@@ -23,25 +24,9 @@
 (defn c-preposal
   "Component to display Preposal as a list item."
   [{:keys [id product from-org responses] :as args}]
-  (let [get-prompt-field-key-value (fn [prompt field k]
-                                     (-> (group-by (comp :prompt :prompt) responses)
-                                         (get prompt)
-                                         first
-                                         :fields
-                                         (->> (group-by (comp :fname :prompt-field)))
-                                         (get field)
-                                         first
-                                         (get k)))
-        pricing-estimate-value (get-prompt-field-key-value "Pricing Estimate"
-                                                           "value"
-                                                           :nval)
-        pricing-estimate-unit (get-prompt-field-key-value "Pricing Estimate"
-                                                          "unit"
-                                                          :sval)
-        free-trial? (= "yes"
-                       (get-prompt-field-key-value "Do you offer a free trial?"
-                                                   "value"
-                                                   :sval))]    
+  (let [pricing-estimate-value (docs/get-field-value responses "Pricing Estimate" "value" :nval)
+        pricing-estimate-unit (docs/get-field-value responses "Pricing Estimate" "unit" :sval)
+        free-trial? (= "yes" (docs/get-field-value responses "Do you offer a free trial?" "value" :sval))]    
     [:> ui/Item {:onClick #(println "go to this preposal")} ; todo: make config var 's3-base-url'
      [:> ui/ItemImage {:class "product-logo"
                        :src (str "https://s3.amazonaws.com/vetd-logos/" (:logo product))}]

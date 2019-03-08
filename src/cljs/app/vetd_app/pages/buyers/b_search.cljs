@@ -1,7 +1,9 @@
 (ns vetd-app.pages.buyers.b-search
   (:require [vetd-app.flexer :as flx]
             [vetd-app.ui :as ui]
+            [vetd-app.docs :as docs]
             [reagent.core :as r]
+            [reagent.format :as format]
             [re-frame.core :as rf]
             [re-com.core :as rc]))
 
@@ -97,35 +99,53 @@
   [:div "Preposal Requested " (str created)])
 
 (defn c-product-search-result
-  [{:keys [id pname short-desc preposals logo rounds categories]} org-name]
-
-  [:> ui/Item {:onClick #(println "go to this product")}
-   [:> ui/ItemImage {:class "product-logo"
-                     :src (str "https://s3.amazonaws.com/vetd-logos/" logo)}]
-   [:> ui/ItemContent
-    [:> ui/ItemHeader
-     pname " " [:small " by " org-name]]
-    [:> ui/ItemDescription short-desc]
-    [:> ui/ItemExtra
-     (when (empty? rounds)
-       [:> ui/Button {:onClick #(rf/dispatch [:start-round :product id])
-                      :icon true
-                      :labelPosition "right"
-                      :floated "right"}
-        "Start VetdRound"
-        [:> ui/Icon {:name "right arrow"}]])
-     (for [c categories]
-       ^{:key (:id c)}
-       [:> ui/Label
-        {:as "a"
-         :class "category-tag"
-         ;; :onClick #(println "category search: " (:id c))
-         }
-        (:cname c)])]]
-   (when (not-empty rounds)
-     [:> ui/Label {:color "blue"
-                   :attached "bottom right"}
-      "VetdRound In Progress"])])
+  [{:keys [id pname short-desc preposals logo rounds categories docs]} org-name]
+  (let [preposal-responses (-> docs first :responses)]
+    [:> ui/Item {:onClick #(println "go to this product")}
+     [:> ui/ItemImage {:class "product-logo"
+                       :src (str "https://s3.amazonaws.com/vetd-logos/" logo)}]
+     [:> ui/ItemContent
+      [:> ui/ItemHeader
+       pname " " [:small " by " org-name]]
+      [:> ui/ItemMeta
+       (if preposal-responses
+         [:span
+          (format/currency-format
+           (docs/get-field-value preposal-responses "Pricing Estimate" "value" :nval))
+          " / "
+          (docs/get-field-value preposal-responses "Pricing Estimate" "unit" :sval)
+          " "
+          [:small "(estimate)"]]
+         "Request Preposal")]
+      [:> ui/ItemDescription short-desc]
+      [:> ui/ItemExtra
+       (when (empty? rounds)
+         [:> ui/Button {:onClick #(rf/dispatch [:start-round :product id])
+                        :icon true
+                        :labelPosition "right"
+                        :floated "right"}
+          "Start VetdRound"
+          [:> ui/Icon {:name "right arrow"}]])
+       (for [c categories]
+         ^{:key (:id c)}
+         [:> ui/Label
+          {:class "category-tag"
+           ;; use the below two keys when we make category tags clickable
+           ;; :as "a"
+           ;; :onClick #(println "category search: " (:id c))
+           }
+          (:cname c)])
+       (when (and preposal-responses
+                  (= "yes" (docs/get-field-value preposal-responses "Do you offer a free trial?" "value" :sval)))
+         [:> ui/Label {:class "free-trial-tag"
+                       :color "teal"
+                       :size "small"
+                       :tag true}
+          "Free Trial"])]]
+     (when (not-empty rounds)
+       [:> ui/Label {:color "blue"
+                     :attached "bottom right"}
+        "VetdRound In Progress"])]))
 
 (defn c-vendor-search-results
   [v]
@@ -157,6 +177,20 @@
                                    [:id :oname :idstr :short-desc
                                     [:products {:id product-ids}
                                      [:id :pname :idstr :short-desc :logo
+                                      [:docs {:dtype "preposal"
+                                              :to-org-id org-id}
+                                       [:id :idstr :title
+                                        [:from-org [:id :oname]]
+                                        [:from-user [:id :uname]]
+                                        [:to-org [:id :oname]]
+                                        [:to-user [:id :uname]]
+                                        [:responses
+                                         [:id :prompt-id :notes
+                                          [:prompt
+                                           [:id :prompt]]
+                                          [:fields
+                                           [:id :pf-id :idx :sval :nval :dval
+                                            [:prompt-field [:id :fname]]]]]]]]
                                       [:rounds {:buyer-id org-id
                                                 :status "active"}
                                        [:id :created :status]]
@@ -193,6 +227,7 @@
                        :icon "search"
                        :autoFocus true
                        :spellCheck false
+                       ;; :loading true ; todo: use this property
                        :onChange (fn [_ this]
                                    (dispatch-search-DB (.-value this))
                                    (reset! search-query (.-value this)))
