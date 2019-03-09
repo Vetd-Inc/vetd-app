@@ -18,7 +18,7 @@
     :pages #{:b/preposals :b/preposal-detail}
     :event [:b/nav-preposals]}
    {:text "Products & Categories"
-    :pages #{:b/search}
+    :pages #{:b/search :b/product-detail}
     :event [:b/nav-search]}])
 
 (defn c-top-nav-item [{:keys [text event active]}]
