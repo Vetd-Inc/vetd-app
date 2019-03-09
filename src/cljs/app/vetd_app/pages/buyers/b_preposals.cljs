@@ -10,8 +10,8 @@
 ;; Events
 (rf/reg-event-fx
  :b/nav-preposals
- (fn []
-   {:nav {:path "/b/preposals/"}}))
+ (constantly
+  {:nav {:path "/b/preposals/"}}))
 
 (rf/reg-event-db
  :b/route-preposals
@@ -23,12 +23,12 @@
 ;; Components
 (defn c-preposal
   "Component to display Preposal as a list item."
-  [{:keys [id product from-org responses] :as args}]
+  [{:keys [id idstr product from-org responses]}]
   (let [pricing-estimate-value (docs/get-field-value responses "Pricing Estimate" "value" :nval)
         pricing-estimate-unit (docs/get-field-value responses "Pricing Estimate" "unit" :sval)
         free-trial? (= "yes" (docs/get-field-value responses "Do you offer a free trial?" "value" :sval))]    
-    [:> ui/Item {:onClick #(println "go to this preposal")} ; todo: make config var 's3-base-url'
-     [:> ui/ItemImage {:class "product-logo"
+    [:> ui/Item {:onClick #(rf/dispatch [:b/nav-preposal-detail idstr])} 
+     [:> ui/ItemImage {:class "product-logo" ; todo: make config var 's3-base-url'
                        :src (str "https://s3.amazonaws.com/vetd-logos/" (:logo product))}]
      [:> ui/ItemContent
       [:> ui/ItemHeader
@@ -44,6 +44,7 @@
       [:> ui/ItemExtra
        (when (empty? (:rounds product))
          [:> ui/Button {:onClick #(rf/dispatch [:b/start-round :product (:id product)])
+                        :color "blue"
                         :icon true
                         :labelPosition "right"
                         :floated "right"}
@@ -59,12 +60,12 @@
            }
           (:cname c)])
        (when free-trial? [:> ui/Label {:class "free-trial-tag"
-                                       :color "teal"
+                                       :color "gray"
                                        :size "small"
                                        :tag true}
                           "Free Trial"])]]
      (when (not-empty (:rounds product))
-       [:> ui/Label {:color "blue"
+       [:> ui/Label {:color "teal"
                      :attached "bottom right"}
         "VetdRound In Progress"])]))
 
@@ -104,8 +105,8 @@
         ;; if empty, let all categories through
         selected-categories (r/atom #{})]
     (fn []
-      [:div.preposals
-       [:div.refine
+      [:div.container-with-sidebar
+       [:div.sidebar
         "Filter By Category"
         (let [categories (->> @preps&
                               :docs
@@ -120,7 +121,7 @@
                                          (if (.-checked this)
                                            (swap! selected-categories conj id)
                                            (swap! selected-categories disj id)))}]))]
-       [:> ui/ItemGroup {:class "results"}
+       [:> ui/ItemGroup {:class "inner-container results"}
         (if (= :loading @preps&)
           [:> ui/Loader {:active true :inline true}]
           (for [preposal (cond-> (:docs @preps&)

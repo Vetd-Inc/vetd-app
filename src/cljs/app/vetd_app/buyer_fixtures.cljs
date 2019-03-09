@@ -15,10 +15,10 @@
 ;; Components
 (def top-nav-items
   [{:text "Preposals"
-    :page :b/preposals
+    :pages #{:b/preposals :b/preposal-detail}
     :event [:b/nav-preposals]}
    {:text "Products & Categories"
-    :page :b/search
+    :pages #{:b/search}
     :event [:b/nav-search]}])
 
 (defn c-top-nav-item [{:keys [text event active]}]
@@ -40,7 +40,7 @@
         [:img {:src "https://s3.amazonaws.com/vetd-logos/vetd.svg"}]]
        (doall
         (for [item top-nav-items]
-          (c-top-nav-item (assoc item :active (= @page& (:page item))))))
+          (c-top-nav-item (assoc item :active (boolean ((:pages item) @page&))))))
        [:> ui/MenuMenu {:position "right"}
         ;; Consider having search bar in top nav?
         ;; [:> ui/MenuItem

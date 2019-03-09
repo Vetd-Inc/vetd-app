@@ -175,12 +175,12 @@
        (when (and preposal-responses
                   (= "yes" (docs/get-field-value preposal-responses "Do you offer a free trial?" "value" :sval)))
          [:> ui/Label {:class "free-trial-tag"
-                       :color "teal"
+                       :color "gray"
                        :size "small"
                        :tag true}
           "Free Trial"])]]
      (when (not-empty rounds)
-       [:> ui/Label {:color "blue"
+       [:> ui/Label {:color "teal"
                      :attached "bottom right"}
         "VetdRound In Progress"])]))
 
@@ -196,15 +196,17 @@
   [:div.category-search-result
    (if (empty? rounds)
      [:> ui/Button {:on-click #(rf/dispatch [:b/start-round :category id])
+                    :color "blue"
                     :icon true
                     :labelPosition "right"}
       (str "Start VetdRound for \"" cname "\"")
       [:> ui/Icon {:name "right arrow"}]]
-     [:> ui/Label {:color "blue"
+     [:> ui/Label {:color "teal"
                    :size "large"}
       "VetdRound In Progress for \"" cname "\""])])
 
-(defn c-search-results []
+(defn c-search-results
+  [search-query]
   (let [org-id @(rf/subscribe [:org-id])
         {:keys [product-ids vendor-ids category-ids] :as ids} @(rf/subscribe [:b/search-result-ids])
         prods (if (not-empty (concat product-ids vendor-ids))
@@ -245,40 +247,45 @@
                                                    :status "active"}
                                           [:id :created :status]]]]]}])
                      [])
+        loading? (or (= :loading prods) (= :loading categories))
         prod-cat-suggestion (r/atom "")]
-    (if (not-empty (concat product-ids vendor-ids))
-      [:div
-       [:div.categories
-        (for [c (:categories categories)]
-          ^{:key (:id c)}
-          [c-category-search-results c])]
-       (for [v (:orgs prods)]
-         ^{:key (:id v)}
-         [c-vendor-search-results v])]
-      [:> ui/Segment {:placeholder true}
-       [:> ui/Header {:icon true}
-        [:> ui/Icon {:name "search"}]
-        "We don't have that product or category."]
-       [:> ui/SegmentInline
-        [:> ui/Input {:label {:icon "asterisk"}
-                      :labelPosition "left corner"
-                      :placeholder "Product / Category . . ."
-                      :style {:position "relative"
-                              :top 1
-                              :marginRight 15}
-                      :onChange (fn [_ this]
-                                  (reset! prod-cat-suggestion (.-value this)))}]
-        #_[:> ui/Select {:compact true
-                         :options [{:text "Product"
-                                    :value "product"
-                                    :key "product"}
-                                   {:text "Category"
-                                    :value "category"
-                                    :key "category"}]
-                         :defaultValue "product"}]
-        [:> ui/Button {:color "blue"
-                       :onClick #(rf/dispatch [:b/req-new-prod-cat @prod-cat-suggestion])}
-         "Request It!"]]])))
+    (if loading?
+      [:> ui/Loader {:active true
+                     :style {:marginTop 20}}]
+      (if (not-empty (concat product-ids vendor-ids))
+        [:div
+         [:div.categories
+          (for [c (:categories categories)]
+            ^{:key (:id c)}
+            [c-category-search-results c])]
+         (for [v (:orgs prods)]
+           ^{:key (:id v)}
+           [c-vendor-search-results v])]
+        (when (> (count @search-query) 2)
+          [:> ui/Segment {:placeholder true}
+           [:> ui/Header {:icon true}
+            [:> ui/Icon {:name "search"}]
+            "We don't have that product or category."]
+           [:> ui/SegmentInline
+            [:> ui/Input {:label {:icon "asterisk"}
+                          :labelPosition "left corner"
+                          :placeholder "Product / Category . . ."
+                          :style {:position "relative"
+                                  :top 1
+                                  :marginRight 15}
+                          :onChange (fn [_ this]
+                                      (reset! prod-cat-suggestion (.-value this)))}]
+            #_[:> ui/Select {:compact true
+                             :options [{:text "Product"
+                                        :value "product"
+                                        :key "product"}
+                                       {:text "Category"
+                                        :value "category"
+                                        :key "category"}]
+                             :defaultValue "product"}]
+            [:> ui/Button {:color "blue"
+                           :onClick #(rf/dispatch [:b/req-new-prod-cat @prod-cat-suggestion])}
+             "Request It!"]]])))))
 
 (defn c-page []
   (let [search-query (r/atom "")]
@@ -302,5 +309,5 @@
        [:> ui/GridRow {:columns 3}
         [:> ui/GridColumn {:width 2}]
         [:> ui/GridColumn {:width 12}
-         [c-search-results]]
+         [c-search-results search-query]]
         [:> ui/GridColumn {:width 2}]]])))
