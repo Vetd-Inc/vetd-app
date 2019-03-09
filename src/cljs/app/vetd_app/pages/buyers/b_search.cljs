@@ -139,10 +139,12 @@
   [:div "Preposal Requested " (str created)])
 
 (defn c-product-search-result
-  [{:keys [id pname short-desc logo rounds categories forms docs]} org]
+  [{:keys [id idstr pname short-desc logo rounds categories forms docs]} org]
   (let [preposal-responses (-> docs first :responses)
         requested-preposal? (not-empty forms)]
-    [:> ui/Item {:onClick #(println "go to this product")}
+    [:> ui/Item {:onClick #(rf/dispatch (if preposal-responses
+                                          [:b/nav-preposal-detail (-> docs first :idstr)]
+                                          [:b/nav-product-detail idstr]))}
      [:> ui/ItemImage {:class "product-logo"
                        :src (str "https://s3.amazonaws.com/vetd-logos/" logo)}]
      [:> ui/ItemContent
