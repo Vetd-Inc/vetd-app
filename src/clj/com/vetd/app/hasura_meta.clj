@@ -15,7 +15,13 @@
               [:vetd :categories_by_round] [[:vetd :categories]]              
               [:vetd :responses_by_doc] [[:vetd :responses]]
               [:vetd :form_docs] [[:vetd :forms]]}
-   :rels [{:tables [:vetd :rounds
+   :rels [{:tables [:vetd :categories
+                    :vetd :rounds_by_category]
+           :fields [:rounds]
+           :cols [:id :category_id]
+           :rel :one-many}
+
+          {:tables [:vetd :rounds
                     :vetd :categories_by_round]
            :fields [:categories]
            :cols [:id :round_id]
@@ -167,7 +173,7 @@
 
           {:tables [:vetd :responses
                     :vetd :users]
-           :fields [:prompt :users]
+           :fields [:users :responses]
            :cols [:prompt_id :id]
            :rel :many-one}
           
