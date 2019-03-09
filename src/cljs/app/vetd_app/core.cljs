@@ -6,6 +6,7 @@
             [vetd-app.pages.buyers.b-home :as p-bhome]
             [vetd-app.pages.buyers.b-preposals :as p-bpreposals]
             [vetd-app.pages.buyers.b-preposal-detail :as p-bpreposal-detail]
+            [vetd-app.pages.buyers.b-product-detail :as p-bproduct-detail]
             [vetd-app.pages.vendors.v-home :as p-vhome]
             [vetd-app.pages.signup :as p-signup]
             [vetd-app.pages.login :as p-login]
@@ -29,7 +30,8 @@
                    :b/home #'p-bhome/c-page
                    :b/search #'p-b-search/c-page
                    :b/preposals #'p-bpreposals/c-page
-                   :b/preposal-detail #'p-bpreposal-detail/c-page   
+                   :b/preposal-detail #'p-bpreposal-detail/c-page
+                   :b/product-detail #'p-bproduct-detail/c-page
                    :v/home #'p-vhome/c-page})
 
 (hooks/reg-hooks! hooks/c-container
@@ -39,6 +41,7 @@
                    :b/search #'b-fix/container
                    :b/preposals #'b-fix/container
                    :b/preposal-detail #'b-fix/container
+                   :b/product-detail #'b-fix/container
                    :v/home #'v-fix/container})
 
 
@@ -192,6 +195,9 @@
 
 (sec/defroute buyers-preposal-detail "/b/preposals/:idstr" [idstr]
   (rf/dispatch [:b/route-preposal-detail idstr]))
+
+(sec/defroute buyers-product-detail "/b/products/:idstr" [idstr]
+  (rf/dispatch [:b/route-product-detail idstr]))
 
 (sec/defroute vendors-home "/v/home/" [query-params]
   (do (.log js/console "nav vendors")

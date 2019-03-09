@@ -161,7 +161,8 @@
           [:small "(estimate)"]]
          (if requested-preposal?
            "Preposal Requested"
-           [:a {:onClick #(rf/dispatch [:b/create-preposal-req id])}
+           [:a {:onClick #(do (.stopPropagation %)
+                              (rf/dispatch [:b/create-preposal-req id]))}
             "Request a Preposal"]))]
       [:> ui/ItemDescription short-desc]
       [:> ui/ItemExtra
@@ -221,7 +222,7 @@
                                       [:forms {:ftype "preposal" ; preposal requests
                                                :from-org-id org-id}
                                        [:id]]
-                                      [:docs {:dtype "preposal"
+                                      [:docs {:dtype "preposal" ; completed preposals
                                               :to-org-id org-id}
                                        [:id :idstr :title
                                         [:from-org [:id :oname]]
