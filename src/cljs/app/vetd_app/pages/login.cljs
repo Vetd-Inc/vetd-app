@@ -67,7 +67,8 @@
                        :onChange (fn [_ this]
                                    (reset! email (.-value this)))}]]
         [:> ui/FormField
-         [:> ui/Input {:placeholder "Password"
+         [:> ui/Input {:type "password"
+                       :placeholder "Password"
                        :onChange (fn [_ this]
                                    (reset! pwd (.-value this)))}]]
         [:> ui/Button {:on-click #(rf/dispatch [:login [@email @pwd]])}
