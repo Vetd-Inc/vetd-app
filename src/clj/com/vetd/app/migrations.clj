@@ -737,7 +737,42 @@
     [:copy-from '{:name :mig-form-template-prompt-2019-03-07
                   :ns com.vetd.app.migrations
                   :up-fn mig-form-template-prompt-2019-03-07-up
-                  :down-fn mig-form-template-prompt-2019-03-07-down}]]])
+                  :down-fn mig-form-template-prompt-2019-03-07-down}]]
+
+   [[2019 3 8 00 00]
+
+    [:create-view {:schema :vetd
+                   :name :categories_by_round
+                   :honey {:select [[:rc.id :rcid]
+                                    :rc.round_id
+                                    :c.id
+                                    :c.idstr                                    
+                                    :c.created
+                                    :c.cname]
+                           :from [[:round_category :rc]]
+                           :join [[:categories :c]
+                                  [:= :c.id :rc.category_id]]}
+                   :owner :vetd
+                   :grants {:hasura [:SELECT]}}]
+
+    [:create-view {:schema :vetd
+                   :name :products_by_round
+                   :honey {:select [[:rp.id :rpid]
+                                    :rp.round_id
+                                    :p.id
+                                    :p.idstr                                    
+                                    :p.created
+                                    :p.pname
+                                    :p.vendor_id
+                                    :p.short_desc
+                                    :p.long_desc
+                                    :p.logo
+                                    :p.url]
+                           :from [[:round_product :rp]]
+                           :join [[:products :p]
+                                  [:= :p.id :rp.product_id]]}
+                   :owner :vetd
+                   :grants {:hasura [:SELECT]}}]]])
 
 #_(mig/mk-migration-files migrations
                           "migrations")
