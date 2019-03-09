@@ -187,7 +187,8 @@
                               :vendor_qm [:boolean]
                               :short_desc [:text]
                               :long_desc [:text]
-                              :url [:text]}
+                              :url [:text]
+                              :vendor_profile_doc_id [:bigint]} ;; TODO
                     :owner :vetd
                     :grants {:hasura [:SELECT]}}]
 
@@ -203,7 +204,8 @@
                               :short_desc [:text]
                               :long_desc [:text]
                               :logo [:text]
-                              :url [:text]}
+                              :url [:text]
+                              :profile_doc_id [:bigint]} ;; TODO
                     :owner :vetd
                     :grants {:hasura [:SELECT]}}]
 
@@ -287,7 +289,9 @@
                               :updated [:timestamp :with :time :zone]
                               :deleted [:timestamp :with :time :zone]
                               :buyer_id [:bigint]
-                              :status [:text]}
+                              :user_id [:bigint] ;; TODO initiating user
+                              :status [:text]
+                              :active_qm [:boolean]} ;; TODO
                     :owner :vetd
                     :grants {:hasura [:SELECT]}}]
 
@@ -396,7 +400,9 @@
                               :updated [:timestamp :with :time :zone]
                               :deleted [:timestamp :with :time :zone]
                               :doc_id [:bigint]
-                              :resp_id [:bigint]}
+                              :resp_id [:bigint]
+                              :replaced_by_id [:bigint] ;; TODO
+                              :user_id [:bigint]} ;; TODO
                     :owner :vetd
                     :grants {:hasura [:SELECT]}}]
 
@@ -459,7 +465,9 @@
                               :deleted [:timestamp :with :time :zone]
                               :form_id [:bigint]
                               :prompt_id [:bigint]
-                              :sort [:integer]}
+                              :sort [:integer]
+                              :replaced_by_id [:bigint] ;; TODO
+                              :user_id [:bigint]} ;; TODO
                     :owner :vetd
                     :grants {:hasura [:SELECT]}}]
     
@@ -471,7 +479,8 @@
                               :updated [:timestamp :with :time :zone]
                               :deleted [:timestamp :with :time :zone]
                               :prompt [:text]
-                              :descr [:text]}
+                              :descr [:text]
+                              :term [:text]} ;; TODO
                     :owner :vetd
                     :grants {:hasura [:SELECT]}}]
 
@@ -501,6 +510,7 @@
                               :deleted [:timestamp :with :time :zone]
                               :prompt_id [:bigint]
                               :user_id [:bigint]
+                              :subject [:bigint] ;; TODO matches originating doc
                               :notes [:text]}
                     :owner :vetd
                     :grants {:hasura [:SELECT]}}]
