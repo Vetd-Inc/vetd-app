@@ -430,7 +430,8 @@
                               :deleted [:timestamp :with :time :zone]
                               :form_template_id [:bigint]
                               :prompt_id [:bigint]
-                              :sort [:integer]}
+                              :sort [:integer]
+                              :term [:text]} ;; TODO
                     :owner :vetd
                     :grants {:hasura [:SELECT]}}]
     
