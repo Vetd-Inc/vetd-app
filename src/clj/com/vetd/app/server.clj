@@ -141,7 +141,9 @@
                                                          :db env/pg-db}))
                                      "DOING IT")))
        (c/GET "*" [] (fn [{:keys [cookies]}]
-                       (-> "public/app.html"
+                       (-> (if (admin-session? cookies)
+                             "public/admin.html"
+                             "public/app.html")
                            io/resource
                            io/input-stream))))
       rm-cookies/wrap-cookies))
