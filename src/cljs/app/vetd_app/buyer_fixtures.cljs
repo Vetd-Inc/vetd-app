@@ -3,15 +3,6 @@
             [reagent.core :as r]
             [re-frame.core :as rf]))
 
-;; Events
-(rf/reg-event-fx
- :logout
- (constantly
-  {:local-store {:session-token nil}
-   :cookies {:admin-token [nil {:max-age 60
-                                :path "/"}]}
-   :dispatch [:pub/nav-login]}))
-
 ;; Components
 (def top-nav-items
   [{:text "Preposals"
@@ -35,7 +26,7 @@
       [:> ui/Menu {:class "top-nav"
                    :secondary true} ; 'secondary' is a misnomer (it's just for styling)
        [:> ui/MenuItem {:class "logo"
-                        :onClick #(rf/dispatch [:b/nav-home])}
+                        :onClick #(rf/dispatch [:nav-home])}
         ;; todo: use a config var for base url
         [:img {:src "https://s3.amazonaws.com/vetd-logos/vetd.svg"}]]
        (doall

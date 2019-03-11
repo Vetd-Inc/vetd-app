@@ -5,13 +5,13 @@
             [goog.functions]))
 
 (rf/reg-event-db
- :pub/route-signup
+ :route-signup
  (fn [db [_ query-params]]
    (assoc db
-          :page :pub/signup)))
+          :page :signup)))
 
 (rf/reg-event-fx
- :pub/nav-signup
+ :nav-signup
  (fn [_ _]
    {:nav {:path "/signup"}}))
 
@@ -34,7 +34,7 @@
    (def res1 results)
    #_ (println res1)
    (if-not (:email-used? results)
-     {:dispatch [:pub/nav-login]}
+     {:dispatch [:nav-login]}
      (js/alert "Email already in use by another account."))))
 
 

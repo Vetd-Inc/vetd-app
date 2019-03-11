@@ -9,13 +9,13 @@
  (fn [{:keys [login-failed?]} _] login-failed?))
 
 (rf/reg-event-db
- :pub/route-login
+ :route-login
  (fn [db [_ query-params]]
    (assoc db
-          :page :pub/login)))
+          :page :login)))
 
 (rf/reg-event-fx
- :pub/nav-login
+ :nav-login
  (fn []
    {:nav {:path "/login"}}))
 
@@ -50,6 +50,14 @@
                  :logged-in? logged-in?
                  :login-failed? true)})))
 
+(rf/reg-event-fx
+ :logout
+ (constantly
+  {:local-store {:session-token nil}
+   :cookies {:admin-token [nil {:max-age 60
+                                :path "/"}]}
+   :dispatch [:nav-login]}))
+
 (defn login-page []
   (let [email (r/atom "")
         pwd (r/atom "")
@@ -75,5 +83,5 @@
          "Log In"]
         [:> ui/Divider {:horizontal true} "Or"]
         [:> ui/Button {:color "blue"
-                       :on-click #(rf/dispatch [:pub/nav-signup])}
+                       :on-click #(rf/dispatch [:nav-signup])}
          "Sign Up"]]])))

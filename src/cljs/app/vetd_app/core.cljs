@@ -1,9 +1,7 @@
 (ns vetd-app.core
   (:require [vetd-app.hooks :as hooks]
             [vetd-app.websockets :as ws]
-            [vetd-app.pages.home :as p-home]
             [vetd-app.pages.buyers.b-search :as p-b-search]
-            [vetd-app.pages.buyers.b-home :as p-bhome]
             [vetd-app.pages.buyers.b-preposals :as p-bpreposals]
             [vetd-app.pages.buyers.b-preposal-detail :as p-bpreposal-detail]
             [vetd-app.pages.buyers.b-product-detail :as p-bproduct-detail]
@@ -24,10 +22,8 @@
 (println "START core")
 
 (hooks/reg-hooks! hooks/c-page
-                  {:home #'p-home/home-page
-                   :pub/signup #'p-signup/signup-page
-                   :pub/login #'p-login/login-page
-                   :b/home #'p-bhome/c-page
+                  {:signup #'p-signup/signup-page
+                   :login #'p-login/login-page
                    :b/search #'p-b-search/c-page
                    :b/preposals #'p-bpreposals/c-page
                    :b/preposal-detail #'p-bpreposal-detail/c-page
@@ -35,9 +31,8 @@
                    :v/home #'p-vhome/c-page})
 
 (hooks/reg-hooks! hooks/c-container
-                  {:pub/login #'pub-fix/container
-                   :pub/signup #'pub-fix/container
-                   :b/home #'b-fix/container
+                  {:login #'pub-fix/container
+                   :signup #'pub-fix/container
                    :b/search #'b-fix/container
                    :b/preposals #'b-fix/container
                    :b/preposal-detail #'b-fix/container
@@ -49,15 +44,7 @@
  :init-db
  (fn [] {}))
 
-(rf/reg-event-db
- :route-home
- (fn [db [_ query-params]]
-   (assoc db
-          :page :home
-          :search-query (:q query-params "") ;; to make :default-value work
-          :query-params query-params)))
-
-(def public-pages #{:pub/login :pub/signup})
+(def public-pages #{:login :signup})
 
 (rf/reg-sub
  :page
@@ -65,7 +52,7 @@
    (if (or (and logged-in? user)
            (public-pages page))
      page
-     :pub/login)))
+     :login)))
 
 (rf/reg-sub
  :page-params
@@ -111,11 +98,10 @@
    (acct/navigate! path query)))
 
 
-
 (defn ->home-url
   [membs admin?]
   (if admin?
-    "/a/home/"
+    "/a/search/"
     (if-let [{{:keys [id buyer? vendor?]} :org} (first membs)]
       (if buyer?
         "/b/preposals/"
@@ -159,9 +145,9 @@
       :cookies {:admin-token (when admin?
                                [(:session-token local-store)
                                 {:max-age 3600 :path "/"}])}
-      :dispatch-later [{:ms 100 :dispatch [:nav-if-public]}]}
+      :dispatch-later [{:ms 100 :dispatch [:nav-home]}]}
      {:db (dissoc db :user)
-      :dispatch [:pub/nav-login]})))
+      :dispatch [:nav-login]})))
 
 (defn c-page []
   (let [page @(rf/subscribe [:page])]
@@ -181,8 +167,7 @@
 ;; Routes
 
 (sec/defroute home-path "/" [query-params]
-  (do #_(.log js/console "nav home")
-      (rf/dispatch [:route-home query-params])))
+  (rf/dispatch [:route-home query-params]))
 
 (sec/defroute buyers-search "/b/search/" [query-params]
   (rf/dispatch [:b/route-search query-params]))
@@ -204,12 +189,10 @@
       (rf/dispatch [:v/route-home query-params])))
 
 (sec/defroute login-path "/login" [query-params]
-  (do #_(.log js/console "nav home")
-      (rf/dispatch [:pub/route-login query-params])))
+  (rf/dispatch [:route-login query-params]))
 
 (sec/defroute signup-path "/signup" [query-params]
-  (do #_(.log js/console "nav home")
-      (rf/dispatch [:pub/route-signup query-params])))
+  (rf/dispatch [:route-signup query-params]))
 
 (sec/defroute catchall-path "*" []
   (do (.log js/console "nav catchall")
