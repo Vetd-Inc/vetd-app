@@ -3,8 +3,6 @@
     right: 5px;
     bottom: 5px;
 }
-
-
 #admin-over-cont .closed {
     height: 100px;
     width: 100px;
@@ -12,8 +10,6 @@
     right: 5px;
     bottom: 5px;
 }
-
-
 #admin-over-cont #admin-symbol {
     background-image: url(../img/vetd-arrow.svg);
     background-size: 58px 97px;
@@ -28,7 +24,6 @@
     right: 5px;
     bottom: 5px;
 }
-
 #admin-over-cont.open {
     background-color: #EEE;
     border: solid 3px  #27AAE0;    
@@ -42,7 +37,6 @@
     right: 20px;
     bottom: 20px;
 }
-
 @keyframes mega-evolve {
   0% {
       filter: hue-rotate(0);
@@ -64,7 +58,6 @@
       transform: rotateX(360deg) rotateY(360deg) rotateZ(-360deg);      
   }
 }
-
 .admin-notice{
     background-color: #FAA;
     color: #A00;

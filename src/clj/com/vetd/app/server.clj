@@ -26,15 +26,15 @@
 (defn uri->content-type
   [uri]
   (or (-> uri
-           (clojure.string/split #"\.")
-           last
-           ({"js" "application/javascript"
-             "css" "text/css"
-             "html" "text/html"
-             "svg" "image/svg+xml"}))
+          (clojure.string/split #"\.")
+          last
+          ({"js" "application/javascript"
+            "css" "text/css"
+            "html" "text/html"
+            "svg" "image/svg+xml"}))
       "text/plain"))
 
-(defn get-public-resource
+(defn public-resource-response
   [uri]
   (if-let [body (some-> (str "public" uri) io/resource io/input-stream)]
     {:status 200
@@ -43,6 +43,9 @@
     {:status 404
      :body "NOT FOUND"}))
 
+(defmacro serve-public-resource
+  [path]
+  `(compojure.core/GET ~path [] (comp public-resource-response :uri)))
 
 (defn ->transit
   [v]
@@ -88,16 +91,16 @@
 
 (defn ws-on-closed
   [ws ws-id & args]
-#_  (println "ws-on-closed")
+  #_  (println "ws-on-closed")
   #_  (clojure.pprint/pprint args)
   (swap! ws-conns disj ws)
-#_  (db/unsubscribe-ws-conn ws-id)
+  #_  (db/unsubscribe-ws-conn ws-id)
   true)
 
 (defn ws-handler
   [req]
-#_  (println "ws-handler:")
-#_  (clojure.pprint/pprint req)
+  #_  (println "ws-handler:")
+  #_  (clojure.pprint/pprint req)
   (let [ws @(ah/websocket-connection req)
         ws-id (str (gensym "ws"))]
     (swap! ws-conns conj ws)
@@ -119,15 +122,20 @@
        (c/GET "/ws" [] #'ws-handler)
        (cr/resources "/assets" {:root "public/assets"})
        (c/GET "/assets*" [] cr/not-found)
+       (serve-public-resource "/apple-touch-icon.png")
+       (serve-public-resource "/favicon-32x32.png")
+       (serve-public-resource "/favicon-16x16.png")
+       (serve-public-resource "/site.webmanifest")
+       (serve-public-resource "/safari-pinned-tab.svg")
        (c/GET "/js/app.js" [] (fn [{:keys [uri cookies]}]
                                 (if env/prod?
-                                  (get-public-resource uri)
-                                  (get-public-resource "/js/full.js"))))
+                                  (public-resource-response uri)
+                                  (public-resource-response "/js/full.js"))))
        (c/GET "/js/full.js" [] (fn [{:keys [uri cookies]}]
                                  (if (admin-session? cookies)
-                                   (get-public-resource uri)
+                                   (public-resource-response uri)
                                    "")))
-       (c/GET "/js*" [] (fn [{:keys [uri]}] (get-public-resource uri)))
+       (serve-public-resource "/js*")
        (c/GET "/-reset-db-" [] (fn [{:keys [cookies]}]
                                  (do (future (mig/reset {:store :database
                                                          :db env/pg-db}))
@@ -136,7 +144,8 @@
                        (-> (if (admin-session? cookies)
                              "public/admin.html"
                              "public/app.html")
-                           io/resource io/input-stream))))
+                           io/resource
+                           io/input-stream))))
       rm-cookies/wrap-cookies))
 
 (defn start-server []
