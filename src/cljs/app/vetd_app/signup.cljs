@@ -4,7 +4,6 @@
 (rf/reg-event-fx
  :create-acct
  (fn [{:keys [db]} [_ [account]]]
-   (println account)
    {:ws-send {:ws (:ws db)
               :payload (merge {:cmd :create-acct
                                :return :ws/create-acct}
