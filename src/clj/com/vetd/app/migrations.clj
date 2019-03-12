@@ -170,7 +170,13 @@
    {:delete-from :form_template_prompt
     :where [:between :id 567926257452 567926257454]}))
 
+(def mig-prompt-fields-2019-03-12-up
+  (mig/mk-copy-from-up-fn "mig-prompt-fields-2019-03-12.sql"))
 
+(def mig-prompt-fields-2019-03-12-down
+  (mig/mk-exe-honeysql-fn
+   {:delete-from :prompt_fields
+    :where [:= :id 610341390082]}))
 
 
 (def migrations
@@ -402,7 +408,7 @@
                               :doc_id [:bigint]
                               :resp_id [:bigint]
                               :replaced_by_id [:bigint] ;; TODO
-                              :user_id [:bigint]} ;; TODO
+                              :user_id [:bigint]}       ;; TODO
                     :owner :vetd
                     :grants {:hasura [:SELECT]}}]
 
@@ -467,7 +473,7 @@
                               :prompt_id [:bigint]
                               :sort [:integer]
                               :replaced_by_id [:bigint] ;; TODO
-                              :user_id [:bigint]} ;; TODO
+                              :user_id [:bigint]}       ;; TODO
                     :owner :vetd
                     :grants {:hasura [:SELECT]}}]
     
@@ -782,7 +788,14 @@
                            :join [[:products :p]
                                   [:= :p.id :rp.product_id]]}
                    :owner :vetd
-                   :grants {:hasura [:SELECT]}}]]])
+                   :grants {:hasura [:SELECT]}}]]
+
+   [[2019 3 12 00 00]
+
+    [:copy-from '{:name :mig-prompt-fields-2019-03-12
+                  :ns com.vetd.app.migrations
+                  :up-fn mig-prompt-fields-2019-03-12-up
+                  :down-fn mig-prompt-fields-2019-03-12-down}]]])
 
 #_(mig/mk-migration-files migrations
                           "migrations")
