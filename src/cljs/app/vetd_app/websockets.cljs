@@ -43,15 +43,13 @@
    (when (log-ws?)
      (.log js/console "ws-inbound")
      (.log js/console (str data)))
-   (if (map? data)
-     (let [{:keys [return response]} data]
-       (let [handler (or (and (keyword? return) return)
-                         (:handler return))]
-         (when handler
-           {:dispatch [handler response data]})))
-     {})))
-
-
+   (or (when (map? data)
+         (let [{:keys [return response]} data
+               handler (or (and (keyword? return) return)
+                           (:handler return))]
+           (when handler
+             {:dispatch [handler response data]})))
+       {})))
 
 (defn ws-onmessage
   [data]
