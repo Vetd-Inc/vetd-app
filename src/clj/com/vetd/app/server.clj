@@ -22,6 +22,8 @@
 
 (defonce server (atom nil))
 (defonce ws-conns (atom #{})) ;; TODO
+(defonce kill-keep-alive-thread (atom false))
+(defonce keep-alive-thread (atom nil))
 
 (defn uri->content-type
   [uri]
@@ -70,6 +72,35 @@
       (ByteArrayInputStream.)
       (t/reader :json)
       t/read))
+
+(defn start-keep-alive-thread []
+
+  (reset! kill-keep-alive-thread false)
+  (if-not @keep-alive-thread
+    (do (log/info "Starting keep-alive thread...")  
+        (reset! keep-alive-thread
+                (future
+                  (do (log/info "Started keep-alive thread.")  
+                      (while (not @kill-keep-alive-thread)
+                        (try
+                          (Thread/sleep 30000)
+                          (doseq [ws @ws-conns]
+                            (do (def ws1 ws)
+                                (respond-transit {:cmd :keep-alive
+                                                  :return nil
+                                                  :response nil}
+                                                 ws)))
+                          (catch Throwable t
+                            (def ka-t t)
+                            (log/error t))))
+                      (log/info "Stopped keep-alive thread.")
+                      :done))))
+    (log/info "Keep-alive thread already running.")))
+
+(defn stop-keep-alive-thread []
+  (log/info "Stopping keep-alive thread...")
+  (reset! kill-keep-alive-thread true)
+  (reset! keep-alive-thread nil))
 
 (defn ws-outbound-handler
   [ws {:keys [cmd return] :as req} data]
@@ -152,7 +183,8 @@
   (log/info "starting http server...")
   (try
     (if-not @server
-      (do (reset! server
+      (do (start-keep-alive-thread)
+          (reset! server
                   (ah/start-server #'app {:port 5080}))
           (log/info "started http server on port 5080"))
       (log/info "server already running"))
@@ -162,6 +194,7 @@
 (defn stop-server []
   (log/info "stopping http server...")
   (try
+    (stop-keep-alive-thread)
     (if-let [svr @server]
       (do
         (.close svr)
@@ -175,4 +208,3 @@
 #_ (stop-server)
 
 #_(start-server)
-

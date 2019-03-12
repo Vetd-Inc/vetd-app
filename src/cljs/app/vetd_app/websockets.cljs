@@ -63,6 +63,10 @@
  (if-let [ws (js/WebSocket. url)]
    (do
      (set! (.-onmessage ws) ws-onmessage)
+     (set! (.-onclose ws)
+           (fn []
+             (.log js/console "Websocket closed. Reconnecting...")
+             (mk-ws-conn url)))
      (set! (.-onopen ws)
            #(rf/dispatch [:ws-connected url]))
      (println "Websocket connection initiated with: " url)
