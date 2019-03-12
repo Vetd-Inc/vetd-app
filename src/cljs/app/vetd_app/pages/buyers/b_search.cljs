@@ -152,13 +152,21 @@
        pname " " [:small " by " (:oname org)]]
       [:> ui/ItemMeta
        (if preposal-responses
-         [:span
-          (format/currency-format
-           (docs/get-field-value preposal-responses "Pricing Estimate" "value" :nval))
-          " / "
-          (docs/get-field-value preposal-responses "Pricing Estimate" "unit" :sval)
-          " "
-          [:small "(estimate)"]]
+         (if-let [p-e-value (docs/get-field-value preposal-responses
+                                                  "Pricing Estimate"
+                                                  "value"
+                                                  :nval)]
+           [:span
+            (format/currency-format p-e-value)
+            " / "
+            (docs/get-field-value preposal-responses "Pricing Estimate" "unit" :sval)
+            " "
+            [:small "(estimate)"]]
+           (when-let [p-e-details (docs/get-field-value preposal-responses
+                                                        "Pricing Estimate"
+                                                        "details"
+                                                        :sval)]
+             (str "Price Estimate: " p-e-details)))
          (if requested-preposal?
            "Preposal Requested"
            [:a {:onClick #(do (.stopPropagation %)
