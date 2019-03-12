@@ -71,6 +71,7 @@
      (set! (.-onopen ws)
            #(rf/dispatch [:ws-connected url]))
      (println "Websocket connection initiated with: " url)
+     (reset! ws& ws)
      ws)
    (throw (js/Error. "Websocket connection failed!"))))
 
@@ -78,7 +79,6 @@
  :ws-conn
  (fn [cofx url]
    (let [ws (mk-ws-conn url)]
-     (reset! ws& ws)
      (assoc cofx
             :ws-conn
             ws))))
