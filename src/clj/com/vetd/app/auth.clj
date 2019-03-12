@@ -31,24 +31,24 @@
       vals
       ffirst))
 
-(defn insert-org [org-name org-url org-type]
+(defn insert-org [org-name org-url buyer? vendor?]
   (let [[id idstr] (ut/mk-id&str)]
     (-> (db/insert! :orgs
                     {:id id
                      :idstr idstr
                      :oname org-name
                      :url org-url
-                     :buyer_qm (= org-type "buyer")
-                     :vendor_qm (= org-type "vendor")
+                     :buyer_qm buyer?
+                     :vendor_qm vendor?
                      :created (ut/now-ts)
                      :updated (ut/now-ts)})
         first)))
 
 (defn create-or-find-org
-  [org-name org-url org-type]
+  [org-name org-url buyer? vendor?]
   (if-let [org (select-org-by-name org-name)]
     [false org]
-    [true (insert-org org-name org-url org-type)]))
+    [true (insert-org org-name org-url buyer? vendor?)]))
 
 (defn select-user-by-email
   [email & fields]
@@ -147,7 +147,7 @@
     (if (select-user-by-email email)
       {:email-used? true}
       (let [user (insert-user uname email pwd)
-            [org-created? org] (create-or-find-org org-name org-url org-type)
+            [org-created? org] (create-or-find-org org-name org-url (= org-type "buyer") (= org-type "vendor"))
             [memb-created? memb] (create-or-find-memb (:id user) (:id org))]
         {:user-created? true
          :user user
