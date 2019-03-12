@@ -142,6 +142,8 @@
     [true (insert-memb user-id org-id)]))
 
 (defn create-account
+  "Create a user account.
+  NOTE: org-type is a string: either 'buyer' or 'vendor'"
   [{:keys [uname org-name org-url org-type email pwd]}]
   (try
     (if (select-user-by-email email)
