@@ -31,16 +31,16 @@
          "Sign Up as a Buyer"]
         [:> ui/FormField
          [:> ui/Input {:placeholder "Full Name"
-                       :onChange (fn [_ this] (reset! email (.-value this)))}]]
+                       :onChange (fn [_ this] (reset! uname (.-value this)))}]]
         [:> ui/FormField
          [:> ui/Input {:placeholder "Email Address"
                        :onChange (fn [_ this] (reset! email (.-value this)))}]]
         [:> ui/FormField
          [:> ui/Input {:placeholder "Organization Name"
-                       :onChange (fn [_ this] (reset! email (.-value this)))}]]
+                       :onChange (fn [_ this] (reset! org-name (.-value this)))}]]
         [:> ui/FormField
          [:> ui/Input {:placeholder "Organization Website"
-                       :onChange (fn [_ this] (reset! email (.-value this)))}]]
+                       :onChange (fn [_ this] (reset! org-url (.-value this)))}]]
         [:> ui/FormField
          [:> ui/Input {:type "password"
                        :placeholder "Password"
