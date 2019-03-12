@@ -95,7 +95,8 @@
       [:> ui/GridRow
        [c-display-field {:width 6} "Estimated Price"
         (if pricing-estimate-value
-          [:<> (format/currency-format pricing-estimate-value) " / " pricing-estimate-unit]
+          [:<> (format/currency-format pricing-estimate-value) " / " pricing-estimate-unit
+           (when pricing-estimate-details (str " - " pricing-estimate-details))]
           pricing-estimate-details)]
        (when (not= "" free-trial-terms)
          [c-display-field {:width 4} "Free Trial Terms" free-trial-terms])

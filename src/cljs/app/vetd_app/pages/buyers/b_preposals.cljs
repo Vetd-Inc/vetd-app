@@ -41,9 +41,8 @@
           " / "
           pricing-estimate-unit
           " "
-          [:small "(estimate)"]]
-         (when pricing-estimate-details
-           (str "Price Estimate: " pricing-estimate-details)))]
+          [:small "(estimate) " pricing-estimate-details]]
+         pricing-estimate-details)]
       [:> ui/ItemDescription (:short-desc product)]
       [:> ui/ItemExtra
        (when (empty? (:rounds product))
