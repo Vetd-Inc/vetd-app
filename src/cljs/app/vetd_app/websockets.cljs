@@ -47,7 +47,8 @@
      (let [{:keys [return response]} data]
        (let [handler (or (and (keyword? return) return)
                          (:handler return))]
-         {:dispatch [handler response data]}))
+         (when handler
+           {:dispatch [handler response data]})))
      {})))
 
 
