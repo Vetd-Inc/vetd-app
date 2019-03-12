@@ -1,16 +1,18 @@
 (ns vetd-app.core
   (:require [vetd-app.hooks :as hooks]
             [vetd-app.websockets :as ws]
-            [vetd-app.pages.buyers.b-search :as p-b-search]
+            [vetd-app.pages.buyers.b-search :as p-bsearch]
             [vetd-app.pages.buyers.b-preposals :as p-bpreposals]
             [vetd-app.pages.buyers.b-preposal-detail :as p-bpreposal-detail]
             [vetd-app.pages.buyers.b-product-detail :as p-bproduct-detail]
             [vetd-app.pages.vendors.v-home :as p-vhome]
-            [vetd-app.pages.signup :as p-signup]
+            [vetd-app.pages.buyers.b-signup :as p-bsignup]
+            [vetd-app.pages.vendors.v-signup :as p-vsignup]
             [vetd-app.pages.login :as p-login]
             [vetd-app.buyer-fixtures :as b-fix]
             [vetd-app.vendor-fixtures :as v-fix]
-            [vetd-app.public-fixtures :as pub-fix]            
+            [vetd-app.public-fixtures :as pub-fix]
+            vetd-app.signup
             vetd-app.local-store
             vetd-app.cookies
             vetd-app.graphql
@@ -22,21 +24,23 @@
 (println "START core")
 
 (hooks/reg-hooks! hooks/c-page
-                  {:signup #'p-signup/signup-page
-                   :login #'p-login/login-page
-                   :b/search #'p-b-search/c-page
+                  {:login #'p-login/login-page
+                   :b/signup #'p-bsignup/c-page
+                   :b/search #'p-bsearch/c-page
                    :b/preposals #'p-bpreposals/c-page
                    :b/preposal-detail #'p-bpreposal-detail/c-page
                    :b/product-detail #'p-bproduct-detail/c-page
+                   :v/signup #'p-vsignup/c-page
                    :v/home #'p-vhome/c-page})
 
 (hooks/reg-hooks! hooks/c-container
                   {:login #'pub-fix/container
-                   :signup #'pub-fix/container
+                   :b/signup #'pub-fix/container
                    :b/search #'b-fix/container
                    :b/preposals #'b-fix/container
                    :b/preposal-detail #'b-fix/container
                    :b/product-detail #'b-fix/container
+                   :v/signup #'pub-fix/container
                    :v/home #'v-fix/container})
 
 
@@ -44,7 +48,7 @@
  :init-db
  (fn [] {}))
 
-(def public-pages #{:login :signup})
+(def public-pages #{:login :b/signup :v/signup})
 
 (rf/reg-sub
  :page
@@ -191,8 +195,11 @@
 (sec/defroute login-path "/login" [query-params]
   (rf/dispatch [:route-login query-params]))
 
-(sec/defroute signup-path "/signup" [query-params]
-  (rf/dispatch [:route-signup query-params]))
+(sec/defroute buyers-signup-path "/b/signup" [query-params]
+  (rf/dispatch [:b/route-signup query-params]))
+
+(sec/defroute vendors-signup-path "/v/signup" [query-params]
+  (rf/dispatch [:v/route-signup query-params]))
 
 (sec/defroute catchall-path "*" []
   (do (.log js/console "nav catchall")

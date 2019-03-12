@@ -1,3 +1,4 @@
+
 (ns vetd-app.ui
   (:require cljsjs.semantic-ui-react
             goog.object
@@ -34,6 +35,8 @@
 (def FormField (component "Form" "Field"))
 
 (def Button (component "Button"))
+(def ButtonGroup (component "Button" "Group"))
+(def ButtonOr (component "Button" "Or"))
 (def Input (component "Input"))
 (def Checkbox (component "Checkbox"))
 (def Select (component "Select"))
@@ -42,6 +45,7 @@
 
 (def Label (component "Label"))
 (def LabelDetail (component "Label" "Detail"))
+(def Message (component "Message"))
 
 (def Image (component "Image"))
 

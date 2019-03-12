@@ -31,24 +31,24 @@
       vals
       ffirst))
 
-(defn insert-org [org-name org-url buyer? vendor?]
+(defn insert-org [org-name org-url org-type]
   (let [[id idstr] (ut/mk-id&str)]
     (-> (db/insert! :orgs
                     {:id id
                      :idstr idstr
                      :oname org-name
                      :url org-url
-                     :buyer_qm buyer?
-                     :vendor_qm vendor?
+                     :buyer_qm (= org-type "buyer")
+                     :vendor_qm (= org-type "vendor")
                      :created (ut/now-ts)
                      :updated (ut/now-ts)})
         first)))
 
 (defn create-or-find-org
-  [org-name org-url buyer? vendor?]
+  [org-name org-url org-type]
   (if-let [org (select-org-by-name org-name)]
     [false org]
-    [true (insert-org org-name org-url buyer? vendor?)]))
+    [true (insert-org org-name org-url org-type)]))
 
 (defn select-user-by-email
   [email & fields]
@@ -142,16 +142,13 @@
     [true (insert-memb user-id org-id)]))
 
 (defn create-account
-  [{:keys [uname org-name org-url email pwd b-or-v?]}]
+  [{:keys [uname org-name org-url org-type email pwd]}]
   (try
     (if (select-user-by-email email)
       {:email-used? true}
       (let [user (insert-user uname email pwd)
-            [org-created? org] (create-or-find-org org-name org-url
-                                                   (true? b-or-v?)
-                                                   (false? b-or-v?))
-            [memb-created? memb] (create-or-find-memb (:id user)
-                                                      (:id org))]
+            [org-created? org] (create-or-find-org org-name org-url org-type)
+            [memb-created? memb] (create-or-find-memb (:id user) (:id org))]
         {:user-created? true
          :user user
          :org-created? org-created?
@@ -160,12 +157,6 @@
          :memb memb}))
     (catch Throwable e
       (log/error e))))
-
-#_(create-account {:uname "John Test7"
-                 :org-name "Test Org7"
-                 :email "jt4@test7.com"
-                 :pwd "hello"
-                 :b-or-v? true})
 
 (defn select-session-by-id
   [session-token]
