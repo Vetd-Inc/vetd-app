@@ -83,6 +83,7 @@
                             :content "Contact us at help@vetd.com"}])
           [:> ui/FormField
            [:> ui/Input {:placeholder "Email Address"
+                         :autoFocus true
                          :onChange (fn [_ this]
                                      (reset! email (.-value this)))}]]
           [:> ui/FormField

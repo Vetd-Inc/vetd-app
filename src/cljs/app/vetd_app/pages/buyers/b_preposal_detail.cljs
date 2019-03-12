@@ -71,6 +71,7 @@
   [{:keys [id product from-org responses] :as preposal}]
   (let [pricing-estimate-value (docs/get-field-value responses "Pricing Estimate" "value" :nval)
         pricing-estimate-unit (docs/get-field-value responses "Pricing Estimate" "unit" :sval)
+        pricing-estimate-details (docs/get-field-value responses "Pricing Estimate" "details" :sval)
         pricing-model (docs/get-field-value responses "Pricing Model" "value" :sval)
         free-trial? (= "yes" (docs/get-field-value responses "Do you offer a free trial?" "value" :sval))
         free-trial-terms (docs/get-field-value responses "Please describe the terms of your trial" "value" :sval)
@@ -92,10 +93,13 @@
       [:> ui/GridRow
        [c-display-field {:width 16} "Product Description" (:long-desc product)]]
       [:> ui/GridRow
-       [c-display-field {:width 4} "Estimated Price"
-        [:<> (format/currency-format pricing-estimate-value) " / " pricing-estimate-unit]]
+       [c-display-field {:width 6} "Estimated Price"
+        (if pricing-estimate-value
+          [:<> (format/currency-format pricing-estimate-value) " / " pricing-estimate-unit
+           (when pricing-estimate-details (str " - " pricing-estimate-details))]
+          pricing-estimate-details)]
        (when (not= "" free-trial-terms)
-         [c-display-field {:width 6} "Free Trial Terms" free-trial-terms])
+         [c-display-field {:width 4} "Free Trial Terms" free-trial-terms])
        (when (not= "" pricing-model)
          [c-display-field {:width 6} "Pricing Model" pricing-model])]
       [:> ui/GridRow

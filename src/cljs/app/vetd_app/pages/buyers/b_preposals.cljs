@@ -26,7 +26,8 @@
   [{:keys [id idstr product from-org responses]}]
   (let [pricing-estimate-value (docs/get-field-value responses "Pricing Estimate" "value" :nval)
         pricing-estimate-unit (docs/get-field-value responses "Pricing Estimate" "unit" :sval)
-        free-trial? (= "yes" (docs/get-field-value responses "Do you offer a free trial?" "value" :sval))]    
+        pricing-estimate-details (docs/get-field-value responses "Pricing Estimate" "details" :sval)
+        free-trial? (= "yes" (docs/get-field-value responses "Do you offer a free trial?" "value" :sval))]
     [:> ui/Item {:onClick #(rf/dispatch [:b/nav-preposal-detail idstr])} 
      [:> ui/ItemImage {:class "product-logo" ; todo: make config var 's3-base-url'
                        :src (str "https://s3.amazonaws.com/vetd-logos/" (:logo product))}]
@@ -34,12 +35,14 @@
       [:> ui/ItemHeader
        (:pname product) " " [:small " by " (:oname from-org)]]
       [:> ui/ItemMeta
-       [:span
-        (format/currency-format pricing-estimate-value)
-        " / "
-        pricing-estimate-unit
-        " "
-        [:small "(estimate)"]]]
+       (if pricing-estimate-value
+         [:span
+          (format/currency-format pricing-estimate-value)
+          " / "
+          pricing-estimate-unit
+          " "
+          [:small "(estimate) " pricing-estimate-details]]
+         pricing-estimate-details)]
       [:> ui/ItemDescription (:short-desc product)]
       [:> ui/ItemExtra
        (when (empty? (:rounds product))
