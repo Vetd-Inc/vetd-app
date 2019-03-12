@@ -71,11 +71,7 @@
       :reagent-render
       (fn []
         [:div.centerpiece
-         [:img {:src "https://s3.amazonaws.com/vetd-logos/vetd.svg"
-                :style {:width 210
-                        :marginBottom 30
-                        :position "relative" ; logo design is weighted a little right
-                        :left "-5px"}}]
+         [:img.logo {:src "https://s3.amazonaws.com/vetd-logos/vetd.svg"}]
          [:> ui/Form {:error @login-failed?}
           (when @login-failed?
             [:> ui/Message {:error true
@@ -84,6 +80,7 @@
           [:> ui/FormField
            [:> ui/Input {:placeholder "Email Address"
                          :autoFocus true
+                         :spellCheck false
                          :onChange (fn [_ this]
                                      (reset! email (.-value this)))}]]
           [:> ui/FormField
