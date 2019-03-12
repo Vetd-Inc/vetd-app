@@ -29,7 +29,6 @@
   (let [page& (rf/subscribe [:page])]
     (fn []
       [flx/col :sidebar
-       (tab page& "Admin Home" :a/home [:a/nav-home])
        (tab page& "Admin Search" :a/search [:a/nav-search])])))
 
 (defn container [body]

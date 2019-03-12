@@ -113,17 +113,17 @@ body, * {
   height: 85px;
   width: 200px;
   margin: 10% auto;
-  animation: 2s infinite pulse;
+  animation: 3s infinite pulse;
 }
 @keyframes pulse {
   0% {
-    transform: scale(0.5);
+    transform: scale(0.75);
   }
   50% {
-    transform: scale(3);
+    transform: scale(1.75);
   }
   100% {
-    transform: scale(0.5);
+    transform: scale(0.75);
   }
 }
 .prod-logo {
@@ -135,36 +135,6 @@ body, * {
 }
 .prod-logo img {
     width: 75px;
-}
-.product-short-desc {
-    font-size: 15px;
-    font-family: 'Raleway', serif;
-    margin: 10px 0 20px 0;
-    padding: 5px;
-}
-#signup-form {
-    border: solid 1px #999;
-    width: 330px;
-    padding: 20px;
-    margin-left: auto;
-    margin-right: auto;
-    margin-top: 50px;
-}
-#signup-form input {
-    margin: 10px;
-}
-#login-form {
-    width: 260px;
-    margin-left: auto;
-    margin-right: auto;
-    margin-top: 50px;
-    text-align: center;
-}
-#login-form input {
-    margin: 10px;
-}
-#login-form button {
-    margin: 10px;
 }
 .form-maybe-doc {
     border: solid 1px; #AAA;
@@ -328,7 +298,17 @@ body, * {
 
 
 /* todo, put this as less variable */
-.ui.teal.label, .ui.teal.labels .label {
+.ui.teal.label, .ui.teal.labels .label,
+.ui.teal.button, .ui.teal.buttons .button {
+  background-color: #4ec2c4 !important;
+  border-color: #4ec2c4 !important;
+  color: #fff !important;
+}
+.ui.teal.button:hover, .ui.teal.buttons .button:hover {
+  background-color: #6dccce !important;
+  border-color: #6dccce !important;
+}
+.ui.teal.button .icon {
   background-color: #4ec2c4 !important;
   border-color: #4ec2c4 !important;
   color: #fff !important;
@@ -337,6 +317,11 @@ body, * {
 .ui.blue.button, .ui.blue.buttons .button {
   background-color: #32abde !important;
   border-color: #32abde !important;
+  color: #fff !important;
+}
+.ui.blue.button:hover, .ui.blue.buttons .button:hover {
+  background-color: #53b8e3 !important;
+  border-color: #53b8e3 !important;
   color: #fff !important;
 }
 .ui.blue.button .icon {
@@ -372,6 +357,9 @@ a.category-tag:hover {
 }
 
 
-#login-form .field {
-  margin-bottom: 0px;
+/* login and signup form */
+.centerpiece {
+  width: 260px;
+  margin: 0 auto;
+  text-align: center;
 }

@@ -4,21 +4,12 @@
             [re-frame.core :as rf]
             [re-com.core :as rc]))
 
-(rf/reg-event-fx
- :logout
- (fn [{:keys [db]} _]
-   {:local-store {:session-token nil}
-    :cookies {:admin-token [nil {:max-age 60
-                                 :path "/"}] }
-    :dispatch [:pub/nav-login]}))
-
 (defn header []
   (let [user-name& (rf/subscribe [:user-name])
         org-name& (rf/subscribe [:org-name])]
     (fn []
       [flx/row :header
-       [:div#header-left [:div.logo
-                          {:on-click #(rf/dispatch [:nav-home])}]]
+       [:div#header-left [:div.logo {:on-click #(rf/dispatch [:nav-home])}]]
        [:div#header-middle [:div.org-name @org-name&]]
        [:div#header-right
         [:div.user-name @user-name&]

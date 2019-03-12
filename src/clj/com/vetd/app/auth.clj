@@ -142,16 +142,15 @@
     [true (insert-memb user-id org-id)]))
 
 (defn create-account
-  [{:keys [uname org-name org-url email pwd b-or-v?]}]
+  "Create a user account.
+  NOTE: org-type is a string: either 'buyer' or 'vendor'"
+  [{:keys [uname org-name org-url org-type email pwd]}]
   (try
     (if (select-user-by-email email)
       {:email-used? true}
       (let [user (insert-user uname email pwd)
-            [org-created? org] (create-or-find-org org-name org-url
-                                                   (true? b-or-v?)
-                                                   (false? b-or-v?))
-            [memb-created? memb] (create-or-find-memb (:id user)
-                                                      (:id org))]
+            [org-created? org] (create-or-find-org org-name org-url (= org-type "buyer") (= org-type "vendor"))
+            [memb-created? memb] (create-or-find-memb (:id user) (:id org))]
         {:user-created? true
          :user user
          :org-created? org-created?
@@ -160,12 +159,6 @@
          :memb memb}))
     (catch Throwable e
       (log/error e))))
-
-#_(create-account {:uname "John Test7"
-                 :org-name "Test Org7"
-                 :email "jt4@test7.com"
-                 :pwd "hello"
-                 :b-or-v? true})
 
 (defn select-session-by-id
   [session-token]
