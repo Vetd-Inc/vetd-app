@@ -109,26 +109,35 @@
         selected-categories (r/atom #{})]
     (fn []
       [:div.container-with-sidebar
-       [:div.sidebar
-        "Filter By Category"
-        (let [categories (->> @preps&
-                              :docs
-                              (map (comp :categories :product))
-                              flatten
-                              (map #(select-keys % [:id :cname]))
-                              (group-by :id))]
-          (for [[id v] categories]
-            ^{:key id} 
-            [:> ui/Checkbox {:label (str (-> v first :cname) " (" (count v) ")")
-                             :onChange (fn [_ this]
-                                         (if (.-checked this)
-                                           (swap! selected-categories conj id)
-                                           (swap! selected-categories disj id)))}]))]
+       (let [categories (->> @preps&
+                             :docs
+                             (map (comp :categories :product))
+                             flatten
+                             (map #(select-keys % [:id :cname]))
+                             (group-by :id))]
+         (when (not-empty categories)
+           [:div.sidebar
+            "Filter By Category"
+            (for [[id v] categories]
+              ^{:key id} 
+              [:> ui/Checkbox {:label (str (-> v first :cname) " (" (count v) ")")
+                               :onChange (fn [_ this]
+                                           (if (.-checked this)
+                                             (swap! selected-categories conj id)
+                                             (swap! selected-categories disj id)))}])]))
        [:> ui/ItemGroup {:class "inner-container results"}
         (if (= :loading @preps&)
           [:> ui/Loader {:active true :inline true}]
-          (for [preposal (cond-> (:docs @preps&)
-                           (seq @selected-categories) (filter-preposals
-                                                       @selected-categories))]
-            ^{:key (:id preposal)}
-            [c-preposal preposal]))]])))
+          (let [preposals (cond-> (:docs @preps&)
+                            (seq @selected-categories) (filter-preposals @selected-categories))]
+            (if (seq preposals)
+              (for [preposal preposals]
+                ^{:key (:id preposal)}
+                [c-preposal preposal])
+              [:<>
+               [:h3 {:style {:marginBottom 5}} "You don't have any Preposals yet."]
+               "Search "
+               [:a {:style {:cursor "pointer"}
+                    :onClick #(rf/dispatch [:b/nav-search])}
+                "Products & Categories"]
+               " to get started."])))]])))

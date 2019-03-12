@@ -359,7 +359,15 @@ a.category-tag:hover {
 
 /* login and signup form */
 .centerpiece {
-  width: 260px;
+  width: 265px;
   margin: 0 auto;
   text-align: center;
+}
+.centerpiece .logo {
+  display: block;
+  width: 210px;
+  margin: 30px auto 40px auto;
+  /* logo design is weighted a little right */
+  position: relative;
+  left: -5px;
 }
