@@ -13,7 +13,12 @@
   (= (get-vetd-env) "BUILD"))
 
 ;; DB
-(def pg-db (env/env :db))
+(def pg-db {:dbtype (env/env :db-type)
+            :dbname (env/env :db-name)
+            :host (env/env :db-host)
+            :port (Integer. (env/env :db-port))
+            :user (env/env :db-user)
+            :password (env/env :db-password)})
 
 ;; Hasura
 (def hasura-ws-url (env/env :hasura-ws-url))

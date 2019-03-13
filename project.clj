@@ -60,7 +60,8 @@
 
   :figwheel {:css-dirs ["resources/public/assets/app/css/"]}
 
-  :plugins [[lein-cljsbuild "1.1.7"]]
+  :plugins [[lein-cljsbuild "1.1.7"]
+            [lein-environ "1.1.0"]]
 
   :clean-targets
   ^{:protect false} [:target-path
@@ -102,28 +103,18 @@
              :resource-paths ["env/prod/resources"]}
 
    ;; production build
-   :build {:env {:vetd-env "BUILD"
-                 :db {:dbtype "postgresql"
-                      :dbname "vetd1"
-                      :host "vetd-db.chwslkxwld9a.us-east-1.rds.amazonaws.com"
-                      :port 5432
-                      :user "vetd" #_"hasura" 
-                      ;; change pwd and move to prod env
-                      :password "Wyl2bap2?"  #_"Hasura1"}
-                 :hasura-ws-url "ws://172.31.0.60:8080/v1alpha1/graphql"
-                 :hasura-http-url "http://172.31.0.60:8080/v1alpha1/graphql"
-                 :segment-frontend-write-key "VXTgraXuvEsV7MzqWUlgQgMcu94rjzU3"}}
+   :build {:env {:vetd-env "BUILD"}}
 
    :dev           [:project/dev :profiles/dev]
    :test          [:project/dev :project/test :profiles/test]
 
    :project/dev  {:env {:vetd-env "DEV"
-                        :db {:dbtype "postgresql"
-                             :dbname "vetd1"
-                             :host "localhost"
-                             :port 5432
-                             :user "vetd"
-                             :password "vetd"}
+                        :db-type "postgresql"
+                        :db-name "vetd1"
+                        :db-host "localhost"
+                        :db-port "5432"
+                        :db-user "vetd"
+                        :db-password "vetd"
                         :hasura-ws-url "ws://localhost:8080/v1alpha1/graphql"
                         :hasura-http-url "http://localhost:8080/v1alpha1/graphql"
                         :segment-frontend-write-key "Ieh9p65FemSOa2s1OngMCWTuVkjjt0Kz"}
