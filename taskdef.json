@@ -105,7 +105,7 @@
     "EC2",
     "FARGATE"
   ],
-  "taskDefinitionArn": "arn:aws:ecs:us-east-1:744151627940:task-definition/vetd-app-task:3",
+  "taskDefinitionArn": "arn:aws:ecs:us-east-1:744151627940:task-definition/vetd-app-task:91",
   "family": "vetd-app-task",
   "requiresAttributes": [
     {
@@ -181,6 +181,6 @@
   ],
   "networkMode": "awsvpc",
   "cpu": "1024",
-  "revision": 3,
+  "revision": 91,
   "volumes": []
 }
