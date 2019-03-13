@@ -1,6 +1,11 @@
 (ns vetd-app.core
-  (:require [vetd-app.hooks :as hooks]
-            [vetd-app.websockets :as ws]
+  (:require vetd-app.websockets
+            vetd-app.graphql
+            vetd-app.local-store
+            vetd-app.cookies
+            vetd-app.analytics
+            vetd-app.signup
+            [vetd-app.hooks :as hooks]
             [vetd-app.pages.buyers.b-search :as p-bsearch]
             [vetd-app.pages.buyers.b-preposals :as p-bpreposals]
             [vetd-app.pages.buyers.b-preposal-detail :as p-bpreposal-detail]
@@ -12,10 +17,6 @@
             [vetd-app.buyer-fixtures :as b-fix]
             [vetd-app.vendor-fixtures :as v-fix]
             [vetd-app.public-fixtures :as pub-fix]
-            vetd-app.signup
-            vetd-app.local-store
-            vetd-app.cookies
-            vetd-app.graphql
             [reagent.core :as r]
             [re-frame.core :as rf]
             [secretary.core :as sec]
