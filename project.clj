@@ -111,7 +111,8 @@
                       ;; change pwd and move to prod env
                       :password "Wyl2bap2?"  #_"Hasura1"}
                  :hasura-ws-url "ws://172.31.0.60:8080/v1alpha1/graphql"
-                 :hasura-http-url "http://172.31.0.60:8080/v1alpha1/graphql"}}
+                 :hasura-http-url "http://172.31.0.60:8080/v1alpha1/graphql"
+                 :segment-frontend-write-key "VXTgraXuvEsV7MzqWUlgQgMcu94rjzU3"}}
 
    :dev           [:project/dev :profiles/dev]
    :test          [:project/dev :project/test :profiles/test]
@@ -124,7 +125,8 @@
                              :user "vetd"
                              :password "vetd"}
                         :hasura-ws-url "ws://localhost:8080/v1alpha1/graphql"
-                        :hasura-http-url "http://localhost:8080/v1alpha1/graphql"}
+                        :hasura-http-url "http://localhost:8080/v1alpha1/graphql"
+                        :segment-frontend-write-key "Ieh9p65FemSOa2s1OngMCWTuVkjjt0Kz"}
                   :jvm-opts ["-Dconf=dev-config.edn"]
                   :dependencies [[binaryage/devtools "0.9.10"]
                                  [nrepl "0.6.0"]
