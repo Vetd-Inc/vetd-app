@@ -101,6 +101,8 @@
              :source-paths ["env/prod/clj"]
              :resource-paths ["env/prod/resources"]}
 
+   :build {:env {:vetd-env "BUILD"}}
+
    :dev           [:project/dev :profiles/dev]
    :test          [:project/dev :project/test :profiles/test]
 
