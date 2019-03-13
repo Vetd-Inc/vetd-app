@@ -7,44 +7,21 @@
   (env/env :vetd-env)) 
 
 (def prod?
-  (-> env/env
-      :vetd-env
-      (= "PROD")))
+  (= (get-vetd-env) "PROD"))
 
 (def building?
-  (-> env/env
-      :vetd-env
-      (= "BUILD")))
+  (= (get-vetd-env) "BUILD"))
 
-(def pg-db-prod {:dbtype "postgresql"
-                 :dbname "vetd1"
-                 :host "vetd-db.chwslkxwld9a.us-east-1.rds.amazonaws.com"
-                 :port 5432
-                 :user "vetd" #_"hasura" 
-                 ;; change pwd and move to prod env
-                 :password "Wyl2bap2?"  #_"Hasura1"})
+;; DB
+(def pg-db {:dbtype (env/env :db-type)
+            :dbname (env/env :db-name)
+            :host (env/env :db-host)
+            :port (Integer. (env/env :db-port))
+            :user (env/env :db-user)
+            :password (env/env :db-password)})
 
-(def pg-db-dev {:dbtype "postgresql"
-                :dbname "vetd1"
-                :host "localhost"
-                :port 5432
-                :user "vetd"
-                :password "vetd"})
-
-(def pg-db
-  (if prod?
-    pg-db-prod
-    pg-db-dev))
-
-
-(def hasura-ws-url
-  (if prod?
-    "ws://172.31.0.60:8080/v1alpha1/graphql"
-    "ws://localhost:8080/v1alpha1/graphql"))
-
-(def hasura-http-url
-  (if prod?
-    "http://172.31.0.60:8080/v1alpha1/graphql"
-    "http://localhost:8080/v1alpha1/graphql"))
+;; Hasura
+(def hasura-ws-url (env/env :hasura-ws-url))
+(def hasura-http-url (env/env :hasura-http-url))
 
 (com/setup-env prod?)

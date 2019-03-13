@@ -60,7 +60,8 @@
 
   :figwheel {:css-dirs ["resources/public/assets/app/css/"]}
 
-  :plugins [[lein-cljsbuild "1.1.7"]]
+  :plugins [[lein-cljsbuild "1.1.7"]
+            [lein-environ "1.1.0"]]
 
   :clean-targets
   ^{:protect false} [:target-path
@@ -101,12 +102,23 @@
              :source-paths ["env/prod/clj"]
              :resource-paths ["env/prod/resources"]}
 
+   ;; production build
    :build {:env {:vetd-env "BUILD"}}
 
    :dev           [:project/dev :profiles/dev]
    :test          [:project/dev :project/test :profiles/test]
 
-   :project/dev  {:jvm-opts ["-Dconf=dev-config.edn"]
+   :project/dev  {:env {:vetd-env "DEV"
+                        :db-type "postgresql"
+                        :db-name "vetd1"
+                        :db-host "localhost"
+                        :db-port "5432"
+                        :db-user "vetd"
+                        :db-password "vetd"
+                        :hasura-ws-url "ws://localhost:8080/v1alpha1/graphql"
+                        :hasura-http-url "http://localhost:8080/v1alpha1/graphql"
+                        :segment-frontend-write-key "Ieh9p65FemSOa2s1OngMCWTuVkjjt0Kz"}
+                  :jvm-opts ["-Dconf=dev-config.edn"]
                   :dependencies [[binaryage/devtools "0.9.10"]
                                  [nrepl "0.6.0"]
                                  [cider/piggieback "0.4.0"]
