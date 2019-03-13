@@ -101,12 +101,31 @@
              :source-paths ["env/prod/clj"]
              :resource-paths ["env/prod/resources"]}
 
-   :build {:env {:vetd-env "BUILD"}}
+   ;; production build
+   :build {:env {:vetd-env "BUILD"
+                 :db {:dbtype "postgresql"
+                      :dbname "vetd1"
+                      :host "vetd-db.chwslkxwld9a.us-east-1.rds.amazonaws.com"
+                      :port 5432
+                      :user "vetd" #_"hasura" 
+                      ;; change pwd and move to prod env
+                      :password "Wyl2bap2?"  #_"Hasura1"}
+                 :hasura-ws-url "ws://172.31.0.60:8080/v1alpha1/graphql"
+                 :hasura-http-url "http://172.31.0.60:8080/v1alpha1/graphql"}}
 
    :dev           [:project/dev :profiles/dev]
    :test          [:project/dev :project/test :profiles/test]
 
-   :project/dev  {:jvm-opts ["-Dconf=dev-config.edn"]
+   :project/dev  {:env {:vetd-env "DEV"
+                        :db {:dbtype "postgresql"
+                             :dbname "vetd1"
+                             :host "localhost"
+                             :port 5432
+                             :user "vetd"
+                             :password "vetd"}
+                        :hasura-ws-url "ws://localhost:8080/v1alpha1/graphql"
+                        :hasura-http-url "http://localhost:8080/v1alpha1/graphql"}
+                  :jvm-opts ["-Dconf=dev-config.edn"]
                   :dependencies [[binaryage/devtools "0.9.10"]
                                  [nrepl "0.6.0"]
                                  [cider/piggieback "0.4.0"]
