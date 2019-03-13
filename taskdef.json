@@ -53,11 +53,11 @@
         },
         {
           "name": "HASURA_WS_URL",
-          "value": "ws://172.31.0.60:8080/v1alpha1/graphql"
+          "value": "ws://172.31.0.205:8080/v1alpha1/graphql"
         },
         {
           "name": "HASURA_HTTP_URL",
-          "value": "http://172.31.0.60:8080/v1alpha1/graphql"
+          "value": "http://172.31.0.205:8080/v1alpha1/graphql"
         },
         {
           "name": "SEGMENT_FRONTEND_WRITE_KEY",
@@ -105,7 +105,7 @@
     "EC2",
     "FARGATE"
   ],
-  "taskDefinitionArn": "arn:aws:ecs:us-east-1:744151627940:task-definition/vetd-app-task:91",
+  "taskDefinitionArn": "arn:aws:ecs:us-east-1:744151627940:task-definition/vetd-app-task:93",
   "family": "vetd-app-task",
   "requiresAttributes": [
     {
@@ -181,6 +181,6 @@
   ],
   "networkMode": "awsvpc",
   "cpu": "1024",
-  "revision": 91,
+  "revision": 93,
   "volumes": []
 }
