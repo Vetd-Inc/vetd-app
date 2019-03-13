@@ -32,3 +32,7 @@
  (def hasura-http-url (env/env :hasura-http-url)))
 
 (com/setup-env prod?)
+
+;; Frontend env
+(defmacro segment-frontend-write-key []
+  (env/env :segment-frontend-write-key))
