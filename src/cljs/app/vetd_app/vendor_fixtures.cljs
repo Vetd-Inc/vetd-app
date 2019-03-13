@@ -29,7 +29,8 @@
   (let [page& (rf/subscribe [:page])]
     (fn []
       [flx/col :sidebar
-       (tab page& "Home" :v/home [:v/nav-home])])))
+       (tab page& "Home" :v/home [:v/nav-home])
+       (tab page& "Products" :v/products [:v/nav-products])])))
 
 (defn container [body]
   [flx/col :container #{:vendor}

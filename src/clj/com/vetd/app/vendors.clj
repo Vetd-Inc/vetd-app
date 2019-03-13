@@ -45,6 +45,39 @@
                  :created (ut/now)
                  :pitch txt})))
 
+(defn insert-product
+  [{:keys [vendor-id pname short-desc long-desc logo url]}]
+  (let [[id idstr] (ut/mk-id&str)]
+    (db/insert! :products
+                {:id id
+                 :idstr idstr
+                 :created (ut/now-ts)
+                 :updated (ut/now-ts)
+                 :deleted nil
+                 :vendor_id vendor-id
+                 :pname pname
+                 :short_desc short-desc
+                 :long_desc long-desc
+                 :logo logo
+                 :url url})))
+
+(defn update-product
+  [{:keys [id pname short-desc long-desc logo url]}]
+  (db/hs-exe! {:update :products
+               :set {:updated (ut/now-ts)
+                     :pname pname
+                     :short_desc short-desc
+                     :long_desc long-desc
+                     :logo logo
+                     :url url}
+               :where [:= :id id]}))
+
+(defn delete-product
+  [prod-id]
+  (db/hs-exe! {:update :products
+               :set {:deleted (ut/now-ts)}
+               :where [:= :id prod-id]}))
+
 (defmethod com/handle-ws-inbound :v/create-preposal
   [req ws-id sub-fn]
   (create-preposal req))
@@ -53,51 +86,25 @@
   [{:keys [vendor-id long-desc]} ws-id sub-fn]
 #_  (create-profile vendor-id long-desc))
 
-
-
-
-
 (defmethod com/handle-ws-inbound :save-form-doc
   [{:keys [form-doc]} ws-id sub-fn]
   (if-let [doc-id (:doc-id form-doc)]
     (docs/update-doc-from-form-doc form-doc)
     (docs/create-doc-from-form-doc form-doc)))
 
-{:doc-title nil,
-  :from-user {:id 420325126261, :uname "Bill Piel"},
-  :prompts
-  [{:id 370382503629,
-    :prompt "Pricing Estimate",
-    :descr
-    "In what range would you expect this buyer's costs to fall?",
-    :fields
-    [{:id 370382503630,
-      :fname "value",
-      :ftype "n",
-      :fsubtype "int",
-      :list? false,
-      :response {:state "default value????"}}
-     {:id 370382503632,
-      :fname "unit",
-      :ftype "e-price-per",
-      :fsubtype nil,
-      :list? false,
-      :response {:state "default value????"}}],
-    :response {:note-state ""}}
-   {:id 370382503633,
-    :prompt "Pitch",
-    :descr "Why do we believe you are a fit for this product?",
-    :fields
-    [{:id 370382503634,
-      :fname "value",
-      :ftype "s",
-      :fsubtype "multi",
-      :list? false,
-      :response {:state "default value????"}}],
-    :response {:note-state ""}}],
-  :title "Preposal Request 54794",
-  :from-org {:id 273818389861, :oname "Vetd"},
-  :product {:id 272814707844, :pname "Stride"},
-  :id 420327446264, 
-  :responses [], 
-  :doc-id nil}
+(defmethod com/handle-ws-inbound :v/new-product
+  [{:keys [vendor-id]} ws-id sub-fn]
+  (insert-product {:vendor-id vendor-id
+                   :pname (str "PRODUCT " (ut/now))
+                   :short-desc "Short Description"
+                   :long-desc "Long Description"
+                   :logo "logo"
+                   :url "url"}))
+
+(defmethod com/handle-ws-inbound :v/save-product
+  [{:keys [product]} ws-id sub-fn]
+  (update-product product))
+
+(defmethod com/handle-ws-inbound :v/delete-product
+  [{:keys [product-id]} ws-id sub-fn]
+  (delete-product product-id))
