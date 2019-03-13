@@ -3,25 +3,29 @@
             [com.vetd.app.util :as ut]
             [environ.core :as env]))
 
-(defn get-vetd-env []
-  (env/env :vetd-env)) 
+(def vetd-env (env/env :vetd-env))
 
 (def prod?
-  (= (get-vetd-env) "PROD"))
+  (= vetd-env "PROD"))
 
 (def building?
-  (= (get-vetd-env) "BUILD"))
+  (= vetd-env "BUILD"))
+
+(defn build-safe-env
+  [k]
+  (when-not building?
+    (get env/env k)))
 
 ;; DB
-(def pg-db {:dbtype (env/env :db-type)
-            :dbname (env/env :db-name)
-            :host (env/env :db-host)
-            :port (Integer. (env/env :db-port))
-            :user (env/env :db-user)
-            :password (env/env :db-password)})
+(def pg-db {:dbtype (build-safe-env :db-type)
+            :dbname (build-safe-env :db-name)
+            :host (build-safe-env :db-host)
+            :port (Integer. (build-safe-env :db-port))
+            :user (build-safe-env :db-user)
+            :password (build-safe-env :db-password)})
 
 ;; Hasura
-(def hasura-ws-url (env/env :hasura-ws-url))
-(def hasura-http-url (env/env :hasura-http-url))
+(def hasura-ws-url (build-safe-env :hasura-ws-url))
+(def hasura-http-url (build-safe-env :hasura-http-url))
 
 (com/setup-env prod?)
