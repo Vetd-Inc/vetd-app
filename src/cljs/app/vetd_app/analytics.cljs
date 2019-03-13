@@ -1,8 +1,8 @@
 (ns vetd-app.analytics
   (:require [re-frame.core :as rf])
-  (:require-macros [vetd-app.env :as env]))
+  (:require-macros vetd-app.env))
 
-(println (str "segment key: " env/segment-frontend-write-key))
+(.log js/console (str "segment key: " vetd-app.env/segment-frontend-write-key))
 
 ;; (rf/reg-fx
 ;;  :analytics/identify
