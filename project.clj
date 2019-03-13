@@ -103,7 +103,8 @@
              :resource-paths ["env/prod/resources"]}
 
    ;; production build
-   :build {:env {:vetd-env "BUILD"}}
+   :build {:env {:vetd-env "BUILD"
+                 :segment-frontend-write-key "VXTgraXuvEsV7MzqWUlgQgMcu94rjzU3"}}
 
    :dev           [:project/dev :profiles/dev]
    :test          [:project/dev :project/test :profiles/test]

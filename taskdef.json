@@ -58,10 +58,6 @@
         {
           "name": "HASURA_HTTP_URL",
           "value": "http://172.31.0.60:8080/v1alpha1/graphql"
-        },
-        {
-          "name": "SEGMENT_FRONTEND_WRITE_KEY",
-          "value": "VXTgraXuvEsV7MzqWUlgQgMcu94rjzU3"
         }
       ],
       "ulimits": null,
