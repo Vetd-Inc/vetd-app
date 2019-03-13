@@ -11,22 +11,24 @@
 (def building?
   (= vetd-env "BUILD"))
 
-(defn build-safe-env
-  [k]
-  (if-not building?
-    (get env/env k)
-    ""))
+(defmacro build-ignore
+  "Ignore body when building."
+  [& body]
+  `(when-not building?
+     ~@body))
 
-;; DB
-(def pg-db {:dbtype (build-safe-env :db-type)
-            :dbname (build-safe-env :db-name)
-            :host (build-safe-env :db-host)
-            :port (Integer. (build-safe-env :db-port))
-            :user (build-safe-env :db-user)
-            :password (build-safe-env :db-password)})
+(build-ignore 
+ ;; DB
+ (def pg-db
+   {:dbtype (env/env :db-type)
+    :dbname (env/env :db-name)
+    :host (env/env :db-host)
+    :port (Integer. (env/env :db-port))
+    :user (env/env :db-user)
+    :password (env/env :db-password)})
 
-;; Hasura
-(def hasura-ws-url (build-safe-env :hasura-ws-url))
-(def hasura-http-url (build-safe-env :hasura-http-url))
+ ;; Hasura
+ (def hasura-ws-url (env/env :hasura-ws-url))
+ (def hasura-http-url (env/env :hasura-http-url)))
 
 (com/setup-env prod?)
