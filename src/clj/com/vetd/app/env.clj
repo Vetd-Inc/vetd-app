@@ -13,8 +13,9 @@
 
 (defn build-safe-env
   [k]
-  (when-not building?
-    (get env/env k)))
+  (if-not building?
+    (get env/env k)
+    ""))
 
 ;; DB
 (def pg-db {:dbtype (build-safe-env :db-type)
