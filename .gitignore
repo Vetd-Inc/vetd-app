@@ -17,3 +17,7 @@ figwheel_server.log
 # OSX
 .DS_Store
 ._*
+
+# Emacs
+#*
+.#*
