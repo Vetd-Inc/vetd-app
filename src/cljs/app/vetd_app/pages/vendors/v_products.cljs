@@ -51,30 +51,30 @@
         [:div "created: " created]
         [:div "updated: " updated]       
         [:> ui/FormField
-         [:> ui/Input {:value @pname&
+         [:> ui/Input {:defaultValue @pname&
                        :placeholder "Product Name"
                        :spellCheck false
                        :onChange (fn [_ this] (reset! pname& (.-value this)))}]]
         [:> ui/FormField
-         [:> ui/TextArea {:value @short-desc&
+         [:> ui/TextArea {:defaultValue @short-desc&
                           :style {:height "100px"}
                           :placeholder "Short Description"
                           :spellCheck false
                           :onChange (fn [_ this] (reset! short-desc&  (.-value this)))}]]
         [:> ui/FormField
-         [:> ui/TextArea {:value @long-desc&
+         [:> ui/TextArea {:defaultValue @long-desc&
                           :style {:height "100px"}                        
                           :placeholder "Long Description"
                           :spellCheck false
                           :onChange (fn [_ this] (reset! long-desc&  (.-value this)))}]]
         [:> ui/FormField
-         [:> ui/Input {:value @logo&
+         [:> ui/Input {:defaultValue @logo&
                        :type "url"
                        :placeholder "Logo"
                        :spellCheck false
                        :onChange (fn [_ this] (reset! logo& (.-value this)))}]]
         [:> ui/FormField
-         [:> ui/Input {:value @url&
+         [:> ui/Input {:defaultValue @url&
                        :type "url"
                        :placeholder "Product Website"
                        :spellCheck false
