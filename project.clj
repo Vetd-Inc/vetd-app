@@ -85,7 +85,7 @@
                  :pretty-print false
                  :closure-warnings
                  {:externs-validation :off :non-standard-jsdoc :off}
-                 :externs ["react/externs/react.js"]}}
+                 :externs ["js/externs.js"]}}
                :min-full
                {:source-paths ["src/clj" "src/cljc" "src/cljs/admin" "src/cljs/app"]
                 :compiler
@@ -97,7 +97,7 @@
                  :pretty-print false
                  :closure-warnings
                  {:externs-validation :off :non-standard-jsdoc :off}
-                 :externs ["react/externs/react.js"]}}}}
+                 :externs ["js/externs.js"]}}}}
              :aot :all
              :uberjar-name "vetd-app.jar"
              :source-paths ["src/clj" "src/cljc"]

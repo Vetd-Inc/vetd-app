@@ -22,12 +22,12 @@
  :login
  (fn [{:keys [db]} [_ [email pwd]]]
    {:ws-send {:payload {:cmd :auth-by-creds
-                        :return :ws/login
+                        :return :login-result
                         :email email
                         :pwd pwd}}}))
 
 (rf/reg-event-fx
- :ws/login
+ :login-result
  (fn [{:keys [db]} [_ {:keys [logged-in? user session-token memberships admin?]
                        :as results}]]
    (if logged-in?
@@ -45,6 +45,7 @@
       :cookies {:admin-token (when admin?
                                [session-token {:max-age 60
                                                :path "/"}])}
+      :analytics/identify {:user-id (:id user)}
       :dispatch-later [{:ms 100 :dispatch [:nav-home]}]}
      {:db (assoc db
                  :logged-in? logged-in?
