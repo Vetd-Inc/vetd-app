@@ -55,7 +55,7 @@
   :main ^:skip-aot com.vetd.app.core
   :target-path "target/%s"
   ;; might be overkill, but it works
-  :source-paths ["src/clj" "src/cljc"]
+  :source-paths ["src/clj" "src/cljc" "src/cljs/admin" "src/cljs/app"]
   :test-paths ["test/clj"]
   :resource-paths ["resources" "target/cljsbuild"]
 
@@ -100,7 +100,6 @@
                  :externs ["js/externs.js"]}}}}
              :aot :all
              :uberjar-name "vetd-app.jar"
-             :source-paths ["src/clj" "src/cljc"]
              :resource-paths ["env/prod/resources"]}
 
    ;; production build
@@ -152,7 +151,7 @@
                       :closure-defines {"re_frame.trace.trace_enabled_QMARK_" true}
                       :preloads [devtools.preload day8.re-frame-10x.preload]}}]}
                   :doo {:build "test"}
-                  :source-paths ["src/clj" "src/cljc" "dev/clj"]
+                  :source-paths ["dev/clj"]
                   :resource-paths ["env/dev/resources"]
                   :repl-options {:nrepl-middleware [cider.piggieback/wrap-cljs-repl]
                                  :init-ns repl-init}
@@ -164,8 +163,7 @@
                   :cljsbuild
                   {:builds
                    {:test
-                    {:source-paths ["src/cljc" "src/cljs/admin" "src/cljs/app" "test/cljs"]
-                     :compiler
+                    {:compiler
                      {:output-to "target/test.js"
                       :main "vetd-app.doo-runner"
                       :optimizations :whitespace
