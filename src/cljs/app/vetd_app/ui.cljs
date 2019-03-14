@@ -17,6 +17,7 @@
     (apply goog.object/getValueByKeys semantic-ui k ks)
     (goog.object/get semantic-ui k)))
 
+
 (def Grid (component "Grid"))
 (def GridColumn (component "Grid" "Column"))
 (def GridRow (component "Grid" "Row"))
@@ -41,6 +42,7 @@
 (def TextArea (component "TextArea"))
 (def Checkbox (component "Checkbox"))
 (def Select (component "Select"))
+(def Dropdown (component "Dropdown"))
 
 (def Icon (component "Icon"))
 

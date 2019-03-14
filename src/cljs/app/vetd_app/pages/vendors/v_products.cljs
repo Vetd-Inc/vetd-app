@@ -36,62 +36,85 @@
                         :product-id product-id}}}))
 
 (defn c-product
-  [{:keys [id pname short-desc long-desc logo url created updated]}]
-  (let [org-id& (rf/subscribe [:org-id])
+  [{:keys [id pname short-desc long-desc logo url created updated categories]}]
+  (let [all-cats& (rf/subscribe [:gql/q
+                                 {:queries
+                                  [[:categories [:id :cname]]]}])
+        org-id& (rf/subscribe [:org-id])
         pname& (r/atom pname)
         short-desc& (r/atom short-desc)
         long-desc& (r/atom long-desc)
         logo& (r/atom logo)
-        url& (r/atom url)]
-    (fn []
-      [:div {:style {:width "400px"}}
-       [:> ui/Form {:style {:margin "10px"
-                            :padding "10px"
-                            :border "solid 1px #666666"}}
-        [:div "created: " created]
-        [:div "updated: " updated]       
-        [:> ui/FormField
-         [:> ui/Input {:defaultValue @pname&
-                       :placeholder "Product Name"
-                       :spellCheck false
-                       :onChange (fn [_ this] (reset! pname& (.-value this)))}]]
-        [:> ui/FormField
-         [:> ui/TextArea {:defaultValue @short-desc&
-                          :style {:height "100px"}
-                          :placeholder "Short Description"
-                          :spellCheck false
-                          :onChange (fn [_ this] (reset! short-desc&  (.-value this)))}]]
-        [:> ui/FormField
-         [:> ui/TextArea {:defaultValue @long-desc&
-                          :style {:height "100px"}                        
-                          :placeholder "Long Description"
-                          :spellCheck false
-                          :onChange (fn [_ this] (reset! long-desc&  (.-value this)))}]]
-        [:> ui/FormField
-         [:> ui/Input {:defaultValue @logo&
-                       :type "url"
-                       :placeholder "Logo"
-                       :spellCheck false
-                       :onChange (fn [_ this] (reset! logo& (.-value this)))}]]
-        [:> ui/FormField
-         [:> ui/Input {:defaultValue @url&
-                       :type "url"
-                       :placeholder "Product Website"
-                       :spellCheck false
-                       :onChange (fn [_ this] (reset! url& (.-value this)))}]]
-        [:> ui/Button {:color "teal"
-                       :fluid true
-                       :on-click #(rf/dispatch [:v/save-product {:id id
-                                                                 :pname @pname&
-                                                                 :short-desc @short-desc&
-                                                                 :long-desc @long-desc&
-                                                                 :logo @logo&
-                                                                 :url @url&}])}
-         "Save Product"]
-        [:> ui/Button {:color "red"
-                       :fluid true
-                       :on-click #(rf/dispatch [:v/delete-product id])}
-         "DELETE  Product"]]])))
+        url& (r/atom url)
+        categories& (r/atom (mapv :id categories))]
+    (fn [{:keys [id pname short-desc long-desc logo url created updated categories]}]
+      (def c1 categories)
+      (let [all-cats (->> @all-cats&
+                          :categories
+                          (mapv (fn [{:keys [id cname]}]
+                                  {:key id
+                                   :value id
+                                   :text cname})))]
+        [:div {:style {:width "400px"}}
+         [:> ui/Form {:style {:margin "10px"
+                              :padding "10px"
+                              :border "solid 1px #666666"}}
+          [:div "created: " created]
+          [:div "updated: " updated]       
+          [:> ui/FormField
+           "Product Name"
+           [:> ui/Input {:defaultValue @pname&
+                         :placeholder "Product Name"
+                         :spellCheck false
+                         :onChange (fn [_ this] (reset! pname& (.-value this)))}]]
+          "Short Description"
+          [:> ui/FormField
+           [:> ui/TextArea {:defaultValue @short-desc&
+                            :style {:height "100px"}
+                            :placeholder "Short Description"
+                            :spellCheck false
+                            :onChange (fn [_ this] (reset! short-desc&  (.-value this)))}]]
+          "Long Description"
+          [:> ui/FormField
+           [:> ui/TextArea {:defaultValue @long-desc&
+                            :style {:height "100px"}                        
+                            :placeholder "Long Description"
+                            :spellCheck false
+                            :onChange (fn [_ this] (reset! long-desc&  (.-value this)))}]]
+          "Logo"
+          [:> ui/FormField
+           [:> ui/Input {:defaultValue @logo&
+                         :placeholder "Logo"
+                         :spellCheck false
+                         :onChange (fn [_ this] (reset! logo& (.-value this)))}]]
+          "Product Website"
+          [:> ui/FormField
+           [:> ui/Input {:defaultValue @url&
+                         :placeholder "Product Website"
+                         :spellCheck false
+                         :onChange (fn [_ this] (reset! url& (.-value this)))}]]
+          "Categories"
+          [:> ui/Dropdown {:defaultValue @categories&
+                           :fluid true
+                           :multiple true
+                           :search true
+                           :selection true
+                           :onChange (fn [_ this] (reset! categories& (.-value this)))
+                           :options all-cats}]
+          [:> ui/Button {:color "teal"
+                         :fluid true
+                         :on-click #(rf/dispatch [:v/save-product {:id id
+                                                                   :pname @pname&
+                                                                   :short-desc @short-desc&
+                                                                   :long-desc @long-desc&
+                                                                   :logo @logo&
+                                                                   :url @url&
+                                                                   :categories @categories&}])}
+           "Save Product"]
+          [:> ui/Button {:color "red"
+                         :fluid true
+                         :on-click #(rf/dispatch [:v/delete-product id])}
+           "DELETE  Product"]]]))))
 
 (defn c-page []
   (let [org-id& (rf/subscribe [:org-id])
@@ -107,7 +130,8 @@
                                   :logo
                                   :url
                                   :created
-                                  :updated]]]}])]
+                                  :updated
+                                  [:categories [:id]]]]]}])]
     (fn []
       (def p1 @prods&)
       [:div
