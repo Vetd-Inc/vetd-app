@@ -63,7 +63,9 @@
                           :buyer-id (->> (:active-memb-id db)
                                          (get (group-by :id (:memberships db)))
                                          first
-                                         :org-id)}}})))
+                                         :org-id)}}
+      :analytics/track {:event "Start Round"
+                        :props {:type etype}}})))
 
 (rf/reg-event-fx
  :b/start-round-success
