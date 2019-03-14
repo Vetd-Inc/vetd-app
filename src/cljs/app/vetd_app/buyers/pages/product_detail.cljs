@@ -1,4 +1,4 @@
-(ns vetd-app.buyers.pages.b-product-detail
+(ns vetd-app.buyers.pages.product-detail
   (:require [vetd-app.flexer :as flx]
             [vetd-app.ui :as ui]
             [vetd-app.docs :as docs]

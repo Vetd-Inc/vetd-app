@@ -1,4 +1,4 @@
-(ns vetd-app.vendors.v-fixtures
+(ns vetd-app.vendors.fixtures
   (:require [vetd-app.flexer :as flx]
             [reagent.core :as r]
             [re-frame.core :as rf]

@@ -1,4 +1,4 @@
-(ns vetd-app.buyers.pages.b-preposals
+(ns vetd-app.buyers.pages.preposals
   (:require [vetd-app.flexer :as flx]
             [vetd-app.ui :as ui]
             [vetd-app.docs :as docs]

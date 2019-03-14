@@ -1,4 +1,4 @@
-(ns vetd-app.vendors.pages.v-home
+(ns vetd-app.vendors.pages.home
   (:require [vetd-app.flexer :as flx]
             [vetd-app.docs :as docs]
             [reagent.core :as r]
