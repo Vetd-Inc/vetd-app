@@ -40,10 +40,15 @@
      (if requested-preposal?
        [:> ui/Label {:style {:marginRight 15}}
         "Preposal Requested"]
-       [:> ui/Button {:onClick #(rf/dispatch [:b/create-preposal-req id])
-                      :color "gray"
-                      :style {:marginRight 15}}
-        "Request a Preposal"])
+       [:> ui/Popup
+        {:content (str "Get a pricing estimate, personalized pitch, and more from " (:oname vendor) ".")
+         :header "What is a Preposal?"
+         :position "bottom left"
+         :trigger (r/as-element
+                   [:> ui/Button {:onClick #(rf/dispatch [:b/create-preposal-req id])
+                                  :color "gray"
+                                  :style {:marginRight 15}}
+                    "Request a Preposal"])}])
      [c/c-categories product]
      [:> ui/Grid {:columns "equal"
                   :style {:margin "20px 0 0 0"}}
