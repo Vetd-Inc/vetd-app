@@ -19,5 +19,5 @@ figwheel_server.log
 ._*
 
 # Emacs
-#*
-.#*
+\#*
+.\#*

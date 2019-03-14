@@ -54,7 +54,10 @@
   
   :main ^:skip-aot com.vetd.app.core
   :target-path "target/%s"
-  :source-paths ["src/clj" "src/cljs/admin" "src/cljs/app" "src/cljc"]
+  ;; might be overkill, but it works
+  :source-paths ["src/clj" "src/cljc" "src/cljs" "src/clj/com/vetd/app"
+                 "src/cljc/vetd_app" "src/cljs/admin/vetd_admin"
+                 "src/cljs/app/vetd_app"]
   :test-paths ["test/clj"]
   :resource-paths ["resources" "target/cljsbuild"]
 
@@ -74,7 +77,9 @@
              :cljsbuild
              {:builds
               {:min-public
-               {:source-paths ["src/cljc" "src/cljs/app" "env/prod/cljs"]
+               {:source-paths ["src/clj" "src/cljc" "src/cljs" "src/clj/com/vetd/app"
+                               "src/cljc/vetd_app" "src/cljs/admin/vetd_admin"
+                               "src/cljs/app/vetd_app"]
                 :compiler
                 {:main "vetd-app.app"
                  :output-dir "target/cljsbuild/public/js/public-out"
@@ -86,7 +91,9 @@
                  {:externs-validation :off :non-standard-jsdoc :off}
                  :externs ["react/externs/react.js"]}}
                :min-full
-               {:source-paths ["src/cljc" "src/cljs/admin" "src/cljs/app" "env/prod/cljs"]
+               {:source-paths ["src/clj" "src/cljc" "src/cljs" "src/clj/com/vetd/app"
+                               "src/cljc/vetd_app" "src/cljs/admin/vetd_admin"
+                               "src/cljs/app/vetd_app"]
                 :compiler
                 {:main "vetd-admin.full"
                  :output-dir "target/cljsbuild/public/js/full-out"
@@ -99,11 +106,16 @@
                  :externs ["react/externs/react.js"]}}}}
              :aot :all
              :uberjar-name "vetd-app.jar"
-             :source-paths ["env/prod/clj"]
+             :source-paths ["src/clj" "src/cljc" "src/cljs" "src/clj/com/vetd/app"
+                            "src/cljc/vetd_app" "src/cljs/admin/vetd_admin"
+                            "src/cljs/app/vetd_app"]
              :resource-paths ["env/prod/resources"]}
 
    ;; production build
-   :build {:env {:vetd-env "BUILD"}}
+   :build {;; This is for env vars that are needed during the actual build.
+           ;; (other environments variables will be passed in when the uberjar is run)
+           :env {:vetd-env "BUILD"
+                 :segment-frontend-write-key "VXTgraXuvEsV7MzqWUlgQgMcu94rjzU3"}}
 
    :dev           [:project/dev :profiles/dev]
    :test          [:project/dev :project/test :profiles/test]
@@ -135,7 +147,8 @@
                   :cljsbuild
                   {:builds
                    [{:id "dev-full"
-                     :source-paths ["src/cljs/admin" "src/cljs/app" "src/cljc" "env/dev/cljs"]
+                     :source-paths ["src/clj/com/vetd/app" "src/cljc/vetd_app"
+                                    "src/cljs/admin/vetd_admin" "src/cljs/app/vetd_app"]
                      :figwheel {:on-jsload "vetd-app.core/mount-components"}
                      :compiler
                      {:main "vetd-admin.full"
@@ -148,7 +161,8 @@
                       :closure-defines {"re_frame.trace.trace_enabled_QMARK_" true}
                       :preloads [devtools.preload day8.re-frame-10x.preload]}}]}
                   :doo {:build "test"}
-                  :source-paths ["dev/clj" "env/dev/clj"]
+                  :source-paths ["src/clj/com/vetd/app" "src/cljc/vetd_app"
+                                 "src/cljs/admin/vetd_admin" "src/cljs/app/vetd_app" "dev/clj"]
                   :resource-paths ["env/dev/resources"]
                   :repl-options {:nrepl-middleware [cider.piggieback/wrap-cljs-repl]
                                  :init-ns repl-init}
