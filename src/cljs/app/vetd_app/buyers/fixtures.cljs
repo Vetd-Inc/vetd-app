@@ -1,4 +1,4 @@
-(ns vetd-app.buyer-fixtures
+(ns vetd-app.buyers.fixtures
   (:require [vetd-app.ui :as ui]
             [reagent.core :as r]
             [re-frame.core :as rf]))

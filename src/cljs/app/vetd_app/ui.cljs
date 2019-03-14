@@ -17,43 +17,15 @@
     (apply goog.object/getValueByKeys semantic-ui k ks)
     (goog.object/get semantic-ui k)))
 
-
+;; Layout
 (def Grid (component "Grid"))
 (def GridColumn (component "Grid" "Column"))
 (def GridRow (component "Grid" "Row"))
-
-(def Menu (component "Menu"))
-(def MenuItem (component "Menu" "Item"))
-(def MenuMenu (component "Menu" "Menu"))
-
 (def Container (component "Container"))
 (def Segment (component "Segment"))
 (def SegmentInline (component "Segment" "Inline"))
 (def Divider (component "Divider"))
 (def Header (component "Header"))
-
-(def Form (component "Form"))
-(def FormField (component "Form" "Field"))
-
-(def Button (component "Button"))
-(def ButtonGroup (component "Button" "Group"))
-(def ButtonOr (component "Button" "Or"))
-(def Input (component "Input"))
-(def TextArea (component "TextArea"))
-(def Checkbox (component "Checkbox"))
-(def Select (component "Select"))
-(def Dropdown (component "Dropdown"))
-
-(def Icon (component "Icon"))
-
-(def Label (component "Label"))
-(def LabelDetail (component "Label" "Detail"))
-(def Message (component "Message"))
-
-(def Image (component "Image"))
-
-(def Loader (component "Loader"))
-
 (def Item (component "Item"))
 (def ItemGroup (component "ItemGroup"))
 (def ItemImage (component "ItemImage"))
@@ -63,9 +35,38 @@
 (def ItemDescription (component "ItemDescription"))
 (def ItemExtra (component "ItemExtra"))
 
+;; Menu
+(def Menu (component "Menu"))
+(def MenuItem (component "Menu" "Item"))
+(def MenuMenu (component "Menu" "Menu"))
 
-;; todo: add to init event? maybe not.
-(aset js/toastr "options"
+;; Form
+(def Form (component "Form"))
+(def FormField (component "Form" "Field"))
+(def Button (component "Button"))
+(def ButtonGroup (component "Button" "Group"))
+(def ButtonOr (component "Button" "Or"))
+(def Input (component "Input"))
+(def TextArea (component "TextArea"))
+(def Checkbox (component "Checkbox"))
+(def Select (component "Select"))
+(def Dropdown (component "Dropdown"))
+
+;; Label
+(def Label (component "Label"))
+(def LabelDetail (component "Label" "Detail"))
+(def Popup (component "Popup"))
+(def Icon (component "Icon"))
+(def Message (component "Message"))
+
+;; Misc
+(def Image (component "Image"))
+(def Loader (component "Loader"))
+
+
+;; Toastr
+;; setup Toastr config:
+(aset js/toastr "options" ; TODO add to init event? maybe not.
       (clj->js {:closeButton false,
                 :debug false,
                 :newestOnTop false,
@@ -79,7 +80,6 @@
                 :hideEasing "linear",
                 :showMethod "fadeIn",
                 :hideMethod "fadeOut"}))
-
 
 (rf/reg-fx
  :toast      ; todo: assumes "success"

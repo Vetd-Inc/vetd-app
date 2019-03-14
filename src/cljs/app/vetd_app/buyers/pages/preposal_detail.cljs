@@ -1,11 +1,10 @@
-(ns vetd-app.pages.buyers.b-preposal-detail
-  (:require [vetd-app.flexer :as flx]
+(ns vetd-app.buyers.pages.preposal-detail
+  (:require [vetd-app.buyers.components :as c]
             [vetd-app.ui :as ui]
             [vetd-app.docs :as docs]
             [reagent.core :as r]
             [reagent.format :as format]
-            [re-frame.core :as rf]
-            [re-com.core :as rc]))
+            [re-frame.core :as rf]))
 
 ;; Events
 (rf/reg-event-fx
@@ -27,45 +26,6 @@
  (fn [{:keys [preposal-idstr]}] preposal-idstr))
 
 ;; Components
-(defn c-rounds
-  "Given a preposal map, display the Round data."
-  [{:keys [product]}]
-  (if (not-empty (:rounds product))
-    [:> ui/Label {:color "teal"
-                  :size "medium"
-                  :ribbon "top left"}
-     "VetdRound In Progress"]
-    [:> ui/Button {:onClick #(rf/dispatch [:b/start-round :product (:id product)])
-                   :color "blue"
-                   :icon true
-                   :labelPosition "right"
-                   :style {:marginRight 15}}
-     "Start VetdRound"
-     [:> ui/Icon {:name "right arrow"}]]))
-
-(defn c-categories
-  "Given a preposal map, display the categories as tags."
-  [{:keys [product]}]
-  [:<>
-   (for [c (:categories product)]
-     ^{:key (:id c)}
-     [:> ui/Label {:class "category-tag"}
-      (:cname c)])])
-
-(defn c-free-trial-tag []
-  [:> ui/Label {:class "free-trial-tag"
-                :color "gray"
-                :size "small"
-                :tag true}
-   "Free Trial"])
-
-(defn c-display-field
-  [props field-key field-value] 
-  [:> ui/GridColumn props
-   [:> ui/Segment {:style {:padding "40px 20px 10px 20px"}}
-    [:> ui/Label {:attached "top"} field-key]
-    field-value]])
-
 (defn c-preposal
   "Component to display Preposal details."
   [{:keys [id product from-org responses] :as preposal}]
@@ -83,17 +43,17 @@
       (:pname product) " " [:small " by " (:oname from-org)]]
      [:> ui/Image {:class "product-logo"
                    :src (str "https://s3.amazonaws.com/vetd-logos/" (:logo product))}]
-     [c-rounds preposal]
-     [c-categories preposal]
-     (when free-trial? [c-free-trial-tag])
+     [c/c-rounds product]
+     [c/c-categories product]
+     (when free-trial? [c/c-free-trial-tag])
      [:> ui/Grid {:columns "equal"
                   :style {:margin "20px 0 0 0"}}
       [:> ui/GridRow
-       [c-display-field {:width 10} "Pitch" pitch]]
+       [c/c-display-field {:width 10} "Pitch" pitch]]
       [:> ui/GridRow
-       [c-display-field {:width 16} "Product Description" (:long-desc product)]]
+       [c/c-display-field {:width 16} "Product Description" (:long-desc product)]]
       [:> ui/GridRow
-       [c-display-field {:width 6} "Estimated Price"
+       [c/c-display-field {:width 6} "Estimated Price"
         (if pricing-estimate-value
           [:<> (format/currency-format pricing-estimate-value) " / " pricing-estimate-unit
            (when (and pricing-estimate-details
@@ -101,11 +61,11 @@
              (str " - " pricing-estimate-details))]
           pricing-estimate-details)]
        (when (not= "" free-trial-terms)
-         [c-display-field {:width 4} "Free Trial Terms" free-trial-terms])
+         [c/c-display-field {:width 4} "Free Trial Terms" free-trial-terms])
        (when (not= "" pricing-model)
-         [c-display-field {:width 6} "Pricing Model" pricing-model])]
+         [c/c-display-field {:width 6} "Pricing Model" pricing-model])]
       [:> ui/GridRow
-       [c-display-field nil (str "About " (:oname from-org))
+       [c/c-display-field nil (str "About " (:oname from-org))
         [:<>
          (when (not= "" website)
            [:span "Website: " website [:br]])

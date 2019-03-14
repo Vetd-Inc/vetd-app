@@ -1,4 +1,4 @@
-(ns vetd-app.pages.login
+(ns vetd-app.public.pages.login
   (:require [vetd-app.ui :as ui]
             [reagent.core :as r]
             [re-frame.core :as rf]

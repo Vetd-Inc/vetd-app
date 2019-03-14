@@ -1,17 +1,17 @@
-(ns vetd-app.pages.buyers.b-signup
+(ns vetd-app.vendors.pages.signup
   (:require [vetd-app.ui :as ui]
             [reagent.core :as r]
             [re-frame.core :as rf]))
 
 ;; Events
 (rf/reg-event-fx
- :b/nav-signup
- (constantly {:nav {:path "/b/signup"}}))
+ :v/nav-signup
+ (constantly {:nav {:path "/v/signup"}}))
 
 (rf/reg-event-db
- :b/route-signup
+ :v/route-signup
  (fn [db]
-   (assoc db :page :b/signup)))
+   (assoc db :page :v/signup)))
 
 ;; Components
 (defn c-page []
@@ -27,7 +27,7 @@
        [:img.logo {:src "https://s3.amazonaws.com/vetd-logos/vetd.svg"}]
        [:> ui/Form
         [:> ui/Header {:as "h2"}
-         "Sign Up as a Buyer"]
+         "Sign Up as a Vendor"]
         [:> ui/FormField
          [:> ui/Input {:placeholder "Full Name"
                        :spellCheck false
@@ -67,6 +67,6 @@
                                                                :email @email
                                                                :org-name @org-name
                                                                :org-url @org-url
-                                                               :org-type "buyer"
+                                                               :org-type "vendor"
                                                                :pwd @pwd}]])}
          "Sign Up"]]])))

@@ -1,4 +1,4 @@
-(ns vetd-app.pages.buyers.b-search
+(ns vetd-app.buyers.pages.search
   (:require [vetd-app.flexer :as flx]
             [vetd-app.ui :as ui]
             [vetd-app.docs :as docs]

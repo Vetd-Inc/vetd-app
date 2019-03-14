@@ -1,4 +1,4 @@
-(ns vetd-app.pages.vendors.v-products
+(ns vetd-app.vendors.pages.products
   (:require [vetd-app.ui :as ui]
             [vetd-app.docs :as docs]
             [reagent.core :as r]
