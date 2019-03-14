@@ -11,6 +11,7 @@
             [vetd-app.pages.buyers.b-preposal-detail :as p-bpreposal-detail]
             [vetd-app.pages.buyers.b-product-detail :as p-bproduct-detail]
             [vetd-app.pages.vendors.v-home :as p-vhome]
+            [vetd-app.pages.vendors.v-products :as p-vprods]            
             [vetd-app.pages.buyers.b-signup :as p-bsignup]
             [vetd-app.pages.vendors.v-signup :as p-vsignup]
             [vetd-app.pages.login :as p-login]
@@ -32,7 +33,8 @@
                    :b/preposal-detail #'p-bpreposal-detail/c-page
                    :b/product-detail #'p-bproduct-detail/c-page
                    :v/signup #'p-vsignup/c-page
-                   :v/home #'p-vhome/c-page})
+                   :v/home #'p-vhome/c-page
+                   :v/products #'p-vprods/c-page})
 
 (hooks/reg-hooks! hooks/c-container
                   {:login #'pub-fix/container
@@ -42,7 +44,8 @@
                    :b/preposal-detail #'b-fix/container
                    :b/product-detail #'b-fix/container
                    :v/signup #'pub-fix/container
-                   :v/home #'v-fix/container})
+                   :v/home #'v-fix/container
+                   :v/products #'v-fix/container})
 
 
 (rf/reg-event-db
@@ -192,6 +195,10 @@
 (sec/defroute vendors-home "/v/home/" [query-params]
   (do (.log js/console "nav vendors")
       (rf/dispatch [:v/route-home query-params])))
+
+(sec/defroute vendors-products "/v/products/" [query-params]
+  (do (.log js/console "nav vendors")
+      (rf/dispatch [:v/route-products query-params])))
 
 (sec/defroute login-path "/login" [query-params]
   (rf/dispatch [:route-login query-params]))

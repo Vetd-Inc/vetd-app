@@ -38,6 +38,7 @@
 (def ButtonGroup (component "Button" "Group"))
 (def ButtonOr (component "Button" "Or"))
 (def Input (component "Input"))
+(def TextArea (component "TextArea"))
 (def Checkbox (component "Checkbox"))
 (def Select (component "Select"))
 
