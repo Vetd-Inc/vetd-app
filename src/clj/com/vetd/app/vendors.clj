@@ -72,6 +72,25 @@
                      :url url}
                :where [:= :id id]}))
 
+(defn insert-product-category
+  [prod_id cat_id]
+  (let [[id idstr] (ut/mk-id&str)]
+    (db/insert! :product_categories
+                {:id id
+                 :idstr idstr
+                 :created (ut/now-ts)
+                 :updated (ut/now-ts)
+                 :deleted nil
+                 :prod_id prod_id
+                 :cat_id cat_id})))
+
+(defn replace-product-categories
+  [{:keys [id categories]}]
+  (db/hs-exe! {:delete-from :product_categories
+               :where [:= :prod_id id]})  
+  (doseq [c categories]
+    (insert-product-category id c)))
+
 (defn delete-product
   [prod-id]
   (db/hs-exe! {:update :products
@@ -103,7 +122,8 @@
 
 (defmethod com/handle-ws-inbound :v/save-product
   [{:keys [product]} ws-id sub-fn]
-  (update-product product))
+  (update-product product)
+  (replace-product-categories product))
 
 (defmethod com/handle-ws-inbound :v/delete-product
   [{:keys [product-id]} ws-id sub-fn]
