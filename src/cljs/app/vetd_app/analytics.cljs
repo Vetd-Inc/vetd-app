@@ -8,7 +8,7 @@
 (rf/reg-fx
  :analytics/identify
  (fn [{:keys [user-id traits]}]
-   (js/analytics.track user-id (clj->js traits))))
+   (js/analytics.identify user-id (clj->js traits))))
 
 (rf/reg-fx
  :analytics/track
