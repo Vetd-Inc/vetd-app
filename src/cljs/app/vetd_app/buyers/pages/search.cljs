@@ -1,5 +1,5 @@
 (ns vetd-app.buyers.pages.search
-  (:require [vetd-app.flexer :as flx]
+  (:require [vetd-app.buyers.components :as c]
             [vetd-app.ui :as ui]
             [vetd-app.docs :as docs]
             [reagent.core :as r]
@@ -194,9 +194,9 @@
                        :tag true}
           "Free Trial"])]]
      (when (not-empty rounds)
-       [:> ui/Label {:color "teal"
-                     :attached "bottom right"}
-        "VetdRound In Progress"])]))
+       [c/c-round-in-progress {:props {:ribbon "right"
+                                       :style {:position "absolute"
+                                               :marginLeft -14}}}])]))
 
 (defn c-vendor-search-results
   [v]

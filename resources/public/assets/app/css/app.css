@@ -225,11 +225,15 @@ body, * {
   font-size: 12px;
   font-weight: 300;
 }
+
 .detail-container > .product-logo {
   position: absolute;
   right: 0px;
   top: 0px;
   padding: 12px;
+}
+.detail-container .start-round-button {
+  margin-right: 15px;
 }
 
 /* to make segment look the same as item results */
