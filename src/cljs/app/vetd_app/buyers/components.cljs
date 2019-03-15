@@ -4,26 +4,38 @@
             [reagent.format :as format]
             [re-frame.core :as rf]))
 
+(defn c-start-round-button [{:keys [etype eid ename props]}]
+  [:> ui/Popup
+   {:content (str "Find and compare similar products to "
+                  ename " that meet your needs.")
+    :header "What is a VetdRound?"
+    :position "bottom left"
+    :trigger (r/as-element
+              [:> ui/Button
+               (merge {:onClick #(rf/dispatch [:b/start-round etype eid])
+                       :class "start-round-button"
+                       :color "blue"
+                       :icon true
+                       :labelPosition "right"}
+                      props)
+               "Start VetdRound"
+               [:> ui/Icon {:name "right arrow"}]])}])
+
+(defn c-round-in-progress [{:keys [props]}]
+  [:> ui/Label (merge {:color "teal"
+                       :size "medium"}
+                      props)
+   "VetdRound In Progress"])
+
 (defn c-rounds
   "Given a product map, display the Round data."
   [product]
   (if (not-empty (:rounds product))
-    [:> ui/Label {:color "teal"
-                  :size "medium"
-                  :ribbon "top left"}
-     "VetdRound In Progress"]
-    [:> ui/Popup
-     {:content (str "Find and compare similar products to " (:pname product) " that meet your needs.")
-      :header "What is a VetdRound?"
-      :position "bottom left"
-      :trigger (r/as-element
-                [:> ui/Button {:onClick #(rf/dispatch [:b/start-round :product (:id product)])
-                               :color "blue"
-                               :icon true
-                               :labelPosition "right"
-                               :style {:marginRight 15}}
-                 "Start VetdRound"
-                 [:> ui/Icon {:name "right arrow"}]])}]))
+    [c-round-in-progress {:props {:ribbon "left"}}]
+    [c-start-round-button {:etype :product
+                           :eid (:id product)
+                           :ename (:pname product)}]
+    ))
 
 (defn c-categories
   "Given a product map, display the categories as tags."
@@ -31,7 +43,11 @@
   [:<>
    (for [c (:categories product)]
      ^{:key (:id c)}
-     [:> ui/Label {:class "category-tag"}
+     [:> ui/Label {:class "category-tag"
+                   ;; use the below two keys to make category tags clickable
+                   ;; :as "a"
+                   ;; :onClick #(println "category search: " (:id c))
+                   }
       (:cname c)])])
 
 (defn c-free-trial-tag []

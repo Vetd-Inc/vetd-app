@@ -1,5 +1,5 @@
 (ns vetd-app.buyers.pages.product-detail
-  (:require [vetd-app.flexer :as flx]
+  (:require [vetd-app.buyers.components :as c]
             [vetd-app.ui :as ui]
             [vetd-app.docs :as docs]
             [reagent.core :as r]
@@ -27,38 +27,6 @@
  (fn [{:keys [product-idstr]}] product-idstr))
 
 ;; Components
-(defn c-rounds
-  "Given a product map, display the Round data."
-  [product]
-  (if (not-empty (:rounds product))
-    [:> ui/Label {:color "teal"
-                  :size "medium"
-                  :ribbon "top left"}
-     "VetdRound In Progress"]
-    [:> ui/Button {:onClick #(rf/dispatch [:b/start-round :product (:id product)])
-                   :color "blue"
-                   :icon true
-                   :labelPosition "right"
-                   :style {:marginRight 15}}
-     "Start VetdRound"
-     [:> ui/Icon {:name "right arrow"}]]))
-
-(defn c-categories
-  "Given a product map, display the categories as tags."
-  [product]
-  [:<>
-   (for [c (:categories product)]
-     ^{:key (:id c)}
-     [:> ui/Label {:class "category-tag"}
-      (:cname c)])])
-
-(defn c-display-field
-  [props field-key field-value] 
-  [:> ui/GridColumn props
-   [:> ui/Segment {:style {:padding "40px 20px 10px 20px"}}
-    [:> ui/Label {:attached "top"} field-key]
-    field-value]])
-
 (defn c-product
   "Component to display Preposal details."
   [{:keys [id pname logo long-desc vendor forms rounds categories] :as product}]
@@ -68,25 +36,30 @@
       pname " " [:small " by " (:oname vendor)]]
      [:> ui/Image {:class "product-logo"
                    :src (str "https://s3.amazonaws.com/vetd-logos/" logo)}]
-     [c-rounds product]
+     [c/c-rounds product]
      (if requested-preposal?
        [:> ui/Label {:style {:marginRight 15}}
         "Preposal Requested"]
-       [:> ui/Button {:onClick #(rf/dispatch [:b/create-preposal-req id])
-                      :color "gray"
-                      :style {:marginRight 15}}
-        "Request a Preposal"])
-     [c-categories product]
+       [:> ui/Popup
+        {:content (str "Get a pricing estimate, personalized pitch, and more from " (:oname vendor) ".")
+         :header "What is a Preposal?"
+         :position "bottom left"
+         :trigger (r/as-element
+                   [:> ui/Button {:onClick #(rf/dispatch [:b/create-preposal-req id])
+                                  :color "gray"
+                                  :style {:marginRight 15}}
+                    "Request a Preposal"])}])
+     [c/c-categories product]
      [:> ui/Grid {:columns "equal"
                   :style {:margin "20px 0 0 0"}}
       [:> ui/GridRow
-       [c-display-field {:width 12} "Product Description" long-desc]]
+       [c/c-display-field {:width 12} "Product Description" long-desc]]
       [:> ui/GridRow
-       [c-display-field {:width 6} "Pitch" "Unavailable (Request a Preposal)"]
-       [c-display-field {:width 6} "Estimated Price" "Unavailable (Request a Preposal)"]]
+       [c/c-display-field {:width 6} "Pitch" "Unavailable (Request a Preposal)"]
+       [c/c-display-field {:width 6} "Estimated Price" "Unavailable (Request a Preposal)"]]
       (when (not= "" (:url vendor))
         [:> ui/GridRow
-         [c-display-field nil (str "About " (:oname vendor))
+         [c/c-display-field nil (str "About " (:oname vendor))
           [:span "Website: " [:a {:href (str "http://" (:url vendor)) ; todo: fragile
                                   :target "_blank"}
                               (:url vendor)]]]])]]))

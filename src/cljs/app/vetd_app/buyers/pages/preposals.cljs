@@ -1,5 +1,5 @@
 (ns vetd-app.buyers.pages.preposals
-  (:require [vetd-app.flexer :as flx]
+  (:require [vetd-app.buyers.components :as c]
             [vetd-app.ui :as ui]
             [vetd-app.docs :as docs]
             [reagent.core :as r]
@@ -28,7 +28,8 @@
         pricing-estimate-unit (docs/get-field-value responses "Pricing Estimate" "unit" :sval)
         pricing-estimate-details (docs/get-field-value responses "Pricing Estimate" "details" :sval)
         free-trial? (= "yes" (docs/get-field-value responses "Do you offer a free trial?" "value" :sval))]
-    [:> ui/Item {:onClick #(rf/dispatch [:b/nav-preposal-detail idstr])} 
+    [:> ui/Item {:onClick #(rf/dispatch [:b/nav-preposal-detail idstr])}
+     
      [:> ui/ItemImage {:class "product-logo" ; todo: make config var 's3-base-url'
                        :src (str "https://s3.amazonaws.com/vetd-logos/" (:logo product))}]
      [:> ui/ItemContent
@@ -44,33 +45,22 @@
           [:small "(estimate) " pricing-estimate-details]]
          pricing-estimate-details)]
       [:> ui/ItemDescription (:short-desc product)]
+      
       [:> ui/ItemExtra
        (when (empty? (:rounds product))
-         [:> ui/Button {:onClick #(rf/dispatch [:b/start-round :product (:id product)])
-                        :color "blue"
-                        :icon true
-                        :labelPosition "right"
-                        :floated "right"}
-          "Start VetdRound"
-          [:> ui/Icon {:name "right arrow"}]])
-       (for [c (:categories product)]
-         ^{:key (:id c)}
-         [:> ui/Label
-          {:class "category-tag"
-           ;; use the below two keys when we make category tags clickable
-           ;; :as "a"
-           ;; :onClick #(println "category search: " (:id c))
-           }
-          (:cname c)])
+         [c/c-start-round-button {:etype :product
+                                  :eid (:id product)
+                                  :props {:floated "right"}}])
+       [c/c-categories product]
        (when free-trial? [:> ui/Label {:class "free-trial-tag"
                                        :color "gray"
                                        :size "small"
                                        :tag true}
                           "Free Trial"])]]
      (when (not-empty (:rounds product))
-       [:> ui/Label {:color "teal"
-                     :attached "bottom right"}
-        "VetdRound In Progress"])]))
+       [c/c-round-in-progress {:props {:ribbon "right"
+                                       :style {:position "absolute"
+                                               :marginLeft -14}}}])]))
 
 (defn filter-preposals
   [preposals selected-categories]
