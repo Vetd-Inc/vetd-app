@@ -4,16 +4,22 @@
             [reagent.format :as format]
             [re-frame.core :as rf]))
 
-(defn c-start-round-button [{:keys [etype eid props]}]
-  [:> ui/Button
-   (merge {:onClick #(rf/dispatch [:b/start-round etype eid])
-           :class "start-round-button"
-           :color "blue"
-           :icon true
-           :labelPosition "right"}
-          props)
-   "Start VetdRound"
-   [:> ui/Icon {:name "right arrow"}]])
+(defn c-start-round-button [{:keys [etype eid ename props]}]
+  [:> ui/Popup
+   {:content (str "Find and compare similar products to "
+                  ename " that meet your needs.")
+    :header "What is a VetdRound?"
+    :position "bottom left"
+    :trigger (r/as-element
+              [:> ui/Button
+               (merge {:onClick #(rf/dispatch [:b/start-round etype eid])
+                       :class "start-round-button"
+                       :color "blue"
+                       :icon true
+                       :labelPosition "right"}
+                      props)
+               "Start VetdRound"
+               [:> ui/Icon {:name "right arrow"}]])}])
 
 (defn c-round-in-progress [{:keys [props]}]
   [:> ui/Label (merge {:color "teal"
@@ -26,14 +32,10 @@
   [product]
   (if (not-empty (:rounds product))
     [c-round-in-progress {:props {:ribbon "left"}}]
-    [:> ui/Popup
-     {:content (str "Find and compare similar products to "
-                    (:pname product) " that meet your needs.")
-      :header "What is a VetdRound?"
-      :position "bottom left"
-      :trigger (r/as-element
-                [c-start-round-button {:etype :product
-                                       :eid (:id product)}])}]))
+    [c-start-round-button {:etype :product
+                           :eid (:id product)
+                           :ename (:pname product)}]
+    ))
 
 (defn c-categories
   "Given a product map, display the categories as tags."
