@@ -34,8 +34,7 @@
     [c-round-in-progress {:props {:ribbon "left"}}]
     [c-start-round-button {:etype :product
                            :eid (:id product)
-                           :ename (:pname product)}]
-    ))
+                           :ename (:pname product)}]))
 
 (defn c-categories
   "Given a product map, display the categories as tags."
@@ -44,10 +43,9 @@
    (for [c (:categories product)]
      ^{:key (:id c)}
      [:> ui/Label {:class "category-tag"
-                   ;; use the below two keys to make category tags clickable
-                   ;; :as "a"
-                   ;; :onClick #(println "category search: " (:id c))
-                   }
+                   :as "a"
+                   :onClick #(do (.stopPropagation %)
+                                 (rf/dispatch [:b/nav-search (:cname c)]))}
       (:cname c)])])
 
 (defn c-free-trial-tag []
