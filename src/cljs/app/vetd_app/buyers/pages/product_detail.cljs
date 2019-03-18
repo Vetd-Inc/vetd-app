@@ -12,12 +12,14 @@
  (fn [_ [_ product-idstr]]
    {:nav {:path (str "/b/products/" product-idstr)}}))
 
-(rf/reg-event-db
+(rf/reg-event-fx
  :b/route-product-detail
- (fn [db [_ product-idstr]]
-   (assoc db
-          :page :b/product-detail
-          :page-params {:product-idstr product-idstr})))
+ (fn [{:keys [db]} [_ product-idstr]]
+   {:db (assoc db
+               :page :b/product-detail
+               :page-params {:product-idstr product-idstr})
+    :analytics/page {:name "Buyers Product Detail"
+                     :props {:product-idstr product-idstr}}}))
 
 ;; Subscriptions
 (rf/reg-sub

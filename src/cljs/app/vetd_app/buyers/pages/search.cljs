@@ -16,13 +16,17 @@
 (rf/reg-event-fx
  :b/nav-search
  (fn [_ [_ search-term]]
-   {:nav {:path (str "/b/search/" (when search-term (js/encodeURI search-term)))}}))
+   {:nav {:path (str "/b/search/" (when search-term (js/encodeURI search-term)))}
+    :analytics/track {:event "Navigate"
+                      :props {:category "Navigation"
+                              :label "Buyers Products & Categories"}}}))
 
 (rf/reg-event-fx
  :b/route-search
  (fn [{:keys [db]} [_ search-term]]
    {:db (assoc db :page :b/search)
-    :dispatch [:b/update-search-term search-term]}))
+    :dispatch [:b/update-search-term search-term]
+    :analytics/page {:name "Buyers Products & Categories"}}))
 
 (rf/reg-event-fx
  :b/update-search-term

@@ -11,14 +11,16 @@
 (rf/reg-event-fx
  :b/nav-preposals
  (constantly
-  {:nav {:path "/b/preposals/"}}))
+  {:nav {:path "/b/preposals/"}
+   :analytics/track {:event "Navigate"
+                     :props {:category "Navigation"
+                             :label "Buyers Preposals"}}}))
 
-(rf/reg-event-db
+(rf/reg-event-fx
  :b/route-preposals
- (fn [db [_ query-params]]
-   (assoc db
-          :page :b/preposals
-          :query-params query-params)))
+ (fn [{:keys [db]}]
+   {:db (assoc db :page :b/preposals)
+    :analytics/page {:name "Buyers Preposals"}}))
 
 ;; Components
 (defn c-preposal

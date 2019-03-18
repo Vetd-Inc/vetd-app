@@ -8,10 +8,11 @@
  :b/nav-signup
  (constantly {:nav {:path "/b/signup"}}))
 
-(rf/reg-event-db
+(rf/reg-event-fx
  :b/route-signup
- (fn [db]
-   (assoc db :page :b/signup)))
+ (fn [{:keys [db]}]
+   {:db (assoc db :page :b/signup)
+    :analytics/page {:name "Buyers Signup"}}))
 
 ;; Components
 (defn c-page []
