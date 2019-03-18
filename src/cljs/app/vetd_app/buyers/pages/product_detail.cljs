@@ -46,7 +46,7 @@
          :header "What is a Preposal?"
          :position "bottom left"
          :trigger (r/as-element
-                   [:> ui/Button {:onClick #(rf/dispatch [:b/create-preposal-req id])
+                   [:> ui/Button {:onClick #(rf/dispatch [:b/create-preposal-req product vendor])
                                   :color "gray"
                                   :style {:marginRight 15}}
                     "Request a Preposal"])}])
