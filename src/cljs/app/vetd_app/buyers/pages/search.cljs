@@ -15,20 +15,22 @@
 ;; Events
 (rf/reg-event-fx
  :b/nav-search
- (fn [_ _]
-   {:nav {:path "/b/search/"}}))
+ (fn [_ [_ search-term]]
+   {:nav {:path (str "/b/search/" (when search-term (js/encodeURI search-term)))}}))
 
-(rf/reg-event-db
+(rf/reg-event-fx
  :b/route-search
- (fn [db [_ query-params]]
-   (assoc db
-          :page :b/search
-          :query-params query-params)))
+ (fn [{:keys [db]} [_ search-term]]
+   {:db (assoc db :page :b/search)
+    :dispatch [:b/update-search-term search-term]}))
 
-(def dispatch-search-DB
-  (goog.functions.debounce
-   #(do (rf/dispatch [:b/search %]))
-   250))
+(rf/reg-event-fx
+ :b/update-search-term
+ (fn [{:keys [db]} [_ search-term]]
+   {:db (assoc db :page-params {:search-term search-term})
+    :dispatch-debounce [{:id :b/search
+                         :dispatch [:b/search search-term]
+                         :timeout 250}]}))
 
 (rf/reg-event-fx
  :b/search
@@ -117,6 +119,12 @@
  (fn [db _]
    (:b/search-result-ids db)))
 
+(rf/reg-sub
+ :search-term
+ :<- [:page-params] 
+ (fn [{:keys [search-term]}]
+   (or search-term "")))
+
 
 ;; Components
 
@@ -141,7 +149,7 @@
   [:div "Preposal Requested " (str created)])
 
 (defn c-product-search-result
-  [{:keys [id idstr pname short-desc logo rounds categories forms docs]} org]
+  [{:keys [id idstr pname short-desc logo rounds categories forms docs] :as product} org]
   (let [preposal-responses (-> docs first :responses)
         requested-preposal? (not-empty forms)]
     [:> ui/Item {:onClick #(rf/dispatch (if preposal-responses
@@ -177,15 +185,7 @@
             "Request a Preposal"]))]
       [:> ui/ItemDescription short-desc]
       [:> ui/ItemExtra
-       (for [c categories]
-         ^{:key (:id c)}
-         [:> ui/Label
-          {:class "category-tag"
-           ;; use the below two keys when we make category tags clickable
-           ;; :as "a"
-           ;; :onClick #(println "category search: " (:id c))
-           }
-          (:cname c)])
+       [c/c-categories product]
        (when (and preposal-responses
                   (= "yes" (docs/get-field-value preposal-responses "Do you offer a free trial?" "value" :sval)))
          [:> ui/Label {:class "free-trial-tag"
@@ -302,26 +302,25 @@
              "Request It!"]]])))))
 
 (defn c-page []
-  (let [search-query (r/atom "")]
+  (let [search-query& (rf/subscribe [:search-term])]
     (fn []
       [:> ui/Grid
        [:> ui/GridRow {:columns 3}
         [:> ui/GridColumn {:width 4}]
         [:> ui/GridColumn {:width 8}
          [:> ui/Input {:class "product-search"
-                       :value @search-query
+                       :value @search-query&
                        :size "big"
                        :icon "search"
                        :autoFocus true
                        :spellCheck false
                        ;; :loading true ; todo: use this property
                        :onChange (fn [_ this]
-                                   (dispatch-search-DB (.-value this))
-                                   (reset! search-query (.-value this)))
+                                   (rf/dispatch [:b/update-search-term (.-value this)]))
                        :placeholder "Search products & categories..."}]]
         [:> ui/GridColumn {:width 4}]]
        [:> ui/GridRow {:columns 3}
         [:> ui/GridColumn {:width 2}]
         [:> ui/GridColumn {:width 12}
-         [c-search-results search-query]]
+         [c-search-results search-query&]]
         [:> ui/GridColumn {:width 2}]]])))

@@ -4,6 +4,7 @@
             vetd-app.local-store
             vetd-app.cookies
             vetd-app.analytics
+            vetd-app.debounce
             vetd-app.signup
             [vetd-app.hooks :as hooks]
             [vetd-app.buyers.fixtures :as b-fix]
@@ -177,8 +178,11 @@
 (sec/defroute home-path "/" [query-params]
   (rf/dispatch [:route-home query-params]))
 
-(sec/defroute buyers-search "/b/search/" [query-params]
-  (rf/dispatch [:b/route-search query-params]))
+(sec/defroute buyers-search-root "/b/search/" []
+  (rf/dispatch [:b/route-search]))
+
+(sec/defroute buyers-search "/b/search/:search-term" [search-term]
+  (rf/dispatch [:b/route-search search-term]))
 
 (sec/defroute buyers-home "/b/home/" [query-params]
   (rf/dispatch [:b/route-home query-params]))
