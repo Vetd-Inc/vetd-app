@@ -23,7 +23,7 @@
     :analytics/page {:name "Buyers Preposals"}}))
 
 (rf/reg-event-fx
- :preposals-filter/add-selected-category
+ :b/preposals-filter.add-selected-category
  (fn [{:keys [db]} [_ category]]
    {:db (update-in db [:preposals-filter :selected-categories] conj (:id category))
     :analytics/track {:event "Filter"
@@ -31,7 +31,7 @@
                               :label (str "Added Category: " (:cname category))}}}))
 
 (rf/reg-event-fx
- :preposals-filter/remove-selected-category
+ :b/preposals-filter.remove-selected-category
  (fn [{:keys [db]} [_ category]]
    {:db (update-in db [:preposals-filter :selected-categories] disj (:id category))}))
 
@@ -141,8 +141,8 @@
                                   :checked (boolean (@selected-categories& id))
                                   :onChange (fn [_ this]
                                               (if (.-checked this)
-                                                (rf/dispatch [:preposals-filter/add-selected-category category])
-                                                (rf/dispatch [:preposals-filter/remove-selected-category category])))}])))]))
+                                                (rf/dispatch [:b/preposals-filter.add-selected-category category])
+                                                (rf/dispatch [:b/preposals-filter.remove-selected-category category])))}])))]))
        [:> ui/ItemGroup {:class "inner-container results"}
         (if (= :loading @preps&)
           [:> ui/Loader {:active true :inline true}]
