@@ -6,7 +6,11 @@
 ;; Events
 (rf/reg-event-fx
  :b/nav-signup
- (constantly {:nav {:path "/b/signup"}}))
+ (constantly
+  {:nav {:path "/b/signup"}
+   :analytics/track {:event "Signup Start"
+                     :props {:category "Accounts"
+                             :label "buyer"}}}))
 
 (rf/reg-event-fx
  :b/route-signup

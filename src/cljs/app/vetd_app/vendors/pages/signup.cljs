@@ -8,9 +8,9 @@
  :v/nav-signup
  (constantly
   {:nav {:path "/v/signup"}
-   :analytics/track {:event "Navigate"
-                     :props {:category "Navigation"
-                             :label "Vendors Signup"}}}))
+   :analytics/track {:event "Signup Start"
+                     :props {:category "Accounts"
+                             :label "vendor"}}}))
 
 (rf/reg-event-fx
  :v/route-signup
