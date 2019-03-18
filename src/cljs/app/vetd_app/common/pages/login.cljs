@@ -32,22 +32,21 @@
  (fn [{:keys [db]} [_ {:keys [logged-in? user session-token memberships admin?]
                        :as results}]]
    (if logged-in?
-     {:db (assoc db
-                 :login-failed? false
-                 :logged-in? logged-in?
-                 :user user
-                 :session-token session-token
-                 :memberships memberships
-                 :active-memb-id (some-> memberships first :id)
-                 :admin? admin?
-                 ;; TODO support users with multi-orgs
-                 :org-id (-> memberships first :org-id))
-      :local-store {:session-token session-token}
-      :cookies {:admin-token (when admin?
-                               [session-token {:max-age 60
-                                               :path "/"}])}
-      :analytics/identify {:user-id (:id user)}
-      :dispatch-later [{:ms 100 :dispatch [:nav-home]}]}
+     (let [org-id (-> memberships first :org-id)] ; TODO support users with multi-orgs
+       {:db (assoc db
+                   :login-failed? false
+                   :logged-in? logged-in?
+                   :user user
+                   :session-token session-token
+                   :memberships memberships
+                   :active-memb-id (some-> memberships first :id)
+                   :admin? admin?
+                   :org-id org-id)
+        :local-store {:session-token session-token}
+        :cookies {:admin-token (when admin? [session-token {:max-age 60 :path "/"}])}
+        :analytics/identify {:user-id (:id user)}
+        :analytics/group {:group-id org-id}
+        :dispatch-later [{:ms 100 :dispatch [:nav-home]}]})
      {:db (assoc db
                  :logged-in? logged-in?
                  :login-failed? true)})))
