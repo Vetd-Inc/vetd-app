@@ -7,7 +7,7 @@
             [re-frame.core :as rf]
             [re-com.core :as rc]))
 
-;; Events
+;;;; Events
 (rf/reg-event-fx
  :b/nav-preposals
  (constantly
@@ -22,7 +22,31 @@
    {:db (assoc db :page :b/preposals)
     :analytics/page {:name "Buyers Preposals"}}))
 
-;; Components
+(rf/reg-event-fx
+ :preposals-filter/add-selected-category
+ (fn [{:keys [db]} [_ category]]
+   {:db (update-in db [:preposals-filter :selected-categories] conj (:id category))
+    :analytics/track {:event "Filter"
+                      :props {:category "Preposals"
+                              :label (str "Added Category: " (:cname category))}}}))
+
+(rf/reg-event-fx
+ :preposals-filter/remove-selected-category
+ (fn [{:keys [db]} [_ category]]
+   {:db (update-in db [:preposals-filter :selected-categories] disj (:id category))}))
+
+;;;; Subscriptions
+(rf/reg-sub
+ :preposals-filter
+ :preposals-filter)
+
+;; a set of Category ID's to allow through filter (if empty, let all categories through)
+(rf/reg-sub
+ :preposals-filter/selected-categories
+ :<- [:preposals-filter]
+ :selected-categories)
+
+;;;; Components
 (defn c-preposal
   "Component to display Preposal as a list item."
   [{:keys [id idstr product from-org responses]}]
@@ -75,6 +99,7 @@
 
 (defn c-page []
   (let [org-id& (rf/subscribe [:org-id])
+        selected-categories& (rf/subscribe [:preposals-filter/selected-categories])
         preps& (rf/subscribe [:gql/sub
                               {:queries
                                [[:docs {:dtype "preposal"
@@ -95,11 +120,9 @@
                                      [:id :prompt]]
                                     [:fields
                                      [:id :pf-id :idx :sval :nval :dval
-                                      [:prompt-field [:id :fname]]]]]]]]]}])
-        ;; a set of category ID's to allow through filter
-        ;; if empty, let all categories through
-        selected-categories (r/atom #{})]
-    (fn []
+                                      [:prompt-field [:id :fname]]]]]]]]]}])]
+
+    (fn [] 
       [:div.container-with-sidebar
        (let [categories (->> @preps&
                              :docs
@@ -110,18 +133,21 @@
          (when (not-empty categories)
            [:div.sidebar
             "Filter By Category"
-            (for [[id v] categories]
-              ^{:key id} 
-              [:> ui/Checkbox {:label (str (-> v first :cname) " (" (count v) ")")
-                               :onChange (fn [_ this]
-                                           (if (.-checked this)
-                                             (swap! selected-categories conj id)
-                                             (swap! selected-categories disj id)))}])]))
+            (doall
+             (for [[id v] categories]
+               (let [category (first v)]
+                 ^{:key id} 
+                 [:> ui/Checkbox {:label (str (:cname category) " (" (count v) ")")
+                                  :checked (boolean (@selected-categories& id))
+                                  :onChange (fn [_ this]
+                                              (if (.-checked this)
+                                                (rf/dispatch [:preposals-filter/add-selected-category category])
+                                                (rf/dispatch [:preposals-filter/remove-selected-category category])))}])))]))
        [:> ui/ItemGroup {:class "inner-container results"}
         (if (= :loading @preps&)
           [:> ui/Loader {:active true :inline true}]
           (let [preposals (cond-> (:docs @preps&)
-                            (seq @selected-categories) (filter-preposals @selected-categories))]
+                            (seq @selected-categories&) (filter-preposals @selected-categories&))]
             (if (seq preposals)
               (for [preposal preposals]
                 ^{:key (:id preposal)}
