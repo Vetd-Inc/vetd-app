@@ -70,8 +70,9 @@
                                          (get (group-by :id (:memberships db)))
                                          first
                                          :org-id)}}
-      :analytics/track {:event "Start Round"
-                        :props {:type etype}}})))
+      :analytics/track {:event "Start"
+                        :props {:category "Round"
+                                :label etype}}})))
 
 (rf/reg-event-fx
  :b/start-round-success
