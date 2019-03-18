@@ -29,7 +29,8 @@
   (let [page& (rf/subscribe [:page])]
     (fn []
       [flx/col :sidebar
-       (tab page& "Admin Search" :a/search [:a/nav-search])])))
+       (tab page& "Admin Search" :a/search [:a/nav-search])
+       (tab page& "Form Templates" :a/form-templates [:a/nav-form-templates])])))
 
 (defn container [body]
   [flx/col :container #{:buyer}
