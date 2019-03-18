@@ -54,7 +54,7 @@
       [:> ui/GridRow
        [c/c-display-field {:width 12} "Product Description"
         [:<> (or long-desc "No description available.")
-         (when (and url (not= "" url))
+         (when (not-empty url)
            [:p "Website: " [:a {:href (str "http://" url) ; todo: fragile
                                 :target "_blank"}
                             [:> ui/Icon {:name "external square"
@@ -69,7 +69,7 @@
           [:span "Website: " [:a {:href (str "http://" (:url vendor)) ; todo: fragile
                                   :target "_blank"}
                               [:> ui/Icon {:name "external square"
-                                         :color "blue"}]
+                                           :color "blue"}]
                               (:url vendor)]]]])]]))
 
 (defn c-page []
