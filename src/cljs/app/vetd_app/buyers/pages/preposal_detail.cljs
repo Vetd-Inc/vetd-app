@@ -12,12 +12,14 @@
  (fn [_ [_ preposal-idstr]]
    {:nav {:path (str "/b/preposals/" preposal-idstr)}}))
 
-(rf/reg-event-db
+(rf/reg-event-fx
  :b/route-preposal-detail
- (fn [db [_ preposal-idstr]]
-   (assoc db
-          :page :b/preposal-detail
-          :page-params {:preposal-idstr preposal-idstr})))
+ (fn [{:keys [db]} [_ preposal-idstr]]
+   {:db (assoc db
+               :page :b/preposal-detail
+               :page-params {:preposal-idstr preposal-idstr})
+    :analytics/page {:name "Buyers Preposal Detail"
+                     :props {:preposal-idstr preposal-idstr}}}))
 
 ;; Subscriptions
 (rf/reg-sub

@@ -302,7 +302,14 @@ body, * {
 
 
 /* todo, put this as less variable */
-.ui.teal.label, .ui.teal.labels .label,
+.ui.teal.label, .ui.teal.labels .label {
+  background: linear-gradient(to right, #32abde, #6dccce) !important;
+  border: none !important;
+  color: #fff !important;
+}
+.ui.teal.ribbon.label {
+  border-color: #187399 !important;
+}
 .ui.teal.button, .ui.teal.buttons .button {
   background-color: #4ec2c4 !important;
   border-color: #4ec2c4 !important;

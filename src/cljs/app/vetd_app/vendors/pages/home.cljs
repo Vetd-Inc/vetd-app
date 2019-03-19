@@ -7,15 +7,17 @@
 
 (rf/reg-event-fx
  :v/nav-home
- (fn [{:keys [db]} _]
-   {:nav {:path "/v/home/"}}))
+ (constantly
+  {:nav {:path "/v/home/"}
+   :analytics/track {:event "Navigate"
+                     :props {:category "Navigation"
+                             :label "Vendor Home"}}}))
 
-(rf/reg-event-db
+(rf/reg-event-fx
  :v/route-home
- (fn [db [_ query-params]]
-   (assoc db
-          :page :v/home
-          :query-params query-params)))
+ (fn [{:keys [db]}]
+   {:db (assoc db :page :v/home)
+    :analytics/page {:name "Vendor Home"}}))
 
 (defn c-page []
   (let [org-id& (rf/subscribe [:org-id])
