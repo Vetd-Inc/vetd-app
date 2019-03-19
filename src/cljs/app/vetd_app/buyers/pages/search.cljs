@@ -16,13 +16,17 @@
 (rf/reg-event-fx
  :b/nav-search
  (fn [_ [_ search-term]]
-   {:nav {:path (str "/b/search/" (when search-term (js/encodeURI search-term)))}}))
+   {:nav {:path (str "/b/search/" (when search-term (js/encodeURI search-term)))}
+    :analytics/track {:event "Navigate"
+                      :props {:category "Navigation"
+                              :label "Buyers Products & Categories"}}}))
 
 (rf/reg-event-fx
  :b/route-search
  (fn [{:keys [db]} [_ search-term]]
    {:db (assoc db :page :b/search)
-    :dispatch [:b/update-search-term search-term]}))
+    :dispatch [:b/update-search-term search-term]
+    :analytics/page {:name "Buyers Products & Categories"}}))
 
 (rf/reg-event-fx
  :b/update-search-term
@@ -66,8 +70,9 @@
                                          (get (group-by :id (:memberships db)))
                                          first
                                          :org-id)}}
-      :analytics/track {:event "Start Round"
-                        :props {:type etype}}})))
+      :analytics/track {:event "Start"
+                        :props {:category "Round"
+                                :label etype}}})))
 
 (rf/reg-event-fx
  :b/start-round-success
@@ -78,23 +83,28 @@
 
 (rf/reg-event-fx
  :b/create-preposal-req
- (fn [{:keys [db]} [_ product-id]]
+ (fn [{:keys [db]} [_ product vendor]]
    (let [qid (get-next-query-id)]
      {:ws-send {:payload {:cmd :b/create-preposal-req
-                          :return {:handler :b/create-preposal-req-success}
+                          :return {:handler :b/create-preposal-req-success
+                                   :product product
+                                   :vendor vendor}
                           :prep-req {:from-org-id (->> (:active-memb-id db)
                                                        (get (group-by :id (:memberships db)))
                                                        first
                                                        :org-id)
                                      :from-user-id (-> db :user :id)
-                                     :prod-id product-id}}}})))
+                                     :prod-id (:id product)}}}})))
 
 (rf/reg-event-fx
  :b/create-preposal-req-success
- (constantly
-  {:toast {:type "success"
-           :title "Preposal Requested"
-           :message "We'll be in touch with next steps."}}))
+ (fn [_ [_ _ {{:keys [product vendor]} :return}]]
+   {:toast {:type "success"
+            :title "Preposal Requested"
+            :message "We'll be in touch with next steps."}
+    :analytics/track {:event "Request"
+                      :props {:category "Preposals"
+                              :label (str (:pname product) " by " (:oname vendor))}}}))
 
 (rf/reg-event-fx
  :b/req-new-prod-cat
@@ -149,7 +159,7 @@
   [:div "Preposal Requested " (str created)])
 
 (defn c-product-search-result
-  [{:keys [id idstr pname short-desc logo rounds categories forms docs] :as product} org]
+  [{:keys [id idstr pname short-desc logo rounds categories forms docs] :as product} vendor]
   (let [preposal-responses (-> docs first :responses)
         requested-preposal? (not-empty forms)]
     [:> ui/Item {:onClick #(rf/dispatch (if preposal-responses
@@ -159,7 +169,7 @@
                        :src (str "https://s3.amazonaws.com/vetd-logos/" logo)}]
      [:> ui/ItemContent
       [:> ui/ItemHeader
-       pname " " [:small " by " (:oname org)]]
+       pname " " [:small " by " (:oname vendor)]]
       [:> ui/ItemMeta
        (if preposal-responses
          (let [p-e-details (docs/get-field-value preposal-responses
@@ -181,7 +191,7 @@
          (if requested-preposal?
            "Preposal Requested"
            [:a {:onClick #(do (.stopPropagation %)
-                              (rf/dispatch [:b/create-preposal-req id]))}
+                              (rf/dispatch [:b/create-preposal-req product vendor]))}
             "Request a Preposal"]))]
       [:> ui/ItemDescription short-desc]
       [:> ui/ItemExtra

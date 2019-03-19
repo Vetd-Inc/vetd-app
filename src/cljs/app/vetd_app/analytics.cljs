@@ -15,10 +15,12 @@
  (fn [{:keys [event props]}]
    (js/analytics.track event (clj->js props))))
 
-;; (rf/reg-fx
-;;  :analytics/page
-;;  )
+(rf/reg-fx
+ :analytics/page
+ (fn [{:keys [name props]}]
+   (js/analytics.page name (clj->js props))))
 
-;; (rf/reg-fx
-;;  :analytics/group
-;;  )
+(rf/reg-fx
+ :analytics/group
+ (fn [{:keys [group-id traits]}]
+   (js/analytics.group group-id (clj->js traits))))

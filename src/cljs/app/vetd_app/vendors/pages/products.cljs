@@ -7,15 +7,17 @@
 
 (rf/reg-event-fx
  :v/nav-products
- (fn [{:keys [db]} _]
-   {:nav {:path "/v/products/"}}))
+ (constantly
+  {:nav {:path "/v/products/"}
+   :analytics/track {:event "Navigate"
+                     :props {:category "Navigation"
+                             :label "Vendors Products"}}}))
 
-(rf/reg-event-db
+(rf/reg-event-fx
  :v/route-products
- (fn [db [_ query-params]]
-   (assoc db
-          :page :v/products
-          :query-params query-params)))
+ (fn [{:keys [db]}]
+   {:db (assoc db :page :v/products)
+    :analytics/page {:name "Vendors Products"}}))
 
 (rf/reg-event-fx
  :v/new-product

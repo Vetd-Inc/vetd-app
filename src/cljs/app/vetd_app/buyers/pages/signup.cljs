@@ -6,12 +6,17 @@
 ;; Events
 (rf/reg-event-fx
  :b/nav-signup
- (constantly {:nav {:path "/b/signup"}}))
+ (constantly
+  {:nav {:path "/b/signup"}
+   :analytics/track {:event "Signup Start"
+                     :props {:category "Accounts"
+                             :label "buyer"}}}))
 
-(rf/reg-event-db
+(rf/reg-event-fx
  :b/route-signup
- (fn [db]
-   (assoc db :page :b/signup)))
+ (fn [{:keys [db]}]
+   {:db (assoc db :page :b/signup)
+    :analytics/page {:name "Buyers Signup"}}))
 
 ;; Components
 (defn c-page []
