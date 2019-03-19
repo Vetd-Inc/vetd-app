@@ -144,3 +144,4 @@
        (for [p (:products @prods&)]
          ^{:key (str "form" (:id p))}
          [c-product p])])))
+

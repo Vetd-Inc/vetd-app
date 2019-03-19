@@ -16,6 +16,12 @@
 (sec/defroute admin-search-path "/a/search/" []
   (rf/dispatch [:a/route-search]))
 
+(sec/defroute admin-form-templates-path "/a/form-templates/" []
+  (rf/dispatch [:a/route-form-templates nil]))
+
+(sec/defroute admin-form-templates-id-path "/a/form-templates/:idstr" [idstr]
+  (rf/dispatch [:a/route-form-templates idstr]))
+
 (defn c-admin-buyer []
   [:div "ADMIN BUYER"])
 
