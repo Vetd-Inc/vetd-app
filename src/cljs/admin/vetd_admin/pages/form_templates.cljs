@@ -87,20 +87,23 @@
                             :background-color "#EFEFEF"
                             :border-left "solid 3px #999999"
                             :border-top "solid 3px #999999"}}
-        [:> ui/FormField {:inline true}
-         [:> ui/Label {:style {:width "200px"}} "Field Name"]
-         [:> ui/Input {:defaultValue @fname&
-                       :style {:width "300px"}
-                       :spellCheck false
-                       :onChange (fn [_ this] (reset! fname& (.-value this)))}]]
-        [:> ui/FormField {:inline true}
-         [:> ui/Label {:style {:width "200px"}} "Description"]
-         [:> ui/TextArea {:defaultValue @descr&
-                          :spellCheck false
-                          :onChange (fn [_ this] (reset! descr& (.-value this)))}]]
-        [:> ui/FormField {:inline true}
-         [:> ui/Label {:style {:width "200px"}} "Type"]
-         [c-ftype-dropdown ftype-pair&]]        
+        [flx/row
+         [flx/col
+          [:> ui/FormField {:inline true}
+           [:> ui/Label {:style {:width "200px"}} "Field Name"]
+           [:> ui/Input {:defaultValue @fname&
+                         :style {:width "300px"}
+                         :spellCheck false
+                         :onChange (fn [_ this] (reset! fname& (.-value this)))}]]
+          [:> ui/FormField {:inline true}
+           [:> ui/Label {:style {:width "200px"}} "Type"]
+           [c-ftype-dropdown ftype-pair&]]] 
+         [:> ui/FormField {:inline true}
+          [:> ui/Label {:style {:width "200px"}} "Description"]
+          [:> ui/TextArea {:defaultValue @descr&
+                           :spellCheck false
+                           :onChange (fn [_ this] (reset! descr& (.-value this)))}]]]
+                
         [:> ui/FormField {:inline true}
          [:> ui/Label {:style {:width "200px"}} "Sort Order"]
          [:> ui/Input {:defaultValue @sort-order&
@@ -132,17 +135,18 @@
                                         ;:on-click #(rf/dispatch [:v/delete-product id])
                        }
          "Remove Prompt from Form"]
-        [:> ui/FormField {:inline true}
-         [:> ui/Label {:style {:width "200px"}} "Prompt"]
-         [:> ui/Input {:defaultValue @prompt&
-                       :style {:width "300px"}
-                       :spellCheck false
-                       :onChange (fn [_ this] (reset! prompt& (.-value this)))}]]
-        [:> ui/FormField {:inline true}
-         [:> ui/Label {:style {:width "200px"}} "Description"]
-         [:> ui/TextArea {:defaultValue @descr&
-                          :spellCheck false
-                          :onChange (fn [_ this] (reset! descr& (.-value this)))}]]
+        [flx/row
+         [:> ui/FormField {:inline true}
+          [:> ui/Label {:style {:width "200px"}} "Prompt"]
+          [:> ui/Input {:defaultValue @prompt&
+                        :style {:width "300px"}
+                        :spellCheck false
+                        :onChange (fn [_ this] (reset! prompt& (.-value this)))}]]
+         [:> ui/FormField {:inline true}
+          [:> ui/Label {:style {:width "200px"}} "Description"]
+          [:> ui/TextArea {:defaultValue @descr&
+                           :spellCheck false
+                           :onChange (fn [_ this] (reset! descr& (.-value this)))}]]]
         [:> ui/FormField {:inline true}
          [:> ui/Label {:style {:width "200px"}} "Sort Order"]
          [:> ui/Input {:defaultValue @sort-order&
@@ -193,8 +197,8 @@
       (def p1 (when prompts& @prompts&))
       
       [:div#admin-form-templates-page
-       {:style {:margin "0 0 100px 200px"
-                :width "700px"}}
+       {:style {:margin "0 0 100px 50px"
+                :width "1000px"}}
        (if-not form-template-idstr
          [c-form-template-list]
          [:<>
