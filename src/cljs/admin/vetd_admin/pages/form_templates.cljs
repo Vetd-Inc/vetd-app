@@ -1,8 +1,19 @@
 (ns vetd-admin.pages.form-templates
   (:require [vetd-app.ui :as ui]
+            [vetd-app.flexer :as flx]
             [reagent.core :as r]
             [re-frame.core :as rf]
             [re-com.core :as rc]))
+
+;; TODO
+;; add new prompt
+;; add existing prompt
+;; remove prompt
+
+;; add prompt field
+;; delete prompt field
+
+;; save
 
 (rf/reg-event-fx
  :a/nav-form-templates
@@ -11,17 +22,62 @@
 
 (rf/reg-event-db
  :a/route-form-templates
- (fn [db [_ url-form-template-idstr]]
+ (fn [db [_ form-template-idstr]]
    (assoc db
           :page :a/form-templates
-          :query-params {:form-template-idstr url-form-template-idstr})))
+          :page-params {:form-template-idstr form-template-idstr})))
+
+(rf/reg-sub
+ :form-template-idstr
+ :<- [:page-params]
+ (fn [{:keys [form-template-idstr]}] form-template-idstr))
+
+(def fsubtypes
+  [{:key :n-int
+    :value [:n :int]
+    :text "Numeric - Integer"}
+   {:key :s-single
+    :value [:s :single]
+    :text "Text - Single Line"}
+   {:key :s-multi
+    :value [:s :multi]
+    :text "Text - Multi Line"}
+   {:key :e-price-per
+    :value [:e :e-price-per]
+    :text "Enum - Price Per"}
+   {:key :e-yes-no
+    :value [:e :e-yes-no]
+    :text "Enum - Yes/No"}])
+
+(defn c-ftype-dropdown [state&]
+  [:> ui/Dropdown {:defaultValue @state&
+                   :fluid true
+                   :selection true
+                   :onChange (fn [_ this] (reset! state& (.-value this)))
+                   :options fsubtypes}])
+
+(defn c-prompts-dropdown [state&]
+  (let [opts (->> @(rf/subscribe [:gql/q
+                                 {:queries
+                                  [[:prompts
+                                    [:id :prompt]]]}])
+                  :prompts
+                  (mapv (fn [{:keys [id prompt]}]
+                          {:key id
+                           :value id
+                           :text prompt})))]
+    [:> ui/Dropdown {:defaultValue @state&
+                     :fluid true
+                     :search true                     
+                     :selection true
+                     :onChange (fn [_ this] (reset! state& (.-value this)))
+                     :options opts}]))
 
 (defn c-prompt-field
   [{:keys [fname descr ftype fsubtype list?] sort' :sort}]
   (let [fname& (r/atom fname)
         descr& (r/atom descr)
-        ftype& (r/atom ftype)
-        fsubtype& (r/atom fsubtype)
+        ftype-pair& (r/atom [ftype fsubtype])
         list?& (r/atom list?)
         sort-order& (r/atom sort')]
     (fn [{:keys [fname descr ftype fsubtype list?] sort' :sort}]
@@ -29,7 +85,8 @@
        [:> ui/Form {:style {:margin "10px"
                             :padding "10px"
                             :background-color "#EFEFEF"
-                            :border-left "solid 3px #999999"}}
+                            :border-left "solid 3px #999999"
+                            :border-top "solid 3px #999999"}}
         [:> ui/FormField {:inline true}
          [:> ui/Label {:style {:width "200px"}} "Field Name"]
          [:> ui/Input {:defaultValue @fname&
@@ -42,6 +99,9 @@
                           :spellCheck false
                           :onChange (fn [_ this] (reset! descr& (.-value this)))}]]
         [:> ui/FormField {:inline true}
+         [:> ui/Label {:style {:width "200px"}} "Type"]
+         [c-ftype-dropdown ftype-pair&]]        
+        [:> ui/FormField {:inline true}
          [:> ui/Label {:style {:width "200px"}} "Sort Order"]
          [:> ui/Input {:defaultValue @sort-order&
                        :spellCheck false
@@ -51,16 +111,11 @@
          [:> ui/Checkbox {:defaultValue @list?&
                           :spellCheck false
                           :onChange (fn [_ this] (reset! list?& (.-value this)))}]]
-        [:> ui/Button {:color "teal"
-                       :fluid true
-                                        ;                       :on-click #(rf/dispatch [:v/save-prompt&field {}])
-                       }
-         "Save Product"]
         [:> ui/Button {:color "red"
                        :fluid true
                                         ;:on-click #(rf/dispatch [:v/delete-product id])
                        }
-         "DELETE  Product"]]])))
+         "DELETE Field"]]])))
 
 (defn c-template-prompt
   [{:keys [fields id rpid prompt descr form-template-id] sort' :sort}]
@@ -72,6 +127,11 @@
        [:> ui/Form {:style {:margin "10px"
                             :padding "10px"
                             :border "solid 1px #666666"}}
+        [:> ui/Button {:color "red"
+                       :fluid true
+                                        ;:on-click #(rf/dispatch [:v/delete-product id])
+                       }
+         "Remove Prompt from Form"]
         [:> ui/FormField {:inline true}
          [:> ui/Label {:style {:width "200px"}} "Prompt"]
          [:> ui/Input {:defaultValue @prompt&
@@ -90,17 +150,11 @@
                        :onChange (fn [_ this] (reset! sort-order& (.-value this)))}]]
         (for [pf fields]
           [c-prompt-field pf])
-        [:> ui/Button {:color "teal"
+        [:> ui/Button {:color "green"
                        :fluid true
                                         ;:on-click #(rf/dispatch [:v/save-prompt&field {}])
                        }
-         "Save Product"]
-        [:> ui/Button {:color "red"
-                       :fluid true
-                                        ;:on-click #(rf/dispatch [:v/delete-product id])
-                       }
-         "DELETE  Product"]]
-       [:div (str fields)]])))
+         "Add Field"]]])))
 
 (defn c-form-template-list []
   (let [fts& (rf/subscribe [:gql/q
@@ -110,55 +164,61 @@
                                 :idstr
                                 :title
                                 :ftype
-                                :fsubtype]]]}])])
-  (fn []
-    [:div
-     (for [{:keys [id idstr]} (:form-templates @fts&)]
-       ^{:key (str "template-link" id)}
-       [:a {:href (str "./" idstr)}])]))
+                                :fsubtype]]]}])]
+    (fn []
+      [:div
+       (for [{:keys [id idstr title ftype fsubtype]} (:form-templates @fts&)]
+         ^{:key (str "template-link" id)}
+         [:a {:href (str "./" idstr)
+              :style {:font-size "large"}}
+          (str title " [ " ftype " " fsubtype " ]")])])))
 
 (defn c-page []
-  (let [fts& (rf/subscribe [:gql/q
-                            {:queries
-                             [[:form-templates
-                               [:id
-                                :idstr
-                                :title
-                                :ftype
-                                :fsubtype]]]}])
-        ft-opts (->> @fts&
-                     :form-templates
-                     (mapv (fn [{:keys [id title]}]
-                             {:key id
-                              :value id
-                              :text title})))]
-    (fn []
-      (let [prompts& (when url-form-template-id
-                       (rf/subscribe [:gql/q
-                                      {:queries
-                                       [[:form-templates
-                                         {:idstr url-form-template-idstr}
-                                         [:id :idstr
-                                          [:prompts
-                                           [:id :rpid :prompt :descr
-                                            :sort :form-template-id
-                                            [:fields
-                                             [:fname :descr
-                                              :ftype :fsubtype
-                                              :list? :sort] ]]]]]]}]))]
-        (def p1 (when prompts& @prompts&))
-         
-        [:div {:style {:margin-left "100px"
-                       :width "700px"}}
-         (when-not url-form-template-id
-           [:> ui/Dropdown {:fluid true
-                            :selection true
-                            :onChange (fn [_ this] (reset! ft-id& (.-value this)))
-                            :options ft-opts}])
-         (for [p (some-> prompts& deref :form-templates
-                         first :prompts)]
-           ^{:key (str "template-prompt" (:rpid p))}
-           [c-template-prompt p])]))))
+  (fn []
+    (let [form-template-idstr @(rf/subscribe [:form-template-idstr])
+          prompts& (when form-template-idstr
+                     (rf/subscribe [:gql/q
+                                    {:queries
+                                     [[:form-templates
+                                       {:idstr form-template-idstr}
+                                       [:id :idstr :title
+                                        [:prompts
+                                         [:id :rpid :prompt :descr
+                                          :sort :form-template-id
+                                          [:fields
+                                           [:fname :descr
+                                            :ftype :fsubtype
+                                            :list? :sort] ]]]]]]}]))
+          existing-prompt& (r/atom nil)]
+      (def p1 (when prompts& @prompts&))
+      
+      [:div#admin-form-templates-page
+       {:style {:margin "0 0 100px 200px"
+                :width "700px"}}
+       (if-not form-template-idstr
+         [c-form-template-list]
+         [:<>
+          [:div {:style {:font-size "x-large"}}
+           (some-> prompts& deref :form-templates
+                   first :title)]
+          
+          (for [p (some-> prompts& deref :form-templates
+                          first :prompts)]
+            ^{:key (str "template-prompt" (:rpid p))}
+            [c-template-prompt p])
+          [:> ui/Button {:color "green"
+                         :fluid true
+                                        ;:on-click #(rf/dispatch [:v/save-prompt&field {}])
+                         }
+           "Add New Prompt"]
+
+          [flx/row
+           [c-prompts-dropdown existing-prompt&]
+           [:> ui/Button {:color "purple"
+                          :fluid true
+                                        ;:on-click #(rf/dispatch [:v/save-prompt&field {}])
+                          }
+            "Add Existing Prompt"]]])])))
 
 
 #_(cljs.pprint/pprint p1)
