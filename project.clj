@@ -61,12 +61,13 @@
 
   :plugins [[lein-cljsbuild "1.1.7"]
             [lein-environ "1.1.0"]
-            [yogthos/lein-sass "0.1.8"]]
+            [vetd/lein-sass "0.5.1"]]
   
   :figwheel {:css-dirs ["resources/public/assets/app/css/"]}
 
-  :sass {:source "src/scss"
-         :target "resources/public/assets/css"}
+  :sass {:src "src/scss"
+         :output-directory "resources/public/assets/css"
+         :command :sass}
 
   :clean-targets
   ^{:protect false} [:target-path
