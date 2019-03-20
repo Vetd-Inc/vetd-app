@@ -60,14 +60,9 @@
   :resource-paths ["resources" "target/cljsbuild"]
 
   :plugins [[lein-cljsbuild "1.1.7"]
-            [lein-environ "1.1.0"]
-            [vetd/lein-sass "0.5.1"]]
+            [lein-environ "1.1.0"]]
   
   :figwheel {:css-dirs ["resources/public/assets/app/css/"]}
-
-  :sass {:src "src/scss"
-         :output-directory "resources/public/assets/css"
-         :command :sass}
 
   :clean-targets
   ^{:protect false} [:target-path
@@ -77,8 +72,7 @@
   :profiles
   {:uberjar {:omit-source true
              :prep-tasks ["compile"
-                          ["cljsbuild" "once" "min-public" "min-full"]
-                          "sass"]
+                          ["cljsbuild" "once" "min-public" "min-full"]]
              :cljsbuild
              {:builds
               {:min-public
