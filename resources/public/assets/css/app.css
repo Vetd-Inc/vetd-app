@@ -3,43 +3,36 @@ Blue   #27AAE0
 Green  #60D1AB
 */
 body {
-  background: #fafafa;
-}
+  background: #fafafa; }
 
 body, * {
-  font-family: "Montserrat", sans-serif;
+  font-family: 'Montserrat', sans-serif;
   font-size: 14px;
   font-weight: 300;
   /* letter-spacing: 0.8px; */
-  color: #444;
-}
+  color: #444; }
 
 /* START - old, will eventually remove */
 .btn-default {
   color: white;
   background-color: #444;
-  font-weight: bold;
-}
+  font-weight: bold; }
 
 #app {
   height: 100%;
-  width: 100%;
-}
+  width: 100%; }
 
 #page {
   height: 100%;
-  width: 100%;
-}
+  width: 100%; }
 
 #full-header .logo {
   margin-top: 39px;
   margin-left: -42px;
-  /* fix centering?? I don't know -- Bill */
-}
+  /* fix centering?? I don't know -- Bill */ }
 
 #full-header {
-  text-align: center;
-}
+  text-align: center; }
 
 #container {
   height: 100%;
@@ -47,8 +40,7 @@ body, * {
   display: flex;
   align-items: flex-start;
   justify-content: flex-start;
-  flex-direction: column;
-}
+  flex-direction: column; }
 
 #header {
   height: 105px;
@@ -57,13 +49,11 @@ body, * {
   display: flex;
   align-items: stretch;
   justify-content: center;
-  flex-direction: row;
-}
+  flex-direction: row; }
 
 #header-left {
   flex-grow: 0;
-  margin: 20px;
-}
+  margin: 20px; }
 
 #header-middle {
   flex-grow: 1;
@@ -71,8 +61,7 @@ body, * {
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  flex-direction: row;
-}
+  flex-direction: row; }
 
 #header-right {
   flex-grow: 0;
@@ -80,12 +69,10 @@ body, * {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  flex-direction: row;
-}
+  flex-direction: row; }
 
 #header-right .user-name {
-  margin: 20px;
-}
+  margin: 20px; }
 
 #sidebar {
   height: 100%;
@@ -98,30 +85,25 @@ body, * {
   display: flex;
   align-items: flex-start;
   justify-content: flex-start;
-  flex-direction: column;
-}
+  flex-direction: column; }
 
 #sidebar {
-  width: 100%;
-}
+  width: 100%; }
 
 #sidebar a {
   font-weight: bold;
   color: black;
-  text-decoration: none;
-}
+  text-decoration: none; }
 
 #sidebar .tab {
   cursor: pointer;
   margin: 5px 0;
   padding: 5px;
-  width: 100%;
-}
+  width: 100%; }
 
 #sidebar .tab.selected {
   color: white;
-  background-color: #27AAE0;
-}
+  background-color: #27AAE0; }
 
 .loading-logo {
   background-image: url(https://s3.amazonaws.com/vetd-logos/vetd.svg);
@@ -129,143 +111,115 @@ body, * {
   height: 85px;
   width: 200px;
   margin: 10% auto;
-  animation: 3s infinite pulse;
-}
+  animation: 3s infinite pulse; }
 
 @keyframes pulse {
   0% {
-    transform: scale(0.75);
-  }
+    transform: scale(0.75); }
   50% {
-    transform: scale(1.75);
-  }
+    transform: scale(1.75); }
   100% {
-    transform: scale(0.75);
-  }
-}
+    transform: scale(0.75); } }
+
 .prod-logo {
   width: 95px;
   margin-right: 20px;
   display: flex;
   align-items: flex-start;
-  justify-content: flex-start;
-}
+  justify-content: flex-start; }
 
 .prod-logo img {
-  width: 75px;
-}
+  width: 75px; }
 
 .form-maybe-doc {
   border: solid 1px #AAA;
   margin: 20px;
   padding: 10px;
-  max-width: 500px;
-}
+  max-width: 500px; }
 
 .form-maybe-doc .title,
 .form-maybe-doc .product-name,
 .form-maybe-doc .org-name,
 .form-maybe-doc .user-name {
-  margin: 10px;
-}
+  margin: 10px; }
 
 .form-maybe-doc .prompt {
-  margin: 10px;
-}
+  margin: 10px; }
 
 .prompt .prompt-text {
-  font-size: 20px;
-}
+  font-size: 20px; }
 
 .prompt textarea {
   width: 400px;
-  height: 200px;
-}
+  height: 200px; }
 
 .prompt .rc-dropdown {
-  min-width: 100px;
-}
+  min-width: 100px; }
 
 .prompt .prompt-field {
-  margin: 5px;
-}
+  margin: 5px; }
 
 /* END - old, will eventually remove */
 .main-container {
-  margin-top: 35px;
-}
+  margin-top: 35px; }
 
 /* Top Navigation Menu */
 .top-nav {
-  margin-bottom: 30px !important;
-}
+  margin-bottom: 30px !important; }
 
 .top-nav > .item {
-  font-weight: 600 !important;
-}
+  font-weight: 600 !important; }
 
 .top-nav > .logo {
   margin-top: -17px !important;
   padding: 0 61px 0 0 !important;
   /* no hover bg change */
-  background: inherit !important;
-}
+  background: inherit !important; }
 
 .top-nav > .logo img {
   height: 50px !important;
-  width: auto !important;
-}
+  width: auto !important; }
 
 .top-nav > .logo img:hover {
   animation-timing-function: linear;
-  animation: 1s infinite party;
-}
+  animation: 1s infinite party; }
 
 @keyframes party {
   0% {
-    filter: hue-rotate(0);
-  }
+    filter: hue-rotate(0); }
   100% {
-    filter: hue-rotate(360deg);
-  }
-}
+    filter: hue-rotate(360deg); } }
+
 /* used by:
  *   Preposals & Preposal Detail */
 .container-with-sidebar {
   display: flex;
-  flex-direction: row;
-}
+  flex-direction: row; }
 
 .container-with-sidebar > .inner-container {
   flex: 1;
-  margin-top: 0 !important;
-}
+  margin-top: 0 !important; }
 
 .sidebar {
   width: 175px;
   margin-right: 15px;
-  font-weight: 400 !important;
-}
+  font-weight: 400 !important; }
 
 .sidebar > .checkbox {
-  display: block;
-}
+  display: block; }
 
 .sidebar > .checkbox > label {
   font-size: 12px;
-  font-weight: 300;
-}
+  font-weight: 300; }
 
 .detail-container > .product-logo {
   position: absolute;
   right: 0px;
   top: 0px;
-  padding: 12px;
-}
+  padding: 12px; }
 
 .detail-container .start-round-button {
-  margin-right: 15px;
-}
+  margin-right: 15px; }
 
 /* to make segment look the same as item results */
 /* .segment { */
@@ -276,8 +230,7 @@ body, * {
 /* } */
 /* Products & Categories page */
 .product-search {
-  width: 100%;
-}
+  width: 100%; }
 
 /* Search Results
  * used by: Preposals page
@@ -288,135 +241,111 @@ body, * {
   background: #fff !important;
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.08), 0 2px 14px 0 rgba(50, 50, 93, 0.14) !important;
   border-radius: 8px !important;
-  transition: transform 0.3s ease-out !important;
+  transition: transform .3s ease-out !important;
   cursor: pointer !important;
   /* hack to fix bug that hides 'attached' labels */
-  transform: scale(1) !important;
-}
+  transform: scale(1) !important; }
 
 .results > .item:hover {
   transform: scale(1.01) !important;
-  transition: transform 0.05s ease-out !important;
-}
+  transition: transform .05s ease-out !important; }
 
 .results > .item > .product-logo {
   width: 128px !important;
   height: 128px !important;
-  display: flex !important;
-}
+  display: flex !important; }
 
 .results > .item > .product-logo > img {
-  align-self: center;
-}
+  align-self: center; }
 
 .results > .item > .content {
   display: flex !important;
-  flex-direction: column !important;
-}
+  flex-direction: column !important; }
 
 .results > .item > .content > .description {
-  flex: 1 !important;
-}
+  flex: 1 !important; }
 
 .results > .item > .content > .extra > .category-tag {
   margin-top: 11px;
-  /* todo: this is kind of hacky */
-}
+  /* todo: this is kind of hacky */ }
 
 .free-trial-tag {
-  margin-left: 15px !important;
-}
+  margin-left: 15px !important; }
 
 .categories {
-  margin-bottom: 20px;
-}
+  margin-bottom: 20px; }
 
 .category-search-result {
   width: 100%;
   text-align: center;
-  margin-bottom: 15px;
-}
+  margin-bottom: 15px; }
 
 /* todo, put this as less variable */
 .ui.teal.label, .ui.teal.labels .label {
   background: linear-gradient(to right, #32abde, #6dccce) !important;
   border: none !important;
-  color: #fff !important;
-}
+  color: #fff !important; }
 
 .ui.teal.ribbon.label {
-  border-color: #187399 !important;
-}
+  border-color: #187399 !important; }
 
 .ui.teal.button, .ui.teal.buttons .button {
   background-color: #4ec2c4 !important;
   border-color: #4ec2c4 !important;
-  color: #fff !important;
-}
+  color: #fff !important; }
 
 .ui.teal.button:hover, .ui.teal.buttons .button:hover {
   background-color: #6dccce !important;
-  border-color: #6dccce !important;
-}
+  border-color: #6dccce !important; }
 
 .ui.teal.button .icon {
   background-color: #4ec2c4 !important;
   border-color: #4ec2c4 !important;
-  color: #fff !important;
-}
+  color: #fff !important; }
 
 .ui.blue.label, .ui.blue.labels .label,
 .ui.blue.button, .ui.blue.buttons .button {
   background-color: #32abde !important;
   border-color: #32abde !important;
-  color: #fff !important;
-}
+  color: #fff !important; }
 
 .ui.blue.button:hover, .ui.blue.buttons .button:hover {
   background-color: #53b8e3 !important;
   border-color: #53b8e3 !important;
-  color: #fff !important;
-}
+  color: #fff !important; }
 
 .ui.blue.button .icon {
   background-color: #1f94c5 !important;
   border-color: #1f94c5 !important;
-  color: #fff !important;
-}
+  color: #fff !important; }
 
 /* Miscellaneous */
 .category-tag {
   background: #fff !important;
-  border: 1px solid #ddd !important;
-}
+  border: 1px solid #ddd !important; }
 
 a.category-tag:hover {
   border-color: #777 !important;
-  color: #777 !important;
-}
+  color: #777 !important; }
 
 /* bootstrap override */
 /* we need to delete bootstrap eventually */
 .label {
-  text-align: left;
-}
+  text-align: left; }
 
 /* Toast Messages (toastr library) */
 #toast-container .toast-success {
-  background-color: #32abde;
-}
+  background-color: #32abde; }
 
 #toast-container .toast-title,
 #toast-container .toast-message {
-  color: #fff;
-}
+  color: #fff; }
 
 /* login and signup form */
 .centerpiece {
   width: 265px;
   margin: 0 auto;
-  text-align: center;
-}
+  text-align: center; }
 
 .centerpiece .logo {
   display: block;
@@ -424,7 +353,4 @@ a.category-tag:hover {
   margin: 30px auto 40px auto;
   /* logo design is weighted a little right */
   position: relative;
-  left: -5px;
-}
-
-/*# sourceMappingURL=app.css.map */
+  left: -5px; }
