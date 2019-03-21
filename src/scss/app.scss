@@ -93,18 +93,20 @@ body {
  *          Products & Categories page
  */
 .results > .item  {
-  padding: 15px 12px !important;
+  padding: 15px !important;
   background: #fff !important;
-  box-shadow: 0 1px 3px 0 rgba(0,0,0,0.08), 0 2px 14px 0 rgba(50,50,93,0.14) !important;
+  box-shadow: 0 2px 14px 0 rgba(50,50,50,0.1) !important;
   border-radius: 8px !important;
   transition: transform .3s ease-out !important;
   cursor: pointer !important;
   /* hack to fix bug that hides 'attached' labels */
-  transform: scale(1) !important;
+  // transform: scale(1) !important;
 }
 .results > .item:hover  {
-  transform: scale(1.01) !important;
-  transition: transform .05s ease-out !important;
+  // transform: scale(1.000);
+  transform: translate(0, -1px) !important;
+  box-shadow: 0 3px 21px 0 rgba(50,50,50,0.26) !important;
+  transition: all .05s ease-out !important;
 }
 .results > .item > .product-logo {
   width: 128px !important;
