@@ -51,7 +51,7 @@ body {
   margin-top: 0 !important;
 }
 .sidebar {
-  width: 175px;
+  width: 225px;
   margin-right: 15px;
   font-weight: 400 !important;
 }
@@ -192,6 +192,57 @@ a.category-tag:hover {
   position: relative;
   left: -5px;
 }
+
+
+
+/* Loading Spinner */
+div.spinner {
+    animation: rotate .4s infinite ease;
+    animation-direction: alternate;
+    position: relative;
+    display: block;
+    margin: auto;
+    width: 142px;
+    height: 142px;
+    transform: scale(1.05);
+}
+div.spinner i {
+    animation: rotate 2s infinite cubic-bezier(0.09, 0.3, 0.7, 0.03);
+    transform-origin: 50% 100% 0;
+    position: absolute;
+    display: inline-block;
+    top: 50%;
+    left: 50%;
+    border: solid 6px transparent;
+    border-bottom: none;
+}
+div.spinner i:nth-child(1) {
+    animation-timing-function: cubic-bezier(0.09, 0.3, 0.12, 0.03);
+    width: 44px;
+    height: 22px;
+    margin-top: -22px;
+    margin-left: -22px;
+    border-color: #4ec2c4;
+    border-top-left-radius: 36px;
+    border-top-right-radius: 36px;
+}
+div.spinner i:nth-child(2) {
+    animation-timing-function: cubic-bezier(0.09, 0.6, 0.24, 0.03);
+    width: 58px;
+    height: 29px;
+    margin-top: -29px;
+    margin-left: -29px;
+    border-color: #32abde;
+    border-top-left-radius: 42px;
+    border-top-right-radius: 42px;
+}
+
+@keyframes rotate {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 
 
 

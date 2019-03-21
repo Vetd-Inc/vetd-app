@@ -104,6 +104,7 @@
         [:> ui/Button {:on-click #(rf/dispatch [:b/nav-preposals])
                        :color "gray"
                        :icon true
+                       :size "small"
                        :labelPosition "left"}
          "All Preposals"
          [:> ui/Icon {:name "left arrow"}]]]

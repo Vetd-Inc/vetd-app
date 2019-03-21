@@ -31,48 +31,35 @@
 (defn c-product
   "Component to display Preposal details."
   [{:keys [id pname long-desc url logo vendor forms rounds categories] :as product}]
-  (let [requested-preposal? (not-empty forms)]
-    [:div.detail-container
-     [:> ui/Header {:size "huge"}
-      pname " " [:small " by " (:oname vendor)]]
-     [:> ui/Image {:class "product-logo"
-                   :src (str "https://s3.amazonaws.com/vetd-logos/" logo)}]
-     [c/c-rounds product]
-     (if requested-preposal?
-       [:> ui/Label {:style {:marginRight 15}}
-        "Preposal Requested"]
-       [:> ui/Popup
-        {:content (str "Get a pricing estimate, personalized pitch, and more from " (:oname vendor) ".")
-         :header "What is a Preposal?"
-         :position "bottom left"
-         :trigger (r/as-element
-                   [:> ui/Button {:onClick #(rf/dispatch [:b/create-preposal-req product vendor])
-                                  :color "gray"
-                                  :style {:marginRight 15}}
-                    "Request a Preposal"])}])
-     [c/c-categories product]
-     [:> ui/Grid {:columns "equal"
-                  :style {:margin "20px 0 0 0"}}
+  [:div.detail-container
+   [:> ui/Header {:size "huge"}
+    pname " " [:small " by " (:oname vendor)]]
+   [:> ui/Image {:class "product-logo"
+                 :src (str "https://s3.amazonaws.com/vetd-logos/" logo)}]
+   
+   [c/c-categories product]
+   [:> ui/Grid {:columns "equal"
+                :style {:margin "20px 0 0 0"}}
+    [:> ui/GridRow
+     [c/c-display-field {:width 12} "Product Description"
+      [:<> (or long-desc "No description available.")
+       (when (not-empty url)
+         [:p "Website: " [:a {:href (str "http://" url) ; todo: fragile
+                              :target "_blank"}
+                          [:> ui/Icon {:name "external square"
+                                       :color "blue"}]
+                          url]])]]]
+    [:> ui/GridRow
+     [c/c-display-field {:width 6} "Pitch" "Unavailable (Request a Preposal)"]
+     [c/c-display-field {:width 6} "Estimated Price" "Unavailable (Request a Preposal)"]]
+    (when (not= "" (:url vendor))
       [:> ui/GridRow
-       [c/c-display-field {:width 12} "Product Description"
-        [:<> (or long-desc "No description available.")
-         (when (not-empty url)
-           [:p "Website: " [:a {:href (str "http://" url) ; todo: fragile
+       [c/c-display-field nil (str "About " (:oname vendor))
+        [:span "Website: " [:a {:href (str "http://" (:url vendor)) ; todo: fragile
                                 :target "_blank"}
                             [:> ui/Icon {:name "external square"
                                          :color "blue"}]
-                            url]])]]]
-      [:> ui/GridRow
-       [c/c-display-field {:width 6} "Pitch" "Unavailable (Request a Preposal)"]
-       [c/c-display-field {:width 6} "Estimated Price" "Unavailable (Request a Preposal)"]]
-      (when (not= "" (:url vendor))
-        [:> ui/GridRow
-         [c/c-display-field nil (str "About " (:oname vendor))
-          [:span "Website: " [:a {:href (str "http://" (:url vendor)) ; todo: fragile
-                                  :target "_blank"}
-                              [:> ui/Icon {:name "external square"
-                                           :color "blue"}]
-                              (:url vendor)]]]])]]))
+                            (:url vendor)]]]])]])
 
 (defn c-page []
   (let [product-idstr& (rf/subscribe [:product-idstr])
@@ -95,9 +82,29 @@
         [:> ui/Button {:on-click #(rf/dispatch [:b/nav-search])
                        :color "gray"
                        :icon true
+                       ;; :size "small"
                        :labelPosition "left"}
          "Back to Search"
-         [:> ui/Icon {:name "left arrow"}]]]
+         [:> ui/Icon {:name "left arrow"}]]
+        (when-not (= :loading @products&)
+          (let [{:keys [vendor rounds forms] :as product} (-> @products& :products first)
+                requested-preposal? (not-empty forms)]
+            [:> ui/Segment
+             [c/c-rounds product]
+             [:br]
+             (if requested-preposal?
+               [:> ui/Label {:style {:marginRight 15}}
+                "Preposal Requested"]
+               [:> ui/Popup
+                {:content (str "Get a pricing estimate, personalized pitch, and more from " (:oname vendor) ".")
+                 :header "What is a Preposal?"
+                 :position "bottom left"
+                 :trigger (r/as-element
+                           [:> ui/Button {:onClick #(rf/dispatch [:b/create-preposal-req product vendor])
+                                          :color "teal"
+                                          :fluid true
+                                          :style {:marginRight 15}}
+                            "Request a Preposal"])}])]))]
        [:> ui/Segment {:class "inner-container"}
         (if (= :loading @products&)
           [:> ui/Loader {:active true :inline true}]

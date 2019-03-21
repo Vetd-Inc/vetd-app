@@ -9,17 +9,20 @@
    {:content (str "Find and compare similar products to "
                   ename " that meet your needs.")
     :header "What is a VetdRound?"
-    :position "bottom left"
+    :position "top left"
     :trigger (r/as-element
               [:> ui/Button
                (merge {:onClick #(rf/dispatch [:b/start-round etype eid])
                        :class "start-round-button"
                        :color "blue"
-                       :icon true
-                       :labelPosition "right"}
+                       :fluid true
+                       ;; :icon true
+                       ;; :labelPosition "right"
+                       }
                       props)
                "Start VetdRound"
-               [:> ui/Icon {:name "right arrow"}]])}])
+               ;; [:> ui/Icon {:name "right arrow"}]
+               ])}])
 
 (defn c-round-in-progress [{:keys [props]}]
   [:> ui/Label (merge {:color "teal"
