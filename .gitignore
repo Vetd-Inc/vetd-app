@@ -21,3 +21,6 @@ figwheel_server.log
 # Emacs
 \#*
 .\#*
+
+# CSS (generated from SCSS)
+/resources/public/assets/css
