@@ -22,7 +22,8 @@
 (rf/reg-event-fx
  :login
  (fn [{:keys [db]} [_ [email pwd]]]
-   {:ws-send {:payload {:cmd :auth-by-creds
+   {:db (assoc db :login-failed? false)
+    :ws-send {:payload {:cmd :auth-by-creds
                         :return :login-result
                         :email email
                         :pwd pwd}}}))
