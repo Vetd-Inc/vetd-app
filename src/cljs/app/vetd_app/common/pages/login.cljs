@@ -76,7 +76,7 @@
          [:> ui/Form {:error @login-failed?}
           (when @login-failed?
             [:> ui/Message {:error true
-                            :header "Incorrect email/password"
+                            :header "Incorrect email / password"
                             :content "Contact us at help@vetd.com"}])
           [:> ui/FormField
            [:> ui/Input {:placeholder "Email Address"
