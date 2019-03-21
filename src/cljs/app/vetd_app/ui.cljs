@@ -63,6 +63,10 @@
 (def Image (component "Image"))
 (def Loader (component "Loader"))
 
+;; Accordion
+(def Accordion (component "Accordion"  #_"Accordion"))
+(def AccordionContent (component "Accordion" "Content"))
+(def AccordionTitle (component "Accordion" "Title"))
 
 ;; Toastr
 ;; setup Toastr config:

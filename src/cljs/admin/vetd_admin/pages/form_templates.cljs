@@ -115,10 +115,14 @@
                           :spellCheck false
                           :onChange (fn [_ this] (reset! list?& (.-value this)))}]]
         [:> ui/Button {:color "red"
-                       :fluid true
-                                        ;:on-click #(rf/dispatch [:v/delete-product id])
-                       }
-         "DELETE Field"]]])))
+                         :icon true
+                         :labelPosition "left"
+                                        ;:on-click #(rf/dispatch [:v/save-prompt&field {}])
+                         }
+           [:> ui/Icon {:name "trash alternate"
+                        :color "white"
+                        :inverted true}]
+           "DELETE FIELD"]]])))
 
 (defn c-template-prompt
   [{:keys [fields id rpid prompt descr form-template-id] sort' :sort}]
@@ -130,10 +134,15 @@
        [:> ui/Form {:style {:margin "10px"
                             :padding "10px"
                             :border "solid 1px #666666"}}
-        [:> ui/Button {:color "red"
-                       :fluid true
-                                        ;:on-click #(rf/dispatch [:v/delete-product id])
+        [:> ui/Button {:style {:width "250px"}
+                       :color "red"
+                       :icon true
+                       :labelPosition "left"
+                                        ;:on-click #(rf/dispatch [:v/save-prompt&field {}])
                        }
+         [:> ui/Icon {:name "remove"
+                      :color "white"
+                      :inverted true}]
          "Remove Prompt from Form"]
         [flx/row
          [:> ui/FormField {:inline true}
@@ -177,7 +186,7 @@
               :style {:font-size "large"}}
           (str title " [ " ftype " " fsubtype " ]")])])))
 
-(defn c-page []
+#_(defn c-page []
   (fn []
     (let [form-template-idstr @(rf/subscribe [:form-template-idstr])
           prompts& (when form-template-idstr
@@ -205,24 +214,61 @@
           [:div {:style {:font-size "x-large"}}
            (some-> prompts& deref :form-templates
                    first :title)]
-          
-          (for [p (some-> prompts& deref :form-templates
-                          first :prompts)]
-            ^{:key (str "template-prompt" (:rpid p))}
-            [c-template-prompt p])
+
+          [:> ui/Accordian {:exclusive false}
+           (for [p (some-> prompts& deref :form-templates
+                           first :prompts)]
+             ^{:key (str "template-prompt" (:rpid p))}
+             [:> ui/AccordianContent {}
+              [c-template-prompt p]])]
           [:> ui/Button {:color "green"
-                         :fluid true
+                         :icon true
+                         :labelPosition "left"
                                         ;:on-click #(rf/dispatch [:v/save-prompt&field {}])
                          }
+           [:> ui/Icon {:name "plus"
+                        :color "white"
+                        :inverted true}]
            "Add New Prompt"]
 
           [flx/row
            [c-prompts-dropdown existing-prompt&]
            [:> ui/Button {:color "purple"
-                          :fluid true
                                         ;:on-click #(rf/dispatch [:v/save-prompt&field {}])
                           }
             "Add Existing Prompt"]]])])))
 
+(defn c-lvl1 []
+  [:div "Level One Contetn"])
+
+(defn c-lvl2 []
+  [:div "Level Two Content"])
+
+#_(defn c-page []
+  [:> ui/Accordion
+   {:panels [{:keys "panel-1" :title "Level 1" :content {:content (c-lvl1)}}
+             {:keys "panel-2" :title "Level 2" :content {:content (c-lvl2)}}]}])
+
+(defn toggle-set [s v]
+  (if (s v)
+    (disj s v)
+    (conj s v)))
+
+(defn c-page []
+  (let [idx& (r/atom #{})]
+    (fn []
+      [:> ui/Accordion
+       [:> ui/AccordionTitle {:active (@idx& 0)
+                              :onClick (fn [_ this] (swap! idx& toggle-set 0))}
+        [:> ui/Icon {:name "dropdown"}]
+        "What is a dog?"]
+       [:> ui/AccordionContent {:active (@idx& 0)}
+        [:div "A dog is an animal."]]
+       [:> ui/AccordionTitle {:active (@idx& 1)
+                              :onClick (fn [_ this] (swap! idx& toggle-set 1))}
+        [:> ui/Icon {:name "dropdown"}]
+        "What is a cat?"]
+       [:> ui/AccordionContent {:active (@idx& 1)}
+        [:div "A cat is another animal."]]])))
 
 #_(cljs.pprint/pprint p1)
