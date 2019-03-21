@@ -101,5 +101,4 @@
        [:> ui/Segment {:class "inner-container"}
         (if (= :loading @products&)
           [:> ui/Loader {:active true :inline true}]
-          [c-product (-> @products& :products first)])
-        ]])))
+          [c-product (-> @products& :products first)])]])))
