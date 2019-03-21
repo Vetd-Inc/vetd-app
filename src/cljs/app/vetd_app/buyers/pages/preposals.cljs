@@ -153,9 +153,11 @@
                 ^{:key (:id preposal)}
                 [c-preposal preposal])
               [:<>
-               [:h3 {:style {:marginBottom 5}} "You don't have any Preposals yet."]
-               "Search "
+               [:h3 {:style {:marginBottom 5}} "You currently don't have any Preposals."]
+               "To get started, request a Preposal from the "
                [:a {:style {:cursor "pointer"}
                     :onClick #(rf/dispatch [:b/nav-search])}
                 "Products & Categories"]
-               " to get started."])))]])))
+               " page."
+               [:br]
+               "Or, simply forward any sales emails you receive to forward@vetd.com."])))]])))
