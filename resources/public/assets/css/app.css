@@ -1,165 +1,9 @@
-/*
-Blue   #27AAE0
-Green  #60D1AB
-*/
 body {
-  background: #fafafa; }
-
-body, * {
-  font-family: 'Montserrat', sans-serif;
+  background: #fafafa;
   font-size: 14px;
   font-weight: 300;
-  /* letter-spacing: 0.8px; */
   color: #444; }
 
-/* START - old, will eventually remove */
-.btn-default {
-  color: white;
-  background-color: #444;
-  font-weight: bold; }
-
-#app {
-  height: 100%;
-  width: 100%; }
-
-#page {
-  height: 100%;
-  width: 100%; }
-
-#full-header .logo {
-  margin-top: 39px;
-  margin-left: -42px;
-  /* fix centering?? I don't know -- Bill */ }
-
-#full-header {
-  text-align: center; }
-
-#container {
-  height: 100%;
-  margin: 0;
-  display: flex;
-  align-items: flex-start;
-  justify-content: flex-start;
-  flex-direction: column; }
-
-#header {
-  height: 105px;
-  font-size: 17px;
-  margin-bottom: 20px;
-  display: flex;
-  align-items: stretch;
-  justify-content: center;
-  flex-direction: row; }
-
-#header-left {
-  flex-grow: 0;
-  margin: 20px; }
-
-#header-middle {
-  flex-grow: 1;
-  margin: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  flex-direction: row; }
-
-#header-right {
-  flex-grow: 0;
-  margin: 12px 30px;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  flex-direction: row; }
-
-#header-right .user-name {
-  margin: 20px; }
-
-#sidebar {
-  height: 100%;
-  flex-basis: 260px;
-  flex-grow: 0;
-  flex-shrink: 0;
-  border-right: solid 1px #999;
-  margin: 0;
-  padding: 20px 20px;
-  display: flex;
-  align-items: flex-start;
-  justify-content: flex-start;
-  flex-direction: column; }
-
-#sidebar {
-  width: 100%; }
-
-#sidebar a {
-  font-weight: bold;
-  color: black;
-  text-decoration: none; }
-
-#sidebar .tab {
-  cursor: pointer;
-  margin: 5px 0;
-  padding: 5px;
-  width: 100%; }
-
-#sidebar .tab.selected {
-  color: white;
-  background-color: #27AAE0; }
-
-.loading-logo {
-  background-image: url(https://s3.amazonaws.com/vetd-logos/vetd.svg);
-  background-size: 200px 85px;
-  height: 85px;
-  width: 200px;
-  margin: 10% auto;
-  animation: 3s infinite pulse; }
-
-@keyframes pulse {
-  0% {
-    transform: scale(0.75); }
-  50% {
-    transform: scale(1.75); }
-  100% {
-    transform: scale(0.75); } }
-
-.prod-logo {
-  width: 95px;
-  margin-right: 20px;
-  display: flex;
-  align-items: flex-start;
-  justify-content: flex-start; }
-
-.prod-logo img {
-  width: 75px; }
-
-.form-maybe-doc {
-  border: solid 1px #AAA;
-  margin: 20px;
-  padding: 10px;
-  max-width: 500px; }
-
-.form-maybe-doc .title,
-.form-maybe-doc .product-name,
-.form-maybe-doc .org-name,
-.form-maybe-doc .user-name {
-  margin: 10px; }
-
-.form-maybe-doc .prompt {
-  margin: 10px; }
-
-.prompt .prompt-text {
-  font-size: 20px; }
-
-.prompt textarea {
-  width: 400px;
-  height: 200px; }
-
-.prompt .rc-dropdown {
-  min-width: 100px; }
-
-.prompt .prompt-field {
-  margin: 5px; }
-
-/* END - old, will eventually remove */
 .main-container {
   margin-top: 35px; }
 
@@ -289,36 +133,6 @@ body, * {
 .ui.teal.ribbon.label {
   border-color: #187399 !important; }
 
-.ui.teal.button, .ui.teal.buttons .button {
-  background-color: #4ec2c4 !important;
-  border-color: #4ec2c4 !important;
-  color: #fff !important; }
-
-.ui.teal.button:hover, .ui.teal.buttons .button:hover {
-  background-color: #6dccce !important;
-  border-color: #6dccce !important; }
-
-.ui.teal.button .icon {
-  background-color: #4ec2c4 !important;
-  border-color: #4ec2c4 !important;
-  color: #fff !important; }
-
-.ui.blue.label, .ui.blue.labels .label,
-.ui.blue.button, .ui.blue.buttons .button {
-  background-color: #32abde !important;
-  border-color: #32abde !important;
-  color: #fff !important; }
-
-.ui.blue.button:hover, .ui.blue.buttons .button:hover {
-  background-color: #53b8e3 !important;
-  border-color: #53b8e3 !important;
-  color: #fff !important; }
-
-.ui.blue.button .icon {
-  background-color: #1f94c5 !important;
-  border-color: #1f94c5 !important;
-  color: #fff !important; }
-
 /* Miscellaneous */
 .category-tag {
   background: #fff !important;
@@ -354,3 +168,19 @@ a.category-tag:hover {
   /* logo design is weighted a little right */
   position: relative;
   left: -5px; }
+
+.loading-logo {
+  background-image: url(https://s3.amazonaws.com/vetd-logos/vetd.svg);
+  background-size: 200px 85px;
+  height: 85px;
+  width: 200px;
+  margin: 10% auto;
+  animation: 3s infinite pulse; }
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.75); }
+  50% {
+    transform: scale(1.75); }
+  100% {
+    transform: scale(0.75); } }

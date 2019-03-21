@@ -1732,7 +1732,7 @@
 
 .ui.blue.buttons .button,
 .ui.blue.button {
-  background-color: #2185D0;
+  background-color: $blue;
   color: #FFFFFF;
   text-shadow: none;
   background-image: none;
@@ -1743,7 +1743,7 @@
 }
 .ui.blue.buttons .button:hover,
 .ui.blue.button:hover {
-  background-color: #1678c2;
+  background-color: #53b8e3;
   color: #FFFFFF;
   text-shadow: none;
 }
@@ -2803,7 +2803,7 @@
 
 .ui.teal.buttons .button,
 .ui.teal.button {
-  background-color: #00B5AD;
+  background-color: $teal;
   color: #FFFFFF;
   text-shadow: none;
   background-image: none;
@@ -2814,7 +2814,7 @@
 }
 .ui.teal.buttons .button:hover,
 .ui.teal.button:hover {
-  background-color: #009c95;
+  background-color: #6dccce;
   color: #FFFFFF;
   text-shadow: none;
 }
