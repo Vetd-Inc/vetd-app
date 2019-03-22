@@ -1,5 +1,6 @@
 (ns vetd-admin.pages.form-templates
   (:require [vetd-app.ui :as ui]
+            [vetd-app.non-exclusive-accordion :as nxa]
             [vetd-app.flexer :as flx]
             [reagent.core :as r]
             [re-frame.core :as rf]
@@ -238,37 +239,49 @@
                           }
             "Add Existing Prompt"]]])])))
 
-(defn c-lvl1 []
-  [:div "Level One Contetn"])
-
-(defn c-lvl2 []
-  [:div "Level Two Content"])
-
-#_(defn c-page []
-  [:> ui/Accordion
-   {:panels [{:keys "panel-1" :title "Level 1" :content {:content (c-lvl1)}}
-             {:keys "panel-2" :title "Level 2" :content {:content (c-lvl2)}}]}])
-
 (defn toggle-set [s v]
   (if (s v)
     (disj s v)
     (conj s v)))
 
 (defn c-page []
-  (let [idx& (r/atom #{})]
+  (let [idx& (r/atom #{0})
+        a& (r/atom true)
+        b& (r/atom true)]
     (fn []
-      [:> ui/Accordion
-       [:> ui/AccordionTitle {:active (@idx& 0)
-                              :onClick (fn [_ this] (swap! idx& toggle-set 0))}
-        [:> ui/Icon {:name "dropdown"}]
-        "What is a dog?"]
-       [:> ui/AccordionContent {:active (@idx& 0)}
-        [:div "A dog is an animal."]]
-       [:> ui/AccordionTitle {:active (@idx& 1)
-                              :onClick (fn [_ this] (swap! idx& toggle-set 1))}
-        [:> ui/Icon {:name "dropdown"}]
-        "What is a cat?"]
-       [:> ui/AccordionContent {:active (@idx& 1)}
-        [:div "A cat is another animal."]]])))
+      [nxa/accordion
+       [nxa/accordion-item
+        [:div
+         [:> ui/Icon {:name "dropdown"}]
+         "What is a dog?"]
+        [:div "A dog is an animal."]
+        [nxa/sub-accordion
+         [nxa/accordion-item
+          [:div
+           [:> ui/Icon {:name "dropdown"}]
+           "What is a dog222?"]
+          [:div "A dog222 is an animal."]
+          [nxa/sub-accordion
+         [nxa/accordion-item
+          [:div
+           [:> ui/Icon {:name "dropdown"}]
+           "What is a dog222?"]
+          [:div "A dog222 is an animal."]]
+         [nxa/accordion-item
+          [:div
+           [:> ui/Icon {:name "dropdown"}]
+           "What is a dog333?"]
+          [:div "A dog333 is an animal."]]]]
+         [nxa/accordion-item
+          [:div
+           [:> ui/Icon {:name "dropdown"}]
+           "What is a dog333?"]
+          [:div "A dog333 is an animal."]
+          ]]]
+       [nxa/accordion-item
+        [:div
+         [:> ui/Icon {:name "dropdown"}]
+         "What is a cat?"]
+        [:div "A cat is an animal too."]]])))
 
 #_(cljs.pprint/pprint p1)

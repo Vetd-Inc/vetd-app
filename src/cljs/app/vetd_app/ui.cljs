@@ -64,7 +64,9 @@
 (def Loader (component "Loader"))
 
 ;; Accordion
-(def Accordion (component "Accordion"  #_"Accordion"))
+(def Accordion (component "Accordion"))
+(def AccordionAccordion (component "Accordion" "Accordion"))
+(def AccordionPanel (component "Accordion" "Panel"))
 (def AccordionContent (component "Accordion" "Content"))
 (def AccordionTitle (component "Accordion" "Title"))
 
