@@ -82,48 +82,54 @@
         list?& (r/atom list?)
         sort-order& (r/atom sort')]
     (fn [{:keys [fname descr ftype fsubtype list?] sort' :sort}]
-      [:div
-       [:> ui/Form {:style {:margin "10px"
-                            :padding "10px"
-                            :background-color "#EFEFEF"
-                            :border-left "solid 3px #999999"
-                            :border-top "solid 3px #999999"}}
-        [flx/row
-         [flx/col
+      [nxa/accordion-item
+       [:div.prompt-field-name [nxa/dropdown-icon] fname]
+       [:div
+        [:> ui/Form {:style {:margin "10px"
+                             :padding "10px"
+                             :background-color "#EFEFEF"
+                             :border-left "solid 3px #999999"}}
+         [:> ui/FormGroup {:widths "equal"}
           [:> ui/FormField {:inline true}
            [:> ui/Label {:style {:width "200px"}} "Field Name"]
            [:> ui/Input {:defaultValue @fname&
                          :style {:width "300px"}
+                         :fluid true
                          :spellCheck false
                          :onChange (fn [_ this] (reset! fname& (.-value this)))}]]
           [:> ui/FormField {:inline true}
            [:> ui/Label {:style {:width "200px"}} "Type"]
-           [c-ftype-dropdown ftype-pair&]]] 
+           [c-ftype-dropdown ftype-pair&]]
+          [:> ui/FormField {:inline true}
+           [:> ui/Label {:style {:width "200px"}} "Sort Order"]
+           [:> ui/Input {:defaultValue @sort-order&
+                         :spellCheck false
+                         :fluid true
+                         :onChange (fn [_ this] (reset! sort-order& (.-value this)))}]]
+          [:> ui/FormField {:inline true}
+           [:> ui/Label {:style {:width "200px"}} "List?"]
+           [:> ui/Checkbox {:defaultValue @list?&
+                            :spellCheck false
+                            :fluid true                            
+                            :onChange (fn [_ this] (reset! list?& (.-value this)))}]]]
          [:> ui/FormField {:inline true}
           [:> ui/Label {:style {:width "200px"}} "Description"]
           [:> ui/TextArea {:defaultValue @descr&
+                           :style {:width "500px"}
                            :spellCheck false
-                           :onChange (fn [_ this] (reset! descr& (.-value this)))}]]]
-                
-        [:> ui/FormField {:inline true}
-         [:> ui/Label {:style {:width "200px"}} "Sort Order"]
-         [:> ui/Input {:defaultValue @sort-order&
-                       :spellCheck false
-                       :onChange (fn [_ this] (reset! sort-order& (.-value this)))}]]
-        [:> ui/FormField {:inline true}
-         [:> ui/Label {:style {:width "200px"}} "List?"]
-         [:> ui/Checkbox {:defaultValue @list?&
-                          :spellCheck false
-                          :onChange (fn [_ this] (reset! list?& (.-value this)))}]]
-        [:> ui/Button {:color "red"
-                         :icon true
-                         :labelPosition "left"
+                           :fluid true                           
+                           :onChange (fn [_ this] (reset! descr& (.-value this)))}]]
+          
+
+         [:> ui/Button {:color "red"
+                        :icon true
+                        :labelPosition "left"
                                         ;:on-click #(rf/dispatch [:v/save-prompt&field {}])
-                         }
-           [:> ui/Icon {:name "trash alternate"
-                        :color "white"
-                        :inverted true}]
-           "DELETE FIELD"]]])))
+                        }
+          [:> ui/Icon {:name "trash alternate"
+                       :color "white"
+                       :inverted true}]
+          "DELETE FIELD"]]]])))
 
 (defn c-template-prompt
   [{:keys [fields id rpid prompt descr form-template-id] sort' :sort}]
@@ -131,11 +137,12 @@
         descr& (r/atom descr)
         sort-order& (r/atom sort')]
     (fn [{:keys [fields id rpid prompt descr form-template-id] sort' :sort}]
-      [:div
-       [:> ui/Form {:style {:margin "10px"
-                            :padding "10px"
-                            :border "solid 1px #666666"}}
-        [:> ui/Button {:style {:width "250px"}
+      [nxa/accordion-item
+       [:div.prompt-title [nxa/dropdown-icon] prompt
+        [:> ui/Button {:style {:width "150px"
+                               :height "30px"
+                               :font-size "small"
+                               :padding 0}
                        :color "red"
                        :icon true
                        :labelPosition "left"
@@ -144,31 +151,48 @@
          [:> ui/Icon {:name "remove"
                       :color "white"
                       :inverted true}]
-         "Remove Prompt from Form"]
-        [flx/row
-         [:> ui/FormField {:inline true}
-          [:> ui/Label {:style {:width "200px"}} "Prompt"]
-          [:> ui/Input {:defaultValue @prompt&
-                        :style {:width "300px"}
-                        :spellCheck false
-                        :onChange (fn [_ this] (reset! prompt& (.-value this)))}]]
-         [:> ui/FormField {:inline true}
-          [:> ui/Label {:style {:width "200px"}} "Description"]
-          [:> ui/TextArea {:defaultValue @descr&
-                           :spellCheck false
-                           :onChange (fn [_ this] (reset! descr& (.-value this)))}]]]
-        [:> ui/FormField {:inline true}
-         [:> ui/Label {:style {:width "200px"}} "Sort Order"]
-         [:> ui/Input {:defaultValue @sort-order&
-                       :spellCheck false
-                       :onChange (fn [_ this] (reset! sort-order& (.-value this)))}]]
-        (for [pf fields]
-          [c-prompt-field pf])
-        [:> ui/Button {:color "green"
-                       :fluid true
+         "Remove"]] 
+       [:div
+        [:> ui/Form {:style {:margin "10px"
+                             :padding "10px"
+                             :border "solid 1px #666666"}}
+         
+         [:> ui/FormGroup {:widths "equal"}
+          [:> ui/FormField {:inline true}
+           [:> ui/Label {:style {:width "200px"}} "Prompt"]
+           [:> ui/Input {:defaultValue @prompt&
+                         :fluid true
+                         :spellCheck false
+                         :onChange (fn [_ this] (reset! prompt& (.-value this)))}]]
+          [:> ui/FormField {:inline true}
+           [:> ui/Label {:style {:width "200px"}} "Description"]
+           [:> ui/TextArea {:defaultValue @descr&
+                            :spellCheck false
+                            :fluid true                            
+                            :onChange (fn [_ this] (reset! descr& (.-value this)))}]]
+          [:> ui/FormField {:inline true}
+           [:> ui/Label {:style {:width "200px"}} "Sort Order"]
+           [:> ui/Input {:defaultValue @sort-order&
+                         :spellCheck false
+                         :fluid true                         
+                         :onChange (fn [_ this] (reset! sort-order& (.-value this)))}]]]
+         [nxa/sub-accordion
+          (for [pf fields]
+            [c-prompt-field pf])]
+         [:> ui/Button {:color "green"
+                        :icon true
+                        :labelPosition "left"
+                        :style {:width "150px"
+                                :height "30px"
+                                :font-size "small"
+                                :padding 0}
+                        
                                         ;:on-click #(rf/dispatch [:v/save-prompt&field {}])
-                       }
-         "Add Field"]]])))
+                        }
+          [:> ui/Icon {:name "add"
+                       :color "white"
+                       :inverted true}]
+          "Add Field"]]]])))
 
 (defn c-form-template-list []
   (let [fts& (rf/subscribe [:gql/q
@@ -187,7 +211,7 @@
               :style {:font-size "large"}}
           (str title " [ " ftype " " fsubtype " ]")])])))
 
-#_(defn c-page []
+(defn c-page []
   (fn []
     (let [form-template-idstr @(rf/subscribe [:form-template-idstr])
           prompts& (when form-template-idstr
@@ -208,7 +232,7 @@
       
       [:div#admin-form-templates-page
        {:style {:margin "0 0 100px 50px"
-                :width "1000px"}}
+                :width "1200px"}}
        (if-not form-template-idstr
          [c-form-template-list]
          [:<>
@@ -216,12 +240,11 @@
            (some-> prompts& deref :form-templates
                    first :title)]
 
-          [:> ui/Accordian {:exclusive false}
+          [nxa/accordion
            (for [p (some-> prompts& deref :form-templates
                            first :prompts)]
              ^{:key (str "template-prompt" (:rpid p))}
-             [:> ui/AccordianContent {}
-              [c-template-prompt p]])]
+             [c-template-prompt p])]
           [:> ui/Button {:color "green"
                          :icon true
                          :labelPosition "left"
@@ -238,50 +261,3 @@
                                         ;:on-click #(rf/dispatch [:v/save-prompt&field {}])
                           }
             "Add Existing Prompt"]]])])))
-
-(defn toggle-set [s v]
-  (if (s v)
-    (disj s v)
-    (conj s v)))
-
-(defn c-page []
-  (let [idx& (r/atom #{0})
-        a& (r/atom true)
-        b& (r/atom true)]
-    (fn []
-      [nxa/accordion
-       [nxa/accordion-item
-        [:div
-         [:> ui/Icon {:name "dropdown"}]
-         "What is a dog?"]
-        [:div "A dog is an animal."]
-        [nxa/sub-accordion
-         [nxa/accordion-item
-          [:div
-           [:> ui/Icon {:name "dropdown"}]
-           "What is a dog222?"]
-          [:div "A dog222 is an animal."]
-          [nxa/sub-accordion
-         [nxa/accordion-item
-          [:div
-           [:> ui/Icon {:name "dropdown"}]
-           "What is a dog222?"]
-          [:div "A dog222 is an animal."]]
-         [nxa/accordion-item
-          [:div
-           [:> ui/Icon {:name "dropdown"}]
-           "What is a dog333?"]
-          [:div "A dog333 is an animal."]]]]
-         [nxa/accordion-item
-          [:div
-           [:> ui/Icon {:name "dropdown"}]
-           "What is a dog333?"]
-          [:div "A dog333 is an animal."]
-          ]]]
-       [nxa/accordion-item
-        [:div
-         [:> ui/Icon {:name "dropdown"}]
-         "What is a cat?"]
-        [:div "A cat is an animal too."]]])))
-
-#_(cljs.pprint/pprint p1)

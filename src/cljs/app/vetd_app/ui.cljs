@@ -43,6 +43,7 @@
 ;; Form
 (def Form (component "Form"))
 (def FormField (component "Form" "Field"))
+(def FormGroup (component "Form" "Group"))
 (def Button (component "Button"))
 (def ButtonGroup (component "Button" "Group"))
 (def ButtonOr (component "Button" "Or"))
