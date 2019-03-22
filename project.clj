@@ -1,7 +1,7 @@
 (defproject vetd-app "0.1.0-SNAPSHOT"
   
-  :description "FIXME: write description"
-  :url "http://example.com/FIXME"
+  :description "Vetd is a buying platform for B2B SaaS products."
+  :url "https://app.vetd.com"
   
   :dependencies [[org.clojure/clojure "1.10.0"]
                  [org.clojure/clojurescript "1.10.516" :scope "provided"]
@@ -59,10 +59,14 @@
   :test-paths ["test/clj"]
   :resource-paths ["resources" "target/cljsbuild"]
 
-  :figwheel {:css-dirs ["resources/public/assets/app/css/"]}
-
   :plugins [[lein-cljsbuild "1.1.7"]
-            [lein-environ "1.1.0"]]
+            [lein-environ "1.1.0"]
+            [lein-jsass "0.2.1"]]
+  
+  :figwheel {:css-dirs ["resources/public/assets/css/"]}
+
+  :jsass {:source "src/scss"
+          :target "resources/public/assets/css"}
 
   :clean-targets
   ^{:protect false} [:target-path
@@ -71,7 +75,9 @@
 
   :profiles
   {:uberjar {:omit-source true
-             :prep-tasks ["compile" ["cljsbuild" "once" "min-public" "min-full"]]
+             :prep-tasks ["compile"
+                          ["cljsbuild" "once" "min-public" "min-full"]
+                          ["jsass" "once"]]
              :cljsbuild
              {:builds
               {:min-public
