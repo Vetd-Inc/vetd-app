@@ -68,7 +68,8 @@
                            :value id
                            :text prompt})))]
     [:> ui/Dropdown {:defaultValue @state&
-                     :fluid true
+                     :style {:width "400px"
+                             :height "40px"}
                      :search true                     
                      :selection true
                      :onChange (fn [_ this] (reset! state& (.-value this)))
