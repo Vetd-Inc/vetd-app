@@ -1,5 +1,6 @@
 (ns vetd-admin.overlays.admin-v-home
-  (:require [vetd-app.flexer :as flx]   
+  (:require [vetd-app.flexer :as flx]
+            [vetd-app.ui :as ui]   
             [reagent.core :as r]
             [re-frame.core :as rf]
             [re-com.core :as rc]))
@@ -24,7 +25,9 @@
 
 (defn prods->choices [prods]
   (for [{:keys [id pname]} prods]
-    {:id id :label pname}))
+    {:key id
+     :text pname
+     :value id}))
 
 (defn c-overlay []
   (let [org-id& (rf/subscribe [:org-id])
@@ -43,28 +46,29 @@
         prods& (rf/subscribe [:gql/q
                               {:queries
                                [[:products {:vendor-id @org-id&}
-                                     [:id :pname :idstr]]]}])]
+                                 [:id :pname :idstr]]]}])]
     (fn []
-      [flx/row
-       [rc/typeahead
-        :data-source (partial search-results @orgs&)
-        :model model&
-        :render-suggestion (fn [{:keys [label]}]
-                             [:span label])
-        :suggestion-to-string #(:label %)
-        :rigid? true
-        :on-change #(reset! org-user& %)]
-       [rc/single-dropdown
-        :choices (-> @prods& :products prods->choices)
-        :model sel-prod-id&
-        :on-change #(reset! sel-prod-id& %)]
-       #_(str @prods&)
-       [rc/button
-        :label "Request Preposal"
-        :on-click #(let [{from-org-id :org-id from-user-id :user-id} @org-user&]
-                     (rf/dispatch [:a/create-preposal-req {:from-org-id from-org-id
-                                                           :from-user-id from-user-id
-                                                           :to-org-id @org-id&
-                                                           :to-user-id @user-id&
-                                                           :prod-id @sel-prod-id&}]))]])))
+      [:div {:style {:display "flex"}}
+       [:> ui/Dropdown {:value @sel-prod-id&
+                        :onChange #(reset! org-user& (.-value %2))
+                        ;; :onSearchChange #(search-results @orgs& (.-searchQuery %2))
+                        :placeholder "User..."
+                        :selection true
+                        :search true
+                        :style {:flex 1}
+                        :options (search-results @orgs& "")}]
+       ;; todo: this is giving the value as the product ID, is that what we want?
+       [:> ui/Dropdown {:value @sel-prod-id&
+                        :onChange #(reset! sel-prod-id& (.-value %2))
+                        :placeholder "Select Product"
+                        :selection true
+                        :options (-> @prods& :products prods->choices)}]
+       [:> ui/Button {:on-click #(let [{from-org-id :org-id from-user-id :user-id} @org-user&]
+                                   (rf/dispatch [:a/create-preposal-req {:from-org-id from-org-id
+                                                                         :from-user-id from-user-id
+                                                                         :to-org-id @org-id&
+                                                                         :to-user-id @user-id&
+                                                                         :prod-id @sel-prod-id&}]))
+                      :color "teal"}
+        "Request Preposal"]])))
 

@@ -1,5 +1,6 @@
 (ns vetd-app.buyers.pages.preposal-detail
-  (:require [vetd-app.buyers.components :as c]
+  (:require [vetd-app.buyers.components :as bc]
+            [vetd-app.common.components :as cc]
             [vetd-app.ui :as ui]
             [vetd-app.docs :as docs]
             [reagent.core :as r]
@@ -45,17 +46,17 @@
       (:pname product) " " [:small " by " (:oname from-org)]]
      [:> ui/Image {:class "product-logo"
                    :src (str "https://s3.amazonaws.com/vetd-logos/" (:logo product))}]
-     [c/c-rounds product]
-     [c/c-categories product]
-     (when free-trial? [c/c-free-trial-tag])
+     [bc/c-rounds product]
+     [bc/c-categories product]
+     (when free-trial? [bc/c-free-trial-tag])
      [:> ui/Grid {:columns "equal"
                   :style {:margin "20px 0 0 0"}}
       [:> ui/GridRow
-       [c/c-display-field {:width 10} "Pitch" pitch]]
+       [bc/c-display-field {:width 10} "Pitch" pitch]]
       [:> ui/GridRow
-       [c/c-display-field {:width 16} "Product Description" (:long-desc product)]]
+       [bc/c-display-field {:width 16} "Product Description" (:long-desc product)]]
       [:> ui/GridRow
-       [c/c-display-field {:width 6} "Estimated Price"
+       [bc/c-display-field {:width 6} "Estimated Price"
         (if pricing-estimate-value
           [:<> (format/currency-format pricing-estimate-value) " / " pricing-estimate-unit
            (when (and pricing-estimate-details
@@ -63,11 +64,11 @@
              (str " - " pricing-estimate-details))]
           pricing-estimate-details)]
        (when (not= "" free-trial-terms)
-         [c/c-display-field {:width 4} "Free Trial Terms" free-trial-terms])
+         [bc/c-display-field {:width 4} "Free Trial Terms" free-trial-terms])
        (when (not= "" pricing-model)
-         [c/c-display-field {:width 6} "Pricing Model" pricing-model])]
+         [bc/c-display-field {:width 6} "Pricing Model" pricing-model])]
       [:> ui/GridRow
-       [c/c-display-field nil (str "About " (:oname from-org))
+       [bc/c-display-field nil (str "About " (:oname from-org))
         [:<>
          (when (not= "" website)
            [:span "Website: " website [:br]])
@@ -110,5 +111,5 @@
          [:> ui/Icon {:name "left arrow"}]]]
        [:> ui/Segment {:class "inner-container"}
         (if (= :loading @preps&)
-          [:> ui/Loader {:active true :inline true}]
+          [cc/c-loader]
           [c-preposal (-> @preps& :docs first)])]])))

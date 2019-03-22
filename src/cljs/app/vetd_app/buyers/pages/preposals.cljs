@@ -1,5 +1,6 @@
 (ns vetd-app.buyers.pages.preposals
-  (:require [vetd-app.buyers.components :as c]
+  (:require [vetd-app.buyers.components :as bc]
+            [vetd-app.common.components :as cc]
             [vetd-app.ui :as ui]
             [vetd-app.docs :as docs]
             [reagent.core :as r]
@@ -74,19 +75,19 @@
       
       [:> ui/ItemExtra
        (when (empty? (:rounds product))
-         [c/c-start-round-button {:etype :product
-                                  :eid (:id product)
-                                  :props {:floated "right"}}])
-       [c/c-categories product]
+         [bc/c-start-round-button {:etype :product
+                                   :eid (:id product)
+                                   :props {:floated "right"}}])
+       [bc/c-categories product]
        (when free-trial? [:> ui/Label {:class "free-trial-tag"
                                        :color "gray"
                                        :size "small"
                                        :tag true}
                           "Free Trial"])]]
      (when (not-empty (:rounds product))
-       [c/c-round-in-progress {:props {:ribbon "right"
-                                       :style {:position "absolute"
-                                               :marginLeft -14}}}])]))
+       [bc/c-round-in-progress {:props {:ribbon "right"
+                                        :style {:position "absolute"
+                                                :marginLeft -14}}}])]))
 
 (defn filter-preposals
   [preposals selected-categories]
@@ -132,7 +133,7 @@
                              (group-by :id))]
          (when (not-empty categories)
            [:div.sidebar
-            "Filter By Category"
+            [:h4 "Filter By Category"]
             (doall
              (for [[id v] categories]
                (let [category (first v)]
@@ -145,7 +146,7 @@
                                                 (rf/dispatch [:b/preposals-filter.remove-selected-category category])))}])))]))
        [:> ui/ItemGroup {:class "inner-container results"}
         (if (= :loading @preps&)
-          [:> ui/Loader {:active true :inline true}]
+          [cc/c-loader]
           (let [preposals (cond-> (:docs @preps&)
                             (seq @selected-categories&) (filter-preposals @selected-categories&))]
             (if (seq preposals)

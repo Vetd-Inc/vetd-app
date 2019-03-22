@@ -1,5 +1,6 @@
 (ns vetd-app.buyers.pages.search
-  (:require [vetd-app.buyers.components :as c]
+  (:require [vetd-app.buyers.components :as bc]
+            [vetd-app.common.components :as cc]
             [vetd-app.ui :as ui]
             [vetd-app.docs :as docs]
             [reagent.core :as r]
@@ -195,7 +196,7 @@
             "Request a Preposal"]))]
       [:> ui/ItemDescription short-desc]
       [:> ui/ItemExtra
-       [c/c-categories product]
+       [bc/c-categories product]
        (when (and preposal-responses
                   (= "yes" (docs/get-field-value preposal-responses "Do you offer a free trial?" "value" :sval)))
          [:> ui/Label {:class "free-trial-tag"
@@ -204,7 +205,7 @@
                        :tag true}
           "Free Trial"])]]
      (when (not-empty rounds)
-       [c/c-round-in-progress {:props {:ribbon "right"
+       [bc/c-round-in-progress {:props {:ribbon "right"
                                        :style {:position "absolute"
                                                :marginLeft -14}}}])]))
 
@@ -274,8 +275,7 @@
         loading? (or (= :loading prods) (= :loading categories))
         prod-cat-suggestion (r/atom "")]
     (if loading?
-      [:> ui/Loader {:active true
-                     :style {:marginTop 20}}]
+      [cc/c-loader {:style {:marginTop 20}}]
       (if (not-empty (concat product-ids vendor-ids))
         [:div
          [:div.categories
