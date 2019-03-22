@@ -6,8 +6,8 @@
 
 (defn c-start-round-button [{:keys [etype eid ename props]}]
   [:> ui/Popup
-   {:content (str "Find and compare similar products to "
-                  ename " that meet your needs.")
+   {:content (str "Find and compare similar products to \""
+                  ename "\" that meet your needs.")
     :header "What is a VetdRound?"
     :position "top left"
     :trigger (r/as-element
@@ -61,6 +61,10 @@
 (defn c-display-field
   [props field-key field-value] 
   [:> ui/GridColumn props
-   [:> ui/Segment {:style {:padding "40px 20px 10px 20px"}}
-    [:> ui/Label {:attached "top"} field-key]
+   [:> ui/Segment {:style {:padding "40px 20px 10px 10px"}
+                   :vertical true}
+    [:> ui/Label {:attached "top"
+                  :style {:font-weight 600}
+                  :basic true}
+     field-key]
     field-value]])

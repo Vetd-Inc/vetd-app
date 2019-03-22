@@ -153,7 +153,8 @@
               (for [preposal preposals]
                 ^{:key (:id preposal)}
                 [c-preposal preposal])
-              [:<>
+              [:div {:style {:width 500
+                             :margin "70px auto"}}
                [:h3 {:style {:marginBottom 5}} "You currently don't have any Preposals."]
                "To get started, request a Preposal from the "
                [:a {:style {:cursor "pointer"}

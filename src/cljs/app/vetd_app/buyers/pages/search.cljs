@@ -191,9 +191,12 @@
                (str "Price Estimate: " p-e-details))))
          (if requested-preposal?
            "Preposal Requested"
-           [:a {:onClick #(do (.stopPropagation %)
-                              (rf/dispatch [:b/create-preposal-req product vendor]))}
-            "Request a Preposal"]))]
+           [:<>
+            "Pricing Unavailable "
+            [:a {:onClick #(do (.stopPropagation %)
+                               (rf/dispatch [:b/create-preposal-req product vendor]))
+                 :style {:color "#4ec2c4"}}
+             "Request a Preposal"]]))]
       [:> ui/ItemDescription short-desc]
       [:> ui/ItemExtra
        [bc/c-categories product]
@@ -206,8 +209,8 @@
           "Free Trial"])]]
      (when (not-empty rounds)
        [bc/c-round-in-progress {:props {:ribbon "right"
-                                       :style {:position "absolute"
-                                               :marginLeft -14}}}])]))
+                                        :style {:position "absolute"
+                                                :marginLeft -14}}}])]))
 
 (defn c-vendor-search-results
   [v]

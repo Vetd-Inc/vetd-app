@@ -33,14 +33,16 @@
   "Component to display Preposal details."
   [{:keys [id pname long-desc url logo vendor forms rounds categories] :as product}]
   [:div.detail-container
-   [:> ui/Header {:size "huge"}
+   [:> ui/Header {:size "huge"
+                  :style {:margin "7px 7px 11px 7px"}}
     pname " " [:small " by " (:oname vendor)]]
    [:> ui/Image {:class "product-logo"
                  :src (str "https://s3.amazonaws.com/vetd-logos/" logo)}]
-   
+   (if (not-empty (:rounds product))
+     [bc/c-round-in-progress {:props {:ribbon "left"}}])
    [bc/c-categories product]
    [:> ui/Grid {:columns "equal"
-                :style {:margin "20px 0 0 0"}}
+                :style {:margin-top 0}}
     [:> ui/GridRow
      [bc/c-display-field {:width 12} "Product Description"
       [:<> (or long-desc "No description available.")
@@ -92,22 +94,35 @@
         (when-not (= :loading @products&)
           (let [{:keys [vendor rounds forms] :as product} (-> @products& :products first)
                 requested-preposal? (not-empty forms)]
-            [:> ui/Segment
-             [bc/c-rounds product]
-             [:br]
-             (if requested-preposal?
-               [:> ui/Label {:style {:marginRight 15}}
-                "Preposal Requested"]
-               [:> ui/Popup
-                {:content (str "Get a pricing estimate, personalized pitch, and more from " (:oname vendor) ".")
-                 :header "What is a Preposal?"
-                 :position "bottom left"
-                 :trigger (r/as-element
-                           [:> ui/Button {:onClick #(rf/dispatch [:b/create-preposal-req product vendor])
-                                          :color "teal"
-                                          :fluid true
-                                          :style {:marginRight 15}}
-                            "Request a Preposal"])}])]))]
+            (when (empty? (:rounds product))
+              [:> ui/Segment
+               [bc/c-start-round-button {:etype :product
+                                         :eid (:id product)
+                                         :ename (:pname product)}]
+               [:br]
+               (if requested-preposal?
+                 [:> ui/Popup
+                  {:content "We will be in touch with next steps."
+                   :header "Preposal Requested!"
+                   :position "bottom left"
+                   :trigger (r/as-element
+                             [:> ui/Label {:color "teal"
+                                           :size "large"
+                                           :basic true}
+                              "Preposal Requested"])}]
+                 [:> ui/Popup
+                  {:content (str "Get a pricing estimate, personalized pitch, and more from "
+                                 (:oname vendor) ".")
+                   :header "What is a Preposal?"
+                   :position "bottom left"
+                   :trigger (r/as-element
+                             [:> ui/Button {:onClick #(rf/dispatch [:b/create-preposal-req product vendor])
+                                            :color "teal"
+                                            :fluid true
+                                            :style {:marginRight 15}}
+                              "Request Preposal"])}])
+               
+               ])))]
        [:> ui/Segment {:class "inner-container"}
         (if (= :loading @products&)
           [cc/c-loader]
