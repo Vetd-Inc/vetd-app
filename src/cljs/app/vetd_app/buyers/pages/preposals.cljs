@@ -56,9 +56,9 @@
         pricing-estimate-details (docs/get-field-value responses "Pricing Estimate" "details" :sval)
         free-trial? (= "yes" (docs/get-field-value responses "Do you offer a free trial?" "value" :sval))]
     [:> ui/Item {:onClick #(rf/dispatch [:b/nav-preposal-detail idstr])}
-     
-     [:> ui/ItemImage {:class "product-logo" ; todo: make config var 's3-base-url'
-                       :src (str "https://s3.amazonaws.com/vetd-logos/" (:logo product))}]
+     ;; TODO make config var 's3-base-url'
+     [:div.product-logo {:style {:background-image
+                                 (str "url('https://s3.amazonaws.com/vetd-logos/" (:logo product) "')")}}]
      [:> ui/ItemContent
       [:> ui/ItemHeader
        (:pname product) " " [:small " by " (:oname from-org)]]
