@@ -1,5 +1,5 @@
 (ns vetd-admin.overlays.admin-v-home
-  (:require [vetd-app.flexer :as flx]   
+  (:require [vetd-app.ui :as ui]   
             [reagent.core :as r]
             [re-frame.core :as rf]
             [re-com.core :as rc]))
@@ -15,16 +15,18 @@
   [orgs q]
   (->> (for [org (:orgs orgs)
              {:keys [user]} (:memberships org)]
-         {:label (str (:oname org) " / " (:uname user))
-          :org-id (:id org)
-          :user-id (:id user)})
-       (filter (fn [{:keys [label]}]
-                 (re-find (re-pattern (str "(?i)" q))
-                          label)))))
+         {:text (str (:oname org) " / " (:uname user))
+          :key (str (:oname org) " / " (:uname user))
+          :value (clj->js {:org-id (:id org)
+                           :user-id (:id user)})})
+       (filter (fn [{:keys [text]}]
+                 (re-find (re-pattern (str "(?i)" q)) text)))))
 
 (defn prods->choices [prods]
   (for [{:keys [id pname]} prods]
-    {:id id :label pname}))
+    {:key id
+     :text pname
+     :value id}))
 
 (defn c-overlay []
   (let [org-id& (rf/subscribe [:org-id])
@@ -43,28 +45,31 @@
         prods& (rf/subscribe [:gql/q
                               {:queries
                                [[:products {:vendor-id @org-id&}
-                                     [:id :pname :idstr]]]}])]
+                                 [:id :pname :idstr]]]}])]
     (fn []
-      [flx/row
-       [rc/typeahead
-        :data-source (partial search-results @orgs&)
-        :model model&
-        :render-suggestion (fn [{:keys [label]}]
-                             [:span label])
-        :suggestion-to-string #(:label %)
-        :rigid? true
-        :on-change #(reset! org-user& %)]
-       [rc/single-dropdown
-        :choices (-> @prods& :products prods->choices)
-        :model sel-prod-id&
-        :on-change #(reset! sel-prod-id& %)]
-       #_(str @prods&)
-       [rc/button
-        :label "Request Preposal"
-        :on-click #(let [{from-org-id :org-id from-user-id :user-id} @org-user&]
-                     (rf/dispatch [:a/create-preposal-req {:from-org-id from-org-id
-                                                           :from-user-id from-user-id
-                                                           :to-org-id @org-id&
-                                                           :to-user-id @user-id&
-                                                           :prod-id @sel-prod-id&}]))]])))
+      [:div {:style {:display "flex"}}
+       [:> ui/Dropdown {:value @org-user&
+                        :onChange #(reset! org-user& (.-value %2))
+                        ;; :onSearchChange #(search-results @orgs& (.-searchQuery %2))
+                        :placeholder "Type User/Org Name..."
+                        :selection true
+                        :search true
+                        :style {:flex 1
+                                :margin-right 5}
+                        :options (search-results @orgs& "")}]
+       [:> ui/Dropdown {:value @sel-prod-id&
+                        :onChange #(reset! sel-prod-id& (.-value %2))
+                        :placeholder "Select Product"
+                        :style {:flex 1
+                                :margin-right 5}
+                        :selection true
+                        :options (-> @prods& :products prods->choices)}]
+       [:> ui/Button {:on-click #(rf/dispatch [:a/create-preposal-req
+                                               {:from-org-id (aget @org-user& "org-id")
+                                                :from-user-id (aget @org-user& "user-id")
+                                                :to-org-id @org-id&
+                                                :to-user-id @user-id&
+                                                :prod-id @sel-prod-id&}])
+                      :color "blue"}
+        "Request Preposal"]])))
 

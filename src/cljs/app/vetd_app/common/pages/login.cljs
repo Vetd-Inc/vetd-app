@@ -1,5 +1,6 @@
 (ns vetd-app.common.pages.login
   (:require [vetd-app.ui :as ui]
+            [vetd-app.common.components :as cc]
             [reagent.core :as r]
             [re-frame.core :as rf]
             [re-com.core :as rc]))
@@ -7,6 +8,10 @@
 (rf/reg-sub
  :login-failed?
  (fn [{:keys [login-failed?]} _] login-failed?))
+
+(rf/reg-sub
+ :login-loading?
+ (fn [{:keys [login-loading?]} _] login-loading?))
 
 (rf/reg-event-fx
  :route-login
@@ -22,7 +27,10 @@
 (rf/reg-event-fx
  :login
  (fn [{:keys [db]} [_ [email pwd]]]
-   {:ws-send {:payload {:cmd :auth-by-creds
+   {:db (assoc db
+               :login-failed? false
+               :login-loading? true)
+    :ws-send {:payload {:cmd :auth-by-creds
                         :return :login-result
                         :email email
                         :pwd pwd}}}))
@@ -34,8 +42,9 @@
    (if logged-in?
      (let [org-id (-> memberships first :org-id)] ; TODO support users with multi-orgs
        {:db (assoc db
+                   :login-loading? false
                    :login-failed? false
-                   :logged-in? logged-in?
+                   :logged-in? true
                    :user user
                    :session-token session-token
                    :memberships memberships
@@ -48,7 +57,8 @@
         :analytics/group {:group-id org-id}
         :dispatch-later [{:ms 100 :dispatch [:nav-home]}]})
      {:db (assoc db
-                 :logged-in? logged-in?
+                 :logged-in? false
+                 :login-loading? false
                  :login-failed? true)})))
 
 (rf/reg-event-fx
@@ -66,40 +76,43 @@
 (defn login-page []
   (let [email (r/atom "")
         pwd (r/atom "")
-        login-failed? (rf/subscribe [:login-failed?])]
+        login-failed? (rf/subscribe [:login-failed?])
+        login-loading? (rf/subscribe [:login-loading?])]
     (r/create-class
      {:component-will-unmount #(rf/dispatch [:clear-login-form])
       :reagent-render
       (fn []
-        [:div.centerpiece
-         [:img.logo {:src "https://s3.amazonaws.com/vetd-logos/vetd.svg"}]
-         [:> ui/Form {:error @login-failed?}
-          (when @login-failed?
-            [:> ui/Message {:error true
-                            :header "Incorrect email / password"
-                            :content "Contact us at help@vetd.com"}])
-          [:> ui/FormField
-           [:> ui/Input {:placeholder "Email Address"
-                         :autoFocus true
-                         :spellCheck false
-                         :onChange (fn [_ this]
-                                     (reset! email (.-value this)))}]]
-          [:> ui/FormField
-           [:> ui/Input {:type "password"
-                         :placeholder "Password"
-                         :onChange (fn [_ this]
-                                     (reset! pwd (.-value this)))}]]
-          [:> ui/Button {:fluid true
-                         :on-click #(rf/dispatch [:login [@email @pwd]])}
-           "Log In"]
-          [:> ui/Divider {:horizontal true
-                          :style {:margin "20px 0"}}
-           "Sign Up"]
-          [:> ui/ButtonGroup {:fluid true}
-           [:> ui/Button {:color "teal"
-                          :on-click #(rf/dispatch [:b/nav-signup])}
-            "As a Buyer"]
-           [:> ui/ButtonOr]
-           [:> ui/Button {:color "blue"
-                          :on-click #(rf/dispatch [:v/nav-signup])}
-            "As a Vendor"]]]])})))
+        (if @login-loading?
+          [cc/c-loader {:props {:style {:margin-top 175}}}]
+          [:div.centerpiece
+           [:img.logo {:src "https://s3.amazonaws.com/vetd-logos/vetd.svg"}]
+           [:> ui/Form {:error @login-failed?}
+            (when @login-failed?
+              [:> ui/Message {:error true
+                              :header "Incorrect email / password"
+                              :content "Contact us at help@vetd.com"}])
+            [:> ui/FormField
+             [:> ui/Input {:placeholder "Email Address"
+                           :autoFocus true
+                           :spellCheck false
+                           :onChange (fn [_ this]
+                                       (reset! email (.-value this)))}]]
+            [:> ui/FormField
+             [:> ui/Input {:type "password"
+                           :placeholder "Password"
+                           :onChange (fn [_ this]
+                                       (reset! pwd (.-value this)))}]]
+            [:> ui/Button {:fluid true
+                           :on-click #(rf/dispatch [:login [@email @pwd]])}
+             "Log In"]
+            [:> ui/Divider {:horizontal true
+                            :style {:margin "20px 0"}}
+             "Sign Up"]
+            [:> ui/ButtonGroup {:fluid true}
+             [:> ui/Button {:color "teal"
+                            :on-click #(rf/dispatch [:b/nav-signup])}
+              "As a Buyer"]
+             [:> ui/ButtonOr]
+             [:> ui/Button {:color "blue"
+                            :on-click #(rf/dispatch [:v/nav-signup])}
+              "As a Vendor"]]]]))})))

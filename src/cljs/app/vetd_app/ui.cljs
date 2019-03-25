@@ -61,7 +61,6 @@
 
 ;; Misc
 (def Image (component "Image"))
-(def Loader (component "Loader"))
 
 
 ;; Toastr

@@ -4,22 +4,24 @@
             [reagent.format :as format]
             [re-frame.core :as rf]))
 
-(defn c-start-round-button [{:keys [etype eid ename props]}]
+(defn c-start-round-button [{:keys [etype eid ename show-icon? props]}]
   [:> ui/Popup
-   {:content (str "Find and compare similar products to "
-                  ename " that meet your needs.")
+   {:content (str "Find and compare similar products to \""
+                  ename "\" that meet your needs.")
     :header "What is a VetdRound?"
-    :position "bottom left"
+    :position "top left"
     :trigger (r/as-element
               [:> ui/Button
                (merge {:onClick #(rf/dispatch [:b/start-round etype eid])
                        :class "start-round-button"
-                       :color "blue"
-                       :icon true
-                       :labelPosition "right"}
-                      props)
+                       :color "blue"}
+                      props
+                      (when show-icon?
+                        {:icon true
+                         :labelPosition "right"}))
                "Start VetdRound"
-               [:> ui/Icon {:name "right arrow"}]])}])
+               (when show-icon?
+                 [:> ui/Icon {:name "right arrow"}])])}])
 
 (defn c-round-in-progress [{:keys [props]}]
   [:> ui/Label (merge {:color "teal"
@@ -58,6 +60,7 @@
 (defn c-display-field
   [props field-key field-value] 
   [:> ui/GridColumn props
-   [:> ui/Segment {:style {:padding "40px 20px 10px 20px"}}
-    [:> ui/Label {:attached "top"} field-key]
-    field-value]])
+   [:> ui/Segment {:class "display-field"
+                   :vertical true}
+    [:h3.display-field-key field-key]
+    [:p field-value]]])
