@@ -21,6 +21,18 @@
  (fn [{:keys [db]} _]
    {:nav {:path "/a/form-templates/"}}))
 
+(rf/reg-event-fx
+ :a/create-form-template-prompt
+ (fn [_ [_ form-template-id]]
+   {:ws-send {:payload {:cmd :a/create-form-template-prompt
+                        :form-template-id form-template-id}}}))
+
+(rf/reg-event-fx
+ :a/dissoc-template-prompt
+ (fn [_ [_ form-template-prompt-id]]
+   {:ws-send {:payload {:cmd :a/dissoc-template-prompt
+                        :form-template-prompt-id form-template-prompt-id}}}))
+
 (rf/reg-event-db
  :a/route-form-templates
  (fn [db [_ form-template-idstr]]
@@ -76,7 +88,7 @@
                      :options opts}]))
 
 (defn c-prompt-field
-  [{:keys [fname descr ftype fsubtype list?] sort' :sort}]
+  [{:keys [id fname descr ftype fsubtype list?] sort' :sort}]
   (let [fname& (r/atom fname)
         descr& (r/atom descr)
         ftype-pair& (r/atom [ftype fsubtype])
@@ -125,8 +137,7 @@
          [:> ui/Button {:color "red"
                         :icon true
                         :labelPosition "left"
-                                        ;:on-click #(rf/dispatch [:v/save-prompt&field {}])
-                        }
+                        :on-click #(rf/dispatch [:a/delete-form-prompt-field id])}
           [:> ui/Icon {:name "trash alternate"
                        :color "white"
                        :inverted true}]
@@ -147,8 +158,7 @@
                        :color "red"
                        :icon true
                        :labelPosition "left"
-                                        ;:on-click #(rf/dispatch [:v/save-prompt&field {}])
-                       }
+                       :on-click #(rf/dispatch [:a/dissoc-template-prompt rpid])}
          [:> ui/Icon {:name "remove"
                       :color "white"
                       :inverted true}]
@@ -215,50 +225,48 @@
 (defn c-page []
   (fn []
     (let [form-template-idstr @(rf/subscribe [:form-template-idstr])
-          prompts& (when form-template-idstr
-                     (rf/subscribe [:gql/q
-                                    {:queries
-                                     [[:form-templates
-                                       {:idstr form-template-idstr}
-                                       [:id :idstr :title
-                                        [:prompts
-                                         [:id :rpid :prompt :descr
-                                          :sort :form-template-id
-                                          [:fields
-                                           [:fname :descr
-                                            :ftype :fsubtype
-                                            :list? :sort] ]]]]]]}]))
+          form-templates& (when form-template-idstr
+                            (rf/subscribe [:gql/q
+                                           {:queries
+                                            [[:form-templates
+                                              {:idstr form-template-idstr}
+                                              [:id :idstr :title
+                                               [:prompts
+                                                {:_order_by {:sort :asc}}
+                                                [:id :rpid :prompt :descr
+                                                 :sort :form-template-id
+                                                 [:fields
+                                                  [:id
+                                                   :fname :descr
+                                                   :ftype :fsubtype
+                                                   :list? :sort] ]]]]]]}]))
           existing-prompt& (r/atom nil)]
-      (def p1 (when prompts& @prompts&))
-      
       [:div#admin-form-templates-page
        {:style {:margin "0 0 100px 50px"
                 :width "1200px"}}
        (if-not form-template-idstr
          [c-form-template-list]
-         [:<>
-          [:div {:style {:font-size "x-large"}}
-           (some-> prompts& deref :form-templates
-                   first :title)]
-
-          [nxa/accordion
-           (for [p (some-> prompts& deref :form-templates
-                           first :prompts)]
-             ^{:key (str "template-prompt" (:rpid p))}
-             [c-template-prompt p])]
-          [:> ui/Button {:color "green"
-                         :icon true
-                         :labelPosition "left"
-                                        ;:on-click #(rf/dispatch [:v/save-prompt&field {}])
-                         }
-           [:> ui/Icon {:name "plus"
-                        :color "white"
-                        :inverted true}]
-           "Add New Prompt"]
-
-          [flx/row
-           [c-prompts-dropdown existing-prompt&]
-           [:> ui/Button {:color "purple"
-                                        ;:on-click #(rf/dispatch [:v/save-prompt&field {}])
-                          }
-            "Add Existing Prompt"]]])])))
+         (let [{:keys [id title prompts]} (some-> form-templates&
+                                                  deref
+                                                  :form-templates
+                                                  first)]
+           [:<>
+            [:div {:style {:font-size "x-large"}} title]
+            [nxa/accordion
+             (for [p prompts]
+               ^{:key (str "template-prompt" (:rpid p))}
+               [c-template-prompt p])]
+            [:> ui/Button {:color "green"
+                           :icon true
+                           :labelPosition "left"
+                           :on-click #(rf/dispatch [:a/create-form-template-prompt id])}
+             [:> ui/Icon {:name "plus"
+                          :color "white"
+                          :inverted true}]
+             "Add New Prompt"]
+            [flx/row
+             [c-prompts-dropdown existing-prompt&]
+             [:> ui/Button {:color "purple"
+                            :on-click #(rf/dispatch [:a/add-existing-form-template-prompt id @existing-prompt&])
+                            }
+              "Add Existing Prompt"]]]))])))

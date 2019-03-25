@@ -70,6 +70,19 @@
                      :to_user_id to-user-id})
         first)))
 
+(defn insert-prompt
+  [{:keys [prompt descr]}]
+  (let [[id idstr] (ut/mk-id&str)]
+    (-> (db/insert! :prompts
+                    {:id id
+                     :idstr idstr
+                     :created (ut/now-ts)
+                     :updated (ut/now-ts)
+                     :deleted nil
+                     :prompt prompt
+                     :descr descr})
+        first)))
+
 (defn insert-form-prompt
   [form-id prompt-id sort']
   (let [[id idstr] (ut/mk-id&str)]
@@ -80,6 +93,20 @@
                      :updated (ut/now-ts)
                      :deleted nil
                      :form_id form-id
+                     :prompt_id prompt-id
+                     :sort sort'})
+        first)))
+
+(defn insert-form-template-prompt
+  [form-template-id prompt-id sort']
+  (let [[id idstr] (ut/mk-id&str)]
+    (-> (db/insert! :form_template_prompt
+                    {:id id
+                     :idstr idstr
+                     :created (ut/now-ts)
+                     :updated (ut/now-ts)
+                     :deleted nil
+                     :form_template_id form-template-id
                      :prompt_id prompt-id
                      :sort sort'})
         first)))
@@ -160,6 +187,12 @@
       (insert-form-prompt form-id prompt-id sort'))
     form))
 
+(defn delete-template-prompt
+  [form-template-prompt-id]
+  (db/hs-exe! {:update :form_template_prompt
+               :set {:deleted (ut/now-ts)}
+               :where [:= :id form-template-prompt-id]}))
+
 ;; necessary? not used - Bill
 (defn create-form&doc
   [{:keys [form-temp-id buyer-org-id buyer-user-id
@@ -227,12 +260,10 @@
                                      :prompt-id prompt-id
                                      :fields fields}))))
 
-(defn update-doc-from-form-doc [form-doc])
-
-#_(clojure.pprint/pprint 
- (ha/sync-query [[:form-templates {:ftype "preposal"}
-                  [:id :idstr :ftype :fsubtype
-                   [:prompts
-                    [:id :idstr :prompt :descr
-                     [:fields
-                      [:id :idstr :fname :descr :ftype :list? :sort]]]]]]]))
+(defn create-blank-form-template-prompt
+  [form-template-id]
+  (let [{:keys [id]} (insert-prompt {:prompt "Empty Prompt"
+                                     :descr "Empty Description"})]
+    (insert-form-template-prompt form-template-id
+                                 id
+                                 100)))

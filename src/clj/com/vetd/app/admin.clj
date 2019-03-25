@@ -27,3 +27,11 @@
 (defmethod com/handle-ws-inbound :a/create-preposal-req
   [{:keys [prep-req]} ws-id sub-fn]
   (docs/create-preposal-req-form prep-req))
+
+(defmethod com/handle-ws-inbound :a/create-form-template-prompt
+  [{:keys [form-template-id]} ws-id sub-fn]
+  (docs/create-blank-form-template-prompt form-template-id))
+
+(defmethod com/handle-ws-inbound :a/dissoc-template-prompt
+  [{:keys [form-template-prompt-id]} ws-id sub-fn]
+  (docs/delete-template-prompt form-template-prompt-id))
