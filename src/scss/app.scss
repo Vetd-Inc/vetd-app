@@ -1,8 +1,17 @@
+@import 'semantic-ui/globals/_variables';
+
 body {
   background: #fafafa;
   font-size: 14px;
   font-weight: 300;
   color: #444;
+}
+
+a.teal {
+  color: $teal !important;
+}
+a.teal:hover {
+  color: $teal-highlight !important;
 }
 
 

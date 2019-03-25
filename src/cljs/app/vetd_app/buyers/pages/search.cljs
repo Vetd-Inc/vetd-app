@@ -193,9 +193,8 @@
            "Preposal Requested"
            [:<>
             "Pricing Unavailable "
-            [:a {:onClick #(do (.stopPropagation %)
-                               (rf/dispatch [:b/create-preposal-req product vendor]))
-                 :style {:color "#4ec2c4"}}
+            [:a.teal {:onClick #(do (.stopPropagation %)
+                               (rf/dispatch [:b/create-preposal-req product vendor]))}
              "Request a Preposal"]]))]
       [:> ui/ItemDescription short-desc]
       [:> ui/ItemExtra
