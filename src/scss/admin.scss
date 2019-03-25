@@ -12,7 +12,7 @@
 }
 #admin-over-cont #admin-symbol {
   background-image: url(../images/vetd-arrow.svg);
-  background-size: 58px 97px;
+  background-size: contain;
   height: 100px;
   width: 100px;
   background-repeat: no-repeat;
@@ -25,7 +25,6 @@
   bottom: 5px;
 }
 #admin-over-cont #admin-symbol:hover {
-  animation: .3s infinite mega-evolve;
   cursor: pointer;
 }
 #admin-over-cont.open {
