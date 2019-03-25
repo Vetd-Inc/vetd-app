@@ -42,15 +42,17 @@
         employee-count (docs/get-field-value responses "Employee Count" "value" :sval)
         website (docs/get-field-value responses "Website" "value" :sval)]
     [:div.detail-container
-     [:> ui/Header {:size "huge"}
+     [:> ui/Header {:size "huge"
+                    :style {:margin "7px 7px 11px 7px"}}
       (:pname product) " " [:small " by " (:oname from-org)]]
      [:> ui/Image {:class "product-logo"
                    :src (str "https://s3.amazonaws.com/vetd-logos/" (:logo product))}]
-     [bc/c-rounds product]
+     (if (not-empty (:rounds product))
+       [bc/c-round-in-progress {:props {:ribbon "left"}}])
      [bc/c-categories product]
      (when free-trial? [bc/c-free-trial-tag])
      [:> ui/Grid {:columns "equal"
-                  :style {:margin "20px 0 0 0"}}
+                  :style {:margin-top 0}}
       [:> ui/GridRow
        [bc/c-display-field {:width 10} "Pitch" pitch]]
       [:> ui/GridRow
@@ -102,13 +104,22 @@
     (fn []
       [:div.container-with-sidebar
        [:div.sidebar
-        [:> ui/Button {:on-click #(rf/dispatch [:b/nav-preposals])
-                       :color "gray"
-                       :icon true
-                       :size "small"
-                       :labelPosition "left"}
-         "All Preposals"
-         [:> ui/Icon {:name "left arrow"}]]]
+        [:div {:style {:padding "0 15px"}}
+         [:> ui/Button {:on-click #(rf/dispatch [:b/nav-search])
+                        :color "gray"
+                        :icon true
+                        :size "small"
+                        :style {:width "100%"}
+                        :labelPosition "left"}
+          "All Preposals"
+          [:> ui/Icon {:name "left arrow"}]]]
+        (when-not (= :loading @preps&)
+          (let [{:keys [product]} (-> @preps& :docs first)]
+            (when (empty? (:rounds product))
+              [:> ui/Segment
+               [bc/c-start-round-button {:etype :product
+                                         :eid (:id product)
+                                         :ename (:pname product)}]])))]
        [:> ui/Segment {:class "inner-container"}
         (if (= :loading @preps&)
           [cc/c-loader]
