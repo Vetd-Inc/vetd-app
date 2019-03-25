@@ -4,7 +4,7 @@
             [reagent.format :as format]
             [re-frame.core :as rf]))
 
-(defn c-start-round-button [{:keys [etype eid ename props]}]
+(defn c-start-round-button [{:keys [etype eid ename show-icon? props]}]
   [:> ui/Popup
    {:content (str "Find and compare similar products to \""
                   ename "\" that meet your needs.")
@@ -14,15 +14,14 @@
               [:> ui/Button
                (merge {:onClick #(rf/dispatch [:b/start-round etype eid])
                        :class "start-round-button"
-                       :color "blue"
-                       :fluid true
-                       ;; :icon true
-                       ;; :labelPosition "right"
-                       }
-                      props)
+                       :color "blue"}
+                      props
+                      (when show-icon?
+                        {:icon true
+                         :labelPosition "right"}))
                "Start VetdRound"
-               ;; [:> ui/Icon {:name "right arrow"}]
-               ])}])
+               (when show-icon?
+                 [:> ui/Icon {:name "right arrow"}])])}])
 
 (defn c-round-in-progress [{:keys [props]}]
   [:> ui/Label (merge {:color "teal"

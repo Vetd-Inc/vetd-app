@@ -98,7 +98,8 @@
               [:> ui/Segment
                [bc/c-start-round-button {:etype :product
                                          :eid (:id product)
-                                         :ename (:pname product)}]
+                                         :ename (:pname product)
+                                         :props {:fluid true}}]
                [:br]
                (if requested-preposal?
                  [:> ui/Popup

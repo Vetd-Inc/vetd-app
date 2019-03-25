@@ -105,7 +105,7 @@
       [:div.container-with-sidebar
        [:div.sidebar
         [:div {:style {:padding "0 15px"}}
-         [:> ui/Button {:on-click #(rf/dispatch [:b/nav-search])
+         [:> ui/Button {:on-click #(rf/dispatch [:b/nav-preposals])
                         :color "gray"
                         :icon true
                         :size "small"
@@ -119,7 +119,8 @@
               [:> ui/Segment
                [bc/c-start-round-button {:etype :product
                                          :eid (:id product)
-                                         :ename (:pname product)}]])))]
+                                         :ename (:pname product)
+                                         :props {:fluid true}}]])))]
        [:> ui/Segment {:class "inner-container"}
         (if (= :loading @preps&)
           [cc/c-loader]
