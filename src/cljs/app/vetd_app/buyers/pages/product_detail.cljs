@@ -33,8 +33,7 @@
   "Component to display Preposal details."
   [{:keys [id pname long-desc url logo vendor forms rounds categories] :as product}]
   [:div.detail-container
-   [:> ui/Header {:size "huge"
-                  :style {:margin "7px 7px 11px 7px"}}
+   [:h1.product-title
     pname " " [:small " by " (:oname vendor)]]
    [:> ui/Image {:class "product-logo"
                  :src (str "https://s3.amazonaws.com/vetd-logos/" logo)}]
@@ -47,11 +46,14 @@
      [bc/c-display-field {:width 12} "Product Description"
       [:<> (or long-desc "No description available.")
        (when (not-empty url)
-         [:p "Website: " [:a {:href (str "http://" url) ; todo: fragile
-                              :target "_blank"}
-                          [:> ui/Icon {:name "external square"
-                                       :color "blue"}]
-                          url]])]]]
+         [:<>
+          [:br]
+          [:br]
+          "Website: " [:a {:href (str "http://" url) ; todo: fragile
+                           :target "_blank"}
+                       [:> ui/Icon {:name "external square"
+                                    :color "blue"}]
+                       url]])]]]
     [:> ui/GridRow
      [bc/c-display-field {:width 6} "Pitch" "Unavailable (Request a Preposal)"]
      [bc/c-display-field {:width 6} "Estimated Price" "Unavailable (Request a Preposal)"]]

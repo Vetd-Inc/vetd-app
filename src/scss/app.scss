@@ -73,6 +73,21 @@ a.teal:hover {
   font-weight: 300;
 }
 
+.detail-container {
+  padding: 7px;
+}
+.product-title {
+  padding: 0 11px 7px 0 !important;
+  margin: 0;
+  font-size: 34px;
+}
+.display-field {
+  margin: 7px 0 7px 0 !important;
+  padding: 0 !important;
+}
+.display-field-key {
+  margin: 0 0 5px 0;
+}
 .detail-container > .product-logo {
   position: absolute;
   right: 0px;
@@ -127,18 +142,19 @@ a.teal:hover {
   transform: translate(0) !important;
 }
 .results > .item:hover  {
-  // transform: scale(1.000);
   transform: translate(0, -1px) !important;
   box-shadow: 0 3px 21px 0 rgba(50,50,50,0.26) !important;
   transition: all .05s ease-out !important;
 }
 .results > .item > .product-logo {
-  width: 128px !important;
-  height: 128px !important;
-  display: flex !important;
-}
-.results > .item > .product-logo > img {
-  align-self: center;
+  min-width: 128px;
+  min-height: 128px;
+  max-width: 128px;
+  max-height: 128px;
+  margin-right: 15px;
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 .results > .item > .content {
   display: flex !important;

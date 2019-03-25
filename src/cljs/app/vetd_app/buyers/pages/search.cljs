@@ -166,8 +166,7 @@
     [:> ui/Item {:onClick #(rf/dispatch (if preposal-responses
                                           [:b/nav-preposal-detail (-> docs first :idstr)]
                                           [:b/nav-product-detail idstr]))}
-     [:> ui/ItemImage {:class "product-logo"
-                       :src (str "https://s3.amazonaws.com/vetd-logos/" logo)}]
+     [:div.product-logo {:style {:background-image (str "url('https://s3.amazonaws.com/vetd-logos/" logo "')")}}]
      [:> ui/ItemContent
       [:> ui/ItemHeader
        pname " " [:small " by " (:oname vendor)]]
@@ -194,7 +193,7 @@
            [:<>
             "Pricing Unavailable "
             [:a.teal {:onClick #(do (.stopPropagation %)
-                               (rf/dispatch [:b/create-preposal-req product vendor]))}
+                                    (rf/dispatch [:b/create-preposal-req product vendor]))}
              "Request a Preposal"]]))]
       [:> ui/ItemDescription short-desc]
       [:> ui/ItemExtra

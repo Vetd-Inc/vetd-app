@@ -60,10 +60,7 @@
 (defn c-display-field
   [props field-key field-value] 
   [:> ui/GridColumn props
-   [:> ui/Segment {:style {:padding "40px 20px 10px 10px"}
+   [:> ui/Segment {:class "display-field"
                    :vertical true}
-    [:> ui/Label {:attached "top"
-                  :style {:font-weight 600}
-                  :basic true}
-     field-key]
-    field-value]])
+    [:h3.display-field-key field-key]
+    [:p field-value]]])
