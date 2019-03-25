@@ -276,7 +276,7 @@
         loading? (or (= :loading prods) (= :loading categories))
         prod-cat-suggestion (r/atom "")]
     (if loading?
-      [cc/c-loader {:style {:marginTop 20}}]
+      [cc/c-loader {:style {:margin-top 20}}]
       (if (not-empty (concat product-ids vendor-ids))
         [:div
          [:div.categories
@@ -298,7 +298,7 @@
                           :style {:position "relative"
                                   :top 1
                                   :width 240
-                                  :marginRight 15}
+                                  :margin-right 15}
                           :onChange (fn [_ this]
                                       (reset! prod-cat-suggestion (.-value this)))}]
             #_[:> ui/Select {:compact true

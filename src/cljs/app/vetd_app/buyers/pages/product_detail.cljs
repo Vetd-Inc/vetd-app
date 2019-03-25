@@ -122,7 +122,7 @@
                              [:> ui/Button {:onClick #(rf/dispatch [:b/create-preposal-req product vendor])
                                             :color "teal"
                                             :fluid true
-                                            :style {:marginRight 15}}
+                                            :style {:margin-right 15}}
                               "Request Preposal"])}])
                
                ])))]
