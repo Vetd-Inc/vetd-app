@@ -795,7 +795,28 @@
     [:copy-from '{:name :mig-prompt-fields-2019-03-12
                   :ns com.vetd.app.migrations
                   :up-fn mig-prompt-fields-2019-03-12-up
-                  :down-fn mig-prompt-fields-2019-03-12-down}]]])
+                  :down-fn mig-prompt-fields-2019-03-12-down}]]
+
+   [[2019 3 25 00 00]
+    [:create-view {:schema :vetd
+                   :name :prompts_by_template
+                   :honey {:select [[:rp.id :rpid]
+                                    [:rp.deleted :rp_deleted]
+                                    :rp.form_template_id
+                                    :rp.sort
+                                    :p.id
+                                    :p.idstr                                    
+                                    :p.created
+                                    :p.updated
+                                    :p.deleted
+                                    :p.prompt
+                                    :p.descr]
+                           :from [[:form_template_prompt :rp]]
+                           :join [[:prompts :p]
+                                  [:= :p.id :rp.prompt_id]]}
+                   :owner :vetd
+                   :grants {:hasura [:SELECT]}}]
+]])
 
 #_(mig/mk-migration-files migrations
                           "migrations")
