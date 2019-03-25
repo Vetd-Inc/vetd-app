@@ -123,9 +123,7 @@
                                             :color "teal"
                                             :fluid true
                                             :style {:margin-right 15}}
-                              "Request Preposal"])}])
-               
-               ])))]
+                              "Request Preposal"])}])])))]
        [:> ui/Segment {:class "inner-container"}
         (if (= :loading @products&)
           [cc/c-loader]
