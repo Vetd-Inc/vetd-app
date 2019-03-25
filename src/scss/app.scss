@@ -82,6 +82,20 @@ a.teal:hover {
   margin-right: 15px;
 }
 
+@media only screen and (max-width: 600px) {
+  .container-with-sidebar {
+    display: flex;
+    flex-direction: column;
+  }
+  .sidebar {
+    width: 100%;
+    margin: 15px auto;
+  }
+  .detail-container > .product-logo {
+    display: none !important;
+  }
+}
+
 /* to make segment look the same as item results */
 /* .segment { */
 /*   padding: 15px 12px !important; */
@@ -179,7 +193,10 @@ a.category-tag:hover {
 
 /* Toast Messages (toastr library) */
 #toast-container .toast-success {
-  background-color: #32abde;
+  background-color: $teal;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  opacity: 1;
 }
 #toast-container .toast-title,
 #toast-container .toast-message {

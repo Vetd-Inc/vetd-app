@@ -291,13 +291,14 @@
           [:> ui/Segment {:placeholder true}
            [:> ui/Header {:icon true}
             [:> ui/Icon {:name "search"}]
-            "We don't have that product or category."]
+            "We could not find any matching products or categories."]
            [:> ui/SegmentInline
             [:> ui/Input {:label {:icon "asterisk"}
                           :labelPosition "left corner"
                           :placeholder "Product / Category . . ."
                           :style {:position "relative"
                                   :top 1
+                                  :width 240
                                   :marginRight 15}
                           :onChange (fn [_ this]
                                       (reset! prod-cat-suggestion (.-value this)))}]
@@ -311,15 +312,15 @@
                              :defaultValue "product"}]
             [:> ui/Button {:color "blue"
                            :onClick #(rf/dispatch [:b/req-new-prod-cat @prod-cat-suggestion])}
-             "Request It!"]]])))))
+             "Request It"]]])))))
 
 (defn c-page []
   (let [search-query& (rf/subscribe [:search-term])]
     (fn []
       [:> ui/Grid
-       [:> ui/GridRow {:columns 3}
-        [:> ui/GridColumn {:width 4}]
-        [:> ui/GridColumn {:width 8}
+       [:> ui/GridRow
+        [:> ui/GridColumn {:computer 4 :mobile 0}]
+        [:> ui/GridColumn {:computer 8 :mobile 16}
          [:> ui/Input {:class "product-search"
                        :value @search-query&
                        :size "big"
@@ -330,9 +331,9 @@
                        :onChange (fn [_ this]
                                    (rf/dispatch [:b/update-search-term (.-value this)]))
                        :placeholder "Search products & categories..."}]]
-        [:> ui/GridColumn {:width 4}]]
-       [:> ui/GridRow {:columns 3}
-        [:> ui/GridColumn {:width 2}]
-        [:> ui/GridColumn {:width 12}
+        [:> ui/GridColumn {:computer 4 :mobile 0}]]
+       [:> ui/GridRow
+        [:> ui/GridColumn {:computer 2 :mobile 0}]
+        [:> ui/GridColumn {:computer 12 :mobile 16}
          [c-search-results search-query&]]
-        [:> ui/GridColumn {:width 2}]]])))
+        [:> ui/GridColumn {:computer 2 :mobile 0}]]])))
