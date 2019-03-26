@@ -58,7 +58,11 @@
 
 (rf/reg-sub
  :page
- (fn [{:keys [page]}] page))
+ (fn [{:keys [logged-in? user page]} _]
+   (if (or (and logged-in? user)
+           (public-pages page))
+     page
+     :login)))
 
 (rf/reg-sub
  :page-params
@@ -108,8 +112,8 @@
   [membs admin?]
   (if admin?
     "/a/search/"
-    (if-let [active-memb (first membs)]
-      (if (-> active-memb :org :buyer?)
+    (if-let [{{:keys [id buyer? vendor?]} :org} (first membs)]
+      (if buyer?
         "/b/preposals/"
         "/v/home/")
       "/")))
@@ -143,14 +147,15 @@
    (if logged-in?
      {:db (assoc db
                  :user user
-                 :logged-in? true
+                 :logged-in? logged-in?
                  :memberships memberships
                  :admin? admin?
                  ;; TODO support users with multi-orgs                 
                  :active-memb-id (some-> memberships first :id))
       :cookies {:admin-token (when admin?
                                [(:session-token local-store)
-                                {:max-age 3600 :path "/"}])}}
+                                {:max-age 3600 :path "/"}])}
+      :dispatch-later [{:ms 100 :dispatch [:nav-home]}]}
      {:db (dissoc db :user)
       :dispatch [:nav-login]})))
 

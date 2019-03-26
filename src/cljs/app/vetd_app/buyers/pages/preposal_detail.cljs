@@ -42,7 +42,8 @@
         employee-count (docs/get-field-value responses "Employee Count" "value" :sval)
         website (docs/get-field-value responses "Website" "value" :sval)]
     [:div.detail-container
-     [:h1.product-title
+     [:> ui/Header {:size "huge"
+                    :style {:margin "7px 7px 11px 7px"}}
       (:pname product) " " [:small " by " (:oname from-org)]]
      [:> ui/Image {:class "product-logo"
                    :src (str "https://s3.amazonaws.com/vetd-logos/" (:logo product))}]
