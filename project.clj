@@ -39,6 +39,7 @@
                  [cljsjs/toastr "2.1.2-1"]
                  [clj-commons/secretary "1.2.4"]
                  [venantius/accountant "0.2.4"]
+                 [pez/clerk "1.0.0"]
 
                  [org.clojure/tools.reader "1.2.2"]
                  [com.taoensso/timbre "4.10.0"]

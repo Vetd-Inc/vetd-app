@@ -22,7 +22,8 @@
             [reagent.core :as r]
             [re-frame.core :as rf]
             [secretary.core :as sec]
-            [accountant.core :as acct]))
+            [accountant.core :as acct]
+            [clerk.core :as clerk]))
 
 (println "START core")
 
@@ -214,9 +215,13 @@
       (rf/dispatch [:apply-route nil])))
 
 (defn config-acct []
-  (acct/configure-navigation! {:nav-handler sec/dispatch!
-                               :path-exists? sec/locate-route
-                               :reload-same-path? false}))
+  (acct/configure-navigation!
+   {:nav-handler (fn [path]
+                   (r/after-render clerk/after-render!)
+                   (sec/dispatch! path)
+                   (clerk/navigate-page! path))
+    :path-exists? sec/locate-route
+    :reload-same-path? false}))
 
 
 (defonce init-done? (volatile! false))
@@ -229,6 +234,7 @@
       (vreset! init-done? true)
       (rf/dispatch-sync [:init-db])
       (rf/dispatch-sync [:ws-init])
+      (clerk/initialize!)
       (config-acct)
       (acct/dispatch-current!)
       (rf/dispatch-sync [:ws-get-session-user])
