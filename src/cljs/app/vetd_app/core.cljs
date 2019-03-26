@@ -116,48 +116,13 @@
       (if buyer?
         "/b/preposals/"
         "/v/home/")
-      "/")))
+      "/login")))
 
 (rf/reg-event-fx
  :nav-home
  (fn [{:keys [db]} _]
-   (let [{:keys [page memberships admin?]} db]
+   (let [{:keys [memberships admin?]} db]
      {:nav {:path (->home-url memberships admin?)}})))
-
-(rf/reg-event-fx
- :nav-if-public
- (fn [{:keys [db]} _]
-   (let [{:keys [page memberships admin?]} db]
-     (if ((conj public-pages :home) page)
-       {:nav {:path (->home-url memberships admin?)}}
-       {}))))
-
-(rf/reg-event-fx
- :ws-get-session-user
- [(rf/inject-cofx :local-store [:session-token])] 
- (fn [{:keys [db local-store]} [_ [email pwd]]]
-   {:ws-send {:payload {:cmd :auth-by-session
-                        :return :ws/req-session
-                        :session-token (:session-token local-store)}}}))
-
-(rf/reg-event-fx
- :ws/req-session
- [(rf/inject-cofx :local-store [:session-token])]  
- (fn [{:keys [db local-store]} [_ {:keys [logged-in? user memberships admin?]}]]
-   (if logged-in?
-     {:db (assoc db
-                 :user user
-                 :logged-in? logged-in?
-                 :memberships memberships
-                 :admin? admin?
-                 ;; TODO support users with multi-orgs                 
-                 :active-memb-id (some-> memberships first :id))
-      :cookies {:admin-token (when admin?
-                               [(:session-token local-store)
-                                {:max-age 3600 :path "/"}])}
-      :dispatch-later [{:ms 100 :dispatch [:nav-home]}]}
-     {:db (dissoc db :user)
-      :dispatch [:nav-login]})))
 
 (defn c-page []
   (let [page @(rf/subscribe [:page])]
@@ -176,8 +141,8 @@
 ;; -------------------------
 ;; Routes
 
-(sec/defroute home-path "/" [query-params]
-  (rf/dispatch [:route-home query-params]))
+(sec/defroute home-path "/" []
+  (rf/dispatch [:nav-home]))
 
 (sec/defroute buyers-search-root "/b/search/" []
   (rf/dispatch [:b/route-search]))
@@ -223,6 +188,40 @@
                                :path-exists? sec/locate-route
                                :reload-same-path? false}))
 
+(rf/reg-event-fx
+ :ws-get-session-user
+ [(rf/inject-cofx :local-store [:session-token])] 
+ (fn [{:keys [db local-store]} [_ [email pwd]]]
+   {:ws-send {:payload {:cmd :auth-by-session
+                        :return :ws/req-session
+                        :session-token (:session-token local-store)}}}))
+
+;; additional init that must occur after :ws/req-session
+(rf/reg-fx
+ :after-req-session
+ (fn []
+   (config-acct)
+   (acct/dispatch-current!)
+   (mount-components)))
+
+(rf/reg-event-fx
+ :ws/req-session
+ [(rf/inject-cofx :local-store [:session-token])]  
+ (fn [{:keys [db local-store]} [_ {:keys [logged-in? user memberships admin?]}]]
+   (if logged-in?
+     {:db (assoc db
+                 :user user
+                 :logged-in? true
+                 :memberships memberships
+                 :admin? admin?
+                 ;; TODO support users with multi-orgs
+                 :active-memb-id (some-> memberships first :id))
+      :cookies {:admin-token (when admin?
+                               [(:session-token local-store)
+                                {:max-age 3600 :path "/"}])}
+      :after-req-session nil}
+     {:after-req-session nil})))
+
 
 (defonce init-done? (volatile! false))
 
@@ -234,10 +233,7 @@
       (vreset! init-done? true)
       (rf/dispatch-sync [:init-db])
       (rf/dispatch-sync [:ws-init])
-      (config-acct)
-      (acct/dispatch-current!)
       (rf/dispatch-sync [:ws-get-session-user])
-      (mount-components)
       (println "init! END"))))
 
 ;; for dev

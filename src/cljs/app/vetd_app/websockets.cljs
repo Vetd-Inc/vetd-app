@@ -39,7 +39,6 @@
 (rf/reg-event-fx
  :ws-inbound
  (fn [cofx [_ data]]
-   (def d1 data)
    (when (log-ws?)
      (.log js/console "ws-inbound")
      (.log js/console (str data)))
@@ -54,7 +53,6 @@
 (defn ws-onmessage
   [data]
   (let [d (t/read json-reader (.-data data))]
-#_    (println d)
     (rf/dispatch [:ws-inbound d])))
 
 (defn mk-ws-conn [url]
