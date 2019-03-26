@@ -107,8 +107,8 @@
 (defn on-change-fn
   [changes& changes-fn value&]
   (fn [_ this]
-    (swap! changes& changes-fn)
-    (reset! value& (.-value this))))
+    (reset! value& (.-value this))
+    (swap! changes& changes-fn)))
 
 (defn c-prompt-field
   [{:keys [id fname descr ftype fsubtype list?] sort' :sort} changes&]
@@ -276,9 +276,10 @@
       [:div
        (for [{:keys [id idstr title ftype fsubtype]} (:form-templates @fts&)]
          ^{:key (str "template-link" id)}
-         [:a {:href (str "./" idstr)
-              :style {:font-size "large"}}
-          (str title " [ " ftype " " fsubtype " ]")])])))
+         [:div {:style {:margin "20px"}}
+          [:a {:href (str "./" idstr)
+               :style {:font-size "large"}}
+           (str title " [ " ftype " " fsubtype " ]")]])])))
 
 (defn c-page []
   (fn []
