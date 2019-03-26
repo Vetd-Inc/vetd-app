@@ -6,16 +6,6 @@
             [re-frame.core :as rf]
             [re-com.core :as rc]))
 
-;; TODO
-;; add new prompt
-;; add existing prompt
-;; remove prompt
-
-;; add prompt field
-;; delete prompt field
-
-;; save
-
 (rf/reg-event-fx
  :a/nav-form-templates
  (fn [{:keys [db]} _]
@@ -51,6 +41,14 @@
  (fn [_ [_ prompt-id]]
    {:ws-send {:payload {:cmd :a/create-prompt-field
                         :prompt-id prompt-id}}}))
+
+(rf/reg-event-fx
+ :a/update-template-prompt&fields
+ (fn [_ [_ changes]]
+   {:ws-send (mapv (fn [[k v]]
+                     {:payload {:cmd :a/update-any
+                                :entity v}})
+                   changes)}))
 
 (rf/reg-event-db
  :a/route-form-templates
@@ -106,13 +104,28 @@
                      :onChange (fn [_ this] (reset! state& (.-value this)))
                      :options opts}]))
 
+(defn on-change-fn
+  [changes& changes-fn value&]
+  (fn [_ this]
+    (swap! changes& changes-fn)
+    (reset! value& (.-value this))))
+
 (defn c-prompt-field
-  [{:keys [id fname descr ftype fsubtype list?] sort' :sort}]
+  [{:keys [id fname descr ftype fsubtype list?] sort' :sort} changes&]
   (let [fname& (r/atom fname)
         descr& (r/atom descr)
         ftype-pair& (r/atom [ftype fsubtype])
         list?& (r/atom list?)
-        sort-order& (r/atom sort')]
+        sort-order& (r/atom sort')
+        changes-fn #(assoc % id
+                           {:id id
+                            :fname @fname&
+                            :descr @descr&
+                            :list_qm @list?& ; HACK list_qm => list?
+                            :sort @sort-order&
+                            :ftype (first @ftype-pair&)
+                            :fsubtype (second @ftype-pair&)})
+        mk-on-change-fn (partial on-change-fn changes& changes-fn)]
     (fn [{:keys [fname descr ftype fsubtype list?] sort' :sort}]
       [nxa/accordion-item
        [:div.prompt-field-name [nxa/dropdown-icon] fname]
@@ -128,7 +141,7 @@
                          :style {:width "300px"}
                          :fluid true
                          :spellCheck false
-                         :onChange (fn [_ this] (reset! fname& (.-value this)))}]]
+                         :onChange (mk-on-change-fn fname&)}]]
           [:> ui/FormField {:inline true}
            [:> ui/Label {:style {:width "200px"}} "Type"]
            [c-ftype-dropdown ftype-pair&]]
@@ -137,22 +150,20 @@
            [:> ui/Input {:defaultValue @sort-order&
                          :spellCheck false
                          :fluid true
-                         :onChange (fn [_ this] (reset! sort-order& (.-value this)))}]]
+                         :onChange (mk-on-change-fn sort-order&)}]]
           [:> ui/FormField {:inline true}
            [:> ui/Label {:style {:width "200px"}} "List?"]
            [:> ui/Checkbox {:defaultValue @list?&
                             :spellCheck false
                             :fluid true                            
-                            :onChange (fn [_ this] (reset! list?& (.-value this)))}]]]
+                            :onChange (mk-on-change-fn list?&)}]]]
          [:> ui/FormField {:inline true}
           [:> ui/Label {:style {:width "200px"}} "Description"]
           [:> ui/TextArea {:defaultValue @descr&
                            :style {:width "500px"}
                            :spellCheck false
                            :fluid true                           
-                           :onChange (fn [_ this] (reset! descr& (.-value this)))}]]
-          
-
+                           :onChange (mk-on-change-fn descr&)}]]
          [:> ui/Button {:color "red"
                         :icon true
                         :labelPosition "left"
@@ -166,9 +177,19 @@
 
 (defn c-template-prompt
   [{:keys [fields id rpid prompt descr form-template-id] sort' :sort}]
-  (let [prompt& (r/atom prompt)
+  (let [changes& (r/atom {})
+        prompt& (r/atom prompt)
         descr& (r/atom descr)
-        sort-order& (r/atom sort')]
+        sort-order& (r/atom sort')
+        changes-fn #(-> %
+                        (assoc id
+                               {:id id
+                                :prompt @prompt&
+                                :descr @descr&})
+                        (assoc rpid
+                               {:id rpid
+                                :sort @sort-order&}))
+        mk-on-change-fn (partial on-change-fn changes& changes-fn)]
     (fn [{:keys [fields id rpid prompt descr form-template-id] sort' :sort}]
       [nxa/accordion-item
        [:div.prompt-title [nxa/dropdown-icon] prompt
@@ -185,7 +206,23 @@
          [:> ui/Icon {:name "remove"
                       :color "white"
                       :inverted true}]
-         "Remove"]] 
+         "Remove"]
+        (when (not-empty @changes&)
+          [:> ui/Button {:style {:width "150px"
+                                 :height "30px"
+                                 :font-size "small"
+                                 :padding 0}
+                         :color "green"
+                         :icon true
+                         :labelPosition "left"
+                         :on-click (fn [e]
+                                     (.stopPropagation e)
+                                     (rf/dispatch [:a/update-template-prompt&fields @changes&])
+                                     (reset! changes& {}))}
+           [:> ui/Icon {:name "save"
+                        :color "white"
+                        :inverted true}]
+           "Save"])] 
        [:div
         [:> ui/Form {:style {:margin "10px"
                              :padding "10px"
@@ -197,22 +234,22 @@
            [:> ui/Input {:defaultValue @prompt&
                          :fluid true
                          :spellCheck false
-                         :onChange (fn [_ this] (reset! prompt& (.-value this)))}]]
+                         :onChange (mk-on-change-fn prompt&)}]]
           [:> ui/FormField {:inline true}
            [:> ui/Label {:style {:width "200px"}} "Description"]
            [:> ui/TextArea {:defaultValue @descr&
                             :spellCheck false
                             :fluid true                            
-                            :onChange (fn [_ this] (reset! descr& (.-value this)))}]]
+                            :onChange (mk-on-change-fn descr&)}]]
           [:> ui/FormField {:inline true}
            [:> ui/Label {:style {:width "200px"}} "Sort Order"]
            [:> ui/Input {:defaultValue @sort-order&
                          :spellCheck false
                          :fluid true                         
-                         :onChange (fn [_ this] (reset! sort-order& (.-value this)))}]]]
+                         :onChange (mk-on-change-fn sort-order&)}]]]
          [nxa/sub-accordion
           (for [pf fields]
-            [c-prompt-field pf])]
+            [c-prompt-field pf changes&])]
          [:> ui/Button {:color "green"
                         :icon true
                         :labelPosition "left"

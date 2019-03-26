@@ -49,3 +49,7 @@
 (defmethod com/handle-ws-inbound :a/delete-form-prompt-field
   [{:keys [prompt-field-id]} ws-id sub-fn]
   (docs/delete-form-prompt-field prompt-field-id))
+
+(defmethod com/handle-ws-inbound :a/update-any
+  [{:keys [entity]} ws-id sub-fn]
+  (db/update-any! entity))
