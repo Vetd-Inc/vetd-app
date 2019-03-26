@@ -62,7 +62,6 @@
 
 ;; Misc
 (def Image (component "Image"))
-(def Loader (component "Loader"))
 
 ;; Accordion
 (def Accordion (component "Accordion"))

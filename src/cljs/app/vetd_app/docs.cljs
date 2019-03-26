@@ -1,6 +1,7 @@
 (ns vetd-app.docs
   (:require [vetd-app.util :as util]
             [vetd-app.flexer :as flx]
+            [vetd-app.ui :as ui]
             [vetd-app.hooks :as hooks]
             [reagent.core :as r]
             [re-frame.core :as rf]
@@ -17,8 +18,9 @@
    (->> r
         :enum-vals
         (mapv (fn [{:keys [value label]}]
-                {:id value
-                 :label label})))))
+                {:key value
+                 :value value
+                 :text label})))))
 
 (defn get-field-value
   "Given a reponses map, get value for prompt->field->key"
@@ -44,8 +46,6 @@
 (rf/reg-event-fx
  :save-form-doc
  (fn [{:keys [db]} [_ form-doc]]
-   (def fd1 (walk-deref-ratoms form-doc))
-   #_   (cljs.pprint/pprint fd1)
    {:ws-send {:payload {:cmd :save-form-doc
                         :return nil
                         :form-doc (walk-deref-ratoms form-doc)}}}))
@@ -89,37 +89,36 @@
 (defn c-prompt-field-default
   [{:keys [fname ftype fsubtype list? response] :as prompt-field}]
   ;; TODO support multiple response fields (for where list? = true)
-  (def pf1 prompt-field)
   (let [value& (some-> response first :state)]
-    [:div.prompt-field
+    [:> ui/FormField
      (when-not (= fname "value")
-       fname)
-     [rc/input-text
-      :model value&
-      :on-change #(reset! value& %)]]))
+       [:label fname])
+     [:> ui/Input {:value @value&
+                   :onChange (fn [_ this]
+                               (reset! value& (.-value this)))}]]))
 
 (defn c-prompt-field-textarea
   [{:keys [fname ftype fsubtype list? response] :as prompt-field}]
   ;; TODO support multiple response fields (for where list? = true)
   (let [value& (some-> response first :state)]
-    [:div.prompt-field
+    [:> ui/FormField
      (when-not (= fname "value")
-       fname)     
-     [rc/input-textarea
-      :model value&
-      :on-change #(reset! value& %)]]))
+       [:label fname])
+     [:> ui/TextArea {:value @value&
+                      :onChange (fn [_ this]
+                                  (reset! value& (.-value this)))}]]))
 
 (defn c-prompt-field-int
   [{:keys [fname ftype fsubtype list? response] :as prompt-field}]
   ;; TODO support multiple response fields (for where list? = true)
   (let [value& (some-> response first :state)]
-    [:div.prompt-field
+    [:> ui/FormField
      (when-not (= fname "value")
-       fname)
-     [rc/input-text
-      :model value&
-      :on-change #(reset! value& %)
-      :validation-regex #"^\d*$"]]))
+       [:label fname])
+     [:> ui/Input {:value @value&
+                   :type "number"
+                   :onChange (fn [_ this]
+                               (reset! value& (.-value this)))}]]))
 
 (defn c-prompt-field-enum
   [{:keys [fname ftype fsubtype list? response] :as prompt-field}]
@@ -127,22 +126,24 @@
   (let [value& (some-> response first :state)
         enum-vals (rf/subscribe [:docs/enums fsubtype])]
     (fn [{:keys [fname ftype fsubtype list? response] :as prompt-field}]
-      [:div.prompt-field
+      [:> ui/FormField
        (when-not (= fname "value")
-         fname)
-       [rc/single-dropdown
-        :model value&
-        :on-change #(reset! value& %)
-        :choices @enum-vals]])))
-
-
+         [:label fname])
+       [:> ui/Dropdown {:value @value&
+                        :onChange #(reset! value& (.-value %2))
+                        ;; :placeholder "Select Product"
+                        :selection true
+                        :options @enum-vals}]])))
 
 (defn c-prompt-default
   [{:keys [prompt descr fields]}]
-  [flx/col #{:prompt}
-   [:div.prompt-text prompt
+  [:<>
+   [:div {:style {:margin-bottom 5}}
+    prompt
     (when descr
-      [rc/info-button :info descr])]
+      [:> ui/Popup {:trigger (r/as-element [:> ui/Icon {:name "info circle"}])
+                    :wide true}
+       descr])]
    (for [{:keys [idstr ftype fsubtype] :as f} fields]
      ^{:key (str "field" (:id f))}
      [(hooks/c-prompt-field idstr [ftype fsubtype] ftype :default)
@@ -154,33 +155,32 @@
          :doc-title (str "Preposal for "
                          (:pname product)
                          " [ "
-                         (:oname from-org)
-                         " => "
                          (:oname to-org)
+                         " => "
+                         (:oname from-org)
                          " ]")
          :doc-notes ""
          :doc-descr ""
          :doc-dtype "preposal"
          :doc-dsubtype "preposal1"))
 
-
-
 (defn c-form-maybe-doc
   [{:keys [id title product from-org from-user doc-id doc-title prompts] :as form-doc}]
-  (def ps1 prompts)
-  [flx/col #{:form-maybe-doc}
-   [:div#title (or doc-title title)]
-   [flx/row
+  [:> ui/Form {:style {:width 400
+                       :margin-bottom 50}}
+   [:div
+    (or doc-title title)
     [:div.product-name (:pname product)]
     [:div.org-name (:oname from-org)]
     [:div.user-name (:uname from-user)]]
    (for [p (sort-by :sort prompts)]
      ^{:key (str "prompt" (:id p))}
      [(hooks/c-prompt :default) p])
-   [rc/button
-    :label "Submit"
-    :on-click #(rf/dispatch [:save-form-doc
-                             (prep-preposal-form-doc form-doc)])]])
+   [:> ui/Button {:color "blue"
+                  :fluid true
+                  :on-click #(rf/dispatch [:save-form-doc
+                                           (prep-preposal-form-doc form-doc)])}
+    "Submit"]])
 
 
 (hooks/reg-hooks! hooks/c-prompt

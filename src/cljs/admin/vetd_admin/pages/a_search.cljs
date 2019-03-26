@@ -1,8 +1,7 @@
 (ns vetd-admin.pages.a-search
-  (:require [vetd-app.flexer :as flx]   
+  (:require [vetd-app.ui :as ui]
             [reagent.core :as r]
-            [re-frame.core :as rf]
-            [re-com.core :as rc]))
+            [re-frame.core :as rf]))
 
 
 (def last-query-id (atom 0))
@@ -22,11 +21,15 @@
           :page :a/search
           :query-params query-params)))
 
-(def dispatch-search-DB
-  (goog.functions.debounce
-   #(do (rf/dispatch [:a/search %]))
-   250))
 
+
+(rf/reg-event-fx
+ :a/update-search-term
+ (fn [{:keys [db]} [_ search-term]]
+   {:db (assoc db :page-params {:search-term search-term})
+    :dispatch-debounce [{:id :a/search
+                         :dispatch [:a/search search-term]
+                         :timeout 250}]}))
 
 (rf/reg-event-fx
  :a/search
@@ -39,6 +42,26 @@
                                    :qid qid}
                           :query q-str
                           :qid qid}}})))
+
+(rf/reg-event-fx
+ :a/ws-search-result-ids
+ (fn [{:keys [db]} [_ results {:keys [return]}]]
+   (if (= (:buyer-qid db) (:qid return))
+     {:db (assoc db
+                 :search-result-ids
+                 results)}
+     {})))
+
+(rf/reg-sub
+ :a/search-result-ids
+ (fn [db _]
+   (:search-result-ids db)))
+
+(rf/reg-sub
+ :search-term
+ :<- [:page-params] 
+ (fn [{:keys [search-term]}]
+   (or search-term "")))
 
 (rf/reg-event-fx
  :a/login-as-support
@@ -69,42 +92,28 @@
                           :return nil
                           :id memb-id}}})))
 
-(rf/reg-sub
- :a/search-result-ids
-  (fn [db _]
-    (:search-result-ids db)))
-
-(rf/reg-event-fx
- :a/ws-search-result-ids
- (fn [{:keys [db]} [_ results {:keys [return]}]]
-   (def res1 results)
-   #_ (println res1)
-   (def ret1 return)
-   (if (= (:buyer-qid db) (:qid return))
-     {:db (assoc db
-                 :search-result-ids
-                 results)}
-     {})))
-
 (defn c-org-search-result
   [{:keys [id oname memberships]}]
   (let [user-id& (rf/subscribe [:user-id])]
     (fn [{:keys [id oname memberships]}]
-      [:div {:class :org-search-result}
-       [:div oname]
+      [:div {:style {:margin-bottom 30}}
+       [:h4 {:style {:margin-bottom 8}}
+        oname]
        (if (empty? memberships)
-         [rc/button
-          :label "Join Org"
-          :on-click #(rf/dispatch [:a/create-membership @user-id& id])]
-         [:div
-          [rc/button
-           :label "Login as Support User"
-           :on-click #(rf/dispatch [:a/login-as-support id])]
-          [rc/button
-           :label "Leave Org"
-           :on-click #(rf/dispatch [:a/delete-membership (->> memberships
-                                                              first
-                                                              :id)])]])])))
+         [:> ui/Button {:onClick #(rf/dispatch [:a/create-membership @user-id& id])
+                        :size "tiny"
+                        :color "teal"}
+          "Join Organization"]
+         [:<>
+          [:> ui/Button {:onClick #(rf/dispatch [:a/login-as-support id])
+                         :size "tiny"
+                         :color "blue"}
+           "Login as Support User"]
+          [:> ui/Button {:onClick #(rf/dispatch [:a/delete-membership
+                                                 (->> memberships first :id)])
+                         :size "tiny"
+                         :color "red"}
+           "Leave Organization"]])])))
 
 (defn c-search-results []
   (let [user-id @(rf/subscribe [:user-id])
@@ -118,7 +127,7 @@
                                     [:memberships {:user-id user-id
                                                    :deleted nil}
                                      [:id]]]]]}]))
-                [])]
+               [])]
     [:div {:class :search-results}
      [:div {:class :orgs}
       (for [o orgs]
@@ -128,17 +137,24 @@
 
 
 (defn c-page []
-  (let [search-query (r/atom "")]
+  (let [search-query& (rf/subscribe [:search-term])]
     (fn []
-      [rc/v-box
-       :style {:align-items :center}
-       :children [[rc/input-text
-                   :model search-query
-                   :attr {:auto-focus true}
-                   :width "50%"
-                   :on-change #(do
-                                 (dispatch-search-DB %)
-                                 (reset! search-query %))
-                   :change-on-blur? false
-                   :placeholder "Search orgs"]
-                  [c-search-results]]])))
+      [:> ui/Grid
+       [:> ui/GridRow
+        [:> ui/GridColumn {:computer 4 :mobile 0}]
+        [:> ui/GridColumn {:computer 8 :mobile 16}
+         [:> ui/Input {:class "product-search"
+                       :value @search-query&
+                       :size "big"
+                       :icon "search"
+                       :autoFocus true
+                       :spellCheck false
+                       :onChange (fn [_ this]
+                                   (rf/dispatch [:a/update-search-term (.-value this)]))
+                       :placeholder "Search for organizations..."}]]
+        [:> ui/GridColumn {:computer 4 :mobile 0}]]
+       [:> ui/GridRow
+        [:> ui/GridColumn {:computer 2 :mobile 0}]
+        [:> ui/GridColumn {:computer 12 :mobile 16}
+         [c-search-results]]
+        [:> ui/GridColumn {:computer 2 :mobile 0}]]])))

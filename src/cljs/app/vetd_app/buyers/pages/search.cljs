@@ -1,5 +1,6 @@
 (ns vetd-app.buyers.pages.search
-  (:require [vetd-app.buyers.components :as c]
+  (:require [vetd-app.buyers.components :as bc]
+            [vetd-app.common.components :as cc]
             [vetd-app.ui :as ui]
             [vetd-app.docs :as docs]
             [reagent.core :as r]
@@ -165,8 +166,7 @@
     [:> ui/Item {:onClick #(rf/dispatch (if preposal-responses
                                           [:b/nav-preposal-detail (-> docs first :idstr)]
                                           [:b/nav-product-detail idstr]))}
-     [:> ui/ItemImage {:class "product-logo"
-                       :src (str "https://s3.amazonaws.com/vetd-logos/" logo)}]
+     [:div.product-logo {:style {:background-image (str "url('https://s3.amazonaws.com/vetd-logos/" logo "')")}}]
      [:> ui/ItemContent
       [:> ui/ItemHeader
        pname " " [:small " by " (:oname vendor)]]
@@ -190,12 +190,14 @@
                (str "Price Estimate: " p-e-details))))
          (if requested-preposal?
            "Preposal Requested"
-           [:a {:onClick #(do (.stopPropagation %)
-                              (rf/dispatch [:b/create-preposal-req product vendor]))}
-            "Request a Preposal"]))]
+           [:<>
+            "Pricing Unavailable "
+            [:a.teal {:onClick #(do (.stopPropagation %)
+                                    (rf/dispatch [:b/create-preposal-req product vendor]))}
+             "Request a Preposal"]]))]
       [:> ui/ItemDescription short-desc]
       [:> ui/ItemExtra
-       [c/c-categories product]
+       [bc/c-categories product]
        (when (and preposal-responses
                   (= "yes" (docs/get-field-value preposal-responses "Do you offer a free trial?" "value" :sval)))
          [:> ui/Label {:class "free-trial-tag"
@@ -204,9 +206,9 @@
                        :tag true}
           "Free Trial"])]]
      (when (not-empty rounds)
-       [c/c-round-in-progress {:props {:ribbon "right"
-                                       :style {:position "absolute"
-                                               :marginLeft -14}}}])]))
+       [bc/c-round-in-progress {:props {:ribbon "right"
+                                        :style {:position "absolute"
+                                                :marginLeft -14}}}])]))
 
 (defn c-vendor-search-results
   [v]
@@ -274,8 +276,7 @@
         loading? (or (= :loading prods) (= :loading categories))
         prod-cat-suggestion (r/atom "")]
     (if loading?
-      [:> ui/Loader {:active true
-                     :style {:marginTop 20}}]
+      [cc/c-loader {:style {:margin-top 20}}]
       (if (not-empty (concat product-ids vendor-ids))
         [:div
          [:div.categories
@@ -289,14 +290,15 @@
           [:> ui/Segment {:placeholder true}
            [:> ui/Header {:icon true}
             [:> ui/Icon {:name "search"}]
-            "We don't have that product or category."]
+            "We could not find any matching products or categories."]
            [:> ui/SegmentInline
             [:> ui/Input {:label {:icon "asterisk"}
                           :labelPosition "left corner"
                           :placeholder "Product / Category . . ."
                           :style {:position "relative"
                                   :top 1
-                                  :marginRight 15}
+                                  :width 240
+                                  :margin-right 15}
                           :onChange (fn [_ this]
                                       (reset! prod-cat-suggestion (.-value this)))}]
             #_[:> ui/Select {:compact true
@@ -309,15 +311,15 @@
                              :defaultValue "product"}]
             [:> ui/Button {:color "blue"
                            :onClick #(rf/dispatch [:b/req-new-prod-cat @prod-cat-suggestion])}
-             "Request It!"]]])))))
+             "Request It"]]])))))
 
 (defn c-page []
   (let [search-query& (rf/subscribe [:search-term])]
     (fn []
       [:> ui/Grid
-       [:> ui/GridRow {:columns 3}
-        [:> ui/GridColumn {:width 4}]
-        [:> ui/GridColumn {:width 8}
+       [:> ui/GridRow
+        [:> ui/GridColumn {:computer 4 :mobile 0}]
+        [:> ui/GridColumn {:computer 8 :mobile 16}
          [:> ui/Input {:class "product-search"
                        :value @search-query&
                        :size "big"
@@ -328,9 +330,9 @@
                        :onChange (fn [_ this]
                                    (rf/dispatch [:b/update-search-term (.-value this)]))
                        :placeholder "Search products & categories..."}]]
-        [:> ui/GridColumn {:width 4}]]
-       [:> ui/GridRow {:columns 3}
-        [:> ui/GridColumn {:width 2}]
-        [:> ui/GridColumn {:width 12}
+        [:> ui/GridColumn {:computer 4 :mobile 0}]]
+       [:> ui/GridRow
+        [:> ui/GridColumn {:computer 2 :mobile 0}]
+        [:> ui/GridColumn {:computer 12 :mobile 16}
          [c-search-results search-query&]]
-        [:> ui/GridColumn {:width 2}]]])))
+        [:> ui/GridColumn {:computer 2 :mobile 0}]]])))

@@ -1,5 +1,6 @@
 (ns vetd-app.buyers.pages.preposals
-  (:require [vetd-app.buyers.components :as c]
+  (:require [vetd-app.buyers.components :as bc]
+            [vetd-app.common.components :as cc]
             [vetd-app.ui :as ui]
             [vetd-app.docs :as docs]
             [reagent.core :as r]
@@ -55,9 +56,9 @@
         pricing-estimate-details (docs/get-field-value responses "Pricing Estimate" "details" :sval)
         free-trial? (= "yes" (docs/get-field-value responses "Do you offer a free trial?" "value" :sval))]
     [:> ui/Item {:onClick #(rf/dispatch [:b/nav-preposal-detail idstr])}
-     
-     [:> ui/ItemImage {:class "product-logo" ; todo: make config var 's3-base-url'
-                       :src (str "https://s3.amazonaws.com/vetd-logos/" (:logo product))}]
+     ;; TODO make config var 's3-base-url'
+     [:div.product-logo {:style {:background-image
+                                 (str "url('https://s3.amazonaws.com/vetd-logos/" (:logo product) "')")}}]
      [:> ui/ItemContent
       [:> ui/ItemHeader
        (:pname product) " " [:small " by " (:oname from-org)]]
@@ -74,19 +75,20 @@
       
       [:> ui/ItemExtra
        (when (empty? (:rounds product))
-         [c/c-start-round-button {:etype :product
-                                  :eid (:id product)
-                                  :props {:floated "right"}}])
-       [c/c-categories product]
+         [bc/c-start-round-button {:etype :product
+                                   :eid (:id product)
+                                   :props {:floated "right"}
+                                   :show-icon? true}])
+       [bc/c-categories product]
        (when free-trial? [:> ui/Label {:class "free-trial-tag"
                                        :color "gray"
                                        :size "small"
                                        :tag true}
                           "Free Trial"])]]
      (when (not-empty (:rounds product))
-       [c/c-round-in-progress {:props {:ribbon "right"
-                                       :style {:position "absolute"
-                                               :marginLeft -14}}}])]))
+       [bc/c-round-in-progress {:props {:ribbon "right"
+                                        :style {:position "absolute"
+                                                :marginLeft -14}}}])]))
 
 (defn filter-preposals
   [preposals selected-categories]
@@ -132,7 +134,7 @@
                              (group-by :id))]
          (when (not-empty categories)
            [:div.sidebar
-            "Filter By Category"
+            [:h4 "Filter By Category"]
             (doall
              (for [[id v] categories]
                (let [category (first v)]
@@ -145,17 +147,20 @@
                                                 (rf/dispatch [:b/preposals-filter.remove-selected-category category])))}])))]))
        [:> ui/ItemGroup {:class "inner-container results"}
         (if (= :loading @preps&)
-          [:> ui/Loader {:active true :inline true}]
+          [cc/c-loader]
           (let [preposals (cond-> (:docs @preps&)
                             (seq @selected-categories&) (filter-preposals @selected-categories&))]
             (if (seq preposals)
               (for [preposal preposals]
                 ^{:key (:id preposal)}
                 [c-preposal preposal])
-              [:<>
-               [:h3 {:style {:marginBottom 5}} "You don't have any Preposals yet."]
-               "Search "
+              [:div {:style {:width 500
+                             :margin "70px auto"}}
+               [:h3 {:style {:margin-bottom 5}} "You currently don't have any Preposals."]
+               "To get started, request a Preposal from the "
                [:a {:style {:cursor "pointer"}
                     :onClick #(rf/dispatch [:b/nav-search])}
                 "Products & Categories"]
-               " to get started."])))]])))
+               " page."
+               [:br]
+               "Or, simply forward any sales emails you receive to forward@vetd.com."])))]])))

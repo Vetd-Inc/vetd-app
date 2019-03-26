@@ -1,42 +1,45 @@
 (ns vetd-admin.admin-fixtures
-  (:require [vetd-app.flexer :as flx]
+  (:require [vetd-app.ui :as ui]
             [reagent.core :as r]
-            [re-frame.core :as rf]
-            [re-com.core :as rc]))
+            [re-frame.core :as rf]))
 
-(defn header []
-  (let [user-name& (rf/subscribe [:user-name])
+;; Components
+(def top-nav-items
+  [{:text "Admin Search"
+    :pages #{:a/search}
+    :event [:a/nav-search]}
+   {:text "Form Templates"
+    :pages #{:a/form-templates}
+    :event [:a/nav-form-templates]}])
+
+(defn c-top-nav-item [{:keys [text event active]}]
+  ^{:key text}
+  [:> ui/MenuItem {:active active
+                   :onClick #(rf/dispatch event)}
+   text])
+
+(defn c-top-nav []
+  (let [page& (rf/subscribe [:page])
+        user-name& (rf/subscribe [:user-name])
         org-name& (rf/subscribe [:org-name])]
     (fn []
-      [flx/row :header
-       [:div#header-left
-        [:div.logo {:on-click #(rf/dispatch [:nav-home])}]]
-       [:div#header-middle [:div.admin-notice "ADMIN PANEL"]]
-       [:div#header-right
-        [:div.user-name @user-name&]
-        [rc/button
-         :label "Logout"
-         :on-click #(rf/dispatch [:logout])]]])))
-
-(defn tab [current& label target disp]
-  [:div {:class (into [:tab]
-                     (when (= @current& target)
-                       [:selected]))}
-   [:a {:on-click #(rf/dispatch disp)}
-    label]])
-
-(defn sidebar []
-  (let [page& (rf/subscribe [:page])]
-    (fn []
-      [flx/col :sidebar
-       (tab page& "Admin Search" :a/search [:a/nav-search])
-       (tab page& "Form Templates" :a/form-templates [:a/nav-form-templates])])))
+      [:> ui/Menu {:class "top-nav"
+                   :secondary true} ; 'secondary' is a misnomer (it's just for styling)
+       [:> ui/MenuItem {:class "logo"
+                        :onClick #(rf/dispatch [:nav-home])}
+        ;; todo: use a config var for base url
+        [:img {:src "https://s3.amazonaws.com/vetd-logos/vetd.svg"}]]
+       (doall
+        (for [item top-nav-items]
+          (c-top-nav-item (assoc item :active (boolean ((:pages item) @page&))))))
+       [:> ui/MenuMenu {:position "right"}
+        [:> ui/MenuItem (str @user-name& " @ " @org-name&)]
+        [:> ui/MenuItem {:name "logout"
+                         :active false
+                         :onClick #(rf/dispatch [:logout])}]]])))
 
 (defn container [body]
-  [flx/col :container #{:buyer}
-   [{:width "100%"} [header]]
-   [flx/row {:height "100%"
-             :width "100%"}
-    [sidebar]
-    [{:flex-grow 1 :margin "10px"}
-     body]]])
+  [:> ui/Container {:class "main-container"}
+   [c-top-nav]
+   body
+   [:div {:style {:height 100}}]])
