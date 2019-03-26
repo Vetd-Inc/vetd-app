@@ -32,6 +32,20 @@
   [{:keys [form-template-id]} ws-id sub-fn]
   (docs/create-blank-form-template-prompt form-template-id))
 
+(defmethod com/handle-ws-inbound :a/create-prompt-field
+  [{:keys [prompt-id]} ws-id sub-fn]
+  (docs/insert-prompt-field prompt-id {:sort 0}))
+
 (defmethod com/handle-ws-inbound :a/dissoc-template-prompt
   [{:keys [form-template-prompt-id]} ws-id sub-fn]
   (docs/delete-template-prompt form-template-prompt-id))
+
+(defmethod com/handle-ws-inbound :a/add-existing-form-template-prompt
+  [{:keys [form-template-prompt-id prompt-id]} ws-id sub-fn]
+  (docs/insert-form-template-prompt form-template-prompt-id
+                                    prompt-id
+                                    100))
+
+(defmethod com/handle-ws-inbound :a/delete-form-prompt-field
+  [{:keys [prompt-field-id]} ws-id sub-fn]
+  (docs/delete-form-prompt-field prompt-field-id))

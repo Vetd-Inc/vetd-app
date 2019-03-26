@@ -33,6 +33,25 @@
    {:ws-send {:payload {:cmd :a/dissoc-template-prompt
                         :form-template-prompt-id form-template-prompt-id}}}))
 
+(rf/reg-event-fx
+ :a/add-existing-form-template-prompt
+ (fn [_ [_ form-template-prompt-id prompt-id]]
+   {:ws-send {:payload {:cmd :a/add-existing-form-template-prompt
+                        :form-template-prompt-id form-template-prompt-id
+                        :prompt-id prompt-id}}}))
+
+(rf/reg-event-fx
+ :a/delete-form-prompt-field
+ (fn [_ [_ prompt-field-id]]
+   {:ws-send {:payload {:cmd :a/delete-form-prompt-field
+                        :prompt-field-id prompt-field-id}}}))
+
+(rf/reg-event-fx
+ :a/create-prompt-field
+ (fn [_ [_ prompt-id]]
+   {:ws-send {:payload {:cmd :a/create-prompt-field
+                        :prompt-id prompt-id}}}))
+
 (rf/reg-event-db
  :a/route-form-templates
  (fn [db [_ form-template-idstr]]
@@ -137,7 +156,9 @@
          [:> ui/Button {:color "red"
                         :icon true
                         :labelPosition "left"
-                        :on-click #(rf/dispatch [:a/delete-form-prompt-field id])}
+                        :on-click (fn [e]
+                                    (.stopPropagation e)
+                                    (rf/dispatch [:a/delete-form-prompt-field id]))}
           [:> ui/Icon {:name "trash alternate"
                        :color "white"
                        :inverted true}]
@@ -158,7 +179,9 @@
                        :color "red"
                        :icon true
                        :labelPosition "left"
-                       :on-click #(rf/dispatch [:a/dissoc-template-prompt rpid])}
+                       :on-click (fn [e]
+                                   (.stopPropagation e)
+                                   (rf/dispatch [:a/dissoc-template-prompt rpid]))}
          [:> ui/Icon {:name "remove"
                       :color "white"
                       :inverted true}]
@@ -197,9 +220,7 @@
                                 :height "30px"
                                 :font-size "small"
                                 :padding 0}
-                        
-                                        ;:on-click #(rf/dispatch [:v/save-prompt&field {}])
-                        }
+                        :on-click #(rf/dispatch [:a/create-prompt-field id])}
           [:> ui/Icon {:name "add"
                        :color "white"
                        :inverted true}]
@@ -226,16 +247,18 @@
   (fn []
     (let [form-template-idstr @(rf/subscribe [:form-template-idstr])
           form-templates& (when form-template-idstr
-                            (rf/subscribe [:gql/q
+                            (rf/subscribe [:gql/sub
                                            {:queries
                                             [[:form-templates
                                               {:idstr form-template-idstr}
                                               [:id :idstr :title
                                                [:prompts
-                                                {:_order_by {:sort :asc}}
+                                                {:rp-deleted nil
+                                                 :_order_by {:sort :asc}}
                                                 [:id :rpid :prompt :descr
                                                  :sort :form-template-id
                                                  [:fields
+                                                  {:_order_by {:sort :asc}}
                                                   [:id
                                                    :fname :descr
                                                    :ftype :fsubtype
@@ -256,17 +279,22 @@
              (for [p prompts]
                ^{:key (str "template-prompt" (:rpid p))}
                [c-template-prompt p])]
-            [:> ui/Button {:color "green"
+            [:> ui/Button {:style {:width "250px"
+                                   :margin "20px 0"}
+                           :color "green"
                            :icon true
                            :labelPosition "left"
-                           :on-click #(rf/dispatch [:a/create-form-template-prompt id])}
+                           :on-click (fn [e]
+                                       (.stopPropagation e)
+                                       (rf/dispatch [:a/create-form-template-prompt id]))}
              [:> ui/Icon {:name "plus"
                           :color "white"
                           :inverted true}]
              "Add New Prompt"]
             [flx/row
              [c-prompts-dropdown existing-prompt&]
-             [:> ui/Button {:color "purple"
-                            :on-click #(rf/dispatch [:a/add-existing-form-template-prompt id @existing-prompt&])
-                            }
+             [:> ui/Button {:color "blue"
+                            :on-click (fn [e]
+                                       (.stopPropagation e)
+                                       (rf/dispatch [:a/add-existing-form-template-prompt id @existing-prompt&]))}
               "Add Existing Prompt"]]]))])))

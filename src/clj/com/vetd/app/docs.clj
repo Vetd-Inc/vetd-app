@@ -158,6 +158,23 @@
          (db/insert! :resp_fields)
          first)))
 
+(defn insert-prompt-field
+  [prompt-id {sort' :sort}]
+  (let [[id idstr] (ut/mk-id&str)]
+    (->> (db/insert! :prompt_fields
+                     {:id id
+                      :idstr idstr
+                      :created (ut/now-ts)
+                      :updated (ut/now-ts)
+                      :deleted nil
+                      :prompt_id prompt-id
+                      :fname "New Field"
+                      :list_qm false
+                      :descr ""
+                      :ftype "s"
+                      :fsubtype "single"})
+         first)))
+
 (defn create-attached-doc-response
   [doc-id {:keys [org-id prompt-id notes user-id fields] :as resp}]
   (let [{resp-id :id} (insert-response resp)]
@@ -192,6 +209,12 @@
   (db/hs-exe! {:update :form_template_prompt
                :set {:deleted (ut/now-ts)}
                :where [:= :id form-template-prompt-id]}))
+
+(defn delete-form-prompt-field
+  [prompt-field-id]
+  (db/hs-exe! {:update :prompt_fields
+               :set {:deleted (ut/now-ts)}
+               :where [:= :id prompt-field-id]}))
 
 ;; necessary? not used - Bill
 (defn create-form&doc
@@ -267,3 +290,5 @@
     (insert-form-template-prompt form-template-id
                                  id
                                  100)))
+
+

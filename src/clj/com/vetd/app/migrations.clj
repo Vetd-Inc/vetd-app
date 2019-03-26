@@ -798,25 +798,25 @@
                   :down-fn mig-prompt-fields-2019-03-12-down}]]
 
    [[2019 3 25 00 00]
-    [:create-view {:schema :vetd
-                   :name :prompts_by_template
-                   :honey {:select [[:rp.id :rpid]
-                                    [:rp.deleted :rp_deleted]
-                                    :rp.form_template_id
-                                    :rp.sort
-                                    :p.id
-                                    :p.idstr                                    
-                                    :p.created
-                                    :p.updated
-                                    :p.deleted
-                                    :p.prompt
-                                    :p.descr]
-                           :from [[:form_template_prompt :rp]]
-                           :join [[:prompts :p]
-                                  [:= :p.id :rp.prompt_id]]}
-                   :owner :vetd
-                   :grants {:hasura [:SELECT]}}]
-]])
+    [:create-or-replace-view
+     {:schema :vetd
+      :name :prompts_by_template
+      :honey {:select [[:rp.id :rpid]
+                       [:rp.deleted :rp_deleted]
+                       :rp.form_template_id
+                       :rp.sort
+                       :p.id
+                       :p.idstr                                    
+                       :p.created
+                       :p.updated
+                       :p.deleted
+                       :p.prompt
+                       :p.descr]
+              :from [[:form_template_prompt :rp]]
+              :join [[:prompts :p]
+                     [:= :p.id :rp.prompt_id]]}
+      :owner :vetd
+      :grants {:hasura [:SELECT]}}]]])
 
 #_(mig/mk-migration-files migrations
                           "migrations")
