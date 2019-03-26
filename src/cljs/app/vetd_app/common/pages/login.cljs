@@ -42,7 +42,6 @@
    (if logged-in?
      (let [org-id (-> memberships first :org-id)] ; TODO support users with multi-orgs
        {:db (assoc db
-                   
                    :login-failed? false
                    :logged-in? true
                    :user user
