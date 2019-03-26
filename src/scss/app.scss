@@ -34,7 +34,7 @@ a.teal:hover {
 }
 .top-nav > .logo img {
   height: 60px !important;
-  width: 140px !important;
+  width: auto !important;
 }
 .top-nav > .logo img:hover {
   animation-timing-function: linear;
@@ -73,6 +73,9 @@ a.teal:hover {
   font-weight: 300;
 }
 
+.detail-container {
+  padding: 7px;
+}
 .product-title {
   padding: 0 11px 7px 0 !important;
   margin: 0;

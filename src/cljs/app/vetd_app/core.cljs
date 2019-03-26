@@ -58,7 +58,11 @@
 
 (rf/reg-sub
  :page
- (fn [{:keys [page]}] page))
+ (fn [{:keys [logged-in? user page]} _]
+   (if (or (and logged-in? user)
+           (public-pages page))
+     page
+     :login)))
 
 (rf/reg-sub
  :page-params
@@ -108,8 +112,8 @@
   [membs admin?]
   (if admin?
     "/a/search/"
-    (if-let [active-memb (first membs)]
-      (if (-> active-memb :org :buyer?)
+    (if-let [{{:keys [id buyer? vendor?]} :org} (first membs)]
+      (if buyer?
         "/b/preposals/"
         "/v/home/")
       "/login")))
@@ -119,7 +123,6 @@
  (fn [{:keys [db]} _]
    (let [{:keys [memberships admin?]} db]
      {:nav {:path (->home-url memberships admin?)}})))
-
 
 (defn c-page []
   (let [page @(rf/subscribe [:page])]
