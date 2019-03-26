@@ -42,7 +42,7 @@
    (if logged-in?
      (let [org-id (-> memberships first :org-id)] ; TODO support users with multi-orgs
        {:db (assoc db
-                   :login-loading? false
+                   
                    :login-failed? false
                    :logged-in? true
                    :user user
@@ -55,11 +55,18 @@
         :cookies {:admin-token (when admin? [session-token {:max-age 60 :path "/"}])}
         :analytics/identify {:user-id (:id user)}
         :analytics/group {:group-id org-id}
-        :dispatch-later [{:ms 100 :dispatch [:nav-home]}]})
+        :dispatch-later [{:ms 100 :dispatch [:nav-home]}
+                         ;; to prevent the login form from flashing briefly
+                         {:ms 200 :dispatch [:hide-login-loading]}]})
      {:db (assoc db
                  :logged-in? false
                  :login-loading? false
                  :login-failed? true)})))
+
+(rf/reg-event-db
+ :hide-login-loading
+ (fn [db]
+   (assoc db :login-loading? false)))
 
 (rf/reg-event-fx
  :logout

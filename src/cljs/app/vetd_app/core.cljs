@@ -150,8 +150,7 @@
                  :active-memb-id (some-> memberships first :id))
       :cookies {:admin-token (when admin?
                                [(:session-token local-store)
-                                {:max-age 3600 :path "/"}])}
-      :dispatch-later [{:ms 100 :dispatch [:nav-home]}]}
+                                {:max-age 3600 :path "/"}])}}
      {:db (dissoc db :user)
       :dispatch [:nav-login]})))
 
