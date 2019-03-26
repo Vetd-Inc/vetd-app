@@ -100,67 +100,67 @@
        distinct))
 
 (defn c-page []
-  (let [org-id& (rf/subscribe [:org-id])
-        selected-categories& (rf/subscribe [:preposals-filter/selected-categories])
-        preps& (rf/subscribe [:gql/sub
-                              {:queries
-                               [[:docs {:dtype "preposal"
-                                        :to-org-id @org-id&}
-                                 [:id :idstr :title
-                                  [:product [:id :pname :logo :short-desc
-                                             [:rounds {:buyer-id @org-id&
-                                                       :status "active"}
-                                              [:id :created :status]]
-                                             [:categories [:id :idstr :cname]]]]
-                                  [:from-org [:id :oname]]
-                                  [:from-user [:id :uname]]
-                                  [:to-org [:id :oname]]
-                                  [:to-user [:id :uname]]
-                                  [:responses
-                                   [:id :prompt-id :notes
-                                    [:prompt
-                                     [:id :prompt]]
-                                    [:fields
-                                     [:id :pf-id :idx :sval :nval :dval
-                                      [:prompt-field [:id :fname]]]]]]]]]}])]
-
-    (fn [] 
-      [:div.container-with-sidebar
-       (let [categories (->> @preps&
-                             :docs
-                             (map (comp :categories :product))
-                             flatten
-                             (map #(select-keys % [:id :cname]))
-                             (group-by :id))]
-         (when (not-empty categories)
-           [:div.sidebar
-            [:h4 "Filter By Category"]
-            (doall
-             (for [[id v] categories]
-               (let [category (first v)]
-                 ^{:key id} 
-                 [:> ui/Checkbox {:label (str (:cname category) " (" (count v) ")")
-                                  :checked (boolean (@selected-categories& id))
-                                  :onChange (fn [_ this]
-                                              (if (.-checked this)
-                                                (rf/dispatch [:b/preposals-filter.add-selected-category category])
-                                                (rf/dispatch [:b/preposals-filter.remove-selected-category category])))}])))]))
-       [:> ui/ItemGroup {:class "inner-container results"}
-        (if (= :loading @preps&)
-          [cc/c-loader]
-          (let [preposals (cond-> (:docs @preps&)
-                            (seq @selected-categories&) (filter-preposals @selected-categories&))]
-            (if (seq preposals)
-              (for [preposal preposals]
-                ^{:key (:id preposal)}
-                [c-preposal preposal])
-              [:div {:style {:width 500
-                             :margin "70px auto"}}
-               [:h3 {:style {:margin-bottom 5}} "You currently don't have any Preposals."]
-               "To get started, request a Preposal from the "
-               [:a {:style {:cursor "pointer"}
-                    :onClick #(rf/dispatch [:b/nav-search])}
-                "Products & Categories"]
-               " page."
-               [:br]
-               "Or, simply forward any sales emails you receive to forward@vetd.com."])))]])))
+  (let [org-id& (rf/subscribe [:org-id])]
+    (when @org-id&
+      (let [selected-categories& (rf/subscribe [:preposals-filter/selected-categories])
+            preps& (rf/subscribe [:gql/sub
+                                  {:queries
+                                   [[:docs {:dtype "preposal"
+                                            :to-org-id @org-id&}
+                                     [:id :idstr :title
+                                      [:product [:id :pname :logo :short-desc
+                                                 [:rounds {:buyer-id @org-id&
+                                                           :status "active"}
+                                                  [:id :created :status]]
+                                                 [:categories [:id :idstr :cname]]]]
+                                      [:from-org [:id :oname]]
+                                      [:from-user [:id :uname]]
+                                      [:to-org [:id :oname]]
+                                      [:to-user [:id :uname]]
+                                      [:responses
+                                       [:id :prompt-id :notes
+                                        [:prompt
+                                         [:id :prompt]]
+                                        [:fields
+                                         [:id :pf-id :idx :sval :nval :dval
+                                          [:prompt-field [:id :fname]]]]]]]]]}])]
+        (fn []
+          [:div.container-with-sidebar
+           (let [categories (->> @preps&
+                                 :docs
+                                 (map (comp :categories :product))
+                                 flatten
+                                 (map #(select-keys % [:id :cname]))
+                                 (group-by :id))]
+             (when (not-empty categories)
+               [:div.sidebar
+                [:h4 "Filter By Category"]
+                (doall
+                 (for [[id v] categories]
+                   (let [category (first v)]
+                     ^{:key id} 
+                     [:> ui/Checkbox {:label (str (:cname category) " (" (count v) ")")
+                                      :checked (boolean (@selected-categories& id))
+                                      :onChange (fn [_ this]
+                                                  (if (.-checked this)
+                                                    (rf/dispatch [:b/preposals-filter.add-selected-category category])
+                                                    (rf/dispatch [:b/preposals-filter.remove-selected-category category])))}])))]))
+           [:> ui/ItemGroup {:class "inner-container results"}
+            (if (= :loading @preps&)
+              [cc/c-loader]
+              (let [preposals (cond-> (:docs @preps&)
+                                (seq @selected-categories&) (filter-preposals @selected-categories&))]
+                (if (seq preposals)
+                  (for [preposal preposals]
+                    ^{:key (:id preposal)}
+                    [c-preposal preposal])
+                  [:div {:style {:width 500
+                                 :margin "70px auto"}}
+                   [:h3 {:style {:margin-bottom 5}} "You currently don't have any Preposals."]
+                   "To get started, request a Preposal from the "
+                   [:a {:style {:cursor "pointer"}
+                        :onClick #(rf/dispatch [:b/nav-search])}
+                    "Products & Categories"]
+                   " page."
+                   [:br]
+                   "Or, simply forward any sales emails you receive to forward@vetd.com."])))]])))))

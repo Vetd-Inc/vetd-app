@@ -58,11 +58,7 @@
 
 (rf/reg-sub
  :page
- (fn [{:keys [logged-in? user page]} _]
-   (if (or (and logged-in? user)
-           (public-pages page))
-     page
-     :login)))
+ (fn [{:keys [page]}] page))
 
 (rf/reg-sub
  :page-params
@@ -112,8 +108,8 @@
   [membs admin?]
   (if admin?
     "/a/search/"
-    (if-let [{{:keys [id buyer? vendor?]} :org} (first membs)]
-      (if buyer?
+    (if-let [active-memb (first membs)]
+      (if (-> active-memb :org :buyer?)
         "/b/preposals/"
         "/v/home/")
       "/")))
@@ -147,7 +143,7 @@
    (if logged-in?
      {:db (assoc db
                  :user user
-                 :logged-in? logged-in?
+                 :logged-in? true
                  :memberships memberships
                  :admin? admin?
                  ;; TODO support users with multi-orgs                 
