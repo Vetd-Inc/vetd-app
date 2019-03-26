@@ -99,6 +99,8 @@ WHERE table_schema = 'vetd' AND table_catalog = 'vetd1';")
        hs-query
        (mapv :table-name)))
 
+(def select-all-table-names-MZ (memoize select-all-table-names))
+
 (defn select-all-view-names [schema]
   (->> {:select [[:table_name :table-name]]
         :from [:information_schema.views]
@@ -117,3 +119,24 @@ WHERE table_schema = 'vetd' AND table_catalog = 'vetd1';")
 
 
 #_ (drop-all "vetd")
+
+(defn find-entity-table-by-id [id]
+  (when id
+    (loop [[head & tail] (select-all-table-names-MZ "vetd")]
+      (let [r (try
+                (hs-query {:select [:id]
+                           :from [(keyword head)]
+                           :where [:= :id id]
+                           :limit 1})
+                (catch Throwable t
+                  nil))]
+        (if (not-empty r)
+          head
+          (recur tail))))))
+
+(defn update-any! [{:keys [id] :as m}]
+  (hs-exe! {:update (-> id find-entity-table-by-id keyword)
+            :set (-> m
+                     (assoc :updated (ut/now-ts))
+                     (dissoc :id :idstr :created))
+            :where [:= :id id]}))

@@ -98,6 +98,38 @@
      :down [(drop-view-if-exists schema'
                                  view')]}))
 
+(defmethod mk-sql :create-or-replace-view
+  [[_ {:keys [schema honey owner grants] view :name}]]
+  (let [schema' (name schema)
+        view' (name view)
+        owner' (name owner)]
+    {:name-part (format "replace-%s-view" view')
+     :ext "sql"
+     :up (->> (concat [(drop-view-if-exists schema'
+                                            view')
+                       (format "CREATE OR REPLACE VIEW %s.%s AS %s;"
+                               schema'
+                               view'
+                               (first
+                                (hny/format honey
+                                            :allow-dashed-names? true
+                                            :quoting :ansi)))
+                       (when owner
+                         (format "ALTER VIEW %s.%s OWNER TO %s"
+                                 schema'
+                                 view'
+                                 owner'))]
+                      (for [[k vs] grants
+                            v      vs]
+                        (format "GRANT %s ON %s.%s TO %s;"
+                                (name v)
+                                schema'
+                                view'
+                                (name k))))
+              (remove nil?))
+     :down [(drop-view-if-exists schema'
+                                 view')]}))
+
 (defmethod mk-sql :copy-from
   [[_ {name-kw :name :as m}]]
   {:name-part (format "copy-from-%s" (name name-kw))

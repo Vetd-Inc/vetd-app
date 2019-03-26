@@ -70,6 +70,19 @@
                      :to_user_id to-user-id})
         first)))
 
+(defn insert-prompt
+  [{:keys [prompt descr]}]
+  (let [[id idstr] (ut/mk-id&str)]
+    (-> (db/insert! :prompts
+                    {:id id
+                     :idstr idstr
+                     :created (ut/now-ts)
+                     :updated (ut/now-ts)
+                     :deleted nil
+                     :prompt prompt
+                     :descr descr})
+        first)))
+
 (defn insert-form-prompt
   [form-id prompt-id sort']
   (let [[id idstr] (ut/mk-id&str)]
@@ -80,6 +93,20 @@
                      :updated (ut/now-ts)
                      :deleted nil
                      :form_id form-id
+                     :prompt_id prompt-id
+                     :sort sort'})
+        first)))
+
+(defn insert-form-template-prompt
+  [form-template-id prompt-id sort']
+  (let [[id idstr] (ut/mk-id&str)]
+    (-> (db/insert! :form_template_prompt
+                    {:id id
+                     :idstr idstr
+                     :created (ut/now-ts)
+                     :updated (ut/now-ts)
+                     :deleted nil
+                     :form_template_id form-template-id
                      :prompt_id prompt-id
                      :sort sort'})
         first)))
@@ -131,6 +158,23 @@
          (db/insert! :resp_fields)
          first)))
 
+(defn insert-prompt-field
+  [prompt-id {sort' :sort}]
+  (let [[id idstr] (ut/mk-id&str)]
+    (->> (db/insert! :prompt_fields
+                     {:id id
+                      :idstr idstr
+                      :created (ut/now-ts)
+                      :updated (ut/now-ts)
+                      :deleted nil
+                      :prompt_id prompt-id
+                      :fname "New Field"
+                      :list_qm false
+                      :descr ""
+                      :ftype "s"
+                      :fsubtype "single"})
+         first)))
+
 (defn create-attached-doc-response
   [doc-id {:keys [org-id prompt-id notes user-id fields] :as resp}]
   (let [{resp-id :id} (insert-response resp)]
@@ -159,6 +203,18 @@
     (doseq [{prompt-id :prompt_id sort' :sort} ps]
       (insert-form-prompt form-id prompt-id sort'))
     form))
+
+(defn delete-template-prompt
+  [form-template-prompt-id]
+  (db/hs-exe! {:update :form_template_prompt
+               :set {:deleted (ut/now-ts)}
+               :where [:= :id form-template-prompt-id]}))
+
+(defn delete-form-prompt-field
+  [prompt-field-id]
+  (db/hs-exe! {:update :prompt_fields
+               :set {:deleted (ut/now-ts)}
+               :where [:= :id prompt-field-id]}))
 
 ;; necessary? not used - Bill
 (defn create-form&doc
@@ -227,12 +283,11 @@
                                      :prompt-id prompt-id
                                      :fields fields}))))
 
-(defn update-doc-from-form-doc [form-doc])
+(defn create-blank-form-template-prompt
+  [form-template-id]
+  (let [{:keys [id]} (insert-prompt {:prompt "Empty Prompt"
+                                     :descr "Empty Description"})]
+    (insert-form-template-prompt form-template-id
+                                 id
+                                 100)))
 
-#_(clojure.pprint/pprint 
- (ha/sync-query [[:form-templates {:ftype "preposal"}
-                  [:id :idstr :ftype :fsubtype
-                   [:prompts
-                    [:id :idstr :prompt :descr
-                     [:fields
-                      [:id :idstr :fname :descr :ftype :list? :sort]]]]]]]))

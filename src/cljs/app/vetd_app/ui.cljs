@@ -43,6 +43,7 @@
 ;; Form
 (def Form (component "Form"))
 (def FormField (component "Form" "Field"))
+(def FormGroup (component "Form" "Group"))
 (def Button (component "Button"))
 (def ButtonGroup (component "Button" "Group"))
 (def ButtonOr (component "Button" "Or"))
@@ -62,6 +63,12 @@
 ;; Misc
 (def Image (component "Image"))
 
+;; Accordion
+(def Accordion (component "Accordion"))
+(def AccordionAccordion (component "Accordion" "Accordion"))
+(def AccordionPanel (component "Accordion" "Panel"))
+(def AccordionContent (component "Accordion" "Content"))
+(def AccordionTitle (component "Accordion" "Title"))
 
 ;; Toastr
 ;; setup Toastr config:

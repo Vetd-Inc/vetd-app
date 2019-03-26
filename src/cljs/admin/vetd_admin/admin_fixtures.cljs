@@ -7,7 +7,10 @@
 (def top-nav-items
   [{:text "Admin Search"
     :pages #{:a/search}
-    :event [:a/nav-search]}])
+    :event [:a/nav-search]}
+   {:text "Form Templates"
+    :pages #{:a/form-templates}
+    :event [:a/nav-form-templates]}])
 
 (defn c-top-nav-item [{:keys [text event active]}]
   ^{:key text}

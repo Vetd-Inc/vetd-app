@@ -1,6 +1,7 @@
 (ns vetd-admin.admin
   (:require [vetd-app.hooks :as hooks]
             [vetd-admin.pages.a-search :as p-a-search]
+            [vetd-admin.pages.form-templates :as p-aform-templates]
             [vetd-admin.admin-fixtures :as a-fix]
             [vetd-admin.overlays.admin-v-home :as ovr-v-home]
             [reagent.core :as r]
@@ -14,6 +15,12 @@
 
 (sec/defroute admin-search-path "/a/search/" []
   (rf/dispatch [:a/route-search]))
+
+(sec/defroute admin-form-templates-path "/a/form-templates/" []
+  (rf/dispatch [:a/route-form-templates nil]))
+
+(sec/defroute admin-form-templates-id-path "/a/form-templates/:idstr" [idstr]
+  (rf/dispatch [:a/route-form-templates idstr]))
 
 (defn c-admin-buyer []
   [:div "ADMIN BUYER"])
@@ -35,13 +42,16 @@
 (defn init! []
   (println "init! ADMIN"))
 
+(hooks/reg-hooks! hooks/c-page
+                  {:a/search #'p-a-search/c-page
+                   :a/form-templates #'p-aform-templates/c-page})
+
+(hooks/reg-hooks! hooks/c-container
+                  {:admin-overlay #'c-admin-overlay-container
+                   :a/search #'a-fix/container
+                   :a/form-templates #'a-fix/container})
+
 (hooks/reg-hook! hooks/init! :admin init!)
-
-(hooks/reg-hook! hooks/c-page :a/search p-a-search/c-page)
-
-(hooks/reg-hook! hooks/c-container :admin-overlay c-admin-overlay-container)
-
-(hooks/reg-hook! hooks/c-container :a/search a-fix/container)
 
 (hooks/reg-hook! hooks/c-admin :v/home ovr-v-home/c-overlay)
 

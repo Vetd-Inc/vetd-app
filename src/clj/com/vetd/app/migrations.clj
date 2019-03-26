@@ -178,6 +178,14 @@
    {:delete-from :prompt_fields
     :where [:= :id 610341390082]}))
 
+(def mig-form-templates-2019-03-26-up
+  (mig/mk-copy-from-up-fn "mig-form-template-2019-03-26.sql"))
+
+(def mig-form-templates-2019-03-26-down
+  (mig/mk-exe-honeysql-fn
+   {:delete-from :form_templates
+    :where [:between :id 732891594222 732891754223]}))
+
 
 (def migrations
   [[[2019 2 4 00 00]
@@ -795,7 +803,35 @@
     [:copy-from '{:name :mig-prompt-fields-2019-03-12
                   :ns com.vetd.app.migrations
                   :up-fn mig-prompt-fields-2019-03-12-up
-                  :down-fn mig-prompt-fields-2019-03-12-down}]]])
+                  :down-fn mig-prompt-fields-2019-03-12-down}]]
+
+   [[2019 3 25 00 00]
+    [:create-or-replace-view
+     {:schema :vetd
+      :name :prompts_by_template
+      :honey {:select [[:rp.id :rpid]
+                       [:rp.deleted :rp_deleted]
+                       :rp.form_template_id
+                       :rp.sort
+                       :p.id
+                       :p.idstr                                    
+                       :p.created
+                       :p.updated
+                       :p.deleted
+                       :p.prompt
+                       :p.descr]
+              :from [[:form_template_prompt :rp]]
+              :join [[:prompts :p]
+                     [:= :p.id :rp.prompt_id]]}
+      :owner :vetd
+      :grants {:hasura [:SELECT]}}]]
+
+   [[2019 3 26 00 00]
+
+    [:copy-from '{:name :mig-form-templates-2019-03-26
+                  :ns com.vetd.app.migrations
+                  :up-fn mig-form-templates-2019-03-26-up
+                  :down-fn mig-form-templates-2019-03-26-down}]]])
 
 #_(mig/mk-migration-files migrations
                           "migrations")
