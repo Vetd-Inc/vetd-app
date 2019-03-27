@@ -54,7 +54,8 @@
 (rf/reg-event-db
  :init-db
  (constantly
-  {:preposals-filter {:selected-categories #{}}}))
+  {:search-term ""
+   :preposals-filter {:selected-categories #{}}}))
 
 (def public-pages #{:login :b/signup :v/signup})
 

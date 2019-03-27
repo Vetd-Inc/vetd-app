@@ -61,9 +61,6 @@
 (rf/reg-event-fx
  :b/ws-search-result-ids
  (fn [{:keys [db]} [_ results {:keys [return]}]]
-   (def res1 results)
-   #_ (println res1)
-   (def ret1 return)
    (if (= (:buyer-qid db) (:qid return))
      {:db (assoc db
                  :b/search-result-ids results
@@ -143,14 +140,12 @@
 
 (rf/reg-sub
  :search-term
- (fn [{:keys [search-term]}]
-   (or search-term "")))
+ (fn [{:keys [search-term]}] search-term))
 
 (rf/reg-sub
  :waiting-for-debounce
  :<- [:page-params]
  (fn [{:keys [waiting-for-debounce]}] waiting-for-debounce))
-
 
 
 ;;;; Components
@@ -323,7 +318,6 @@
                        :icon "search"
                        :autoFocus true
                        :spellCheck false
-                       ;; :loading true ; todo: use this property
                        :onChange (fn [_ this]
                                    (rf/dispatch [:b/update-search-term (.-value this)]))
                        :placeholder "Search products & categories..."}]]
