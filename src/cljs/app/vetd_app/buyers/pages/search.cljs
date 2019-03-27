@@ -39,7 +39,7 @@
  (fn [{:keys [db url]} [_ search-term & {:keys [bypass-url-fx]}]]
    (merge {:db (assoc db
                       :search-term search-term
-                      :page-params {:waiting-for-debounce true})
+                      :page-params {:waiting-for-debounce? true})
            :dispatch-debounce [{:id :b/search
                                 :dispatch [:b/search search-term]
                                 :timeout 250}]}
@@ -64,7 +64,7 @@
    (if (= (:buyer-qid db) (:qid return))
      {:db (assoc db
                  :b/search-result-ids results
-                 :page-params {:waiting-for-debounce false})}
+                 :page-params {:waiting-for-debounce? false})}
      {})))
 
 (rf/reg-event-fx
@@ -143,9 +143,9 @@
  (fn [{:keys [search-term]}] search-term))
 
 (rf/reg-sub
- :waiting-for-debounce
+ :waiting-for-debounce?
  :<- [:page-params]
- (fn [{:keys [waiting-for-debounce]}] waiting-for-debounce))
+ (fn [{:keys [waiting-for-debounce?]}] waiting-for-debounce?))
 
 
 ;;;; Components
@@ -263,7 +263,7 @@
                                                    :status "active"}
                                           [:id :created :status]]]]]}])
                      [])
-        loading? (or @(rf/subscribe [:waiting-for-debounce])
+        loading? (or @(rf/subscribe [:waiting-for-debounce?])
                      (= :loading prods)
                      (= :loading categories))
         prod-cat-suggestion (r/atom "")]
