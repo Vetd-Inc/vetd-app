@@ -27,9 +27,11 @@
 (rf/reg-event-fx
  :b/route-search
  (fn [{:keys [db]} [_ search-term]]
-   {:db (assoc db :page :b/search)
-    :dispatch [:b/update-search-term search-term :bypass-url-fx true]
-    :analytics/page {:name "Buyers Products & Categories"}}))
+   (merge
+    {:db (assoc db :page :b/search)
+     :analytics/page {:name "Buyers Products & Categories"}}
+    (when search-term
+      {:dispatch [:b/update-search-term search-term :bypass-url-fx true]}))))
 
 (rf/reg-event-fx
  :b/update-search-term
