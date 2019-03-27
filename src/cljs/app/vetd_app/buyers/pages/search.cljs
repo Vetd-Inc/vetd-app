@@ -37,8 +37,9 @@
  :b/update-search-term
  [(rf/inject-cofx :url)]
  (fn [{:keys [db url]} [_ search-term & {:keys [bypass-url-fx]}]]
-   (merge {:db (assoc db :search-term search-term)
-           
+   (merge {:db (assoc db
+                      :search-term search-term
+                      :page-params {:waiting-for-debounce true})
            :dispatch-debounce [{:id :b/search
                                 :dispatch [:b/search search-term]
                                 :timeout 250}]}
@@ -64,7 +65,9 @@
    #_ (println res1)
    (def ret1 return)
    (if (= (:buyer-qid db) (:qid return))
-     {:db (assoc db :b/search-result-ids results)}
+     {:db (assoc db
+                 :b/search-result-ids results
+                 :page-params {:waiting-for-debounce false})}
      {})))
 
 (rf/reg-event-fx
@@ -142,6 +145,12 @@
  :search-term
  (fn [{:keys [search-term]}]
    (or search-term "")))
+
+(rf/reg-sub
+ :waiting-for-debounce
+ :<- [:page-params]
+ (fn [{:keys [waiting-for-debounce]}] waiting-for-debounce))
+
 
 
 ;;;; Components
@@ -259,7 +268,9 @@
                                                    :status "active"}
                                           [:id :created :status]]]]]}])
                      [])
-        loading? (or (= :loading prods) (= :loading categories))
+        loading? (or @(rf/subscribe [:waiting-for-debounce])
+                     (= :loading prods)
+                     (= :loading categories))
         prod-cat-suggestion (r/atom "")]
     (if loading?
       [cc/c-loader {:style {:margin-top 20}}]
