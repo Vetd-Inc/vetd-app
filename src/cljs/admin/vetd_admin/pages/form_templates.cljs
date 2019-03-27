@@ -8,8 +8,8 @@
 
 (rf/reg-event-fx
  :a/nav-form-templates
- (fn [{:keys [db]} _]
-   {:nav {:path "/a/form-templates/"}}))
+ (fn [_ [_ idstr]]
+   {:nav {:path (str "/a/form-templates" (when idstr (str "/" idstr)))}}))
 
 (rf/reg-event-fx
  :a/create-form-template-prompt
@@ -277,8 +277,9 @@
        (for [{:keys [id idstr title ftype fsubtype]} (:form-templates @fts&)]
          ^{:key (str "template-link" id)}
          [:div {:style {:margin "20px"}}
-          [:a {:href (str "./" idstr)
-               :style {:font-size "large"}}
+          [:a {:onClick #(rf/dispatch [:a/nav-form-templates idstr])
+               :style {:font-size "large"
+                       :cursor "pointer"}}
            (str title " [ " ftype " " fsubtype " ]")]])])))
 
 (defn c-page []
