@@ -12,7 +12,8 @@
     :position "top left"
     :trigger (r/as-element
               [:> ui/Button
-               (merge {:onClick #(rf/dispatch [:b/start-round etype eid])
+               (merge {:onClick #(do (.stopPropagation %)
+                                     (rf/dispatch [:b/start-round etype eid]))
                        :class "start-round-button"
                        :color "blue"}
                       props
