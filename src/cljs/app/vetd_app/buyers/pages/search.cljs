@@ -144,28 +144,7 @@
    (or search-term "")))
 
 
-;; Components
-
-;; TODO link to request preposal <==================
-(defn rndr-preposal
-  [{:keys [vendor-name pitch created]}]
-  [:div {:style {:border "solid 1px #AAA"}}
-   "Preposal"
-   [:div pitch]
-   [:div (str created)]])
-
-(defn c-round-search-result
-  [{:keys [id created status]}]
-  [:div "Active Round " (str [status created])])
-
-(defn c-preposal-search-result
-  [{:keys [created]}]
-  [:div "Preposal " (str created)])
-
-(defn c-preposal-req-search-result
-  [{:keys [created]}]
-  [:div "Preposal Requested " (str created)])
-
+;;;; Components
 (defn c-product-search-result
   [{:keys [id idstr pname short-desc logo rounds categories forms docs] :as product} vendor]
   (let [preposal-responses (-> docs first :responses)
@@ -217,7 +196,7 @@
                                         :style {:position "absolute"
                                                 :marginLeft -14}}}])]))
 
-(defn c-vendor-search-results
+(defn c-product-search-results
   [v]
   [:> ui/ItemGroup {:class "results"}
    (for [p (:products v)]
@@ -292,7 +271,7 @@
             [c-category-search-results c])]
          (for [v (:orgs prods)]
            ^{:key (:id v)}
-           [c-vendor-search-results v])]
+           [c-product-search-results v])]
         (when (> (count @search-query) 2)
           [:> ui/Segment {:placeholder true}
            [:> ui/Header {:icon true}
