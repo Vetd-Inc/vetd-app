@@ -142,7 +142,7 @@
 (sec/defroute home-path "/" []
   (rf/dispatch [:nav-home]))
 
-(sec/defroute buyers-search-root "/b/search" [params]
+(sec/defroute buyers-search-root "/b/search" []
   (rf/dispatch [:b/route-search]))
 (sec/defroute buyers-search "/b/search/:search-term" [search-term]
   (rf/dispatch [:b/route-search search-term]))
