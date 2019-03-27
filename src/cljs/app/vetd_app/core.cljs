@@ -58,11 +58,7 @@
 
 (rf/reg-sub
  :page
- (fn [{:keys [logged-in? user page]} _]
-   (if (or (and logged-in? user)
-           (public-pages page))
-     page
-     :login)))
+ (fn [{:keys [page]}] page))
 
 (rf/reg-sub
  :page-params
@@ -112,8 +108,8 @@
   [membs admin?]
   (if admin?
     "/a/search/"
-    (if-let [{{:keys [id buyer? vendor?]} :org} (first membs)]
-      (if buyer?
+    (if-let [active-memb (first membs)]
+      (if (-> active-memb :org :buyer?)
         "/b/preposals/"
         "/v/home/")
       "/login")))
@@ -196,14 +192,6 @@
                         :return :ws/req-session
                         :session-token (:session-token local-store)}}}))
 
-;; additional init that must occur after :ws/req-session
-(rf/reg-fx
- :after-req-session
- (fn []
-   (config-acct)
-   (acct/dispatch-current!)
-   (mount-components)))
-
 (rf/reg-event-fx
  :ws/req-session
  [(rf/inject-cofx :local-store [:session-token])]  
@@ -222,6 +210,13 @@
       :after-req-session nil}
      {:after-req-session nil})))
 
+;; additional init that must occur after :ws/req-session
+(rf/reg-fx
+ :after-req-session
+ (fn []
+   (config-acct)
+   (acct/dispatch-current!)
+   (mount-components)))
 
 (defonce init-done? (volatile! false))
 

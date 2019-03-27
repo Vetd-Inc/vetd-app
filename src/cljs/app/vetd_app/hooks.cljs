@@ -31,11 +31,9 @@
 
 ;; HOOKS =========================
 
-(vetd-app.hooks/defhook c-page (constantly [:div "no page"]))
+(vetd-app.hooks/defhook c-page (constantly nil))
 
 (vetd-app.hooks/defhook c-container (fn [p] [:div p]))
-
-(vetd-app.hooks/defhook c-general (constantly nil))
 
 (vetd-app.hooks/defhook c-admin (constantly nil))
 
