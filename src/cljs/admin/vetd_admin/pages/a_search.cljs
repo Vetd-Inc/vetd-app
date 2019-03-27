@@ -26,7 +26,7 @@
 (rf/reg-event-fx
  :a/update-search-term
  (fn [{:keys [db]} [_ search-term]]
-   {:db (assoc db :page-params {:search-term search-term})
+   {:db (assoc db :search-term search-term)
     :dispatch-debounce [{:id :a/search
                          :dispatch [:a/search search-term]
                          :timeout 250}]}))
@@ -35,8 +35,7 @@
  :a/search
  (fn [{:keys [db ws]} [_ q-str q-type]]
    (let [qid (get-next-query-id)]
-     {:db (assoc db
-                 :buyer-qid qid)
+     {:db (assoc db :buyer-qid qid)
       :ws-send {:payload {:cmd :a/search
                           :return {:handler :a/ws-search-result-ids
                                    :qid qid}
@@ -47,21 +46,17 @@
  :a/ws-search-result-ids
  (fn [{:keys [db]} [_ results {:keys [return]}]]
    (if (= (:buyer-qid db) (:qid return))
-     {:db (assoc db
-                 :search-result-ids
-                 results)}
+     {:db (assoc db :a/search-result-ids results)}
      {})))
 
 (rf/reg-sub
  :a/search-result-ids
  (fn [db _]
-   (:search-result-ids db)))
+   (:a/search-result-ids db)))
 
 (rf/reg-sub
  :search-term
- :<- [:page-params] 
- (fn [{:keys [search-term]}]
-   (or search-term "")))
+ (fn [{:keys [search-term]}] search-term))
 
 (rf/reg-event-fx
  :a/login-as-support
