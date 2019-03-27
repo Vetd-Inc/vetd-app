@@ -192,7 +192,7 @@
           {:tables [:vetd :form_templates
                     :vetd :prompts_by_template]
            :fields [:prompts]
-           :cols [:id :form_templates]
+           :cols [:id :form_template_id]
            :rel :one-many}
 
           {:tables [:vetd :enums

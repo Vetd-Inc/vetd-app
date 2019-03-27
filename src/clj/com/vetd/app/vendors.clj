@@ -108,7 +108,7 @@
 (defmethod com/handle-ws-inbound :save-form-doc
   [{:keys [form-doc]} ws-id sub-fn]
   (if-let [doc-id (:doc-id form-doc)]
-    (docs/update-doc-from-form-doc form-doc)
+    :TODO #_(docs/update-doc-from-form-doc form-doc)
     (docs/create-doc-from-form-doc form-doc)))
 
 (defmethod com/handle-ws-inbound :v/new-product

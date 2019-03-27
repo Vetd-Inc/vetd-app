@@ -4,7 +4,8 @@
 (defonce hook-registry (volatile! {}))
 
 #_(vreset! hook-registry {})
-#_(cljs.pprint/pprint @hook-registry)
+
+#_ (cljs.pprint/pprint @hook-registry)
 
 (defn defhook* [hook-kw default]
   (with-meta 
@@ -18,6 +19,7 @@
             default)))
     {::type hook-kw}))
 
+
 (defn reg-hook! [hook-fn handle f]
   (if-let [hook-type (-> hook-fn meta ::type)]
     (vswap! hook-registry assoc-in [hook-type handle] f)
@@ -27,7 +29,8 @@
   (doseq [[k v] m]
     (reg-hook! hook-fn k v)))
 
-;;;; Hooks
+;; HOOKS =========================
+
 (vetd-app.hooks/defhook c-page (constantly nil))
 
 (vetd-app.hooks/defhook c-container (fn [p] [:div p]))
