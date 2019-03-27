@@ -8,7 +8,7 @@
 (rf/reg-event-fx
  :v/nav-products
  (constantly
-  {:nav {:path "/v/products/"}
+  {:nav {:path "/v/products"}
    :analytics/track {:event "Navigate"
                      :props {:category "Navigation"
                              :label "Vendors Products"}}}))

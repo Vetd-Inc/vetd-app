@@ -13,10 +13,10 @@
 
 (def show-admin?& (r/atom true #_false))
 
-(sec/defroute admin-search-path "/a/search/" []
+(sec/defroute admin-search-path "/a/search" []
   (rf/dispatch [:a/route-search]))
 
-(sec/defroute admin-form-templates-path "/a/form-templates/" []
+(sec/defroute admin-form-templates-path "/a/form-templates" []
   (rf/dispatch [:a/route-form-templates nil]))
 
 (sec/defroute admin-form-templates-id-path "/a/form-templates/:idstr" [idstr]
