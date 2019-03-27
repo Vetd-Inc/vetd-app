@@ -77,6 +77,7 @@
        (when (empty? (:rounds product))
          [bc/c-start-round-button {:etype :product
                                    :eid (:id product)
+                                   :ename (:pname product)
                                    :props {:floated "right"}
                                    :show-icon? true}])
        [bc/c-categories product]
