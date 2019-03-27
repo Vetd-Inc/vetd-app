@@ -12,7 +12,7 @@
 (rf/reg-event-fx
  :b/nav-preposals
  (constantly
-  {:nav {:path "/b/preposals/"}
+  {:nav {:path "/b/preposals"}
    :analytics/track {:event "Navigate"
                      :props {:category "Navigation"
                              :label "Buyers Preposals"}}}))

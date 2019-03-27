@@ -4,6 +4,7 @@
             vetd-app.local-store
             vetd-app.cookies
             vetd-app.analytics
+            vetd-app.url
             vetd-app.debounce
             vetd-app.signup
             [vetd-app.hooks :as hooks]
@@ -108,11 +109,11 @@
 (defn ->home-url
   [membs admin?]
   (if admin?
-    "/a/search/"
+    "/a/search"
     (if-let [active-memb (first membs)]
       (if (-> active-memb :org :buyer?)
-        "/b/preposals/"
-        "/v/home/")
+        "/b/preposals"
+        "/v/home")
       "/login")))
 
 (rf/reg-event-fx
@@ -140,16 +141,15 @@
 (sec/defroute home-path "/" []
   (rf/dispatch [:nav-home]))
 
-(sec/defroute buyers-search-root "/b/search/" []
+(sec/defroute buyers-search-root "/b/search" [params]
   (rf/dispatch [:b/route-search]))
-
 (sec/defroute buyers-search "/b/search/:search-term" [search-term]
   (rf/dispatch [:b/route-search search-term]))
 
-(sec/defroute buyers-home "/b/home/" [query-params]
+(sec/defroute buyers-home "/b/home" [query-params]
   (rf/dispatch [:b/route-home query-params]))
 
-(sec/defroute buyers-preposals "/b/preposals/" [query-params]
+(sec/defroute buyers-preposals "/b/preposals" [query-params]
   (rf/dispatch [:b/route-preposals query-params]))
 
 (sec/defroute buyers-preposal-detail "/b/preposals/:idstr" [idstr]
@@ -158,13 +158,11 @@
 (sec/defroute buyers-product-detail "/b/products/:idstr" [idstr]
   (rf/dispatch [:b/route-product-detail idstr]))
 
-(sec/defroute vendors-home "/v/home/" [query-params]
-  (do (.log js/console "nav vendors")
-      (rf/dispatch [:v/route-home query-params])))
+(sec/defroute vendors-home "/v/home" [query-params]
+  (rf/dispatch [:v/route-home query-params]))
 
-(sec/defroute vendors-products "/v/products/" [query-params]
-  (do (.log js/console "nav vendors")
-      (rf/dispatch [:v/route-products query-params])))
+(sec/defroute vendors-products "/v/products" [query-params]
+  (rf/dispatch [:v/route-products query-params]))
 
 (sec/defroute login-path "/login" [query-params]
   (rf/dispatch [:route-login query-params]))

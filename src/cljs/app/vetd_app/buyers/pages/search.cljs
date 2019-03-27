@@ -3,6 +3,7 @@
             [vetd-app.common.components :as cc]
             [vetd-app.ui :as ui]
             [vetd-app.docs :as docs]
+            [vetd-app.url :as url]
             [reagent.core :as r]
             [reagent.format :as format]
             [re-frame.core :as rf]
@@ -13,11 +14,12 @@
 (defn get-next-query-id []
   (swap! last-query-id inc))
 
-;; Events
+;;;; Events
 (rf/reg-event-fx
  :b/nav-search
  (fn [_ [_ search-term]]
-   {:nav {:path (str "/b/search/" (when search-term (js/encodeURI search-term)))}
+   {:nav {:path (str "/b/search"
+                     (when search-term (str "/" (js/encodeURI search-term))))}
     :analytics/track {:event "Navigate"
                       :props {:category "Navigation"
                               :label "Buyers Products & Categories"}}}))
@@ -26,16 +28,20 @@
  :b/route-search
  (fn [{:keys [db]} [_ search-term]]
    {:db (assoc db :page :b/search)
-    :dispatch [:b/update-search-term search-term]
+    :dispatch [:b/update-search-term search-term :bypass-url-fx true]
     :analytics/page {:name "Buyers Products & Categories"}}))
 
 (rf/reg-event-fx
  :b/update-search-term
- (fn [{:keys [db]} [_ search-term]]
-   {:db (assoc db :page-params {:search-term search-term})
-    :dispatch-debounce [{:id :b/search
-                         :dispatch [:b/search search-term]
-                         :timeout 250}]}))
+ [(rf/inject-cofx :url)]
+ (fn [{:keys [db url]} [_ search-term & {:keys [bypass-url-fx]}]]
+   (merge {:db (assoc db :search-term search-term)
+           
+           :dispatch-debounce [{:id :b/search
+                                :dispatch [:b/search search-term]
+                                :timeout 250}]}
+          (when-not bypass-url-fx
+            {:url (url/replace-end url (:search-term db) search-term)}))))
 
 (rf/reg-event-fx
  :b/search
@@ -132,7 +138,6 @@
 
 (rf/reg-sub
  :search-term
- :<- [:page-params] 
  (fn [{:keys [search-term]}]
    (or search-term "")))
 

@@ -12,7 +12,7 @@
 (rf/reg-event-fx
  :a/nav-search
  (fn [{:keys [db]} _]
-   {:nav {:path "/a/search/"}}))
+   {:nav {:path "/a/search"}}))
 
 (rf/reg-event-db
  :a/route-search
