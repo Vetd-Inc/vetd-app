@@ -17,7 +17,7 @@
                     (map :oid)
                     distinct)]
       {:org-ids vids})
-      {:org-ids []}))
+    {:org-ids []}))
 
 
 (defmethod com/handle-ws-inbound :a/search
@@ -49,6 +49,10 @@
 (defmethod com/handle-ws-inbound :a/delete-form-prompt-field
   [{:keys [prompt-field-id]} ws-id sub-fn]
   (docs/delete-form-prompt-field prompt-field-id))
+
+(defmethod com/handle-ws-inbound :a/create-form-from-template
+  [{:keys [form-template-id]} ws-id sub-fn]
+  (docs/create-form-from-template {:form-temp-id form-template-id}))
 
 (defmethod com/handle-ws-inbound :a/update-any
   [{:keys [entity]} ws-id sub-fn]

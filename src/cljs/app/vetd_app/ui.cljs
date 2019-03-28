@@ -70,9 +70,12 @@
 (def AccordionContent (component "Accordion" "Content"))
 (def AccordionTitle (component "Accordion" "Title"))
 
+;; Modal
+(def Confirm (component "Confirm"))
+
 ;; Toastr
 ;; setup Toastr config:
-(aset js/toastr "options" ; TODO add to init event? maybe not.
+(aset js/toastr "options"         ; TODO add to init event? maybe not.
       (clj->js {:closeButton false,
                 :debug false,
                 :newestOnTop false,
