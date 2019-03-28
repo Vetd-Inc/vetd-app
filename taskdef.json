@@ -17,6 +17,11 @@
           "hostPort": 5080,
           "protocol": "tcp",
           "containerPort": 5080
+        },
+        {
+          "hostPort": 4001,
+          "protocol": "tcp",
+          "containerPort": 4001
         }
       ],
       "command": null,
@@ -101,7 +106,7 @@
     "EC2",
     "FARGATE"
   ],
-  "taskDefinitionArn": "arn:aws:ecs:us-east-1:744151627940:task-definition/vetd-app-task:103",
+  "taskDefinitionArn": "arn:aws:ecs:us-east-1:744151627940:task-definition/vetd-app-task:117",
   "family": "vetd-app-task",
   "requiresAttributes": [
     {
@@ -177,6 +182,6 @@
   ],
   "networkMode": "awsvpc",
   "cpu": "1024",
-  "revision": 103,
+  "revision": 117,
   "volumes": []
 }

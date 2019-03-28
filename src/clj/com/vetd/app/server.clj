@@ -74,7 +74,6 @@
       t/read))
 
 (defn start-keep-alive-thread []
-
   (reset! kill-keep-alive-thread false)
   (if-not @keep-alive-thread
     (do (log/info "Starting keep-alive thread...")  
