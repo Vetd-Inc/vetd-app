@@ -79,6 +79,7 @@
              :prep-tasks ["compile"
                           ["cljsbuild" "once" "min-public" "min-full"]
                           ["jsass" "once"]]
+             :dependencies [[nrepl "0.6.0"]]
              :cljsbuild
              {:builds
               {:min-public
@@ -110,7 +111,7 @@
              :resource-paths ["env/prod/resources"]}
 
    ;; production build
-   :build {;; This is for env vars that are needed during the actual build.
+   :build { ;; This is for env vars that are needed during the actual build.
            ;; (other environments variables will be passed in when the uberjar is run)
            :env {:vetd-env "BUILD"
                  :segment-frontend-write-key "VXTgraXuvEsV7MzqWUlgQgMcu94rjzU3"}}
