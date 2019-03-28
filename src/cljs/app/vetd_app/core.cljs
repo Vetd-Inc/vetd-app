@@ -18,6 +18,7 @@
             [vetd-app.vendors.pages.signup :as p-vsignup]
             [vetd-app.vendors.pages.preposals :as p-vpreposals]
             [vetd-app.vendors.pages.products :as p-vprods]
+            [vetd-app.vendors.pages.profile :as p-vprofile]
             [vetd-app.common.fixtures :as pub-fix]
             [vetd-app.common.pages.login :as p-login]
             [reagent.core :as r]
@@ -37,7 +38,8 @@
                    :b/product-detail #'p-bproduct-detail/c-page
                    :v/signup #'p-vsignup/c-page
                    :v/preposals #'p-vpreposals/c-page
-                   :v/products #'p-vprods/c-page})
+                   :v/products #'p-vprods/c-page
+                   :v/profile #'p-vprofile/c-page})
 
 (hooks/reg-hooks! hooks/c-container
                   {:login #'pub-fix/container
@@ -48,7 +50,8 @@
                    :b/product-detail #'b-fix/container
                    :v/signup #'pub-fix/container
                    :v/preposals #'v-fix/container
-                   :v/products #'v-fix/container})
+                   :v/products #'v-fix/container
+                   :v/profile #'v-fix/container})
 
 
 (rf/reg-event-db
@@ -161,6 +164,9 @@
 
 (sec/defroute vendors-products "/v/products" [query-params]
   (rf/dispatch [:v/route-products query-params]))
+
+(sec/defroute vendors-profile "/v/profile" [query-params]
+  (rf/dispatch [:v/route-profile query-params]))
 
 (sec/defroute login-path "/login" [query-params]
   (rf/dispatch [:route-login query-params]))
