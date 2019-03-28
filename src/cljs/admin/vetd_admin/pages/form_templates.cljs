@@ -88,9 +88,9 @@
 
 (defn c-prompts-dropdown [state&]
   (let [opts (->> @(rf/subscribe [:gql/q
-                                 {:queries
-                                  [[:prompts
-                                    [:id :prompt]]]}])
+                                  {:queries
+                                   [[:prompts
+                                     [:id :prompt]]]}])
                   :prompts
                   (mapv (fn [{:keys [id prompt]}]
                           {:key id
@@ -128,52 +128,54 @@
         mk-on-change-fn (partial on-change-fn changes& changes-fn)]
     (fn [{:keys [fname descr ftype fsubtype list?] sort' :sort}]
       [nxa/accordion-item
+       ^{:key (str "template-prompt-field-name" id)}
        [:div.prompt-field-name [nxa/dropdown-icon] fname]
-       [:div
-        [:> ui/Form {:style {:margin "10px"
-                             :padding "10px"
-                             :background-color "#EFEFEF"
-                             :border-left "solid 3px #999999"}}
-         [:> ui/FormGroup {:widths "equal"}
-          [:> ui/FormField {:inline true}
-           [:> ui/Label {:style {:width "200px"}} "Field Name"]
-           [:> ui/Input {:defaultValue @fname&
-                         :style {:width "300px"}
-                         :fluid true
-                         :spellCheck false
-                         :onChange (mk-on-change-fn fname&)}]]
-          [:> ui/FormField {:inline true}
-           [:> ui/Label {:style {:width "200px"}} "Type"]
-           [c-ftype-dropdown ftype-pair&]]
-          [:> ui/FormField {:inline true}
-           [:> ui/Label {:style {:width "200px"}} "Sort Order"]
-           [:> ui/Input {:defaultValue @sort-order&
-                         :spellCheck false
-                         :fluid true
-                         :onChange (mk-on-change-fn sort-order&)}]]
-          [:> ui/FormField {:inline true}
-           [:> ui/Label {:style {:width "200px"}} "List?"]
-           [:> ui/Checkbox {:defaultValue @list?&
-                            :spellCheck false
-                            :fluid true                            
-                            :onChange (mk-on-change-fn list?&)}]]]
+       
+       ^{:key (str "template-prompt-field-form" id)}
+       [:div {:style {:margin "10px"
+                      :padding "10px"
+                      :background-color "#EFEFEF"
+                      :border-left "solid 3px #999999"}}
+        [:> ui/FormGroup {:widths "equal"}
          [:> ui/FormField {:inline true}
-          [:> ui/Label {:style {:width "200px"}} "Description"]
-          [:> ui/TextArea {:defaultValue @descr&
-                           :style {:width "500px"}
+          [:> ui/Label {:style {:width "200px"}} "Field Name"]
+          [:> ui/Input {:defaultValue @fname&
+                        :style {:width "300px"}
+                        :fluid true
+                        :spellCheck false
+                        :onChange (mk-on-change-fn fname&)}]]
+         [:> ui/FormField {:inline true}
+          [:> ui/Label {:style {:width "200px"}} "Type"]
+          [c-ftype-dropdown ftype-pair&]]
+         [:> ui/FormField {:inline true}
+          [:> ui/Label {:style {:width "200px"}} "Sort Order"]
+          [:> ui/Input {:defaultValue @sort-order&
+                        :spellCheck false
+                        :fluid true
+                        :onChange (mk-on-change-fn sort-order&)}]]
+         [:> ui/FormField {:inline true}
+          [:> ui/Label {:style {:width "200px"}} "List?"]
+          [:> ui/Checkbox {:defaultValue @list?&
                            :spellCheck false
-                           :fluid true                           
-                           :onChange (mk-on-change-fn descr&)}]]
-         [:> ui/Button {:color "red"
-                        :icon true
-                        :labelPosition "left"
-                        :on-click (fn [e]
-                                    (.stopPropagation e)
-                                    (rf/dispatch [:a/delete-form-prompt-field id]))}
-          [:> ui/Icon {:name "trash alternate"
-                       :color "white"
-                       :inverted true}]
-          "DELETE FIELD"]]]])))
+                           :fluid true                            
+                           :onChange (mk-on-change-fn list?&)}]]]
+        [:> ui/FormField {:inline true}
+         [:> ui/Label {:style {:width "200px"}} "Description"]
+         [:> ui/TextArea {:defaultValue @descr&
+                          :style {:width "500px"}
+                          :spellCheck false
+                          :fluid true                           
+                          :onChange (mk-on-change-fn descr&)}]]
+        [:> ui/Button {:color "red"
+                       :icon true
+                       :labelPosition "left"
+                       :on-click (fn [e]
+                                   (.stopPropagation e)
+                                   (rf/dispatch [:a/delete-form-prompt-field id]))}
+         [:> ui/Icon {:name "trash alternate"
+                      :color "white"
+                      :inverted true}]
+         "DELETE FIELD"]]])))
 
 (defn c-template-prompt
   [{:keys [fields id rpid prompt descr form-template-id] sort' :sort}]
@@ -192,6 +194,7 @@
         mk-on-change-fn (partial on-change-fn changes& changes-fn)]
     (fn [{:keys [fields id rpid prompt descr form-template-id] sort' :sort}]
       [nxa/accordion-item
+       ^{:key (str "template-prompt-title" id)}
        [:div.prompt-title [nxa/dropdown-icon] prompt
         [:> ui/Button {:style {:width "150px"
                                :height "30px"
@@ -222,7 +225,9 @@
            [:> ui/Icon {:name "save"
                         :color "white"
                         :inverted true}]
-           "Save"])] 
+           "Save"])]
+       
+       ^{:key (str "template-prompt-form" id)}
        [:div
         [:> ui/Form {:style {:margin "10px"
                              :padding "10px"
@@ -249,6 +254,7 @@
                          :onChange (mk-on-change-fn sort-order&)}]]]
          [nxa/sub-accordion
           (for [pf fields]
+            ^{:key (str "template-prompt-field" (:id pf))}
             [c-prompt-field pf changes&])]
          [:> ui/Button {:color "green"
                         :icon true
@@ -334,6 +340,6 @@
              [c-prompts-dropdown existing-prompt&]
              [:> ui/Button {:color "blue"
                             :on-click (fn [e]
-                                       (.stopPropagation e)
-                                       (rf/dispatch [:a/add-existing-form-template-prompt id @existing-prompt&]))}
+                                        (.stopPropagation e)
+                                        (rf/dispatch [:a/add-existing-form-template-prompt id @existing-prompt&]))}
               "Add Existing Prompt"]]]))])))
