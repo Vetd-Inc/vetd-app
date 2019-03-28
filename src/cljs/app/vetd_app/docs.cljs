@@ -170,9 +170,12 @@
                        :margin-bottom 50}}
    [:div
     (or doc-title title)
-    [:div.product-name (:pname product)]
-    [:div.org-name (:oname from-org)]
-    [:div.user-name (:uname from-user)]]
+    (when product
+      [:div.product-name (:pname product)])
+    (when from-org
+      [:div.org-name (:oname from-org)])
+    (when from-user
+      [:div.user-name (:uname from-user)])]
    (for [p (sort-by :sort prompts)]
      ^{:key (str "prompt" (:id p))}
      [(hooks/c-prompt :default) p])

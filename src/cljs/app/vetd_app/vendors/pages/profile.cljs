@@ -22,29 +22,45 @@
 
 (defn c-page []
   (let [org-id& (rf/subscribe [:org-id])
-        profile& (rf/subscribe [:gql/sub
-                                {:queries
-                                 [[:form-docs {:ftype "preposal"
-                                               :to-org-id @org-id&}
-                                   [:id :title
-                                    :doc-id :doc-title
-                                    [:product [:id :pname]]
-                                    [:from-org [:id :oname]]
-                                    [:from-user [:id :uname]]
-                                    [:to-org [:id :oname]]
-                                    [:to-user [:id :uname]]
-                                    [:prompts
-                                     [:id :idstr :prompt :descr #_:sort ;; TODO sort
-                                      [:fields
-                                       [:id :idstr :fname :ftype
-                                        :fsubtype :list? #_:sort]]]]
-                                    [:responses
-                                     [:id :prompt-id :notes
-                                      [:fields [:id :pf-id :idx :sval :nval :dval]]]]]]]}])]
+        existing-profile& (rf/subscribe [:gql/sub
+                                         {:queries
+                                          [[:form-docs {:ftype "vendor-profile"
+                                                        :doc-from-org-id @org-id&
+                                                        :_order_by {:created :desc}
+                                                        :_limit 1}
+                                            [:id :title :doc-id :doc-title
+                                             [:from-org [:id :oname]]
+                                             [:from-user [:id :uname]]
+                                             [:to-org [:id :oname]]
+                                             [:to-user [:id :uname]]
+                                             [:prompts {:deleted nil
+                                                        :_order_by {:sort :asc}}
+                                              [:id :idstr :prompt :descr #_:sort ;; TODO sort
+                                               [:fields
+                                                [:id :idstr :fname :ftype
+                                                 :fsubtype :list? #_:sort]]]]
+                                             [:responses
+                                              [:id :prompt-id :notes
+                                               [:fields [:id :pf-id :idx :sval :nval :dval]]]]]]]}])]
     (fn []
-      (if (= :loading @profile&)
+      (if (= :loading @existing-profile&)
         [cc/c-loader]
-        [:<>
-         (for [profile (:form-docs @profile&)]
-           ^{:key (str "form" (:id profile))}
-           [docs/c-form-maybe-doc (docs/mk-form-doc-state profile)])]))))
+        (if (not-empty (:form-docs @existing-profile&))
+          [docs/c-form-maybe-doc (docs/mk-form-doc-state (first (:form-docs @existing-profile&)))]
+          (let [new-profile-form& (rf/subscribe [:gql/sub
+                                                 {:queries
+                                                  [[:forms {:ftype "vendor-profile"
+                                                            :_order_by {:created :desc}
+                                                            :_limit 1}
+                                                    [:id :title
+                                                     [:from-org [:id :oname]]
+                                                     [:from-user [:id :uname]]
+                                                     [:to-org [:id :oname]]
+                                                     [:to-user [:id :uname]]
+                                                     [:prompts {:deleted nil
+                                                                :_order_by {:sort :asc}}
+                                                      [:id :idstr :prompt :descr #_:sort ;; TODO sort
+                                                       [:fields
+                                                        [:id :idstr :fname :ftype
+                                                         :fsubtype :list? #_:sort]]]]]]]}])]
+            [docs/c-form-maybe-doc (docs/mk-form-doc-state (first (:forms @new-profile-form&)))]))))))
