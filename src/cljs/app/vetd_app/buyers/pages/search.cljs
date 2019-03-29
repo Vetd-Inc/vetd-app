@@ -2,10 +2,10 @@
   (:require [vetd-app.buyers.components :as bc]
             [vetd-app.common.components :as cc]
             [vetd-app.ui :as ui]
+            [vetd-app.util :as util]
             [vetd-app.docs :as docs]
             [vetd-app.url :as url]
             [reagent.core :as r]
-            [reagent.format :as format]
             [re-frame.core :as rf]
             [re-com.core :as rc]))
 
@@ -171,7 +171,7 @@
                                                     "value"
                                                     :nval)]
              [:span
-              (format/currency-format p-e-value)
+              (util/currency-format p-e-value)
               " / "
               (docs/get-field-value preposal-responses "Pricing Estimate" "unit" :sval)
               " "
