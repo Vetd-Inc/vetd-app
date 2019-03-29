@@ -291,3 +291,15 @@
                                  id
                                  100)))
 
+(defn upsert-form
+  [{:keys [id] :as form}]
+  (let [exists? (-> [[:forms {:id id} [:id]]]
+                    ha/sync-query
+                    :forms
+                    empty?
+                    not)]
+    (if exists?
+      ;; TODO Don't use db/update-any! -- not efficient
+      (-> form ha/walk-clj-kw->sql-field db/update-any!)
+      (insert-form form))))
+
