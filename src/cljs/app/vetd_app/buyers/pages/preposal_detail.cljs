@@ -2,6 +2,7 @@
   (:require [vetd-app.buyers.components :as bc]
             [vetd-app.common.components :as cc]
             [vetd-app.ui :as ui]
+            [vetd-app.util :as util]
             [vetd-app.docs :as docs]
             [reagent.core :as r]
             [reagent.format :as format]
@@ -59,7 +60,7 @@
       [:> ui/GridRow
        [bc/c-display-field {:width 6} "Estimated Price"
         (if pricing-estimate-value
-          [:<> (format/currency-format pricing-estimate-value) " / " pricing-estimate-unit
+          [:<> (util/currency-format pricing-estimate-value) " / " pricing-estimate-unit
            (when (and pricing-estimate-details
                       (not= "" pricing-estimate-details))
              (str " - " pricing-estimate-details))]

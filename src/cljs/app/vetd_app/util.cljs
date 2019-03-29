@@ -4,6 +4,7 @@
             [re-frame.core :as rf]
             [re-frame.interop :refer [deref? reagent-id]]
             [reagent.ratom :as rr]
+            [reagent.format :as format]
             [re-frame.registrar :as rf-reg])
   (:import [goog.functions]))
 
@@ -27,6 +28,11 @@
       (f))))
 
 (defn now [] (.getTime (js/Date.)))
+
+;; Number formatters
+(def currency-format format/currency-format)
+(defn decimal-format [n]
+  (.format (goog.i18n.NumberFormat. (.-DECIMAL goog.i18n.NumberFormat.Format)) n))
 
 (defn kw->str
   [kw]
