@@ -11,7 +11,7 @@
    {:content (str "Find and compare similar products to \""
                   ename "\" that meet your needs.")
     :header "What is a VetdRound?"
-    :position "top left"
+    :position "bottom left"
     :trigger (r/as-element
               [:> ui/Button
                (merge {:onClick #(do (.stopPropagation %)

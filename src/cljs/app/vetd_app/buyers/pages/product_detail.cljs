@@ -49,6 +49,28 @@
            :title "Company Profile Requested"
            :message "We'll let you know when the profile is added."}}))
 
+(rf/reg-event-fx
+ :b/setup-call
+ (fn [{:keys [db]} [_ product-id product-name]]
+   (let [qid (get-next-query-id)]
+     {:ws-send {:payload {:cmd :b/setup-call
+                          :return {:handler :b/setup-call-success}
+                          :product-id product-id
+                          :buyer-id (->> (:active-memb-id db)
+                                         (get (group-by :id (:memberships db)))
+                                         first
+                                         :org-id)}}
+      :analytics/track {:event "Setup Call"
+                        :props {:category "Product"
+                                :label product-name}}})))
+
+(rf/reg-event-fx
+ :b/setup-call-success
+ (constantly
+  {:toast {:type "success"
+           :title "Setup a Call"
+           :message "We'll setup a call for you soon."}}))
+
 ;; Subscriptions
 (rf/reg-sub
  :product-idstr
@@ -162,7 +184,22 @@
                                             :color "teal"
                                             :fluid true
                                             :style {:margin-right 15}}
-                              "Request Preposal"])}])])))]
+                              "Request Preposal"])}])
+               [:br]
+               [:> ui/Popup
+                {:content (str "Let us setup a call for you with " (:oname vendor) " to discuss "
+                               (:pname product) ".")
+                 :header "Setup a Call"
+                 :position "bottom left"
+                 :trigger (r/as-element
+                           [:> ui/Button {:onClick #(rf/dispatch [:b/setup-call (:id product) (:pname product)])
+                                          :color "grey"
+                                          :fluid true
+                                          :icon true
+                                          :labelPosition "left"
+                                          :style {:margin-right 15}}
+                            "Setup a Call"
+                            [:> ui/Icon {:name "left call"}]])}]])))]
        [:div.inner-container
         (if (= :loading @products&)
           [cc/c-loader]
