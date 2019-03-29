@@ -24,7 +24,7 @@
                                   {:queries
                                    [[:form-docs {:ftype "preposal"
                                                  :to-org-id @org-id&}
-                                     [:id :title
+                                     [:id :title :ftype :fsubtype
                                       :doc-id :doc-title
                                       [:product [:id :pname]]
                                       [:from-org [:id :oname]]

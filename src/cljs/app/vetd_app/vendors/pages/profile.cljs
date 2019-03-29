@@ -29,6 +29,7 @@
                                                         :_order_by {:created :desc}
                                                         :_limit 1}
                                             [:id :title :doc-id :doc-title
+                                             :ftype :fsubtype
                                              [:from-org [:id :oname]]
                                              [:from-user [:id :uname]]
                                              [:to-org [:id :oname]]
@@ -47,20 +48,19 @@
         [cc/c-loader]
         (if (not-empty (:form-docs @existing-profile&))
           [docs/c-form-maybe-doc (docs/mk-form-doc-state (first (:form-docs @existing-profile&)))]
-          (let [new-profile-form& (rf/subscribe [:gql/sub
-                                                 {:queries
-                                                  [[:forms {:ftype "vendor-profile"
-                                                            :_order_by {:created :desc}
-                                                            :_limit 1}
-                                                    [:id :title
-                                                     [:from-org [:id :oname]]
-                                                     [:from-user [:id :uname]]
-                                                     [:to-org [:id :oname]]
-                                                     [:to-user [:id :uname]]
-                                                     [:prompts {:deleted nil
-                                                                :_order_by {:sort :asc}}
-                                                      [:id :idstr :prompt :descr #_:sort ;; TODO sort
-                                                       [:fields
-                                                        [:id :idstr :fname :ftype
-                                                         :fsubtype :list? #_:sort]]]]]]]}])]
-            [docs/c-form-maybe-doc (docs/mk-form-doc-state (first (:forms @new-profile-form&)))]))))))
+          (let [profile-forms& (rf/subscribe [:gql/sub
+                                              {:queries
+                                               [[:forms {:ftype "vendor-profile"
+                                                         :_order_by {:created :desc}
+                                                         :_limit 1}
+                                                 [:id :title :ftype :fsubtype
+                                                  [:prompts {:deleted nil
+                                                             :_order_by {:sort :asc}}
+                                                   [:id :idstr :prompt :descr #_:sort ;; TODO sort
+                                                    [:fields
+                                                     [:id :idstr :fname :ftype
+                                                      :fsubtype :list? #_:sort]]]]]]]}])
+                profile-form (first (:forms @profile-forms&))]
+            [docs/c-form-maybe-doc (docs/mk-form-doc-state (assoc profile-form
+                                                                  ;; this is reversed because of preposal request logic
+                                                                  :to-org {:id @org-id&}))]))))))
