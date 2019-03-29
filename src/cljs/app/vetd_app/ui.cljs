@@ -1,8 +1,8 @@
-
 (ns vetd-app.ui
   (:require cljsjs.semantic-ui-react
             goog.object
             cljsjs.toastr
+            [reagent.core :as r]
             [re-frame.core :as rf]))
 
 ;; handle to top-level extern from Semantic UI React
@@ -69,6 +69,31 @@
 (def AccordionPanel (component "Accordion" "Panel"))
 (def AccordionContent (component "Accordion" "Content"))
 (def AccordionTitle (component "Accordion" "Title"))
+
+(defn nx-accordion-item
+  "Define an item within a non-exclusive accordion."
+  [title & body]
+  (let [active& (r/atom false)]
+    (fn [title & body]
+      [:div
+       [:> AccordionTitle {:active @active&
+                              :onClick (fn [_ this] (swap! active& not))}
+        title]
+       [:> AccordionContent {:active @active&}
+        (for [b body]
+          b)]])))
+
+(defn ^:private nx-any-accordion
+  "Build any type of non-exclusive accordion."
+  [component & accordion-items]
+  (fn [& accordion-items]
+    [:> component
+     (for [ai accordion-items]
+       ai)]))
+
+;; Non-Exclusive Accordion (you can have multiple items remain open concurrently)
+(def nx-accordion (partial nx-any-accordion Accordion))
+(def nx-sub-accordion (partial nx-any-accordion AccordionAccordion))
 
 ;; Modal
 (def Confirm (component "Confirm"))
