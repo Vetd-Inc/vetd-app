@@ -1,6 +1,5 @@
 (ns vetd-admin.pages.form-templates
   (:require [vetd-app.ui :as ui]
-            [vetd-app.non-exclusive-accordion :as nxa]
             [vetd-app.flexer :as flx]
             [reagent.core :as r]
             [re-frame.core :as rf]
@@ -133,9 +132,11 @@
                             :fsubtype (second @ftype-pair&)})
         mk-on-change-fn (partial on-change-fn changes& changes-fn)]
     (fn [{:keys [fname descr ftype fsubtype list?] sort' :sort}]
-      [nxa/accordion-item
+      [ui/nx-accordion-item
        ^{:key (str "template-prompt-field-name" id)}
-       [:div.prompt-field-name [nxa/dropdown-icon] fname]
+       [:div.prompt-field-name
+        [:> ui/Icon {:name "dropdown"}]
+        fname]
        
        ^{:key (str "template-prompt-field-form" id)}
        [:div {:style {:margin "10px"
@@ -199,9 +200,11 @@
                                 :sort @sort-order&}))
         mk-on-change-fn (partial on-change-fn changes& changes-fn)]
     (fn [{:keys [fields id rpid prompt descr form-template-id] sort' :sort}]
-      [nxa/accordion-item
+      [ui/nx-accordion-item
        ^{:key (str "template-prompt-title" id)}
-       [:div.prompt-title [nxa/dropdown-icon] prompt
+       [:div.prompt-title
+        [:> ui/Icon {:name "dropdown"}]
+        prompt
         [:> ui/Button {:color "red"
                        :size "tiny"
                        :icon true
@@ -255,7 +258,7 @@
                          :spellCheck false
                          :fluid true                         
                          :onChange (mk-on-change-fn sort-order&)}]]]
-         [nxa/sub-accordion
+         [ui/nx-sub-accordion
           (for [pf fields]
             ^{:key (str "template-prompt-field" (:id pf))}
             [c-prompt-field pf changes&])]
@@ -324,7 +327,7 @@
                                                   first)]
            [:<>
             [:h1 title]
-            [nxa/accordion
+            [ui/nx-accordion
              (for [p prompts]
                ^{:key (str "template-prompt" (:rpid p))}
                [c-template-prompt p])]
