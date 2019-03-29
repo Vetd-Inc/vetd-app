@@ -3,7 +3,7 @@
             [vetd-admin.pages.a-search :as p-a-search]
             [vetd-admin.pages.form-templates :as p-aform-templates]
             [vetd-admin.admin-fixtures :as a-fix]
-            [vetd-admin.overlays.admin-v-home :as ovr-v-home]
+            [vetd-admin.overlays.admin-v-preposals :as ovr-v-preposals]
             [reagent.core :as r]
             [re-frame.core :as rf]
             [re-com.core :as rc]
@@ -53,7 +53,7 @@
 
 (hooks/reg-hook! hooks/init! :admin init!)
 
-(hooks/reg-hook! hooks/c-admin :v/home ovr-v-home/c-overlay)
+(hooks/reg-hook! hooks/c-admin :v/preposals ovr-v-preposals/c-overlay)
 
 
 (println "END ADMIN")
