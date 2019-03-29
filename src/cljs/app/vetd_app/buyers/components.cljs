@@ -84,12 +84,13 @@
      [:> ui/Grid {:columns "equal"
                   :style {:margin-top 0}}
       [:> ui/GridRow
-       [c-display-field {:width 8} "Website"
-        [:a {:href website-url
-             :target "_blank"}
-         [:> ui/Icon {:name "external square"
-                      :color "blue"}]
-         website-url]]
+       (when (has-data? website-url)
+         [c-display-field {:width 8} "Website"
+          [:a {:href website-url
+               :target "_blank"}
+           [:> ui/Icon {:name "external square"
+                        :color "blue"}]
+           website-url]])
        (when (has-data? headquarters)
          [c-display-field {:width 8} "Headquarters" headquarters])]
       [:> ui/GridRow
