@@ -158,7 +158,7 @@
          (db/insert! :resp_fields)
          first)))
 
-(defn insert-prompt-field
+(defn insert-default-prompt-field
   [prompt-id {sort' :sort}]
   (let [[id idstr] (ut/mk-id&str)]
     (->> (db/insert! :prompt_fields
@@ -173,6 +173,23 @@
                       :descr ""
                       :ftype "s"
                       :fsubtype "single"})
+         first)))
+
+(defn insert-prompt-field
+  [{:keys [prompt-id fname list? descr ftype fsubtype]}]
+  (let [[id idstr] (ut/mk-id&str)]
+    (->> (db/insert! :prompt_fields
+                     {:id id
+                      :idstr idstr
+                      :created (ut/now-ts)
+                      :updated (ut/now-ts)
+                      :deleted nil
+                      :prompt_id prompt-id
+                      :fname fname
+                      :list_qm list?
+                      :descr descr
+                      :ftype ftype
+                      :fsubtype fsubtype})
          first)))
 
 (defn create-attached-doc-response
@@ -215,6 +232,12 @@
   (db/hs-exe! {:update :prompt_fields
                :set {:deleted (ut/now-ts)}
                :where [:= :id prompt-field-id]}))
+
+(defn delete-form-prompt
+  [form-prompt-id]
+  (db/hs-exe! {:update :form-prompt
+               :set {:deleted (ut/now-ts)}
+               :where [:= :id form-prompt-id]}))
 
 ;; necessary? not used - Bill
 (defn create-form&doc
@@ -302,4 +325,47 @@
       ;; TODO Don't use db/update-any! -- not efficient
       (-> form ha/walk-clj-kw->sql-field db/update-any!)
       (insert-form form))))
+
+(defn upsert-prompt-field
+  [{:keys [id prompt-id] :as field}]
+  (let [exists? (-> [[:prompts {:id prompt-id}
+                      [:id
+                       [:fields [:id]]]]]
+                    ha/sync-query
+                    :prompts
+                    first
+                    :fields
+                    empty?
+                    not)]
+    (if exists?
+      ;; TODO Don't use db/update-any! -- not efficient
+      (-> field ha/walk-clj-kw->sql-field db/update-any!)
+      (insert-prompt-field field))))
+
+(defn upsert-form-prompts
+  [form-id new-prompts]
+  (let [old-prompts (some->> [[:forms {:id form-id}
+                               [:id
+                                [:prompts [:id :rpid :sort]]]]]
+                             ha/sync-query
+                             :forms
+                             first
+                             :prompts)
+        [a b] (clojure.data/diff
+               (group-by :id old-prompts)
+               (group-by :id new-prompts))
+        kill-rpids (->> a
+                        vals
+                        flatten
+                        (filter :id)
+                        (map :rpid))
+        new-form-prompts (->> vals
+                              flatten
+                              (filter :id))]
+    (doseq [form-prompt-id kill-rpids]
+      (delete-form-prompt-field form-prompt-id))
+    (doseq [{:keys [id fields] sort' :sort :as prompt} new-form-prompts]
+      (mapv upsert-prompt-field fields)
+      (insert-prompt prompt)
+      (insert-form-prompt form-id id sort'))))
 

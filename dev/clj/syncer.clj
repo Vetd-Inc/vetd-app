@@ -30,7 +30,7 @@
 (defn mk-ws [ch]
   (let [ws @(ah/websocket-client #_"ws://localhost:5080/ws"
                                  #_"wss://app.vetd.com/ws"
-                                 "ws://18.204.1.191:5080/ws"
+                                 "ws://3.95.139.7:5080/ws"
                                  )]
     (ms/on-closed ws ws-on-closed)
     (ms/consume (partial ws-ib-handler ch) ws)
@@ -71,6 +71,8 @@
                                      :deleted
                                      :prompt
                                      :descr
+                                     :form-id
+                                     :sort
                                      [:fields {:deleted nil}
                                       [:id 
                                        :idstr
@@ -86,11 +88,11 @@
                                        :sort]]]]]]]}}
                        ws))
 
+;; TODO need to be able to use id from production for insert
 (defn upsert-form&dependents
-  [{:keys [prompts] :as form}]
+  [{:keys [id prompts] :as form}]
   (docs/upsert-form (dissoc form :prompts))
-  #_(doseq [p prompts]
-    (docs/upsert-prompts p)))
+  (docs/upsert-form-prompts id prompts))
 
 
 (defn sync-profile-forms-from-prod []
