@@ -32,7 +32,7 @@
     (if-not @nrepl-server&
       (if-let [start-fn (resolve-start-server-fn)]
         (do (log/info "starting nrepl server...")
-            (reset! nrepl-server& (start-fn :port 4001 )) ; TODO add cider middleware
+            (reset! nrepl-server& (start-fn :bind "0.0.0.0" :port 4001)) ; TODO add cider middleware
             (log/info "started nrepl server on port 4001")
             @nrepl-server&)
         (log/info "Could not resolve `nrepl.server/start-server`"))
