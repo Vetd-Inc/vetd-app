@@ -2,9 +2,9 @@
   (:require [vetd-app.buyers.components :as bc]
             [vetd-app.common.components :as cc]
             [vetd-app.ui :as ui]
+            [vetd-app.util :as util]
             [vetd-app.docs :as docs]
             [reagent.core :as r]
-            [reagent.format :as format]
             [re-frame.core :as rf]
             [re-com.core :as rc]))
 
@@ -65,7 +65,7 @@
       [:> ui/ItemMeta
        (if pricing-estimate-value
          [:span
-          (format/currency-format pricing-estimate-value)
+          (util/currency-format pricing-estimate-value)
           " / "
           pricing-estimate-unit
           " "

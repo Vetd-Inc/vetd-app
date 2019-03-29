@@ -30,9 +30,9 @@
 
 ;; Components
 (defn c-product
-  "Component to display Preposal details."
+  "Component to display Product details."
   [{:keys [id pname long-desc url logo vendor forms rounds categories] :as product}]
-  [:div.detail-container
+  [:> ui/Segment {:class "detail-container"}
    [:h1.product-title
     pname " " [:small " by " (:oname vendor)]]
    [:> ui/Image {:class "product-logo"
@@ -73,7 +73,19 @@
                                  {:queries
                                   [[:products {:idstr @product-idstr&}
                                     [:id :pname :logo :short-desc :long-desc :url
-                                     [:vendor [:id :oname :url]]
+                                     [:vendor
+                                      [:id :oname :url
+                                       [:docs-out {:dtype "vendor-profile"
+                                                   :_order_by {:created :desc}
+                                                   :_limit 1}
+                                        [:id 
+                                         [:responses
+                                          [:id :prompt-id :notes
+                                           [:prompt
+                                            [:id :prompt]]
+                                           [:fields
+                                            [:id :pf-id :idx :sval :nval :dval
+                                             [:prompt-field [:id :fname]]]]]]]]]]
                                      [:forms {:ftype "preposal" ; preposal requests
                                               :from-org-id @org-id&}
                                       [:id]]
@@ -124,7 +136,11 @@
                                             :fluid true
                                             :style {:margin-right 15}}
                               "Request Preposal"])}])])))]
-       [:> ui/Segment {:class "inner-container"}
+       [:div.inner-container
         (if (= :loading @products&)
           [cc/c-loader]
-          [c-product (-> @products& :products first)])]])))
+          (let [product (-> @products& :products first)]
+            [:<>
+             [c-product product]
+             (when (not-empty (-> product :vendor :docs-out))
+               [bc/c-vendor-profile (-> product :vendor :docs-out first)])]))]])))

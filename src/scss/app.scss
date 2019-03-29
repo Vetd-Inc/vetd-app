@@ -74,7 +74,7 @@ a.teal:hover {
 }
 
 .product-title {
-  padding: 0 11px 7px 0 !important;
+  padding: 5px 180px 14px 0 !important;
   margin: 0;
   font-size: 34px;
 }
@@ -91,9 +91,6 @@ a.teal:hover {
   top: 0px;
   padding: 15px;
 }
-.detail-container .start-round-button {
-  margin-right: 15px;
-}
 
 @media only screen and (max-width: 600px) {
   .container-with-sidebar {
@@ -103,11 +100,22 @@ a.teal:hover {
   .sidebar {
     width: 100%;
     margin: 15px auto;
-  }
+  } 
   .detail-container > .product-logo {
     display: none !important;
   }
+  .product-title {
+    padding: 0 7px 7px 0 !important;
+  }
 }
+
+/* Vendor Profile (under Product detail and Preposal detail) */
+.vendor-profile .title {
+  padding: 0 11px 7px 0 !important;
+  margin: 0;
+  font-size: 24px;
+}
+
 
 /* to make segment look the same as item results */
 /* .segment { */
