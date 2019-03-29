@@ -77,7 +77,7 @@
     (fn [title & body]
       [:div
        [:> AccordionTitle {:active @active&
-                              :onClick (fn [_ this] (swap! active& not))}
+                           :onClick (fn [_ this] (swap! active& not))}
         title]
        [:> AccordionContent {:active @active&}
         (for [b body]
