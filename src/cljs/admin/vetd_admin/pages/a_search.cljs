@@ -64,7 +64,7 @@
    (let [qid (get-next-query-id)]
      {:db (assoc db
                  :org-id org-id)
-      :dispatch [:v/nav-home]})))
+      :dispatch [:v/nav-preposals]})))
 
 (rf/reg-event-fx
  :a/create-membership

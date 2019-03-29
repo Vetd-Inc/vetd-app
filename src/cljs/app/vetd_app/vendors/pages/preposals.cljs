@@ -1,23 +1,22 @@
-(ns vetd-app.vendors.pages.home
-  (:require [vetd-app.flexer :as flx]
-            [vetd-app.docs :as docs]
+(ns vetd-app.vendors.pages.preposals
+  (:require [vetd-app.docs :as docs]
             [reagent.core :as r]
             [re-frame.core :as rf]
             [re-com.core :as rc]))
 
 (rf/reg-event-fx
- :v/nav-home
+ :v/nav-preposals
  (constantly
-  {:nav {:path "/v/home"}
+  {:nav {:path "/v/preposals"}
    :analytics/track {:event "Navigate"
                      :props {:category "Navigation"
-                             :label "Vendor Home"}}}))
+                             :label "Vendor Preposals"}}}))
 
 (rf/reg-event-fx
- :v/route-home
+ :v/route-preposals
  (fn [{:keys [db]}]
-   {:db (assoc db :page :v/home)
-    :analytics/page {:name "Vendor Home"}}))
+   {:db (assoc db :page :v/preposals)
+    :analytics/page {:name "Vendor Preposals"}}))
 
 (defn c-page []
   (let [org-id& (rf/subscribe [:org-id])
@@ -25,7 +24,7 @@
                                   {:queries
                                    [[:form-docs {:ftype "preposal"
                                                  :to-org-id @org-id&}
-                                     [:id :title
+                                     [:id :title :ftype :fsubtype
                                       :doc-id :doc-title
                                       [:product [:id :pname]]
                                       [:from-org [:id :oname]]
@@ -46,25 +45,3 @@
        (for [preq (:form-docs @prep-reqs&)]
          ^{:key (str "form" (:id preq))}
          [docs/c-form-maybe-doc (docs/mk-form-doc-state preq)])])))
-
-#_ (cljs.pprint/pprint preq1)
-
-#_
-(cljs.pprint/pprint @(rf/subscribe [:gql/q
-                                    {:queries
-                                     [[:form-docs {:ftype "preposal"
-                                                   :to-org-id @(rf/subscribe [:org-id])}
-                                       [:id :title
-                                        :doc-id :doc-title
-                                        [:product [:id :pname]]
-                                        [:from-org [:id :oname]]
-                                        [:from-user [:id :uname]]
-                                        [:to-org [:id :oname]]
-                                        [:to-user [:id :uname]]
-                                        [:prompts
-                                         [:id :prompt :descr
-                                          [:fields
-                                           [:id :fname :ftype :fsubtype :list?]]]]
-                                        [:responses
-                                         [:id :prompt-id :notes
-                                          [:fields [:id :idx :sval :nval :dval]]]]]]]}]))

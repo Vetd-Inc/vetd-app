@@ -50,6 +50,12 @@
                                 :entity v}})
                    changes)}))
 
+(rf/reg-event-fx
+ :a/create-form-from-template
+ (fn [_ [_ form-template-id]]
+   {:ws-send {:payload {:cmd :a/create-form-from-template
+                        :form-template-id form-template-id}}}))
+
 (rf/reg-event-db
  :a/route-form-templates
  (fn [db [_ form-template-idstr]]
@@ -175,7 +181,7 @@
          [:> ui/Icon {:name "trash alternate"
                       :color "white"
                       :inverted true}]
-         "DELETE FIELD"]]])))
+         "Delete Field"]]])))
 
 (defn c-template-prompt
   [{:keys [fields id rpid prompt descr form-template-id] sort' :sort}]
@@ -196,11 +202,8 @@
       [nxa/accordion-item
        ^{:key (str "template-prompt-title" id)}
        [:div.prompt-title [nxa/dropdown-icon] prompt
-        [:> ui/Button {:style {:width "150px"
-                               :height "30px"
-                               :font-size "small"
-                               :padding 0}
-                       :color "red"
+        [:> ui/Button {:color "red"
+                       :size "tiny"
                        :icon true
                        :labelPosition "left"
                        :on-click (fn [e]
@@ -308,7 +311,8 @@
                                                    :fname :descr
                                                    :ftype :fsubtype
                                                    :list? :sort] ]]]]]]}]))
-          existing-prompt& (r/atom nil)]
+          existing-prompt& (r/atom nil)
+          show-confirm-publish? (r/atom false)]
       [:div#admin-form-templates-page
        {:style {:margin "0 0 100px 50px"
                 :width "1200px"}}
@@ -319,7 +323,7 @@
                                                   :form-templates
                                                   first)]
            [:<>
-            [:div {:style {:font-size "x-large"}} title]
+            [:h1 title]
             [nxa/accordion
              (for [p prompts]
                ^{:key (str "template-prompt" (:rpid p))}
@@ -342,4 +346,11 @@
                             :on-click (fn [e]
                                         (.stopPropagation e)
                                         (rf/dispatch [:a/add-existing-form-template-prompt id @existing-prompt&]))}
-              "Add Existing Prompt"]]]))])))
+              "Add Existing Prompt"]]
+            [:div {:style {:margin-top 100}}
+             [:> ui/Button {:color "purple"
+                            :on-click (fn [e]
+                                        (.stopPropagation e)
+                                        (when (js/confirm "Are you sure you want to publish?")
+                                          (rf/dispatch [:a/create-form-from-template id title])))}
+              "Publish As Form"]]]))])))

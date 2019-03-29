@@ -16,8 +16,9 @@
             [vetd-app.buyers.pages.product-detail :as p-bproduct-detail]
             [vetd-app.vendors.fixtures :as v-fix]
             [vetd-app.vendors.pages.signup :as p-vsignup]
-            [vetd-app.vendors.pages.home :as p-vhome]
+            [vetd-app.vendors.pages.preposals :as p-vpreposals]
             [vetd-app.vendors.pages.products :as p-vprods]
+            [vetd-app.vendors.pages.profile :as p-vprofile]
             [vetd-app.common.fixtures :as pub-fix]
             [vetd-app.common.pages.login :as p-login]
             [reagent.core :as r]
@@ -36,8 +37,9 @@
                    :b/preposal-detail #'p-bpreposal-detail/c-page
                    :b/product-detail #'p-bproduct-detail/c-page
                    :v/signup #'p-vsignup/c-page
-                   :v/home #'p-vhome/c-page
-                   :v/products #'p-vprods/c-page})
+                   :v/preposals #'p-vpreposals/c-page
+                   :v/products #'p-vprods/c-page
+                   :v/profile #'p-vprofile/c-page})
 
 (hooks/reg-hooks! hooks/c-container
                   {:login #'pub-fix/container
@@ -47,8 +49,9 @@
                    :b/preposal-detail #'b-fix/container
                    :b/product-detail #'b-fix/container
                    :v/signup #'pub-fix/container
-                   :v/home #'v-fix/container
-                   :v/products #'v-fix/container})
+                   :v/preposals #'v-fix/container
+                   :v/products #'v-fix/container
+                   :v/profile #'v-fix/container})
 
 
 (rf/reg-event-db
@@ -114,7 +117,7 @@
     (if-let [active-memb (first membs)]
       (if (-> active-memb :org :buyer?)
         "/b/preposals"
-        "/v/home")
+        "/v/preposals")
       "/login")))
 
 (rf/reg-event-fx
@@ -147,9 +150,6 @@
 (sec/defroute buyers-search "/b/search/:search-term" [search-term]
   (rf/dispatch [:b/route-search search-term]))
 
-(sec/defroute buyers-home "/b/home" [query-params]
-  (rf/dispatch [:b/route-home query-params]))
-
 (sec/defroute buyers-preposals "/b/preposals" [query-params]
   (rf/dispatch [:b/route-preposals query-params]))
 
@@ -159,11 +159,14 @@
 (sec/defroute buyers-product-detail "/b/products/:idstr" [idstr]
   (rf/dispatch [:b/route-product-detail idstr]))
 
-(sec/defroute vendors-home "/v/home" [query-params]
-  (rf/dispatch [:v/route-home query-params]))
+(sec/defroute vendors-preposals "/v/preposals" [query-params]
+  (rf/dispatch [:v/route-preposals query-params]))
 
 (sec/defroute vendors-products "/v/products" [query-params]
   (rf/dispatch [:v/route-products query-params]))
+
+(sec/defroute vendors-profile "/v/profile" [query-params]
+  (rf/dispatch [:v/route-profile query-params]))
 
 (sec/defroute login-path "/login" [query-params]
   (rf/dispatch [:route-login query-params]))

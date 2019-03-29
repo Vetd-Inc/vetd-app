@@ -149,20 +149,22 @@
      [(hooks/c-prompt-field idstr [ftype fsubtype] ftype :default)
       f])])
 
-(defn prep-preposal-form-doc
-  [{:keys [id title product to-org to-user from-org from-user doc-id doc-title prompts] :as form-doc}]
+(defn prep-form-doc
+  [{:keys [id ftype fsubtype title product to-org to-user from-org from-user doc-id doc-title prompts] :as form-doc}]
   (assoc form-doc
-         :doc-title (str "Preposal for "
-                         (:pname product)
-                         " [ "
-                         (:oname to-org)
-                         " => "
-                         (:oname from-org)
-                         " ]")
+         :doc-title (cond
+                      (= ftype "preposal") (str "Preposal for "
+                                                (:pname product)
+                                                " [ "
+                                                (:oname to-org)
+                                                " => "
+                                                (:oname from-org)
+                                                " ]")
+                      :else (str title " doc"))
          :doc-notes ""
          :doc-descr ""
-         :doc-dtype "preposal"
-         :doc-dsubtype "preposal1"))
+         :doc-dtype ftype
+         :doc-dsubtype fsubtype))
 
 (defn c-form-maybe-doc
   [{:keys [id title product from-org from-user doc-id doc-title prompts] :as form-doc}]
@@ -170,16 +172,19 @@
                        :margin-bottom 50}}
    [:div
     (or doc-title title)
-    [:div.product-name (:pname product)]
-    [:div.org-name (:oname from-org)]
-    [:div.user-name (:uname from-user)]]
+    (when product
+      [:div.product-name (:pname product)])
+    (when from-org
+      [:div.org-name (:oname from-org)])
+    (when from-user
+      [:div.user-name (:uname from-user)])]
    (for [p (sort-by :sort prompts)]
      ^{:key (str "prompt" (:id p))}
      [(hooks/c-prompt :default) p])
    [:> ui/Button {:color "blue"
                   :fluid true
                   :on-click #(rf/dispatch [:save-form-doc
-                                           (prep-preposal-form-doc form-doc)])}
+                                           (prep-form-doc form-doc)])}
     "Submit"]])
 
 
