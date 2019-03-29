@@ -1,4 +1,4 @@
-(ns vetd-admin.overlays.admin-v-home
+(ns vetd-admin.overlays.admin-v-preposals
   (:require [vetd-app.ui :as ui]   
             [reagent.core :as r]
             [re-frame.core :as rf]
