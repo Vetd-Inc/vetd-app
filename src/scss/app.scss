@@ -7,6 +7,9 @@ body {
   color: #444;
 }
 
+a {
+  cursor: pointer !important;
+}
 a.teal {
   color: $teal !important;
 }

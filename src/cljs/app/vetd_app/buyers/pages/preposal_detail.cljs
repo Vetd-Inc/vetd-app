@@ -136,7 +136,8 @@
        [:div.inner-container
         (if (= :loading @preps&)
           [cc/c-loader]
-          (let [preposal (-> @preps& :docs first)]
+          (let [preposal (-> @preps& :docs first)
+                vendor (-> preposal :product :vendor)]
             [:<>
              [c-preposal preposal]
-             [bc/c-vendor-profile (-> preposal :product :vendor :docs-out first)]]))]])))
+             [bc/c-vendor-profile (-> vendor :docs-out first) (:id vendor) (:oname vendor)]]))]])))

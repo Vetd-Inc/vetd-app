@@ -7,6 +7,11 @@
             [reagent.format :as format]
             [re-frame.core :as rf]))
 
+(def last-query-id (atom 0))
+
+(defn get-next-query-id []
+  (swap! last-query-id inc))
+
 ;; Events
 (rf/reg-event-fx
  :b/nav-product-detail
@@ -21,6 +26,28 @@
                :page-params {:product-idstr product-idstr})
     :analytics/page {:name "Buyers Product Detail"
                      :props {:product-idstr product-idstr}}}))
+
+(rf/reg-event-fx
+ :b/request-vendor-profile
+ (fn [{:keys [db]} [_ vendor-id vendor-name]]
+   (let [qid (get-next-query-id)]
+     {:ws-send {:payload {:cmd :b/request-vendor-profile
+                          :return {:handler :b/request-vendor-profile-success}
+                          :vendor-id vendor-id
+                          :buyer-id (->> (:active-memb-id db)
+                                         (get (group-by :id (:memberships db)))
+                                         first
+                                         :org-id)}}
+      :analytics/track {:event "Request"
+                        :props {:category "Vendor Profile"
+                                :label vendor-name}}})))
+
+(rf/reg-event-fx
+ :b/request-vendor-profile-success
+ (constantly
+  {:toast {:type "success"
+           :title "Company Profile Requested"
+           :message "We'll let you know when the profile is added."}}))
 
 ;; Subscriptions
 (rf/reg-sub
@@ -139,8 +166,8 @@
        [:div.inner-container
         (if (= :loading @products&)
           [cc/c-loader]
-          (let [product (-> @products& :products first)]
+          (let [product (-> @products& :products first)
+                vendor (-> product :vendor)]
             [:<>
              [c-product product]
-             (when (not-empty (-> product :vendor :docs-out))
-               [bc/c-vendor-profile (-> product :vendor :docs-out first)])]))]])))
+             [bc/c-vendor-profile (-> vendor :docs-out first) (:id vendor) (:oname vendor)]]))]])))

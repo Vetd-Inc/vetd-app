@@ -73,30 +73,39 @@
   (not-empty (str value)))
 
 (defn c-vendor-profile
-  [{:keys [responses] :as vendor-profile-doc}]
-  (let [website-url (docs/get-field-value responses "Website" "value" :sval)
-        funding-status (docs/get-field-value responses "Funding Status" "value" :sval)
-        year-founded (docs/get-field-value responses "Year Founded" "value" :sval)
-        headquarters (docs/get-field-value responses "Headquarters Location" "value" :sval)
-        num-employees (docs/get-field-value responses "Employee Count" "value" :nval)]
+  [{:keys [responses] :as vendor-profile-doc} vendor-id vendor-name]
+  (if vendor-profile-doc
+    (let [website-url (docs/get-field-value responses "Website" "value" :sval)
+          funding-status (docs/get-field-value responses "Funding Status" "value" :sval)
+          year-founded (docs/get-field-value responses "Year Founded" "value" :sval)
+          headquarters (docs/get-field-value responses "Headquarters Location" "value" :sval)
+          num-employees (docs/get-field-value responses "Employee Count" "value" :nval)]
+      [:> ui/Segment {:class "detail-container vendor-profile"}
+       [:h1.title "Company Profile"]
+       [:> ui/Grid {:columns "equal"
+                    :style {:margin-top 0}}
+        [:> ui/GridRow
+         (when (has-data? website-url)
+           [c-display-field {:width 8} "Website"
+            [:a {:href website-url
+                 :target "_blank"}
+             [:> ui/Icon {:name "external square"
+                          :color "blue"}]
+             website-url]])
+         (when (has-data? headquarters)
+           [c-display-field {:width 8} "Headquarters" headquarters])]
+        [:> ui/GridRow
+         (when (has-data? funding-status)
+           [c-display-field {:width 5} "Funding Status" funding-status])
+         (when (has-data? year-founded)
+           [c-display-field {:width 5} "Year Founded" year-founded])
+         (when (has-data? num-employees)
+           [c-display-field {:width 6} "Number of Employees" (util/decimal-format num-employees)])]]])
     [:> ui/Segment {:class "detail-container vendor-profile"}
      [:h1.title "Company Profile"]
-     [:> ui/Grid {:columns "equal"
-                  :style {:margin-top 0}}
-      [:> ui/GridRow
-       (when (has-data? website-url)
-         [c-display-field {:width 8} "Website"
-          [:a {:href website-url
-               :target "_blank"}
-           [:> ui/Icon {:name "external square"
-                        :color "blue"}]
-           website-url]])
-       (when (has-data? headquarters)
-         [c-display-field {:width 8} "Headquarters" headquarters])]
-      [:> ui/GridRow
-       (when (has-data? funding-status)
-         [c-display-field {:width 5} "Funding Status" funding-status])
-       (when (has-data? year-founded)
-         [c-display-field {:width 5} "Year Founded" year-founded])
-       (when (has-data? num-employees)
-         [c-display-field {:width 6} "Number of Employees" (util/decimal-format num-employees)])]]]))
+     "This company has not completed a profile."
+     [:br]
+     [:br]
+     [:a.blue {:onClick #(do (.stopPropagation %)
+                             (rf/dispatch [:b/request-vendor-profile vendor-id vendor-name]))}
+      "Request a Company Profile"]]))
