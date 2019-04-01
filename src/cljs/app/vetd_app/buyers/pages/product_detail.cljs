@@ -2,6 +2,7 @@
   (:require [vetd-app.buyers.components :as bc]
             [vetd-app.common.components :as cc]
             [vetd-app.ui :as ui]
+            [vetd-app.util :as util]
             [vetd-app.docs :as docs]
             [reagent.core :as r]
             [reagent.format :as format]
@@ -34,11 +35,7 @@
      {:ws-send {:payload {:cmd :b/request-vendor-profile
                           :return {:handler :b/request-vendor-profile-return}
                           :vendor-id vendor-id
-                          :buyer-id (->> db
-                                         :memberships
-                                         (filter #(= (:id %) (:active-memb-id db)))
-                                         first
-                                         :org-id)}}
+                          :buyer-id (util/db->current-org-id db)}}
       :analytics/track {:event "Request"
                         :props {:category "Vendor Profile"
                                 :label vendor-name}}})))
@@ -57,10 +54,7 @@
      {:ws-send {:payload {:cmd :b/setup-call
                           :return {:handler :b/setup-call-return}
                           :product-id product-id
-                          :buyer-id (->> (:active-memb-id db)
-                                         (get (group-by :id (:memberships db)))
-                                         first
-                                         :org-id)}}
+                          :buyer-id (util/db->current-org-id db)}}
       :analytics/track {:event "Setup Call"
                         :props {:category "Product"
                                 :label product-name}}})))
@@ -80,10 +74,7 @@
                           :return {:handler :b/ask-a-question-return}
                           :product-id product-id
                           :message message
-                          :buyer-id (->> (:active-memb-id db)
-                                         (get (group-by :id (:memberships db)))
-                                         first
-                                         :org-id)}}
+                          :buyer-id (util/db->current-org-id db)}}
       :analytics/track {:event "Ask A Question"
                         :props {:category "Product"
                                 :label product-name}}})))

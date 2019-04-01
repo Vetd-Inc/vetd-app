@@ -55,7 +55,7 @@
                           :return {:handler :b/ws-search-result-ids
                                    :qid qid}
                           :query q-str
-                          :buyer-id (-> db :memberships first :org-id)
+                          :buyer-id (util/db->current-org-id db)
                           :qid qid}}})))
 
 (rf/reg-event-fx
@@ -75,10 +75,7 @@
                           :return {:handler :b/start-round-return}
                           :etype etype
                           :eid eid
-                          :buyer-id (->> (:active-memb-id db)
-                                         (get (group-by :id (:memberships db)))
-                                         first
-                                         :org-id)}}
+                          :buyer-id (util/db->current-org-id db)}}
       :analytics/track {:event "Start"
                         :props {:category "Round"
                                 :label etype}}})))

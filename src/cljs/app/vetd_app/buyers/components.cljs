@@ -40,17 +40,15 @@
                            :ename (:pname product)}]))
 
 (defn c-setup-call-button
-  [product vendor]
+  [{:keys [id pname] :as product} {:keys [oname] :as vendor}]
   (fn []
     [:> ui/Popup
-     {:content (str "Let us setup a call for you with "
-                    (:oname vendor) " to discuss " (:pname product) ".")
+     {:content (str "Let us setup a call for you with " oname
+                    " to discuss " pname ".")
       :header "Setup a Call"
       :position "bottom left"
       :trigger (r/as-element
-                [:> ui/Button {:onClick #(rf/dispatch [:b/setup-call
-                                                       (:id product)
-                                                       (:pname product)])
+                [:> ui/Button {:onClick #(rf/dispatch [:b/setup-call id pname])
                                :color "grey"
                                :fluid true
                                :icon true
@@ -60,7 +58,7 @@
                  [:> ui/Icon {:name "left call"}]])}]))
 
 (defn c-ask-a-question-button
-  [product vendor]
+  [{:keys [id pname] :as product} {:keys [oname] :as vendor}]
   (let [modal-showing? (r/atom false)
         message (r/atom "")]
     (fn []
@@ -78,7 +76,7 @@
                      :dimmer "inverted"
                      :closeOnDimmerClick false
                      :closeOnEscape false}
-        [:> ui/ModalHeader "Ask a Question About \"" (:pname product) "\""]
+        [:> ui/ModalHeader "Ask a Question About \"" pname "\""]
         [:> ui/ModalContent
          [:> ui/Form
           [:> ui/FormField
@@ -91,8 +89,8 @@
          [:> ui/Button {:onClick #(reset! modal-showing? false)}
           "Cancel"]
          [:> ui/Button {:onClick #(do (rf/dispatch [:b/ask-a-question
-                                                    (:id product)
-                                                    (:pname product)
+                                                    id
+                                                    pname
                                                     @message])
                                       (reset! modal-showing? false))
                         :color "blue"}
