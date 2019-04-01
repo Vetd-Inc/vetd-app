@@ -218,6 +218,10 @@ a.category-tag:hover {
   color: #777 !important;
 }
 
+textarea {
+  font-family: inherit;
+}
+
 /* Toast Messages (toastr library) */
 #toast-container .toast-success {
   background-color: $teal;

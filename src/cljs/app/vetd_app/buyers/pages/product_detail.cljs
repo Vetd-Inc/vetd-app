@@ -73,11 +73,12 @@
 
 (rf/reg-event-fx
  :b/ask-a-question
- (fn [{:keys [db]} [_ product-id product-name]]
+ (fn [{:keys [db]} [_ product-id product-name message]]
    (let [qid (get-next-query-id)]
      {:ws-send {:payload {:cmd :b/ask-a-question
                           :return {:handler :b/ask-a-question-return}
                           :product-id product-id
+                          :message message
                           :buyer-id (->> (:active-memb-id db)
                                          (get (group-by :id (:memberships db)))
                                          first

@@ -61,22 +61,42 @@
 
 (defn c-ask-a-question-button
   [product vendor]
-  (fn []
-    [:> ui/Popup
-     {:content (str "Ask a question about " (:pname product) ".")
-      :header "Ask a Question"
-      :position "bottom left"
-      :trigger (r/as-element
-                [:> ui/Button {:onClick #(rf/dispatch [:b/setup-call
-                                                       (:id product)
-                                                       (:pname product)])
-                               :color "grey"
-                               :fluid true
-                               :icon true
-                               :labelPosition "left"
-                               :style {:margin-right 15}}
-                 "Ask a Question"
-                 [:> ui/Icon {:name "question"}]])}]))
+  (let [modal-showing? (r/atom false)
+        message (r/atom "")]
+    (fn []
+      [:<>
+       [:> ui/Button {:onClick #(reset! modal-showing? true)
+                      :color "grey"
+                      :fluid true
+                      :icon true
+                      :labelPosition "left"
+                      :style {:margin-right 15}}
+        "Ask a Question"
+        [:> ui/Icon {:name "question"}]]
+       [:> ui/Modal {:open @modal-showing?
+                     :size "tiny"
+                     :dimmer "inverted"
+                     :closeOnDimmerClick false
+                     :closeOnEscape false}
+        [:> ui/ModalHeader "Ask a Question About \"" (:pname product) "\""]
+        [:> ui/ModalContent
+         [:> ui/Form
+          [:> ui/FormField
+           [:> ui/TextArea {:placeholder ""
+                            :autoFocus true
+                            :spellCheck true
+                            :onChange (fn [_ this]
+                                        (reset! message (.-value this)))}]]]]
+        [:> ui/ModalActions
+         [:> ui/Button {:onClick #(reset! modal-showing? false)}
+          "Cancel"]
+         [:> ui/Button {:onClick #(do (rf/dispatch [:b/ask-a-question
+                                                    (:id product)
+                                                    (:pname product)
+                                                    @message])
+                                      (reset! modal-showing? false))
+                        :color "blue"}
+          "Submit"]]]])))
 
 (defn c-categories
   "Given a product map, display the categories as tags."
