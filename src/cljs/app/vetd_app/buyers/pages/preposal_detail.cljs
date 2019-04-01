@@ -2,9 +2,9 @@
   (:require [vetd-app.buyers.components :as bc]
             [vetd-app.common.components :as cc]
             [vetd-app.ui :as ui]
+            [vetd-app.util :as util]
             [vetd-app.docs :as docs]
             [reagent.core :as r]
-            [reagent.format :as format]
             [re-frame.core :as rf]))
 
 ;; Events
@@ -41,7 +41,7 @@
         pitch (docs/get-field-value responses "Pitch" "value" :sval)
         employee-count (docs/get-field-value responses "Employee Count" "value" :sval)
         website (docs/get-field-value responses "Website" "value" :sval)]
-    [:div.detail-container
+    [:> ui/Segment {:class "detail-container"}
      [:h1.product-title
       (:pname product) " " [:small " by " (:oname from-org)]]
      [:> ui/Image {:class "product-logo"
@@ -59,7 +59,7 @@
       [:> ui/GridRow
        [bc/c-display-field {:width 6} "Estimated Price"
         (if pricing-estimate-value
-          [:<> (format/currency-format pricing-estimate-value) " / " pricing-estimate-unit
+          [:<> (util/currency-format pricing-estimate-value) " / " pricing-estimate-unit
            (when (and pricing-estimate-details
                       (not= "" pricing-estimate-details))
              (str " - " pricing-estimate-details))]
@@ -88,7 +88,20 @@
                                              [:rounds {:buyer-id @org-id&
                                                        :status "active"}
                                               [:id :created :status]]
-                                             [:categories [:id :idstr :cname]]]]
+                                             [:categories [:id :idstr :cname]]
+                                             [:vendor
+                                              [:id :oname :url
+                                               [:docs-out {:dtype "vendor-profile"
+                                                           :_order_by {:created :desc}
+                                                           :_limit 1}
+                                                [:id 
+                                                 [:responses
+                                                  [:id :prompt-id :notes
+                                                   [:prompt
+                                                    [:id :prompt]]
+                                                   [:fields
+                                                    [:id :pf-id :idx :sval :nval :dval
+                                                     [:prompt-field [:id :fname]]]]]]]]]]]]
                                   [:from-org [:id :oname]]
                                   [:from-user [:id :uname]]
                                   [:to-org [:id :oname]]
@@ -120,7 +133,10 @@
                                          :eid (:id product)
                                          :ename (:pname product)
                                          :props {:fluid true}}]])))]
-       [:> ui/Segment {:class "inner-container"}
+       [:div.inner-container
         (if (= :loading @preps&)
           [cc/c-loader]
-          [c-preposal (-> @preps& :docs first)])]])))
+          (let [preposal (-> @preps& :docs first)]
+            [:<>
+             [c-preposal preposal]
+             [bc/c-vendor-profile (-> preposal :product :vendor :docs-out first)]]))]])))
