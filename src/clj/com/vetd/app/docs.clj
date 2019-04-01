@@ -59,7 +59,7 @@
   (let [[id idstr] (if use-id?
                      [id idstr]
                      (ut/mk-id&str))]
-    (-> (db/insert! :form-templates
+    (-> (db/insert! :form_templates
                     {:id id
                      :idstr idstr
                      :created (ut/now-ts)
@@ -264,13 +264,13 @@
 
 (defn delete-form-prompt
   [form-prompt-id]
-  (db/hs-exe! {:update :form-prompt
+  (db/hs-exe! {:update :form_prompt
                :set {:deleted (ut/now-ts)}
                :where [:= :id form-prompt-id]}))
 
 (defn delete-form-template-prompt
   [form-template-prompt-id]
-  (db/hs-exe! {:update :form-template-prompt
+  (db/hs-exe! {:update :form_template_prompt
                :set {:deleted (ut/now-ts)}
                :where [:= :id form-template-prompt-id]}))
 
@@ -358,19 +358,33 @@
                     not)]
     (if exists?
       ;; TODO Don't use db/update-any! -- not efficient
-      (-> form ha/walk-clj-kw->sql-field db/update-any!)
+      (-> form (dissoc :prompts)
+          ha/walk-clj-kw->sql-field db/update-any!)
       (insert-form form use-id?))))
+
+(defn upsert-prompt
+  [{:keys [id] :as prompt} & [use-id?]]
+  (let [exists? (-> [[:prompts {:id id} [:id]]]
+                    ha/sync-query
+                    :prompts
+                    empty?
+                    not)]
+    (if exists?
+      ;; TODO Don't use db/update-any! -- not efficient
+      (-> prompt (dissoc :fields :form-template-id :sort)
+          ha/walk-clj-kw->sql-field db/update-any!)
+      (insert-prompt prompt use-id?))))
 
 (defn upsert-form-template
   [{:keys [id] :as form-template} & [use-id?]]
   (let [exists? (-> [[:form-templates {:id id} [:id]]]
                     ha/sync-query
-                    :forms
+                    :form-templates
                     empty?
                     not)]
     (if exists?
       ;; TODO Don't use db/update-any! -- not efficient
-      (-> form-template ha/walk-clj-kw->sql-field db/update-any!)
+      (-> form-template (dissoc :prompts) ha/walk-clj-kw->sql-field db/update-any!)
       (insert-form-template form-template use-id?))))
 
 (defn upsert-prompt-field
@@ -404,14 +418,14 @@
                (group-by :id old-prompts)
                (group-by :id new-prompts))]
     {:kill-rpids (->> a
-                        vals
-                        flatten
-                        (filter :id)
-                        (map :rpid))
+                      vals
+                      flatten
+                      (filter :id)
+                      (map :rpid))
      :new-form-prompts (->> b
-                              vals
-                              flatten
-                              (filter :id))}))
+                            vals
+                            flatten
+                            (filter :id))}))
 
 (defn upsert-form-prompts
   [form-id new-prompts & [use-id?]]
@@ -422,7 +436,7 @@
       (delete-form-prompt form-prompt-id))
     (doseq [{:keys [id fields] sort' :sort :as prompt} new-form-prompts]
       (mapv upsert-prompt-field fields)
-      (insert-prompt prompt use-id?)
+      (upsert-prompt prompt use-id?)
       (insert-form-prompt form-id id sort'))))
 
 (defn upsert-form-template-prompts*
@@ -431,7 +445,7 @@
              [:id
               [:prompts [:id :rpid :sort]]]]]
            ha/sync-query
-           :forms
+           :form-templates
            first
            :prompts))
 
@@ -444,5 +458,5 @@
       (delete-form-template-prompt form-template-prompt-id))
     (doseq [{:keys [id fields] sort' :sort :as prompt} new-form-prompts]
       (mapv upsert-prompt-field fields)
-      (insert-prompt prompt use-id?)
+      (upsert-prompt prompt use-id?)
       (insert-form-template-prompt form-template-id id sort'))))
