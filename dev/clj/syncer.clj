@@ -15,8 +15,6 @@
 (defn ws-ib-handler
   [ch data]
   (try
-    (println "ws-ib-handler")
-    (clojure.pprint/pprint data)
     (let [d (svr/read-transit-string data)
           mtype (some-> d :response :mtype)
           payload (-> d :response :payload)]
@@ -152,7 +150,6 @@
     (let [forms (a/alt!!
                   (a/timeout 5000) :timeout
                   ch ([v] v))]
-      (clojure.pprint/pprint forms)      
       (->> forms :forms (mapv upsert-form&dependents)))
     (.close ws)
     true))
@@ -164,7 +161,6 @@
     (let [form-templates (a/alt!!
                            (a/timeout 5000) :timeout
                            ch ([v] v))]
-      (clojure.pprint/pprint form-templates)      
       (->> form-templates :form-templates
            (mapv upsert-form-template&dependents)))
     (.close ws)
