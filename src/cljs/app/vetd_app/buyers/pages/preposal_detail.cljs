@@ -111,7 +111,7 @@
        [:div.sidebar
         [:div {:style {:padding "0 15px"}}
          [:> ui/Button {:on-click #(rf/dispatch [:b/nav-preposals])
-                        :color "gray"
+                        :basic true
                         :icon true
                         :size "small"
                         :fluid true
