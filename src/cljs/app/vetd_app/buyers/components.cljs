@@ -22,7 +22,7 @@
                        :labelPosition "left"}
                       props)
                "Start VetdRound"
-               [:> ui/Icon {:name "th"}]])}])
+               [:> ui/Icon {:name "vetd-icon"}]])}])
 
 (defn c-round-in-progress [{:keys [props]}]
   [:> ui/Label (merge {:color "teal"

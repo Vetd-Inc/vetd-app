@@ -7,15 +7,6 @@ body {
   color: #444;
 }
 
-/* Override basic Semantic UI behavior */
-.ui.fluid[class*="left labeled"].icon.button {
-  padding-left: 44px !important;
-  // padding-left: 33px !important;
-  padding-right: 0px !important;
-  text-align: left !important;
-}
-
-
 a {
   cursor: pointer !important;
 }
@@ -40,7 +31,7 @@ a.teal:hover {
 }
 .top-nav > .logo {
   margin-top: -20px !important;
-  padding: 0 55px 0 29px !important;
+  padding: 0 55px 0 35px !important;
   /* no hover bg change */
   background: inherit !important;
 }
@@ -72,8 +63,8 @@ a.teal:hover {
   margin-top: 0 !important;
 }
 .sidebar {
-  width: 205px;
-  margin-right: 30px;
+  width: 223px;
+  margin-right: 20px;
   font-weight: 400 !important;
 }
 .sidebar > .checkbox {
@@ -197,7 +188,29 @@ a.teal:hover {
 }
 
 
-/* todo, put this as less variable */
+/* Override basic Semantic UI behavior */
+.ui.fluid[class*="left labeled"].icon.button {
+  padding-left: 44px !important;
+  padding-right: 0px !important;
+  text-align: left !important;
+}
+
+i.icon.vetd-icon:before {
+  content: " " !important;
+  width: 100%;
+  background-image: url(../images/vetd-arrow.svg) !important;
+  background-size: 13px !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  height: 100%;
+  filter: brightness(100);
+}
+.start-round-button:hover i.icon.vetd-icon:before {
+  // animation-timing-function: linear;
+  // animation: 1s infinite party;
+}
+
+/* TODO put this as less variable */
 .ui.teal.label, .ui.teal.labels .label {
   background: linear-gradient(to right, #32abde, #6dccce) !important;
   border: none !important;
