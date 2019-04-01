@@ -34,8 +34,9 @@
      {:ws-send {:payload {:cmd :b/request-vendor-profile
                           :return {:handler :b/request-vendor-profile-return}
                           :vendor-id vendor-id
-                          :buyer-id (->> (:active-memb-id db)
-                                         (get (group-by :id (:memberships db)))
+                          :buyer-id (->> db
+                                         :memberships
+                                         (filter #(= (:id %) (:active-memb-id db)))
                                          first
                                          :org-id)}}
       :analytics/track {:event "Request"
@@ -186,7 +187,7 @@
         (if (= :loading @products&)
           [cc/c-loader]
           (let [product (-> @products& :products first)
-                vendor (-> product :vendor)]
+                {:keys [docs-out id oname]} (:vendor product)]
             [:<>
              [c-product product]
-             [bc/c-vendor-profile (-> vendor :docs-out first) (:id vendor) (:oname vendor)]]))]])))
+             [bc/c-vendor-profile (first docs-out) id oname]]))]])))

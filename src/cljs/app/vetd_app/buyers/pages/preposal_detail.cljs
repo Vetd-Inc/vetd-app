@@ -132,7 +132,7 @@
         (if (= :loading @preps&)
           [cc/c-loader]
           (let [preposal (-> @preps& :docs first)
-                vendor (-> preposal :product :vendor)]
+                {:keys [docs-out id oname]} (-> preposal :product :vendor)]
             [:<>
              [c-preposal preposal]
-             [bc/c-vendor-profile (-> vendor :docs-out first) (:id vendor) (:oname vendor)]]))]])))
+             [bc/c-vendor-profile (first docs-out) id oname]]))]])))
