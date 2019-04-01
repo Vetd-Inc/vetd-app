@@ -127,7 +127,9 @@
                                          :ename (:pname product)
                                          :props {:fluid true}}]
                [:br]
-               [bc/c-setup-call-button product (:vendor product)]])))]
+               [bc/c-setup-call-button product (:vendor product)]
+               [:br]
+               [bc/c-ask-a-question-button product (:vendor product)]])))]
        [:div.inner-container
         (if (= :loading @preps&)
           [cc/c-loader]

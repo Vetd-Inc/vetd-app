@@ -71,6 +71,28 @@
            :title "Setup a Call"
            :message "We'll setup a call for you soon."}}))
 
+(rf/reg-event-fx
+ :b/ask-a-question
+ (fn [{:keys [db]} [_ product-id product-name]]
+   (let [qid (get-next-query-id)]
+     {:ws-send {:payload {:cmd :b/ask-a-question
+                          :return {:handler :b/ask-a-question-return}
+                          :product-id product-id
+                          :buyer-id (->> (:active-memb-id db)
+                                         (get (group-by :id (:memberships db)))
+                                         first
+                                         :org-id)}}
+      :analytics/track {:event "Ask A Question"
+                        :props {:category "Product"
+                                :label product-name}}})))
+
+(rf/reg-event-fx
+ :b/ask-a-question-return
+ (constantly
+  {:toast {:type "success"
+           :title "Question Sent!"
+           :message "We'll get an answer for you soon."}}))
+
 ;; Subscriptions
 (rf/reg-sub
  :product-idstr
@@ -181,12 +203,14 @@
                               "Request Preposal"
                               [:> ui/Icon {:name "wpforms"}]])}])
                [:br]
-               [bc/c-setup-call-button product vendor]])))]
+               [bc/c-setup-call-button product vendor]
+               [:br]
+               [bc/c-ask-a-question-button product vendor]])))]
        [:div.inner-container
         (if (= :loading @products&)
           [cc/c-loader]
           (let [product (-> @products& :products first)
-                vendor (-> product :vendor)]
+                vendor (:vendor product)]
             [:<>
              [c-product product]
              [bc/c-vendor-profile (-> vendor :docs-out first) (:id vendor) (:oname vendor)]]))]])))

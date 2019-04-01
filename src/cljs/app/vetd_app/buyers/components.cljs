@@ -59,6 +59,25 @@
                  "Setup a Call"
                  [:> ui/Icon {:name "left call"}]])}]))
 
+(defn c-ask-a-question-button
+  [product vendor]
+  (fn []
+    [:> ui/Popup
+     {:content (str "Ask a question about " (:pname product) ".")
+      :header "Ask a Question"
+      :position "bottom left"
+      :trigger (r/as-element
+                [:> ui/Button {:onClick #(rf/dispatch [:b/setup-call
+                                                       (:id product)
+                                                       (:pname product)])
+                               :color "grey"
+                               :fluid true
+                               :icon true
+                               :labelPosition "left"
+                               :style {:margin-right 15}}
+                 "Ask a Question"
+                 [:> ui/Icon {:name "question"}]])}]))
+
 (defn c-categories
   "Given a product map, display the categories as tags."
   [product]
