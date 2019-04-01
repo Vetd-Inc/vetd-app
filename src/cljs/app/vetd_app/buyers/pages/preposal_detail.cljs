@@ -67,14 +67,7 @@
        (when (not= "" free-trial-terms)
          [bc/c-display-field {:width 4} "Free Trial Terms" free-trial-terms])
        (when (not= "" pricing-model)
-         [bc/c-display-field {:width 6} "Pricing Model" pricing-model])]
-      [:> ui/GridRow
-       [bc/c-display-field nil (str "About " (:oname from-org))
-        [:<>
-         (when (not= "" website)
-           [:span "Website: " website [:br]])
-         (when (not= "" employee-count)
-           [:span "Number of Employees: " employee-count])]]]]]))
+         [bc/c-display-field {:width 6} "Pricing Model" pricing-model])]]]))
 
 (defn c-page []
   (let [preposal-idstr& (rf/subscribe [:preposal-idstr])
@@ -121,7 +114,7 @@
                         :color "gray"
                         :icon true
                         :size "small"
-                        :style {:width "100%"}
+                        :fluid true
                         :labelPosition "left"}
           "All Preposals"
           [:> ui/Icon {:name "left arrow"}]]]
@@ -132,7 +125,9 @@
                [bc/c-start-round-button {:etype :product
                                          :eid (:id product)
                                          :ename (:pname product)
-                                         :props {:fluid true}}]])))]
+                                         :props {:fluid true}}]
+               [:br]
+               [bc/c-setup-call-button product (:vendor product)]])))]
        [:div.inner-container
         (if (= :loading @preps&)
           [cc/c-loader]

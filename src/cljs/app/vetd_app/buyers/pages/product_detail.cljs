@@ -105,15 +105,7 @@
                        url]])]]]
     [:> ui/GridRow
      [bc/c-display-field {:width 6} "Pitch" "Unavailable (Request a Preposal)"]
-     [bc/c-display-field {:width 6} "Estimated Price" "Unavailable (Request a Preposal)"]]
-    (when (not= "" (:url vendor))
-      [:> ui/GridRow
-       [bc/c-display-field nil (str "About " (:oname vendor))
-        [:span "Website: " [:a {:href (str "http://" (:url vendor)) ; todo: fragile
-                                :target "_blank"}
-                            [:> ui/Icon {:name "external square"
-                                         :color "blue"}]
-                            (:url vendor)]]]])]])
+     [bc/c-display-field {:width 6} "Estimated Price" "Unavailable (Request a Preposal)"]]]])
 
 (defn c-page []
   (let [product-idstr& (rf/subscribe [:product-idstr])
@@ -150,7 +142,7 @@
                         :color "gray"
                         :icon true
                         :size "small"
-                        :style {:width "100%"}
+                        :fluid true
                         :labelPosition "left"}
           "Back to Search"
           [:> ui/Icon {:name "left arrow"}]]]
@@ -172,7 +164,8 @@
                    :trigger (r/as-element
                              [:> ui/Label {:color "teal"
                                            :size "large"
-                                           :basic true}
+                                           :basic true
+                                           :style {:display "block"}}
                               "Preposal Requested"])}]
                  [:> ui/Popup
                   {:content (str "Get a pricing estimate, personalized pitch, and more from "
@@ -183,23 +176,12 @@
                              [:> ui/Button {:onClick #(rf/dispatch [:b/create-preposal-req product vendor])
                                             :color "teal"
                                             :fluid true
-                                            :style {:margin-right 15}}
-                              "Request Preposal"])}])
+                                            :icon true
+                                            :labelPosition "left"}
+                              "Request Preposal"
+                              [:> ui/Icon {:name "wpforms"}]])}])
                [:br]
-               [:> ui/Popup
-                {:content (str "Let us setup a call for you with " (:oname vendor) " to discuss "
-                               (:pname product) ".")
-                 :header "Setup a Call"
-                 :position "bottom left"
-                 :trigger (r/as-element
-                           [:> ui/Button {:onClick #(rf/dispatch [:b/setup-call (:id product) (:pname product)])
-                                          :color "grey"
-                                          :fluid true
-                                          :icon true
-                                          :labelPosition "left"
-                                          :style {:margin-right 15}}
-                            "Setup a Call"
-                            [:> ui/Icon {:name "left call"}]])}]])))]
+               [bc/c-setup-call-button product vendor]])))]
        [:div.inner-container
         (if (= :loading @products&)
           [cc/c-loader]

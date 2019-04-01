@@ -6,7 +6,7 @@
             [reagent.format :as format]
             [re-frame.core :as rf]))
 
-(defn c-start-round-button [{:keys [etype eid ename show-icon? props]}]
+(defn c-start-round-button [{:keys [etype eid ename props]}]
   [:> ui/Popup
    {:content (str "Find and compare similar products to \""
                   ename "\" that meet your needs.")
@@ -17,14 +17,12 @@
                (merge {:onClick #(do (.stopPropagation %)
                                      (rf/dispatch [:b/start-round etype eid]))
                        :class "start-round-button"
-                       :color "blue"}
-                      props
-                      (when show-icon?
-                        {:icon true
-                         :labelPosition "right"}))
+                       :color "blue"
+                       :icon true
+                       :labelPosition "left"}
+                      props)
                "Start VetdRound"
-               (when show-icon?
-                 [:> ui/Icon {:name "right arrow"}])])}])
+               [:> ui/Icon {:name "th"}]])}])
 
 (defn c-round-in-progress [{:keys [props]}]
   [:> ui/Label (merge {:color "teal"
@@ -40,6 +38,26 @@
     [c-start-round-button {:etype :product
                            :eid (:id product)
                            :ename (:pname product)}]))
+
+(defn c-setup-call-button
+  [product vendor]
+  (fn []
+    [:> ui/Popup
+     {:content (str "Let us setup a call for you with "
+                    (:oname vendor) " to discuss " (:pname product) ".")
+      :header "Setup a Call"
+      :position "bottom left"
+      :trigger (r/as-element
+                [:> ui/Button {:onClick #(rf/dispatch [:b/setup-call
+                                                       (:id product)
+                                                       (:pname product)])
+                               :color "grey"
+                               :fluid true
+                               :icon true
+                               :labelPosition "left"
+                               :style {:margin-right 15}}
+                 "Setup a Call"
+                 [:> ui/Icon {:name "left call"}]])}]))
 
 (defn c-categories
   "Given a product map, display the categories as tags."
