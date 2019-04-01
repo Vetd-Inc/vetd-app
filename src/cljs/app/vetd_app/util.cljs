@@ -190,3 +190,11 @@
                    (reset! reaction-id (reagent-id reaction))
                    reaction))))))
 
+(defn db->current-org-id
+  "Given the app-db state, return the current org id of the user."
+  [db]
+  (->> db
+       :memberships
+       (filter #(= (:id %) (:active-memb-id db)))
+       first
+       :org-id))

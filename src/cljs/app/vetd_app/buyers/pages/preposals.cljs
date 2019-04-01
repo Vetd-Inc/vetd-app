@@ -78,8 +78,7 @@
          [bc/c-start-round-button {:etype :product
                                    :eid (:id product)
                                    :ename (:pname product)
-                                   :props {:floated "right"}
-                                   :show-icon? true}])
+                                   :props {:floated "right"}}])
        [bc/c-categories product]
        (when free-trial? [:> ui/Label {:class "free-trial-tag"
                                        :color "gray"
