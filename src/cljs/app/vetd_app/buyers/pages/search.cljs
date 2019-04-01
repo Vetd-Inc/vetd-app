@@ -72,7 +72,7 @@
  (fn [{:keys [db]} [_ etype eid]]
    (let [qid (get-next-query-id)]
      {:ws-send {:payload {:cmd :b/start-round
-                          :return {:handler :b/start-round-success}
+                          :return {:handler :b/start-round-return}
                           :etype etype
                           :eid eid
                           :buyer-id (->> (:active-memb-id db)
@@ -84,7 +84,7 @@
                                 :label etype}}})))
 
 (rf/reg-event-fx
- :b/start-round-success
+ :b/start-round-return
  (constantly
   {:toast {:type "success"
            :title "Your VetdRound has begun!"
@@ -95,7 +95,7 @@
  (fn [{:keys [db]} [_ product vendor]]
    (let [qid (get-next-query-id)]
      {:ws-send {:payload {:cmd :b/create-preposal-req
-                          :return {:handler :b/create-preposal-req-success
+                          :return {:handler :b/create-preposal-req-return
                                    :product product
                                    :vendor vendor}
                           :prep-req {:from-org-id (->> (:active-memb-id db)
@@ -106,7 +106,7 @@
                                      :prod-id (:id product)}}}})))
 
 (rf/reg-event-fx
- :b/create-preposal-req-success
+ :b/create-preposal-req-return
  (fn [_ [_ _ {{:keys [product vendor]} :return}]]
    {:toast {:type "success"
             :title "Preposal Requested"
@@ -120,13 +120,13 @@
  (fn [{:keys [db]} [_ req]]
    (let [qid (get-next-query-id)]
      {:ws-send {:payload {:cmd :b/req-new-prod-cat
-                          :return {:handler :b/req-new-prod-cat-success}
+                          :return {:handler :b/req-new-prod-cat-return}
                           :org-id (-> db :memberships first :org-id)
                           :user-id (-> db :user :id)
                           :req req}}})))
 
 (rf/reg-event-fx
- :b/req-new-prod-cat-success
+ :b/req-new-prod-cat-return
  (constantly
   {:toast {:type "success"
            :title "Thanks for the suggestion!"

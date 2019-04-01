@@ -32,7 +32,7 @@
  (fn [{:keys [db]} [_ vendor-id vendor-name]]
    (let [qid (get-next-query-id)]
      {:ws-send {:payload {:cmd :b/request-vendor-profile
-                          :return {:handler :b/request-vendor-profile-success}
+                          :return {:handler :b/request-vendor-profile-return}
                           :vendor-id vendor-id
                           :buyer-id (->> (:active-memb-id db)
                                          (get (group-by :id (:memberships db)))
@@ -43,7 +43,7 @@
                                 :label vendor-name}}})))
 
 (rf/reg-event-fx
- :b/request-vendor-profile-success
+ :b/request-vendor-profile-return
  (constantly
   {:toast {:type "success"
            :title "Company Profile Requested"
@@ -54,7 +54,7 @@
  (fn [{:keys [db]} [_ product-id product-name]]
    (let [qid (get-next-query-id)]
      {:ws-send {:payload {:cmd :b/setup-call
-                          :return {:handler :b/setup-call-success}
+                          :return {:handler :b/setup-call-return}
                           :product-id product-id
                           :buyer-id (->> (:active-memb-id db)
                                          (get (group-by :id (:memberships db)))
@@ -65,7 +65,7 @@
                                 :label product-name}}})))
 
 (rf/reg-event-fx
- :b/setup-call-success
+ :b/setup-call-return
  (constantly
   {:toast {:type "success"
            :title "Setup a Call"
