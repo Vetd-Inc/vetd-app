@@ -27,11 +27,13 @@
       (clojure.pprint/pprint t)
       nil)))
 
+;; this sucks. ws and alb not friends because no cookies -- Bill
+(def prod-ip "18.206.74.173")
+
 (defn mk-ws [ch]
   (let [ws @(ah/websocket-client #_"ws://localhost:5080/ws"
-                                 #_"wss://app.vetd.com/ws"
-                                 "ws://3.95.139.7:5080/ws"
-                                 )]
+                                 (format "ws://%s:5080/ws"
+                                         prod-ip))]
     (ms/on-closed ws ws-on-closed)
     (ms/consume (partial ws-ib-handler ch) ws)
     (Thread/sleep 1000)
@@ -88,12 +90,60 @@
                                        :sort]]]]]]]}}
                        ws))
 
-;; TODO need to be able to use id from production for insert
+
+(defn req-profile-form-templates&dependents [ws]
+  (svr/respond-transit {:cmd :graphql
+                        :sub-id (keyword (gensym))
+                        :return :yes
+                        :subscription? false
+                        :query {:queries
+                                [[:form-templates
+                                  {:ftype ["vendor-profile" "product-profile"]
+                                   :deleted nil}
+                                  [:id
+                                   :idstr
+                                   :created
+                                   :updated
+                                   :deleted
+                                   :title
+                                   :descr
+                                   :ftype
+                                   :fsubtype
+                                   [:prompts {:deleted nil
+                                              :rp-deleted nil}
+                                    [:id 
+                                     :idstr
+                                     :created
+                                     :updated
+                                     :deleted
+                                     :prompt
+                                     :descr
+                                     :form-template-id
+                                     :sort
+                                     [:fields {:deleted nil}
+                                      [:id 
+                                       :idstr
+                                       :created
+                                       :updated
+                                       :deleted
+                                       :prompt_id
+                                       :fname
+                                       :descr
+                                       :ftype
+                                       :fsubtype
+                                       :list_qm
+                                       :sort]]]]]]]}}
+                       ws))
+
 (defn upsert-form&dependents
   [{:keys [id prompts] :as form}]
-  (docs/upsert-form (dissoc form :prompts))
-  (docs/upsert-form-prompts id prompts))
+  (docs/upsert-form (dissoc form :prompts) true)
+  (docs/upsert-form-prompts id prompts true))
 
+(defn upsert-form-template&dependents
+  [{:keys [id prompts] :as form-template}]
+  (docs/upsert-form-template (dissoc form-template :prompts) true)
+  (docs/upsert-form-template-prompts id prompts true))
 
 (defn sync-profile-forms-from-prod []
   (let [ch (a/chan 1)
@@ -107,6 +157,21 @@
     (.close ws)
     true))
 
+(defn sync-profile-form-templates-from-prod []
+  (let [ch (a/chan 1)
+        ws (mk-ws ch #_ res)]
+    (req-profile-form-templates&dependents ws)
+    (let [form-templates (a/alt!!
+                           (a/timeout 5000) :timeout
+                           ch ([v] v))]
+      (clojure.pprint/pprint form-templates)      
+      (->> form-templates :form-templates
+           (mapv upsert-form-template&dependents)))
+    (.close ws)
+    true))
+
 #_ (sync-profile-forms-from-prod)
+
+#_ (sync-profile-form-templates-from-prod)
 
 #_(.close @ws&)
