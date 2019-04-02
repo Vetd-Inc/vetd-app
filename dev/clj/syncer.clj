@@ -145,7 +145,7 @@
 
 (defn sync-profile-forms-from-prod []
   (let [ch (a/chan 1)
-        ws (mk-ws ch #_ res)]
+        ws (mk-ws ch)]
     (req-profile-forms&dependents ws)
     (let [forms (a/alt!!
                   (a/timeout 5000) :timeout
@@ -156,7 +156,7 @@
 
 (defn sync-profile-form-templates-from-prod []
   (let [ch (a/chan 1)
-        ws (mk-ws ch #_ res)]
+        ws (mk-ws ch)]
     (req-profile-form-templates&dependents ws)
     (let [form-templates (a/alt!!
                            (a/timeout 5000) :timeout
@@ -169,5 +169,3 @@
 #_ (sync-profile-forms-from-prod)
 
 #_ (sync-profile-form-templates-from-prod)
-
-#_(.close @ws&)
