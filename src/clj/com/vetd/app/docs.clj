@@ -7,6 +7,31 @@
             [honeysql.core :as hs]
             clojure.data))
 
+(defn get-latest-form-doc-by-ftype&from-org
+  [ftype doc-from-org-id]
+  (-> [[:form-docs {:ftype ftype
+                    :doc-from-org-id doc-from-org-id
+                    :_order_by {:created :desc}
+                    :_limit 1}
+        [:id :title :doc-id :doc-title :doc-from-org-id
+         :ftype :fsubtype
+         [:from-org [:id :oname]]
+         [:from-user [:id :uname]]
+         [:to-org [:id :oname]]
+         [:to-user [:id :uname]]
+         [:prompts {:deleted nil
+                    :_order_by {:sort :asc}}
+          [:id :idstr :prompt :descr
+           [:fields
+            [:id :idstr :fname :ftype
+             :fsubtype :list?]]]]
+         [:responses
+          [:id :prompt-id :notes
+           [:fields [:id :pf-id :idx :sval :nval :dval]]]]]]]
+      ha/sync-query
+      :form-docs
+      first))
+
 ;; TODO use prompt-field data type
 (defn convert-field-val
   [v ftype fsubtype]
