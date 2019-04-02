@@ -25,8 +25,6 @@
 (defonce kill-keep-alive-thread (atom false))
 (defonce keep-alive-thread (atom nil))
 
-#_ (count @ws-conns)
-
 (defn uri->content-type
   [uri]
   (or (-> uri
