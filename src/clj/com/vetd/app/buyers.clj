@@ -35,17 +35,6 @@
       {:product-ids []
        :vendor-ids []}))
 
-#_(defn search-categories
-  [q buyer-id]
-  (if (not-empty q)
-    (db/hs-query {:select [[:c.*] [:rc.id :round_id] [:rc.idstr :round_idstr] [:rc.created :round_created]]
-                  :from [[:categories :c]]
-                  :left-join [[:rounds_by_category :rc] [:and
-                                                         [:= :rc.category_id :c.id]
-                                                         [:= :rc.buyer_id buyer-id]]]
-                  :where [(keyword "~*") :c.cname (str ".*?" q ".*")]
-                  :limit 5})))
-
 (defn search-category-ids
   [q]
   (if (not-empty q)
@@ -161,6 +150,77 @@ User '%s'
 "
                                          req org-name user-name)}})))
 
+(defn send-vendor-profile-req [vendor-id buyer-id]
+  (let [vendor-name (-> vendor-id auth/select-org-by-id :oname)
+        buyer-name (-> buyer-id auth/select-org-by-id :oname)]
+    (aws/invoke sns {:op :Publish
+                     :request {:TopicArn "arn:aws:sns:us-east-1:744151627940:ui-misc"
+                               :Subject "Vendor Profile Request"
+                               :Message (format
+                                         "Vendor Profile Request
+Buyer: '%s'
+Vendor: '%s'
+"
+                                         buyer-name vendor-name)}})))
+
+
+(defn send-setup-call-req [buyer-id product-id]
+  (let [product-name (-> [[:products {:id product-id} [:pname]]]
+                        ha/sync-query
+                        vals
+                        ffirst
+                        :pname)
+        buyer-name (-> buyer-id auth/select-org-by-id :oname)]
+    (aws/invoke sns {:op :Publish
+                     :request {:TopicArn "arn:aws:sns:us-east-1:744151627940:ui-misc"
+                               :Subject "Setup Call Request"
+                               :Message (format
+                                         "Setup Call Request
+Buyer: '%s'
+Product: '%s'
+"
+                                         buyer-name product-name)}})))
+
+(defn send-ask-question-req [product-id message buyer-id]
+  (let [product-name (-> [[:products {:id product-id} [:pname]]]
+                        ha/sync-query
+                        vals
+                        ffirst
+                        :pname)
+        buyer-name (-> buyer-id auth/select-org-by-id :oname)]
+    (aws/invoke sns {:op :Publish
+                     :request {:TopicArn "arn:aws:sns:us-east-1:744151627940:ui-misc"
+                               :Subject "Ask a Question Request"
+                               :Message (format
+                                         "Ask a Question Request
+Buyer: '%s'
+Product: '%s'
+Message:
+%s
+"
+                                         buyer-name product-name message)}})))
+
+(defn send-prep-req
+  [{:keys [to-org-id to-user-id from-org-id from-user-id prod-id] :as prep-req}]
+  (let [product-name (-> [[:products {:id prod-id} [:pname]]]
+                         ha/sync-query
+                         vals
+                         ffirst
+                         :pname)
+        buyer-name (-> from-org-id auth/select-org-by-id :oname)
+        from-user-name (-> from-user-id auth/select-user-by-id :uname)]
+    (aws/invoke sns {:op :Publish
+                     :request {:TopicArn "arn:aws:sns:us-east-1:744151627940:ui-misc"
+                               :Subject "Preposal Request"
+                               :Message (format
+                                         "Preposal Request
+Buyer: '%s'
+Buyer User: '%s'
+
+Product: '%s'
+"
+                                         buyer-name from-user-name
+                                         product-name)}})))
 
 ;; TODO there could be multiple preposals/rounds per buyer-vendor pair
 
@@ -174,6 +234,7 @@ User '%s'
 
 (defmethod com/handle-ws-inbound :b/create-preposal-req
   [{:keys [prep-req]} ws-id sub-fn]
+  (send-prep-req prep-req)
   (docs/create-preposal-req-form prep-req))
 
 ;; TODO record which user started round
@@ -184,3 +245,15 @@ User '%s'
 (defmethod com/handle-ws-inbound :b/req-new-prod-cat
   [{:keys [user-id org-id req]} ws-id sub-fn]
   (send-new-prod-cat-req user-id org-id req))
+
+(defmethod com/handle-ws-inbound :b/request-vendor-profile
+  [{:keys [vendor-id buyer-id]} ws-id sub-fn]
+  (send-vendor-profile-req vendor-id buyer-id))
+
+(defmethod com/handle-ws-inbound :b/setup-call
+  [{:keys [buyer-id product-id]} ws-id sub-fn]
+  (send-setup-call-req buyer-id product-id))
+
+(defmethod com/handle-ws-inbound :b/ask-a-question
+  [{:keys [product-id message buyer-id]} ws-id sub-fn]
+  (send-ask-question-req product-id message buyer-id))
