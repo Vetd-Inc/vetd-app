@@ -67,14 +67,7 @@
        (when (not= "" free-trial-terms)
          [bc/c-display-field {:width 4} "Free Trial Terms" free-trial-terms])
        (when (not= "" pricing-model)
-         [bc/c-display-field {:width 6} "Pricing Model" pricing-model])]
-      [:> ui/GridRow
-       [bc/c-display-field nil (str "About " (:oname from-org))
-        [:<>
-         (when (not= "" website)
-           [:span "Website: " website [:br]])
-         (when (not= "" employee-count)
-           [:span "Number of Employees: " employee-count])]]]]]))
+         [bc/c-display-field {:width 6} "Pricing Model" pricing-model])]]]))
 
 (defn c-page []
   (let [preposal-idstr& (rf/subscribe [:preposal-idstr])
@@ -118,10 +111,10 @@
        [:div.sidebar
         [:div {:style {:padding "0 15px"}}
          [:> ui/Button {:on-click #(rf/dispatch [:b/nav-preposals])
-                        :color "gray"
+                        :basic true
                         :icon true
                         :size "small"
-                        :style {:width "100%"}
+                        :fluid true
                         :labelPosition "left"}
           "All Preposals"
           [:> ui/Icon {:name "left arrow"}]]]
@@ -132,11 +125,16 @@
                [bc/c-start-round-button {:etype :product
                                          :eid (:id product)
                                          :ename (:pname product)
-                                         :props {:fluid true}}]])))]
+                                         :props {:fluid true}}]
+               [:br]
+               [bc/c-setup-call-button product (:vendor product)]
+               [:br]
+               [bc/c-ask-a-question-button product (:vendor product)]])))]
        [:div.inner-container
         (if (= :loading @preps&)
           [cc/c-loader]
-          (let [preposal (-> @preps& :docs first)]
+          (let [preposal (-> @preps& :docs first)
+                {:keys [docs-out id oname]} (-> preposal :product :vendor)]
             [:<>
              [c-preposal preposal]
-             [bc/c-vendor-profile (-> preposal :product :vendor :docs-out first)]]))]])))
+             [bc/c-vendor-profile (first docs-out) id oname]]))]])))

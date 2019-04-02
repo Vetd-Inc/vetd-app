@@ -2,10 +2,16 @@
   (:require [vetd-app.buyers.components :as bc]
             [vetd-app.common.components :as cc]
             [vetd-app.ui :as ui]
+            [vetd-app.util :as util]
             [vetd-app.docs :as docs]
             [reagent.core :as r]
             [reagent.format :as format]
             [re-frame.core :as rf]))
+
+(def last-query-id (atom 0))
+
+(defn get-next-query-id []
+  (swap! last-query-id inc))
 
 ;; Events
 (rf/reg-event-fx
@@ -21,6 +27,64 @@
                :page-params {:product-idstr product-idstr})
     :analytics/page {:name "Buyers Product Detail"
                      :props {:product-idstr product-idstr}}}))
+
+(rf/reg-event-fx
+ :b/request-vendor-profile
+ (fn [{:keys [db]} [_ vendor-id vendor-name]]
+   (let [qid (get-next-query-id)]
+     {:ws-send {:payload {:cmd :b/request-vendor-profile
+                          :return {:handler :b/request-vendor-profile-return}
+                          :vendor-id vendor-id
+                          :buyer-id (util/db->current-org-id db)}}
+      :analytics/track {:event "Request"
+                        :props {:category "Vendor Profile"
+                                :label vendor-name}}})))
+
+(rf/reg-event-fx
+ :b/request-vendor-profile-return
+ (constantly
+  {:toast {:type "success"
+           :title "Company Profile Requested"
+           :message "We'll let you know when the profile is added."}}))
+
+(rf/reg-event-fx
+ :b/setup-call
+ (fn [{:keys [db]} [_ product-id product-name]]
+   (let [qid (get-next-query-id)]
+     {:ws-send {:payload {:cmd :b/setup-call
+                          :return {:handler :b/setup-call-return}
+                          :product-id product-id
+                          :buyer-id (util/db->current-org-id db)}}
+      :analytics/track {:event "Setup Call"
+                        :props {:category "Product"
+                                :label product-name}}})))
+
+(rf/reg-event-fx
+ :b/setup-call-return
+ (constantly
+  {:toast {:type "success"
+           :title "Setup a Call"
+           :message "We'll setup a call for you soon."}}))
+
+(rf/reg-event-fx
+ :b/ask-a-question
+ (fn [{:keys [db]} [_ product-id product-name message]]
+   (let [qid (get-next-query-id)]
+     {:ws-send {:payload {:cmd :b/ask-a-question
+                          :return {:handler :b/ask-a-question-return}
+                          :product-id product-id
+                          :message message
+                          :buyer-id (util/db->current-org-id db)}}
+      :analytics/track {:event "Ask A Question"
+                        :props {:category "Product"
+                                :label product-name}}})))
+
+(rf/reg-event-fx
+ :b/ask-a-question-return
+ (constantly
+  {:toast {:type "success"
+           :title "Question Sent!"
+           :message "We'll get an answer for you soon."}}))
 
 ;; Subscriptions
 (rf/reg-sub
@@ -56,15 +120,7 @@
                        url]])]]]
     [:> ui/GridRow
      [bc/c-display-field {:width 6} "Pitch" "Unavailable (Request a Preposal)"]
-     [bc/c-display-field {:width 6} "Estimated Price" "Unavailable (Request a Preposal)"]]
-    (when (not= "" (:url vendor))
-      [:> ui/GridRow
-       [bc/c-display-field nil (str "About " (:oname vendor))
-        [:span "Website: " [:a {:href (str "http://" (:url vendor)) ; todo: fragile
-                                :target "_blank"}
-                            [:> ui/Icon {:name "external square"
-                                         :color "blue"}]
-                            (:url vendor)]]]])]])
+     [bc/c-display-field {:width 6} "Estimated Price" "Unavailable (Request a Preposal)"]]]])
 
 (defn c-page []
   (let [product-idstr& (rf/subscribe [:product-idstr])
@@ -98,10 +154,10 @@
        [:div.sidebar
         [:div {:style {:padding "0 15px"}}
          [:> ui/Button {:on-click #(rf/dispatch [:b/nav-search])
-                        :color "gray"
+                        :basic true
                         :icon true
                         :size "small"
-                        :style {:width "100%"}
+                        :fluid true
                         :labelPosition "left"}
           "Back to Search"
           [:> ui/Icon {:name "left arrow"}]]]
@@ -123,7 +179,8 @@
                    :trigger (r/as-element
                              [:> ui/Label {:color "teal"
                                            :size "large"
-                                           :basic true}
+                                           :basic true
+                                           :style {:display "block"}}
                               "Preposal Requested"])}]
                  [:> ui/Popup
                   {:content (str "Get a pricing estimate, personalized pitch, and more from "
@@ -134,13 +191,19 @@
                              [:> ui/Button {:onClick #(rf/dispatch [:b/create-preposal-req product vendor])
                                             :color "teal"
                                             :fluid true
-                                            :style {:margin-right 15}}
-                              "Request Preposal"])}])])))]
+                                            :icon true
+                                            :labelPosition "left"}
+                              "Request Preposal"
+                              [:> ui/Icon {:name "wpforms"}]])}])
+               [:br]
+               [bc/c-setup-call-button product vendor]
+               [:br]
+               [bc/c-ask-a-question-button product vendor]])))]
        [:div.inner-container
         (if (= :loading @products&)
           [cc/c-loader]
-          (let [product (-> @products& :products first)]
+          (let [product (-> @products& :products first)
+                {:keys [docs-out id oname]} (:vendor product)]
             [:<>
              [c-product product]
-             (when (not-empty (-> product :vendor :docs-out))
-               [bc/c-vendor-profile (-> product :vendor :docs-out first)])]))]])))
+             [bc/c-vendor-profile (first docs-out) id oname]]))]])))

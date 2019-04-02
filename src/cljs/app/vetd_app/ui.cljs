@@ -96,6 +96,10 @@
 (def nx-sub-accordion (partial nx-any-accordion AccordionAccordion))
 
 ;; Modal
+(def Modal (component "Modal"))
+(def ModalHeader (component "Modal" "Header"))
+(def ModalContent (component "Modal" "Content"))
+(def ModalActions (component "Modal" "Actions"))
 (def Confirm (component "Confirm"))
 
 ;; Toastr
