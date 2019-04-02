@@ -23,6 +23,21 @@
             [:= :d.id nil]
             [:= :o.deleted nil]]}))
 
+(defn count-products-without-profile []
+  (db/hs-query
+   {:select [:%count.*]
+    :from [[:products :p]]
+    :left-join [[:docs :d]
+                [:and
+                 [:= :d.subject :p.id]
+                 [:= :d.dtype "product-profile"]
+                 [:= :d.deleted nil]]]
+    :where [:and
+            [:= :d.id nil]
+            [:= :p.deleted nil]]}))
+
+#_(count-products-without-profile)
+
 (defn get-vendors-without-profile-with-limit [limit]
   (db/hs-query
    {:select [:o.*]
@@ -36,6 +51,20 @@
             [:= :o.vendor_qm true]
             [:= :d.id nil]
             [:= :o.deleted nil]]
+    :limit limit}))
+
+(defn get-products-without-profile-with-limit [limit]
+  (db/hs-query
+   {:select [:p.*]
+    :from [[:products :p]]
+    :left-join [[:docs :d]
+                [:and
+                 [:= :d.subject :p.id]
+                 [:= :d.dtype "product-profile"]
+                 [:= :d.deleted nil]]]
+    :where [:and
+            [:= :d.id nil]
+            [:= :p.deleted nil]]
     :limit limit}))
 
 (defn get-latest-vendor-profile-form []
@@ -63,11 +92,36 @@
       :forms
       first))
 
+(defn get-latest-product-profile-form []
+  (-> [[:forms
+        {:ftype "product-profile"
+         :deleted nil
+         :_order_by {:created :desc}
+         :_limit 1}
+        [:id
+         :title
+         :ftype
+         :fsubtype
+         [:prompts {:deleted nil}
+          [:id 
+           :prompt
+           :sort
+           [:fields {:deleted nil}
+            [:id 
+             :fname
+             :ftype
+             :fsubtype
+             :list?
+             :sort]]]]]]]
+      ha/sync-query
+      :forms
+      first))
+
 ;; top-level doc fields:  doc-title from-org doc-dtype doc-dsubtype
 
 ;; response-field fields: response ([{:state X}])
 
-(defn apply-vendor-values-to-prompts
+(defn apply-values-to-prompts
   [v {:keys [prompt fields] :as p}]
   (when-let [resp-fields (v prompt)]
     (assoc p
@@ -86,7 +140,7 @@
          :to-org {:id id}
          :doc-dtype ftype
          :doc-dsubtype fsubtype
-         :prompts (keep (partial apply-vendor-values-to-prompts v)
+         :prompts (keep (partial apply-values-to-prompts v)
                         prompts)))
 
 (defn mk-vendor-values-from-db-rec
@@ -109,6 +163,41 @@
     :done))
 
 #_ (create-vendor-profiles 1)
+
+(defn apply-product-values-to-form
+  [{:keys [pname product] :as v} {:keys [prompts ftype fsubtype] :as form}]
+  (assoc form
+         :doc-title (format "Product Profile for %s" pname)
+         :doc-dtype ftype
+         :doc-dsubtype fsubtype
+         :product product
+         :prompts (keep (partial apply-values-to-prompts v)
+                        prompts)))
+
+(defn mk-product-values-from-db-rec
+  [{:keys [pname id long_desc logo url]}]
+  {:id id
+   :pname pname
+   :product {:id id}
+   "Describe your product or service" {"value" long_desc}
+   "Product Logo" {"value" logo}
+   "Product Website" {"value" url}})
+
+(defn create-product-profiles [n]
+  (let [form (get-latest-product-profile-form)]
+    (doseq [v (get-products-without-profile-with-limit n)]
+      (try
+        (println (:id v) (:pname v))
+        (-> v
+            mk-product-values-from-db-rec
+            (apply-product-values-to-form form)
+            docs/create-doc-from-form-doc)
+        (catch Throwable t
+          (clojure.pprint/pprint t))))
+    :done))
+
+#_ (create-product-profiles 100)
+
 
 #_
 (clojure.pprint/pprint 
