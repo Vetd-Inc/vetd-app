@@ -4,7 +4,33 @@
             [com.vetd.app.util :as ut]
             [com.vetd.app.hasura :as ha]
             [taoensso.timbre :as log]
-            [honeysql.core :as hs]))
+            [honeysql.core :as hs]
+            clojure.data))
+
+(defn get-latest-form-doc-by-ftype&from-org
+  [ftype doc-from-org-id]
+  (-> [[:form-docs {:ftype ftype
+                    :doc-from-org-id doc-from-org-id
+                    :_order_by {:created :desc}
+                    :_limit 1}
+        [:id :title :doc-id :doc-title :doc-from-org-id
+         :ftype :fsubtype
+         [:from-org [:id :oname]]
+         [:from-user [:id :uname]]
+         [:to-org [:id :oname]]
+         [:to-user [:id :uname]]
+         [:prompts {:deleted nil
+                    :_order_by {:sort :asc}}
+          [:id :idstr :prompt :descr
+           [:fields
+            [:id :idstr :fname :ftype
+             :fsubtype :list?]]]]
+         [:responses
+          [:id :prompt-id :notes
+           [:fields [:id :pf-id :idx :sval :nval :dval]]]]]]]
+      ha/sync-query
+      :form-docs
+      first))
 
 ;; TODO use prompt-field data type
 (defn convert-field-val
@@ -24,8 +50,12 @@
 (defn insert-form
   [{:keys [form-temp-id title descr notes from-org-id
            from-user-id to-org-id to-user-id status
-           ftype fsubtype subject]}]
-  (let [[id idstr] (ut/mk-id&str)]
+           ftype fsubtype subject
+           id idstr]}
+   & [use-id?]]
+  (let [[id idstr] (if use-id?
+                     [id idstr]
+                     (ut/mk-id&str))]
     (-> (db/insert! :forms
                     {:id id
                      :idstr idstr
@@ -44,6 +74,26 @@
                      :to_org_id to-org-id
                      :to_user_id to-user-id
                      :status status})
+        first)))
+
+(defn insert-form-template
+  [{:keys [title descr notes
+           ftype fsubtype subject
+           id idstr]}
+   & [use-id?]]
+  (let [[id idstr] (if use-id?
+                     [id idstr]
+                     (ut/mk-id&str))]
+    (-> (db/insert! :form_templates
+                    {:id id
+                     :idstr idstr
+                     :created (ut/now-ts)
+                     :updated (ut/now-ts)
+                     :deleted nil
+                     :ftype ftype
+                     :fsubtype fsubtype
+                     :title title
+                     :descr descr})
         first)))
 
 (defn insert-doc
@@ -71,8 +121,10 @@
         first)))
 
 (defn insert-prompt
-  [{:keys [prompt descr]}]
-  (let [[id idstr] (ut/mk-id&str)]
+  [{:keys [prompt descr id idstr]} & [use-id?]]
+  (let [[id idstr] (if use-id?
+                     [id idstr]
+                     (ut/mk-id&str))]
     (-> (db/insert! :prompts
                     {:id id
                      :idstr idstr
@@ -158,7 +210,7 @@
          (db/insert! :resp_fields)
          first)))
 
-(defn insert-prompt-field
+(defn insert-default-prompt-field
   [prompt-id {sort' :sort}]
   (let [[id idstr] (ut/mk-id&str)]
     (->> (db/insert! :prompt_fields
@@ -173,6 +225,25 @@
                       :descr ""
                       :ftype "s"
                       :fsubtype "single"})
+         first)))
+
+(defn insert-prompt-field
+  [{:keys [prompt-id fname list? descr ftype fsubtype id idstr]} & [use-id?]]
+  (let [[id idstr] (if use-id?
+                     [id idstr]
+                     (ut/mk-id&str))]
+    (->> (db/insert! :prompt_fields
+                     {:id id
+                      :idstr idstr
+                      :created (ut/now-ts)
+                      :updated (ut/now-ts)
+                      :deleted nil
+                      :prompt_id prompt-id
+                      :fname fname
+                      :list_qm list?
+                      :descr descr
+                      :ftype ftype
+                      :fsubtype fsubtype})
          first)))
 
 (defn create-attached-doc-response
@@ -215,6 +286,18 @@
   (db/hs-exe! {:update :prompt_fields
                :set {:deleted (ut/now-ts)}
                :where [:= :id prompt-field-id]}))
+
+(defn delete-form-prompt
+  [form-prompt-id]
+  (db/hs-exe! {:update :form_prompt
+               :set {:deleted (ut/now-ts)}
+               :where [:= :id form-prompt-id]}))
+
+(defn delete-form-template-prompt
+  [form-template-prompt-id]
+  (db/hs-exe! {:update :form_template_prompt
+               :set {:deleted (ut/now-ts)}
+               :where [:= :id form-template-prompt-id]}))
 
 ;; necessary? not used - Bill
 (defn create-form&doc
@@ -291,3 +374,114 @@
                                  id
                                  100)))
 
+(defn upsert-form
+  [{:keys [id] :as form} & [use-id?]]
+  (let [exists? (-> [[:forms {:id id} [:id]]]
+                    ha/sync-query
+                    :forms
+                    empty?
+                    not)]
+    (if exists?
+      ;; TODO Don't use db/update-any! -- not efficient
+      (-> form (dissoc :prompts)
+          ha/walk-clj-kw->sql-field db/update-any!)
+      (insert-form form use-id?))))
+
+(defn upsert-prompt
+  [{:keys [id] :as prompt} & [use-id?]]
+  (let [exists? (-> [[:prompts {:id id} [:id]]]
+                    ha/sync-query
+                    :prompts
+                    empty?
+                    not)]
+    (if exists?
+      ;; TODO Don't use db/update-any! -- not efficient
+      (-> prompt (dissoc :fields :form-template-id :sort)
+          ha/walk-clj-kw->sql-field db/update-any!)
+      (insert-prompt prompt use-id?))))
+
+(defn upsert-form-template
+  [{:keys [id] :as form-template} & [use-id?]]
+  (let [exists? (-> [[:form-templates {:id id} [:id]]]
+                    ha/sync-query
+                    :form-templates
+                    empty?
+                    not)]
+    (if exists?
+      ;; TODO Don't use db/update-any! -- not efficient
+      (-> form-template (dissoc :prompts) ha/walk-clj-kw->sql-field db/update-any!)
+      (insert-form-template form-template use-id?))))
+
+(defn upsert-prompt-field
+  [{:keys [id prompt-id] :as field} & [use-id?]]
+  (let [exists? (-> [[:prompts {:id prompt-id}
+                      [:id
+                       [:fields {:id id} [:id]]]]]
+                    ha/sync-query
+                    :prompts
+                    first
+                    :fields
+                    empty?
+                    not)]
+    (if exists?
+      ;; TODO Don't use db/update-any! -- not efficient
+      (-> field ha/walk-clj-kw->sql-field db/update-any!)
+      (insert-prompt-field field use-id?))))
+
+(defn upsert-form-prompts*
+  [form-id]
+  (some->> [[:forms {:id form-id}
+             [:id
+              [:prompts [:id :rpid :sort]]]]]
+           ha/sync-query
+           :forms
+           first
+           :prompts))
+
+(defn upsert-form-prompts** [old-prompts new-prompts]
+  (let [[a b] (clojure.data/diff
+               (group-by :id old-prompts)
+               (group-by :id new-prompts))]
+    {:kill-rpids (->> a
+                      vals
+                      flatten
+                      (filter :id)
+                      (map :rpid))
+     :new-form-prompts (->> b
+                            vals
+                            flatten
+                            (filter :id))}))
+
+(defn upsert-form-prompts
+  [form-id new-prompts & [use-id?]]
+  (let [old-prompts (upsert-form-prompts* form-id)
+        {:keys [kill-rpids new-form-prompts]}
+        (upsert-form-prompts** old-prompts new-prompts)]
+    (doseq [form-prompt-id kill-rpids]
+      (delete-form-prompt form-prompt-id))
+    (doseq [{:keys [id fields] sort' :sort :as prompt} new-form-prompts]
+      (mapv upsert-prompt-field fields)
+      (upsert-prompt prompt use-id?)
+      (insert-form-prompt form-id id sort'))))
+
+(defn upsert-form-template-prompts*
+  [form-template-id]
+  (some->> [[:form-templates {:id form-template-id}
+             [:id
+              [:prompts [:id :rpid :sort]]]]]
+           ha/sync-query
+           :form-templates
+           first
+           :prompts))
+
+(defn upsert-form-template-prompts
+  [form-template-id new-prompts & [use-id?]]
+  (let [old-prompts (upsert-form-template-prompts* form-template-id)
+        {:keys [kill-rpids new-form-prompts]}
+        (upsert-form-prompts** old-prompts new-prompts)]
+    (doseq [form-template-prompt-id kill-rpids]
+      (delete-form-template-prompt form-template-prompt-id))
+    (doseq [{:keys [id fields] sort' :sort :as prompt} new-form-prompts]
+      (mapv upsert-prompt-field fields)
+      (upsert-prompt prompt use-id?)
+      (insert-form-template-prompt form-template-id id sort'))))

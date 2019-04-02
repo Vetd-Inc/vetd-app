@@ -123,20 +123,24 @@ WHERE table_schema = 'vetd' AND table_catalog = 'vetd1';")
 (defn find-entity-table-by-id [id]
   (when id
     (loop [[head & tail] (select-all-table-names-MZ "vetd")]
-      (let [r (try
-                (hs-query {:select [:id]
-                           :from [(keyword head)]
-                           :where [:= :id id]
-                           :limit 1})
-                (catch Throwable t
-                  nil))]
-        (if (not-empty r)
-          head
-          (recur tail))))))
+      (if head
+        (let [r (try
+                  (hs-query {:select [:id]
+                             :from [(keyword head)]
+                             :where [:= :id id]
+                             :limit 1})
+                  (catch Throwable t
+                    nil))]
+          (if (not-empty r)
+            head
+            (recur tail)))
+        nil))))
 
 (defn update-any! [{:keys [id] :as m}]
-  (hs-exe! {:update (-> id find-entity-table-by-id keyword)
-            :set (-> m
-                     (assoc :updated (ut/now-ts))
-                     (dissoc :id :idstr :created))
-            :where [:= :id id]}))
+  (if-let [tbl (-> id find-entity-table-by-id keyword)]
+    (hs-exe! {:update tbl
+              :set (-> m
+                       (assoc :updated (ut/now-ts))
+                       (dissoc :id :idstr :created))
+              :where [:= :id id]})
+    (throw (Exception. (format "Could not find entity with id %s." id)))))

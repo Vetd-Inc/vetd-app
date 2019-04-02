@@ -17,7 +17,7 @@
 ;; :pre-init :init-sent :ackd :closed
 
 (defonce cn& (atom {:ws nil
-                :state :closed}))
+                    :state :closed}))
 
 (def last-ka& (atom nil))
 

@@ -34,7 +34,7 @@
 
 (defmethod com/handle-ws-inbound :a/create-prompt-field
   [{:keys [prompt-id]} ws-id sub-fn]
-  (docs/insert-prompt-field prompt-id {:sort 0}))
+  (docs/insert-default-prompt-field prompt-id {:sort 0}))
 
 (defmethod com/handle-ws-inbound :a/dissoc-template-prompt
   [{:keys [form-template-prompt-id]} ws-id sub-fn]
