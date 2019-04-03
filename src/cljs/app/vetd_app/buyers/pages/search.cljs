@@ -92,6 +92,7 @@
  (fn [{:keys [db]} [_ product vendor]]
    (let [qid (get-next-query-id)]
      {:ws-send {:payload {:cmd :b/create-preposal-req
+
                           :return {:handler :b/create-preposal-req-return
                                    :product product
                                    :vendor vendor}

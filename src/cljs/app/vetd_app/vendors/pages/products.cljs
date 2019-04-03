@@ -133,7 +133,34 @@
                                   :url
                                   :created
                                   :updated
-                                  [:categories [:id]]]]]}])]
+                                  [:categories [:id]]
+                                  [:form-docs {:ftype "product-profile"}
+                                   [:id :title :ftype :fsubtype
+                                    :doc-id :doc-title
+                                    [:prompts {:_order_by {:sort :asc}}
+                                     [:id :idstr :prompt :descr :sort
+                                      [:fields {:_order_by {:sort :asc}}
+                                       [:id :idstr :fname :ftype
+                                        :fsubtype :list? :sort]]]]
+                                    [:responses
+                                     [:id :prompt-id :notes
+                                      [:fields [:id :pf-id :idx :sval :nval :dval]]]]]]]]]}])
+        prod-prof-form (-> @(rf/subscribe [:gql/q
+                                           {:queries
+                                            [[:forms {:ftype "product-profile"
+                                                      :_order_by {:created :desc}
+                                                      :_limit 1
+                                                      :deleted nil}
+                                              [:id :title :ftype :fsubtype
+                                               [:prompts {:_order_by {:sort :asc}
+                                                          :deleted nil}
+                                                [:id :idstr :prompt :descr :sort
+                                                 [:fields {:_order_by {:sort :asc}
+                                                           :deleted nil}
+                                                  [:id :idstr :fname :ftype
+                                                   :fsubtype :list? :sort]]]]]]]}])
+                           :forms
+                           first)]
     (fn []
       (def p1 @prods&)
       [:div
@@ -142,6 +169,15 @@
                       :on-click #(rf/dispatch [:v/new-product @org-id&])}
         "New Product"]
        (for [p (:products @prods&)]
-         ^{:key (str "form" (:id p))}
-         [c-product p])])))
+         [:div
+          ^{:key (str "product" (:id p))}
+          [c-product p]
+          ^{:key (str "profile" (:id p))}
+          [docs/c-form-maybe-doc
+           (docs/mk-form-doc-state (or (-> p
+                                           :form-docs
+                                           first)
+                                       prod-prof-form))]])])))
+
+#_ (cljs.pprint/pprint p1)
 
