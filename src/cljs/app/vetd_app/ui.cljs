@@ -63,9 +63,9 @@
   Fixes the bug where value updates cause cursor position to move to end of input."
   [{:keys [value on-change class size icon autoFocus spellCheck placeholder]}]
   [:div.ui.input
-   {:class (str (when class (str " " class))
-                (when icon " icon")
-                (when size (str " " size)))}
+   {:class (str class " "
+                size " "
+                (when icon "icon"))}
    [:input {:type "text"
             :value value
             :autoFocus autoFocus
