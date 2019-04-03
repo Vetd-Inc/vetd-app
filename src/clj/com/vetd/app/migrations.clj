@@ -588,7 +588,6 @@
                                   [:= :r.id :dr.resp_id]]}
                    :owner :vetd
                    :grants {:hasura [:SELECT]}}]
-
     [:create-view {:schema :vetd
                    :name :prompts_by_form
                    :honey {:select [[:rp.id :rpid]

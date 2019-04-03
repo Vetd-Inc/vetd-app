@@ -30,10 +30,11 @@
  :ws-connected
  (fn [db [_ url]]
    (println "Websocket connected to: " url)
-   (let [q @ws-queue]
+   (let [q @ws-queue
+         ws @ws&]
      (reset! ws-queue [])
      (doseq [f q]
-       (f)))
+       (f ws)))
    db))
 
 (rf/reg-event-fx
@@ -100,7 +101,7 @@
     (if (and ws
              (= 1 (.-readyState ws)))
       (.send ws (t/write json-writer payload))
-      (swap! ws-queue conj #(.send ws (t/write json-writer payload))))))
+      (swap! ws-queue conj #(.send % (t/write json-writer payload))))))
 
 (rf/reg-fx
  :ws-send

@@ -38,85 +38,37 @@
                         :product-id product-id}}}))
 
 (defn c-product
-  [{:keys [id pname short-desc long-desc logo url created updated categories]}]
-  (let [all-cats& (rf/subscribe [:gql/q
-                                 {:queries
-                                  [[:categories [:id :cname]]]}])
-        org-id& (rf/subscribe [:org-id])
-        pname& (r/atom pname)
-        short-desc& (r/atom short-desc)
-        long-desc& (r/atom long-desc)
-        logo& (r/atom logo)
-        url& (r/atom url)
-        categories& (r/atom (mapv :id categories))]
-    (fn [{:keys [id pname short-desc long-desc logo url created updated categories]}]
-      (def c1 categories)
-      (let [all-cats (->> @all-cats&
-                          :categories
-                          (mapv (fn [{:keys [id cname]}]
-                                  {:key id
-                                   :value id
-                                   :text cname})))]
-        [:div {:style {:width "400px"}}
-         [:> ui/Form {:style {:margin "10px"
-                              :padding "10px"
-                              :border "solid 1px #666666"}}
-          [:div "created: " created]
-          [:div "updated: " updated]       
-          [:> ui/FormField
-           "Product Name"
-           [:> ui/Input {:defaultValue @pname&
-                         :placeholder "Product Name"
-                         :spellCheck false
-                         :onChange (fn [_ this] (reset! pname& (.-value this)))}]]
-          "Short Description"
-          [:> ui/FormField
-           [:> ui/TextArea {:defaultValue @short-desc&
-                            :style {:height "100px"}
-                            :placeholder "Short Description"
-                            :spellCheck false
-                            :onChange (fn [_ this] (reset! short-desc&  (.-value this)))}]]
-          "Long Description"
-          [:> ui/FormField
-           [:> ui/TextArea {:defaultValue @long-desc&
-                            :style {:height "100px"}                        
-                            :placeholder "Long Description"
-                            :spellCheck false
-                            :onChange (fn [_ this] (reset! long-desc&  (.-value this)))}]]
-          "Logo"
-          [:> ui/FormField
-           [:> ui/Input {:defaultValue @logo&
-                         :placeholder "Logo"
-                         :spellCheck false
-                         :onChange (fn [_ this] (reset! logo& (.-value this)))}]]
-          "Product Website"
-          [:> ui/FormField
-           [:> ui/Input {:defaultValue @url&
-                         :placeholder "Product Website"
-                         :spellCheck false
-                         :onChange (fn [_ this] (reset! url& (.-value this)))}]]
-          "Categories"
-          [:> ui/Dropdown {:defaultValue @categories&
-                           :fluid true
-                           :multiple true
-                           :search true
-                           :selection true
-                           :onChange (fn [_ this] (reset! categories& (.-value this)))
-                           :options all-cats}]
-          [:> ui/Button {:color "teal"
-                         :fluid true
-                         :on-click #(rf/dispatch [:v/save-product {:id id
-                                                                   :pname @pname&
-                                                                   :short-desc @short-desc&
-                                                                   :long-desc @long-desc&
-                                                                   :logo @logo&
-                                                                   :url @url&
-                                                                   :categories @categories&}])}
-           "Save Product"]
-          [:> ui/Button {:color "red"
-                         :fluid true
-                         :on-click #(rf/dispatch [:v/delete-product id])}
-           "DELETE  Product"]]]))))
+  [{:keys [id pname form-doc created updated]}]
+  (let [pname& (r/atom pname)
+        save-doc-fn& (atom nil)]
+    (fn [{:keys [id pname form-doc created updated]}]
+      [:div {:style {:width "800px"}}
+       [:> ui/Form {:style {:margin "10px"
+                            :padding "10px"
+                            :border "solid 1px #666666"}}
+        [:div "created: " created]
+        [:div "updated: " updated]       
+        [:> ui/FormField
+         "Product Name"
+         [:> ui/Input {:defaultValue @pname&
+                       :placeholder "Product Name"
+                       :spellCheck false
+                       :onChange (fn [_ this] (reset! pname& (.-value this)))}]]
+        [docs/c-form-maybe-doc
+         (docs/mk-form-doc-state form-doc)
+         {:return-save-fn& save-doc-fn&
+          :c-wrapper [:div]}]
+        [:> ui/Button {:color "teal"
+                       :fluid true
+                       :on-click #(do
+                                    (rf/dispatch [:v/save-product {:id id
+                                                                   :pname @pname&}])
+                                    (@save-doc-fn&))}
+         "Save Product"]
+        [:> ui/Button {:color "red"
+                       :fluid true
+                       :on-click #(rf/dispatch [:v/delete-product id])}
+         "DELETE  Product"]]])))
 
 (defn c-page []
   (let [org-id& (rf/subscribe [:org-id])
@@ -137,6 +89,7 @@
                                   [:form-docs {:ftype "product-profile"}
                                    [:id :title :ftype :fsubtype
                                     :doc-id :doc-title
+                                    [:product [:id]]
                                     [:prompts {:_order_by {:sort :asc}}
                                      [:id :idstr :prompt :descr :sort
                                       [:fields {:_order_by {:sort :asc}}
@@ -145,39 +98,35 @@
                                     [:responses
                                      [:id :prompt-id :notes
                                       [:fields [:id :pf-id :idx :sval :nval :dval]]]]]]]]]}])
-        prod-prof-form (-> @(rf/subscribe [:gql/q
-                                           {:queries
-                                            [[:forms {:ftype "product-profile"
-                                                      :_order_by {:created :desc}
-                                                      :_limit 1
+        prod-prof-form& (rf/subscribe [:gql/q
+                                       {:queries
+                                        [[:forms {:ftype "product-profile"
+                                                  :_order_by {:created :desc}
+                                                  :_limit 1
+                                                  :deleted nil}
+                                          [:id :title :ftype :fsubtype
+                                           [:prompts {:_order_by {:sort :asc}
                                                       :deleted nil}
-                                              [:id :title :ftype :fsubtype
-                                               [:prompts {:_order_by {:sort :asc}
-                                                          :deleted nil}
-                                                [:id :idstr :prompt :descr :sort
-                                                 [:fields {:_order_by {:sort :asc}
-                                                           :deleted nil}
-                                                  [:id :idstr :fname :ftype
-                                                   :fsubtype :list? :sort]]]]]]]}])
-                           :forms
-                           first)]
+                                            [:id :idstr :prompt :descr :sort
+                                             [:fields {:_order_by {:sort :asc}
+                                                       :deleted nil}
+                                              [:id :idstr :fname :ftype
+                                               :fsubtype :list? :sort]]]]]]]}])]
     (fn []
       (def p1 @prods&)
-      [:div
-       [:> ui/Button {:color "teal"
-                      :fluid true
-                      :on-click #(rf/dispatch [:v/new-product @org-id&])}
-        "New Product"]
-       (for [p (:products @prods&)]
-         [:div
-          ^{:key (str "product" (:id p))}
-          [c-product p]
-          ^{:key (str "profile" (:id p))}
-          [docs/c-form-maybe-doc
-           (docs/mk-form-doc-state (or (-> p
-                                           :form-docs
-                                           first)
-                                       prod-prof-form))]])])))
-
-#_ (cljs.pprint/pprint p1)
-
+      (let (-> @prod-prof-form&
+               :forms
+               first [prod-prof-form ])
+        [:div
+         [:> ui/Button {:color "teal"
+                        :fluid true
+                        :on-click #(rf/dispatch [:v/new-product @org-id&])}
+          "New Product"]
+         (for [{:keys [id form-docs] :as p} (:products @prods&)]
+           [:div
+            ^{:key (str "product" id)}
+            [c-product (assoc p
+                              :form-doc
+                              (or (first form-docs)
+                                  (assoc prod-prof-form
+                                         :product {:id id})))]])]))))

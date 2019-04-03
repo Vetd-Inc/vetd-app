@@ -44,4 +44,6 @@
       [:div
        (for [preq (:form-docs @prep-reqs&)]
          ^{:key (str "form" (:id preq))}
-         [docs/c-form-maybe-doc (docs/mk-form-doc-state preq)])])))
+         [docs/c-form-maybe-doc
+          (docs/mk-form-doc-state preq)
+          {:show-submit true}])])))

@@ -47,7 +47,9 @@
       (if (= :loading @existing-profile&)
         [cc/c-loader]
         (if (not-empty (:form-docs @existing-profile&))
-          [docs/c-form-maybe-doc (docs/mk-form-doc-state (first (:form-docs @existing-profile&)))]
+          [docs/c-form-maybe-doc
+           (docs/mk-form-doc-state (first (:form-docs @existing-profile&)))
+           {:show-submit true}]
           (let [profile-forms& (rf/subscribe [:gql/sub
                                               {:queries
                                                [[:forms {:ftype "vendor-profile"
@@ -63,4 +65,5 @@
                 profile-form (first (:forms @profile-forms&))]
             [docs/c-form-maybe-doc (docs/mk-form-doc-state (assoc profile-form
                                                                   ;; this is reversed because of preposal request logic
-                                                                  :to-org {:id @org-id&}))]))))))
+                                                                  :to-org {:id @org-id&}))
+             {:show-submit true}]))))))
