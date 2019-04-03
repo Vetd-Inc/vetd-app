@@ -55,11 +55,11 @@
 (def ButtonGroup (component "Button" "Group"))
 (def ButtonOr (component "Button" "Or"))
 
-;; WARNING: use "input" (lowercase) if you need to handle value updates from an atom/sub (controlled elements). This is "Input" (capitalized) is safe for uncontrolled elements.
+;; WARNING: use "input" (lowercase) if you need to handle value updates from an atom/sub (controlled elements). This "Input" (capitalized) is safe for uncontrolled elements.
 (def Input (component "Input"))
 
 (defn input
-  "Creates a controlled text input with limited support for Semantic UI styles.
+  "Creates a controlled text input with limited support for Semantic UI features.
   Fixes the bug where value updates cause cursor position to move to end of input."
   [{:keys [value on-change class size icon autoFocus spellCheck placeholder]}]
   [:div.ui.input
