@@ -86,6 +86,12 @@
            :fields [:responses]
            :cols [:doc_id :doc_id]
            :rel :many-many}
+
+          {:tables [:vetd :form_docs
+                    :vetd :products]
+           :fields [:product :form-docs]
+           :cols [:doc_subject :id]
+           :rel :many-one}
           
           {:tables [:vetd :docs
                     :vetd :orgs]

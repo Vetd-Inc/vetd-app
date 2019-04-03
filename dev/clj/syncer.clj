@@ -26,7 +26,7 @@
       nil)))
 
 ;; this sucks. ws and alb not friends because no cookies -- Bill
-(def prod-ip "34.239.155.117")
+(def prod-ip "100.27.49.146")
 
 (defn mk-ws [ch]
   (let [ws @(ah/websocket-client #_"ws://localhost:5080/ws"
@@ -169,3 +169,4 @@
 #_ (sync-profile-forms-from-prod)
 
 #_ (sync-profile-form-templates-from-prod)
+
