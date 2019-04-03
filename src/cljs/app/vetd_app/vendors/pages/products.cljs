@@ -114,9 +114,9 @@
                                                :fsubtype :list? :sort]]]]]]]}])]
     (fn []
       (def p1 @prods&)
-      (let (-> @prod-prof-form&
-               :forms
-               first [prod-prof-form ])
+      (let [prod-prof-form (-> @prod-prof-form&
+                               :forms
+                               first )]
         [:div
          [:> ui/Button {:color "teal"
                         :fluid true
