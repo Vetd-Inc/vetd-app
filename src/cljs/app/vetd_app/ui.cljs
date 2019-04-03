@@ -35,6 +35,13 @@
 (def ItemDescription (component "ItemDescription"))
 (def ItemExtra (component "ItemExtra"))
 
+;; Label
+(def Label (component "Label"))
+(def LabelDetail (component "Label" "Detail"))
+(def Popup (component "Popup"))
+(def Icon (component "Icon"))
+(def Message (component "Message"))
+
 ;; Menu
 (def Menu (component "Menu"))
 (def MenuItem (component "Menu" "Item"))
@@ -47,18 +54,30 @@
 (def Button (component "Button"))
 (def ButtonGroup (component "Button" "Group"))
 (def ButtonOr (component "Button" "Or"))
+
+;; WARNING: use "input" (lowercase) if you need to handle value updates from an atom/sub (controlled elements). This is "Input" (capitalized) is safe for uncontrolled elements.
 (def Input (component "Input"))
+
+(defn input
+  "Creates a controlled text input with limited support for Semantic UI styles.
+  Fixes the bug where value updates cause cursor position to move to end of input."
+  [{:keys [value on-change class size icon autoFocus spellCheck placeholder]}]
+  [:div.ui.input
+   {:class (str (when class (str " " class))
+                (when icon " icon")
+                (when size (str " " size)))}
+   [:input {:type "text"
+            :value value
+            :autoFocus autoFocus
+            :spellCheck spellCheck
+            :on-change on-change
+            :placeholder placeholder}]
+   (when icon [:> Icon {:name icon}])])
+
 (def TextArea (component "TextArea"))
 (def Checkbox (component "Checkbox"))
 (def Select (component "Select"))
 (def Dropdown (component "Dropdown"))
-
-;; Label
-(def Label (component "Label"))
-(def LabelDetail (component "Label" "Detail"))
-(def Popup (component "Popup"))
-(def Icon (component "Icon"))
-(def Message (component "Message"))
 
 ;; Misc
 (def Image (component "Image"))
