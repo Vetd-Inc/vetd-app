@@ -167,29 +167,22 @@
          :doc-dsubtype fsubtype))
 
 (defn c-form-maybe-doc
-  [{:keys [id title product from-org from-user doc-id doc-title prompts] :as form-doc} & [{:keys [show-submit return-save-fn&]}]]
+  [{:keys [id title product from-org from-user doc-id doc-title prompts] :as form-doc} & [{:keys [show-submit return-save-fn& c-wrapper]}]]
   (let [save-fn #(rf/dispatch [:save-form-doc
                                (prep-form-doc form-doc)])]
     (when return-save-fn&
       (reset! return-save-fn& save-fn))
-    [:> ui/Form {:style {:width 400
-                         :margin-bottom 50}}
-     [:div
-      (or doc-title title)
-      (when product
-        [:div.product-name (:pname product)])
-      (when from-org
-        [:div.org-name (:oname from-org)])
-      (when from-user
-        [:div.user-name (:uname from-user)])]
-     (for [p (sort-by :sort prompts)]
-       ^{:key (str "prompt" (:id p))}
-       [(hooks/c-prompt :default) p])
-     (when show-submit
-       [:> ui/Button {:color "blue"
-                      :fluid true
-                      :on-click save-fn}
-        "Submit"])]))
+    (into (or c-wrapper
+              [:> ui/Form {:style {:width 400
+                                   :margin-bottom 50}}])
+          [:div
+           (or doc-title title)
+           (when product
+             [:div.product-name (:pname product)])
+           (when from-org
+             [:div.org-name (:oname from-org)])
+           (when from-user
+             [:div.user-name (:uname from-user)])])))
 
 
 (hooks/reg-hooks! hooks/c-prompt
