@@ -309,15 +309,14 @@
        [:> ui/GridRow
         [:> ui/GridColumn {:computer 4 :mobile 0}]
         [:> ui/GridColumn {:computer 8 :mobile 16}
-         [:> ui/Input {:class "product-search"
-                       :value @search-query&
-                       :size "big"
-                       :icon "search"
-                       :autoFocus true
-                       :spellCheck false
-                       :onChange (fn [_ this]
-                                   (rf/dispatch [:b/update-search-term (.-value this)]))
-                       :placeholder "Search products & categories..."}]]
+         [ui/input {:class "product-search"
+                    :value @search-query&
+                    :size "big"
+                    :icon "search"
+                    :autoFocus true
+                    :spellCheck false
+                    :on-change #(rf/dispatch [:b/update-search-term (-> % .-target .-value)])
+                    :placeholder "Search products & categories..."}]]
         [:> ui/GridColumn {:computer 4 :mobile 0}]]
        [:> ui/GridRow
         [:> ui/GridColumn {:computer 2 :mobile 0}]
