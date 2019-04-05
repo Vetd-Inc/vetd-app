@@ -37,7 +37,8 @@
                                              [:prompts {:ref-deleted nil
                                                         :_order_by {:sort :asc}}
                                               [:id :idstr :prompt :descr #_:sort ;; TODO sort
-                                               [:fields
+                                               [:fields {:deleted nil
+                                                         :_order_by {:sort :asc}}
                                                 [:id :idstr :fname :ftype
                                                  :fsubtype :list? #_:sort]]]]
                                              [:responses
@@ -59,7 +60,8 @@
                                                   [:prompts {:ref-deleted nil
                                                              :_order_by {:sort :asc}}
                                                    [:id :idstr :prompt :descr #_:sort ;; TODO sort
-                                                    [:fields
+                                                    [:fields {:deleted nil
+                                                              :_order_by {:sort :asc}}
                                                      [:id :idstr :fname :ftype
                                                       :fsubtype :list? #_:sort]]]]]]]}])
                 profile-form (first (:forms @profile-forms&))]
