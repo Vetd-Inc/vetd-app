@@ -34,7 +34,7 @@
                                              [:from-user [:id :uname]]
                                              [:to-org [:id :oname]]
                                              [:to-user [:id :uname]]
-                                             [:prompts {:deleted nil
+                                             [:prompts {:ref-deleted nil
                                                         :_order_by {:sort :asc}}
                                               [:id :idstr :prompt :descr #_:sort ;; TODO sort
                                                [:fields
@@ -56,7 +56,7 @@
                                                          :_order_by {:created :desc}
                                                          :_limit 1}
                                                  [:id :title :ftype :fsubtype
-                                                  [:prompts {:deleted nil
+                                                  [:prompts {:ref-deleted nil
                                                              :_order_by {:sort :asc}}
                                                    [:id :idstr :prompt :descr #_:sort ;; TODO sort
                                                     [:fields
