@@ -304,12 +304,13 @@
                                               {:idstr form-template-idstr}
                                               [:id :idstr :title
                                                [:prompts
-                                                {:rp-deleted nil
+                                                {:ref-deleted nil
                                                  :_order_by {:sort :asc}}
                                                 [:id :rpid :prompt :descr
                                                  :sort :form-template-id
                                                  [:fields
-                                                  {:_order_by {:sort :asc}}
+                                                  {:deleted nil
+                                                   :_order_by {:sort :asc}}
                                                   [:id
                                                    :fname :descr
                                                    :ftype :fsubtype
