@@ -300,29 +300,15 @@
       (insert-form-prompt form-id prompt-id sort'))
     form))
 
-(defn delete-template-prompt
-  [form-template-prompt-id]
-  (db/hs-exe! {:update :form_template_prompt
+(defn- update-deleted [tbl-kw id]
+  (db/hs-exe! {:update tbl-kw
                :set {:deleted (ut/now-ts)}
-               :where [:= :id form-template-prompt-id]}))
+               :where [:= :id id]}))
 
-(defn delete-form-prompt-field
-  [prompt-field-id]
-  (db/hs-exe! {:update :prompt_fields
-               :set {:deleted (ut/now-ts)}
-               :where [:= :id prompt-field-id]}))
-
-(defn delete-form-prompt
-  [form-prompt-id]
-  (db/hs-exe! {:update :form_prompt
-               :set {:deleted (ut/now-ts)}
-               :where [:= :id form-prompt-id]}))
-
-(defn delete-form-template-prompt
-  [form-template-prompt-id]
-  (db/hs-exe! {:update :form_template_prompt
-               :set {:deleted (ut/now-ts)}
-               :where [:= :id form-template-prompt-id]}))
+(def delete-template-prompt (partial update-deleted :form_template_prompt))
+(def delete-form-prompt-field (partial update-deleted :prompt_fields))
+(def delete-form-prompt (partial update-deleted :form_prompt))
+(def delete-form-template-prompt (partial update-deleted :form_template_prompt))
 
 ;; necessary? not used - Bill
 (defn create-form&doc
