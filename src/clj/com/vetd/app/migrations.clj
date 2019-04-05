@@ -830,7 +830,185 @@
     [:copy-from '{:name :mig-form-templates-2019-03-26
                   :ns com.vetd.app.migrations
                   :up-fn mig-form-templates-2019-03-26-up
-                  :down-fn mig-form-templates-2019-03-26-down}]]])
+                  :down-fn mig-form-templates-2019-03-26-down}]]
+
+   [[2019 4 5 00 00]
+    [:create-or-replace-view
+     {:schema :vetd
+      :name :categories_by_product
+      :honey {:select [[:pc.id :pcid]
+                       [:pc.id :ref_id]
+                       [:pc.deleted :ref_deleted]
+                       :pc.prod_id
+                       :c.id
+                       :c.idstr
+                       :c.cname
+                       :c.deleted]
+              :from [[:product_categories :pc]]
+              :join [[:categories :c]
+                     [:= :c.id :pc.cat_id]]}
+      :owner :vetd
+      :grants {:hasura [:SELECT]}}]
+
+    [:create-or-replace-view
+     {:schema :vetd
+      :name :products_by_round
+      :honey {:select [[:rp.id :rpid]
+                       [:rp.id :ref_id]
+                       [:rp.deleted :ref_deleted]
+                       :rp.round_id
+                       :p.id
+                       :p.idstr                                    
+                       :p.created
+                       :p.pname
+                       :p.vendor_id
+                       :p.short_desc
+                       :p.long_desc
+                       :p.logo
+                       :p.url
+                       :p.deleted]
+              :from [[:round_product :rp]]
+              :join [[:products :p]
+                     [:= :p.id :rp.product_id]]}
+      :owner :vetd
+      :grants {:hasura [:SELECT]}}]
+
+    [:create-or-replace-view
+     {:schema :vetd
+      :name :categories_by_round
+      :honey {:select [[:rc.id :rcid]
+                       :rc.round_id
+                       [:rc.id :ref_id]
+                       [:rc.deleted :ref_deleted]
+                       :c.id
+                       :c.idstr                                    
+                       :c.created
+                       :c.cname
+                       :c.deleted]
+              :from [[:round_category :rc]]
+              :join [[:categories :c]
+                     [:= :c.id :rc.category_id]]}
+      :owner :vetd
+      :grants {:hasura [:SELECT]}} ]
+
+    [:create-or-replace-view
+     {:schema :vetd
+      :name :prompts_by_form
+      :honey {:select [[:fp.id :rpid]
+                       [:fp.id :ref_id]
+                       [:fp.deleted :ref_deleted]
+                       :fp.form_id
+                       :fp.sort
+                       :p.id
+                       :p.idstr                                    
+                       :p.created
+                       :p.updated
+                       :p.deleted
+                       :p.prompt
+                       :p.descr]
+              :from [[:form_prompt :fp]]
+              :join [[:prompts :p]
+                     [:= :p.id :fp.prompt_id]]}
+      :owner :vetd
+      :grants {:hasura [:SELECT]}}]
+
+    [:create-or-replace-view
+     {:schema :vetd
+      :name :responses_by_doc
+      :honey {:select [[:dr.id :drid]
+                       :dr.doc_id
+                       [:dr.id :ref_id]
+                       [:dr.deleted :ref_deleted]
+                       :r.id
+                       :r.idstr                                    
+                       :r.created
+                       :r.updated
+                       :r.deleted
+                       :r.prompt_id
+                       :r.user_id
+                       :r.notes]
+              :from [[:doc_resp :dr]]
+              :join [[:responses :r]
+                     [:= :r.id :dr.resp_id]]}
+      :owner :vetd
+      :grants {:hasura [:SELECT]}} ]
+
+    [:create-or-replace-view
+     {:schema :vetd
+      :name :rounds_by_product
+      :honey {:select [[:rp.id :rcid]
+                       :rp.product_id
+                       [:rp.id :ref_id]
+                       [:rp.deleted :ref_deleted]
+                       :r.id
+                       :r.idstr                                    
+                       :r.created
+                       :r.deleted
+                       :r.buyer_id
+                       :r.status]
+              :from [[:round_product :rp]]
+              :join [[:rounds :r]
+                     [:= :r.id :rp.round_id]]}
+      :owner :vetd
+      :grants {:hasura [:SELECT]}}]
+
+    [:create-or-replace-view
+     {:schema :vetd
+      :name :rounds_by_category
+      :honey {:select [[:rc.id :rcid]
+                       :rc.category_id
+                       [:rc.id :ref_id]
+                       [:rc.deleted :ref_deleted]
+                       :r.id
+                       :r.idstr                                    
+                       :r.created
+                       :r.deleted
+                       :r.buyer_id
+                       :r.status]
+              :from [[:round_category :rc]]
+              :join [[:rounds :r]
+                     [:= :r.id :rc.round_id]]}
+      :owner :vetd
+      :grants {:hasura [:SELECT]}}]
+
+    [:create-or-replace-view
+     {:schema :vetd
+      :name :categories_by_product
+      :honey {:select [[:pc.id :pcid]
+                       :pc.prod_id
+                       [:pc.id :ref_id]
+                       [:pc.deleted :ref_deleted]
+                       :c.id
+                       :c.idstr
+                       :c.cname
+                       :c.deleted]
+              :from [[:product_categories :pc]]
+              :join [[:categories :c]
+                     [:= :c.id :pc.cat_id]]}
+      :owner :vetd
+      :grants {:hasura [:SELECT]}}]
+
+    [:create-or-replace-view
+     {:schema :vetd
+      :name :prompts_by_template
+      :honey {:select [[:rp.id :rpid]
+                       [:rp.deleted :rp_deleted]
+                       [:rp.id :ref_id]
+                       [:rp.deleted :ref_deleted]
+                       :rp.form_template_id
+                       :rp.sort
+                       :p.id
+                       :p.idstr                                    
+                       :p.created
+                       :p.updated
+                       :p.deleted
+                       :p.prompt
+                       :p.descr]
+              :from [[:form_template_prompt :rp]]
+              :join [[:prompts :p]
+                     [:= :p.id :rp.prompt_id]]}
+      :owner :vetd
+      :grants {:hasura [:SELECT]}}]]])
 
 #_(mig/mk-migration-files migrations
                           "migrations")
