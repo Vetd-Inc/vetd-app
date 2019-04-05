@@ -47,3 +47,6 @@
          [docs/c-form-maybe-doc
           (docs/mk-form-doc-state preq)
           {:show-submit true}])])))
+
+#_ (cljs.pprint/pprint preq1)
+
