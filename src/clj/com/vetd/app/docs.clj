@@ -352,6 +352,27 @@
                                      :prompt-id prompt-id
                                      :fields fields}))))
 
+(defn update-doc-from-form-doc
+  [{:keys [doc-id doc-title responses from-org from-user to-org to-user
+           doc-descr doc-notes doc-dtype doc-dsubtype product]}]
+  (db/update-any!
+   {:id doc-id
+    :title doc-title
+    :dtype doc-dtype
+    :dsubtype doc-dsubtype
+    :subject (:id product)
+    :descr doc-descr
+    :notes doc-notes
+    :form-id id
+    ;; fields below are reveresed intentionally
+    :from-org-id (:id to-org)
+    :from-user-id (:id to-user)
+    :to-org-id (:id from-org)
+    :to-user-id (:id from-user)}
+   :docs)
+  
+  )
+
 (defn create-blank-form-template-prompt
   [form-template-id]
   (let [{:keys [id]} (insert-prompt {:prompt "Empty Prompt"
@@ -439,6 +460,16 @@
            first
            :prompts))
 
+(defn- get-child-responses
+  [field id]
+  (some->> [[field {:id id}
+             [:id
+              [:responses [:id :ref-id]]]]]
+           ha/sync-query
+           field
+           first
+           :responses))
+
 (defn upsert-form-prompts* [old-prompts new-prompts]
   (let [[a b] (clojure.data/diff
                (group-by :id old-prompts)
@@ -480,3 +511,4 @@
                                   insert-form-template-prompt
                                   new-prompts
                                   use-id?))
+
