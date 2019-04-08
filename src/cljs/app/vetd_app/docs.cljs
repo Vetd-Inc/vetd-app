@@ -46,9 +46,13 @@
 (rf/reg-event-fx
  :save-form-doc
  (fn [{:keys [db]} [_ form-doc]]
-   {:ws-send {:payload {:cmd :save-form-doc
-                        :return nil
-                        :form-doc (walk-deref-ratoms form-doc)}}}))
+   (let [fd (walk-deref-ratoms form-doc)]
+     (def fd1 fd)
+     {:ws-send {:payload {:cmd :save-form-doc
+                          :return nil
+                          :form-doc fd}}})))
+
+#_(cljs.pprint/pprint fd1)
 
 ;; TODO support multiple response fields (for where list? = true)
 (defn mk-form-doc-prompt-field-state

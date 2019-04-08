@@ -358,16 +358,36 @@
   [doc-id]
   (some->> [[:docs {:id doc-id}
              [:id
-              [:responses [:id :ref-id]]]]]
+              [:responses
+               {:ref-deleted nil}
+               [:id :ref-id 
+                [:fields {:deleted nil}
+                 [:fname :sval :nval :dval]]]]]]]
            ha/sync-query
            :docs
            first
            :responses))
 
 (defn update-response-from-form-doc
-  [{:keys [doc-id responses]}]
-  (let [old-responses (get-child-responses doc-id)]
-    (def or1 old-responses)))
+  [{old-fields :fields} {new-fields :fields}]
+  (let [old-fields' (group-by :fname old-fields)
+        new-fields' (group-by :fname new-fields)]
+    (doseq [k (keys new-fields')]
+      (update-response-from-form-doc (-> k old-fields' first)
+                                     (-> k new-fields' first)))))
+
+;; write down steps!!!!!!!!!!!
+
+(defn update-responses-from-form-doc
+  [{:keys [doc-id prompts]}]
+  (let [old-responses (->> doc-id
+                           get-child-responses
+                           (group-by :id))
+        new-responses (->> prompts
+                           (group-by #(-> % :response :id)))]
+    (doseq [k (keys new-responses)]
+      (update-response-from-form-doc (-> k old-responses first)
+                                     (-> k new-responses first)))))
 
 #_(clojure.pprint/pprint or1)
 
@@ -396,7 +416,7 @@
     :to_org_id (:id from-org)
     :to_user_id (:id from-user)}
    :docs)
-  (update-response-from-form-doc form-doc))
+  (update-responses-from-form-doc form-doc))
 
 (defn create-blank-form-template-prompt
   [form-template-id]
@@ -439,7 +459,7 @@
 (defn upsert-prompt [{:keys [id] :as prompt} & [use-id?]]
   (upsert* prompt-exists?
            insert-prompt
-           [:fields :form-template-id :sort]
+           [:fields :form-template-id :sort :form-id]
            prompt
            use-id?))
 
@@ -507,7 +527,7 @@
     (doseq [form-prompt-id kill-rpids]
       (delete-form-prompt form-prompt-id))
     (doseq [{:keys [fields] prompt-id :id sort' :sort :as prompt} new-form-prompts]
-      (mapv upsert-prompt-field fields)
+      (mapv #(upsert-prompt-field % true) fields)
       (upsert-prompt prompt use-id?)
       (prompt-ins-fn id prompt-id sort'))))
 
@@ -526,4 +546,3 @@
                                   insert-form-template-prompt
                                   new-prompts
                                   use-id?))
-
