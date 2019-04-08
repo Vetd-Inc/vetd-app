@@ -58,11 +58,11 @@
         },
         {
           "name": "HASURA_WS_URL",
-          "value": "ws://172.31.0.205:8080/v1alpha1/graphql"
+          "value": "ws://172.31.1.78:8080/v1alpha1/graphql"
         },
         {
           "name": "HASURA_HTTP_URL",
-          "value": "http://172.31.0.205:8080/v1alpha1/graphql"
+          "value": "http://172.31.1.78:8080/v1alpha1/graphql"
         }
       ],
       "ulimits": null,
@@ -182,6 +182,6 @@
   ],
   "networkMode": "awsvpc",
   "cpu": "1024",
-  "revision": 117,
+  "revision": 133,
   "volumes": []
 }

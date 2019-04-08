@@ -34,10 +34,11 @@
                                              [:from-user [:id :uname]]
                                              [:to-org [:id :oname]]
                                              [:to-user [:id :uname]]
-                                             [:prompts {:deleted nil
+                                             [:prompts {:ref-deleted nil
                                                         :_order_by {:sort :asc}}
                                               [:id :idstr :prompt :descr #_:sort ;; TODO sort
-                                               [:fields
+                                               [:fields {:deleted nil
+                                                         :_order_by {:sort :asc}}
                                                 [:id :idstr :fname :ftype
                                                  :fsubtype :list? #_:sort]]]]
                                              [:responses
@@ -56,10 +57,11 @@
                                                          :_order_by {:created :desc}
                                                          :_limit 1}
                                                  [:id :title :ftype :fsubtype
-                                                  [:prompts {:deleted nil
+                                                  [:prompts {:ref-deleted nil
                                                              :_order_by {:sort :asc}}
                                                    [:id :idstr :prompt :descr #_:sort ;; TODO sort
-                                                    [:fields
+                                                    [:fields {:deleted nil
+                                                              :_order_by {:sort :asc}}
                                                      [:id :idstr :fname :ftype
                                                       :fsubtype :list? #_:sort]]]]]]]}])
                 profile-form (first (:forms @profile-forms&))]
