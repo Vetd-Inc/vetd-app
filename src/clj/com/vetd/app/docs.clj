@@ -423,7 +423,7 @@
                     not)]
     (if exists?
       ;; TODO Don't use db/update-any! -- not efficient
-      (-> prompt (dissoc :fields :form-template-id :sort)
+      (-> prompt (dissoc :fields :form-template-id :form-id :sort)
           ha/walk-clj-kw->sql-field db/update-any!)
       (insert-prompt prompt use-id?))))
 
