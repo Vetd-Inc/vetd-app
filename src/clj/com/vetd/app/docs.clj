@@ -487,7 +487,7 @@
     (doseq [form-prompt-id kill-rpids]
       (delete-form-prompt form-prompt-id))
     (doseq [{:keys [id fields] sort' :sort :as prompt} new-form-prompts]
-      (mapv upsert-prompt-field fields)
+      (mapv #(upsert-prompt-field % true) fields)
       (upsert-prompt prompt use-id?)
       (insert-form-prompt form-id id sort'))))
 
