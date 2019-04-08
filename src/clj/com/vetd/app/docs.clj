@@ -365,8 +365,8 @@
            :responses))
 
 (defn update-response-from-form-doc
-  [{:keys [id responses]}]
-  (let [old-responses (get-child-responses id)]
+  [{:keys [doc-id responses]}]
+  (let [old-responses (get-child-responses doc-id)]
     (def or1 old-responses)))
 
 #_(clojure.pprint/pprint or1)
