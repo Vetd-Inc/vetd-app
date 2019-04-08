@@ -295,7 +295,9 @@
                                    insert-form)
         ps (db/hs-query {:select [:prompt_id :sort]
                          :from [:form_template_prompt]
-                         :where [:= :form_template_id form-temp-id]})]
+                         :where [:and
+                                 [:= :form_template_id form-temp-id]
+                                 [:= :deleted nil]]})]
     (doseq [{prompt-id :prompt_id sort' :sort} ps]
       (insert-form-prompt form-id prompt-id sort'))
     form))
