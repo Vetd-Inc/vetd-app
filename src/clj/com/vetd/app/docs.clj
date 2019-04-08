@@ -368,15 +368,16 @@
            first
            :responses))
 
+(defn update-response-field-from-form-doc
+  [old-field new-field])
+
 (defn update-response-from-form-doc
   [{old-fields :fields} {new-fields :fields}]
   (let [old-fields' (group-by :fname old-fields)
         new-fields' (group-by :fname new-fields)]
     (doseq [k (keys new-fields')]
-      (update-response-from-form-doc (-> k old-fields' first)
-                                     (-> k new-fields' first)))))
-
-;; write down steps!!!!!!!!!!!
+      (update-response-field-from-form-doc (-> k old-fields' first)
+                                           (-> k new-fields' first)))))
 
 (defn update-responses-from-form-doc
   [{:keys [doc-id prompts]}]
@@ -388,6 +389,8 @@
     (doseq [k (keys new-responses)]
       (update-response-from-form-doc (-> k old-responses first)
                                      (-> k new-responses first)))))
+
+
 
 #_(clojure.pprint/pprint or1)
 
