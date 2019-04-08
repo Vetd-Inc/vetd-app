@@ -295,7 +295,9 @@
                                    insert-form)
         ps (db/hs-query {:select [:prompt_id :sort]
                          :from [:form_template_prompt]
-                         :where [:= :form_template_id form-temp-id]})]
+                         :where [:and
+                                 [:= :form_template_id form-temp-id]
+                                 [:= :deleted nil]]})]
     (doseq [{prompt-id :prompt_id sort' :sort} ps]
       (insert-form-prompt form-id prompt-id sort'))
     form))
@@ -352,9 +354,33 @@
                                      :prompt-id prompt-id
                                      :fields fields}))))
 
+(defn- get-child-responses
+  [doc-id]
+  (some->> [[:docs {:id doc-id}
+             [:id
+              [:responses [:id :ref-id]]]]]
+           ha/sync-query
+           :docs
+           first
+           :responses))
+
+(defn update-response-from-form-doc
+  [{:keys [id responses]}]
+  (let [old-responses (get-child-responses id)]
+    (def or1 old-responses)))
+
+#_(clojure.pprint/pprint or1)
+
+#_(def fd1 $s/*)
+
+#_(clojure.pprint/pprint  fd1)
+
+#_(update-doc-from-form-doc fd1)
+
 (defn update-doc-from-form-doc
-  [{:keys [doc-id doc-title responses from-org from-user to-org to-user
-           doc-descr doc-notes doc-dtype doc-dsubtype product]}]
+  [{:keys [id doc-id doc-title responses from-org from-user to-org to-user
+           doc-descr doc-notes doc-dtype doc-dsubtype product]
+    :as form-doc}]
   (db/update-any!
    {:id doc-id
     :title doc-title
@@ -363,15 +389,14 @@
     :subject (:id product)
     :descr doc-descr
     :notes doc-notes
-    :form-id id
+    :form_id id
     ;; fields below are reveresed intentionally
-    :from-org-id (:id to-org)
-    :from-user-id (:id to-user)
-    :to-org-id (:id from-org)
-    :to-user-id (:id from-user)}
+    :from_org_id (:id to-org)
+    :from_user_id (:id to-user)
+    :to_org_id (:id from-org)
+    :to_user_id (:id from-user)}
    :docs)
-  
-  )
+  (update-response-from-form-doc form-doc))
 
 (defn create-blank-form-template-prompt
   [form-template-id]
@@ -459,16 +484,6 @@
            field
            first
            :prompts))
-
-(defn- get-child-responses
-  [field id]
-  (some->> [[field {:id id}
-             [:id
-              [:responses [:id :ref-id]]]]]
-           ha/sync-query
-           field
-           first
-           :responses))
 
 (defn upsert-form-prompts* [old-prompts new-prompts]
   (let [[a b] (clojure.data/diff
