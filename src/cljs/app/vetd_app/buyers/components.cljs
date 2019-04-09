@@ -189,7 +189,38 @@
           [c-display-field {:width 16} "Estimated Time to Onboard" (v "Onboarding Process" "Estimated Time To Onboard")])]
        [:> ui/GridRow
         (when (has-data? (v "Onboarding Process"))
-          [c-display-field {:width 16} "Onboarding Process" (v "Onboarding Process") :has-markdown? true])]]]]))
+          [c-display-field {:width 16} "Onboarding Process" (v "Onboarding Process") :has-markdown? true])]]]
+     [:> ui/Segment {:class "detail-container profile"}
+      [:h1.title "Client Service"]
+      [:> ui/Grid {:columns "equal" :style {:margin-top 0}}
+       [:> ui/GridRow
+        (when (has-data? (v "Point of Contact"))
+          [c-display-field {:width 16} "Point of Contact" (v "Point of Contact")])]
+       [:> ui/GridRow
+        (when (has-data? (v "Meeting Frequency"))
+          [c-display-field {:width 16} "Meeting Frequency" (v "Meeting Frequency") :has-markdown? true])]]]
+     [:> ui/Segment {:class "detail-container profile"}
+      [:h1.title "Measurement & Reporting"]
+      [:> ui/Grid {:columns "equal" :style {:margin-top 0}}
+       [:> ui/GridRow
+        (when (has-data? (v "Reporting"))
+          [c-display-field {:width 16} "Reporting" (v "Reporting") :has-markdown? true])]
+       [:> ui/GridRow
+        (when (has-data? (v "KPIs"))
+          [c-display-field {:width 16} "KPIs" (v "KPIs") :has-markdown? true])]
+       [:> ui/GridRow
+        (when (has-data? (v "Integrations"))
+          [c-display-field {:width 16} "Integrations" (v "Integrations") :has-markdown? true])]
+       [:> ui/GridRow
+        (when (has-data? (v "Data Security"))
+          [c-display-field {:width 16} "Data Security" (v "Data Security") :has-markdown? true])]
+       [:> ui/GridRow
+        (when (has-data? (v "Product Roadmap"))
+          [c-display-field {:width 16} "Product Roadmap" (v "Product Roadmap") :has-markdown? true])]
+       
+
+       
+       ]]]))
 
 #_(when (has-data? (v "Number of Current Clients"))
     [c-display-field {:width 6} "Number of Current Clients" (util/decimal-format (v "Number of Current Clients"))])
