@@ -149,110 +149,130 @@
   [value]
   (not-empty (str value)))
 
+(defn request-profile
+  [section]
+  [:<>
+   "This company has not completed their " section " section."
+   [:br]
+   [:br]
+   [:a.blue {:onClick #(do (.stopPropagation %)
+                           #_(rf/dispatch [:b/request-vendor-profile vendor-id vendor-name]))}
+    "Request Complete Profile"]])
+
 (defn c-pricing
-  [v] ; v - value function, retrieves value by prompt name
+  [v]             ; v - value function, retrieves value by prompt name
   [:> ui/Segment {:class "detail-container profile"}
    [:h1.title "Pricing"]
-   [:> ui/Grid {:columns "equal" :style {:margin-top 0}}
-    [:> ui/GridRow
-     (when (has-data? (v "Price Range"))
-       [c-display-field {:width 5} "Range"
-        [:<>
-         (v "Price Range")
-         [:br]
-         "Request a Preposal to get a personalized estimate."]])
-     (when (has-data? (v "Pricing Model"))
-       [c-display-field {:width 6} "Model" (v "Pricing Model") :has-markdown? true])
-     (if (= "Yes" (v "Do you offer a free trial?"))
-       [c-display-field {:width 5} "Free Trial" (v "Please describe the terms of your trial")]
-       [c-display-field {:width 5} "Free Trial" "No"])]
-    [:> ui/GridRow
-     (when (has-data? (v "Payment Options"))
-       [c-display-field {:width 5} "Payment Options" (v "Payment Options")])
-     (when (has-data? (v "Minimum Contract Length"))
-       [c-display-field {:width 6} "Minimum Contract Length" (v "Minimum Contract Length")])
-     (when (has-data? (v "Cancellation Process"))
-       [c-display-field {:width 5} "Cancellation Process" (v "Cancellation Process")])]]])
+   (if (has-data? (v "Price Range"))
+     [:> ui/Grid {:columns "equal" :style {:margin-top 0}}
+      [:> ui/GridRow
+       (when (has-data? (v "Price Range"))
+         [c-display-field {:width 5} "Range"
+          [:<>
+           (v "Price Range")
+           [:br]
+           "Request a Preposal to get a personalized estimate."]])
+       (when (has-data? (v "Pricing Model"))
+         [c-display-field {:width 6} "Model" (v "Pricing Model") :has-markdown? true])
+       (if (= "Yes" (v "Do you offer a free trial?"))
+         [c-display-field {:width 5} "Free Trial" (v "Please describe the terms of your trial")]
+         [c-display-field {:width 5} "Free Trial" "No"])]
+      [:> ui/GridRow
+       (when (has-data? (v "Payment Options"))
+         [c-display-field {:width 5} "Payment Options" (v "Payment Options")])
+       (when (has-data? (v "Minimum Contract Length"))
+         [c-display-field {:width 6} "Minimum Contract Length" (v "Minimum Contract Length")])
+       (when (has-data? (v "Cancellation Process"))
+         [c-display-field {:width 5} "Cancellation Process" (v "Cancellation Process")])]]
+     [request-profile "Pricing"])])
 
 (defn c-onboarding
   [v] ; v - value function, retrieves value by prompt name
   [:> ui/Segment {:class "detail-container profile"}
    [:h1.title "Onboarding"]
-   [:> ui/Grid {:columns "equal" :style {:margin-top 0}}
-    [:> ui/GridRow
-     (when (has-data? (v "Onboarding Process" "Estimated Time To Onboard"))
-       [c-display-field {:width 16} "Estimated Time to Onboard" (v "Onboarding Process" "Estimated Time To Onboard")])]
-    [:> ui/GridRow
-     (when (has-data? (v "Onboarding Process"))
-       [c-display-field {:width 16} "Onboarding Process" (v "Onboarding Process") :has-markdown? true])]
-    [:> ui/GridRow
-     (when (has-data? (v "Onboarding Team Involvement"))
-       [c-display-field {:width 16} "Onboarding Team Involvement" (v "Onboarding Team Involvement") :has-markdown? true])]]])
+   (if (has-data? (v "Onboarding Process" "Estimated Time To Onboard"))
+     [:> ui/Grid {:columns "equal" :style {:margin-top 0}}
+      [:> ui/GridRow
+       (when (has-data? (v "Onboarding Process" "Estimated Time To Onboard"))
+         [c-display-field {:width 16} "Estimated Time to Onboard" (v "Onboarding Process" "Estimated Time To Onboard")])]
+      [:> ui/GridRow
+       (when (has-data? (v "Onboarding Process"))
+         [c-display-field {:width 16} "Onboarding Process" (v "Onboarding Process") :has-markdown? true])]
+      [:> ui/GridRow
+       (when (has-data? (v "Onboarding Team Involvement"))
+         [c-display-field {:width 16} "Onboarding Team Involvement" (v "Onboarding Team Involvement") :has-markdown? true])]]
+     [request-profile "Onboarding"])])
 
 (defn c-client-service
   [v] ; v - value function, retrieves value by prompt name
   [:> ui/Segment {:class "detail-container profile"}
    [:h1.title "Client Service"]
-   [:> ui/Grid {:columns "equal" :style {:margin-top 0}}
-    [:> ui/GridRow
-     (when (has-data? (v "Point of Contact"))
-       [c-display-field {:width 16} "Point of Contact" (v "Point of Contact")])]
-    [:> ui/GridRow
-     (when (has-data? (v "Meeting Frequency"))
-       [c-display-field {:width 16} "Meeting Frequency" (v "Meeting Frequency") :has-markdown? true])]]])
+   (if (has-data? (v "Point of Contact"))
+     [:> ui/Grid {:columns "equal" :style {:margin-top 0}}
+      [:> ui/GridRow
+       (when (has-data? (v "Point of Contact"))
+         [c-display-field {:width 16} "Point of Contact" (v "Point of Contact")])]
+      [:> ui/GridRow
+       (when (has-data? (v "Meeting Frequency"))
+         [c-display-field {:width 16} "Meeting Frequency" (v "Meeting Frequency") :has-markdown? true])]]
+     [request-profile "Client Service"])])
 
 (defn c-reporting
   [v] ; v - value function, retrieves value by prompt name
   [:> ui/Segment {:class "detail-container profile"}
    [:h1.title "Reporting & Measurements"]
-   [:> ui/Grid {:columns "equal" :style {:margin-top 0}}
-    [:> ui/GridRow
-     (when (has-data? (v "Reporting"))
-       [c-display-field {:width 16} "Reporting" (v "Reporting") :has-markdown? true])]
-    [:> ui/GridRow
-     (when (has-data? (v "KPIs"))
-       [c-display-field {:width 16} "KPIs" (v "KPIs")
-        :has-markdown? true
-        :info "Key Performance Indicators"])]
-    [:> ui/GridRow
-     (when (has-data? (v "Integrations"))
-       [c-display-field {:width 16} "Integrations" (v "Integrations") :has-markdown? true])]
-    [:> ui/GridRow
-     (when (has-data? (v "Data Security"))
-       [c-display-field {:width 16} "Data Security" (v "Data Security") :has-markdown? true])]]])
+   (if (has-data? (v "Reporting"))
+     [:> ui/Grid {:columns "equal" :style {:margin-top 0}}
+      [:> ui/GridRow
+       (when (has-data? (v "Reporting"))
+         [c-display-field {:width 16} "Reporting" (v "Reporting") :has-markdown? true])]
+      [:> ui/GridRow
+       (when (has-data? (v "KPIs"))
+         [c-display-field {:width 16} "KPIs" (v "KPIs")
+          :has-markdown? true
+          :info "Key Performance Indicators"])]
+      [:> ui/GridRow
+       (when (has-data? (v "Integrations"))
+         [c-display-field {:width 16} "Integrations" (v "Integrations") :has-markdown? true])]
+      [:> ui/GridRow
+       (when (has-data? (v "Data Security"))
+         [c-display-field {:width 16} "Data Security" (v "Data Security") :has-markdown? true])]]
+     [request-profile "Reporting & Measurements"])])
 
 (defn c-market-niche
   [v] ; v - value function, retrieves value by prompt name
   [:> ui/Segment {:class "detail-container profile"}
    [:h1.title "Industry Niche"]
-   [:> ui/Grid {:columns "equal" :style {:margin-top 0}}
-    [:> ui/GridRow
-     (when (has-data? (v "Ideal Client Profile"))
-       [c-display-field {:width 16} "Ideal Client Profile" (v "Ideal Client Profile")
-        :has-markdown? true
-        :info "A typical user of this product, in terms of company size, revenue, verticals, etc."])]
-    (when (has-data? (v "Case Studies" "Links to Case Studies"))
+   (if (has-data? (v "Ideal Client Profile"))
+     [:> ui/Grid {:columns "equal" :style {:margin-top 0}}
       [:> ui/GridRow
-       [c-display-field {:width 16} "Case Studies"
-        [:a {:href (v "Case Studies" "Links to Case Studies")
-             :target "_blank"}
-         [:> ui/Icon {:name "external square"
-                      :color "blue"}]
-         (v "Case Studies" "Links to Case Studies")]]])
-    [:> ui/GridRow
-     (when (has-data? (v "Number of Current Clients"))
-       [c-display-field {:width 6} "Number of Current Clients" (util/decimal-format (v "Number of Current Clients"))])
-     (when (has-data? (v "Example Current Clients"))
-       [c-display-field {:width 10} "Example Current Clients" (v "Example Current Clients") :has-markdown? true])]
-    [:> ui/GridRow
-     (when (has-data? (v "Competitors"))
-       [c-display-field {:width 16} "Competitors" (v "Competitors") :has-markdown? true])]
-    [:> ui/GridRow
-     (when (has-data? (v "Competitive Differentiator"))
-       [c-display-field {:width 16} "Competitive Differentiator" (v "Competitive Differentiator") :has-markdown? true])]
-    [:> ui/GridRow
-     (when (has-data? (v "Product Roadmap"))
-       [c-display-field {:width 16} "Product Roadmap" (v "Product Roadmap") :has-markdown? true])]]])
+       (when (has-data? (v "Ideal Client Profile"))
+         [c-display-field {:width 16} "Ideal Client Profile" (v "Ideal Client Profile")
+          :has-markdown? true
+          :info "A typical user of this product, in terms of company size, revenue, verticals, etc."])]
+      (when (has-data? (v "Case Studies" "Links to Case Studies"))
+        [:> ui/GridRow
+         [c-display-field {:width 16} "Case Studies"
+          [:a {:href (v "Case Studies" "Links to Case Studies")
+               :target "_blank"}
+           [:> ui/Icon {:name "external square"
+                        :color "blue"}]
+           (v "Case Studies" "Links to Case Studies")]]])
+      [:> ui/GridRow
+       (when (has-data? (v "Number of Current Clients"))
+         [c-display-field {:width 6} "Number of Current Clients" (util/decimal-format (v "Number of Current Clients"))])
+       (when (has-data? (v "Example Current Clients"))
+         [c-display-field {:width 10} "Example Current Clients" (v "Example Current Clients") :has-markdown? true])]
+      [:> ui/GridRow
+       (when (has-data? (v "Competitors"))
+         [c-display-field {:width 16} "Competitors" (v "Competitors") :has-markdown? true])]
+      [:> ui/GridRow
+       (when (has-data? (v "Competitive Differentiator"))
+         [c-display-field {:width 16} "Competitive Differentiator" (v "Competitive Differentiator") :has-markdown? true])]
+      [:> ui/GridRow
+       (when (has-data? (v "Product Roadmap"))
+         [c-display-field {:width 16} "Product Roadmap" (v "Product Roadmap") :has-markdown? true])]]
+     [request-profile "Industry Niche"])])
 
 (defn c-product
   "Component to display Product details."
@@ -299,13 +319,11 @@
                [:> ui/Icon {:name "external square"
                             :color "blue"}]
                "Watch Video"]])]]]]]]
-     (when product-profile-responses
-       [:<>
-        [c-pricing v]
-        [c-onboarding v]
-        [c-client-service v]
-        [c-reporting v]
-        [c-market-niche v]])]))
+     [c-pricing v]
+     [c-onboarding v]
+     [c-client-service v]
+     [c-reporting v]
+     [c-market-niche v]]))
 
 (defn c-vendor-profile
   [{:keys [responses] :as vendor-profile-doc} vendor-id vendor-name]
@@ -321,26 +339,26 @@
                     :style {:margin-top 0}}
         [:> ui/GridRow
          (when (has-data? website-url)
-           [c-display-field {:width 8} "Website"
+           [c-display-field {:width 6} "Website"
             [:a {:href website-url
                  :target "_blank"}
              [:> ui/Icon {:name "external square"
                           :color "blue"}]
              website-url]])
          (when (has-data? headquarters)
-           [c-display-field {:width 8} "Headquarters" headquarters])]
+           [c-display-field {:width 5} "Headquarters" headquarters])]
         [:> ui/GridRow
          (when (has-data? funding-status)
-           [c-display-field {:width 5} "Funding Status" funding-status])
+           [c-display-field {:width 6} "Funding Status" funding-status])
          (when (has-data? year-founded)
            [c-display-field {:width 5} "Year Founded" year-founded])
          (when (has-data? num-employees)
-           [c-display-field {:width 6} "Number of Employees" (util/decimal-format num-employees)])]]])
-    [:> ui/Segment {:class "detail-container vendor-profile"}
+           [c-display-field {:width 5} "Number of Employees" (util/decimal-format num-employees)])]]])
+    [:> ui/Segment {:class "detail-container profile"}
      [:h1.title "Company Profile"]
-     "This company has not completed a profile."
+     "This company has not completed their Company profile."
      [:br]
      [:br]
      [:a.blue {:onClick #(do (.stopPropagation %)
                              (rf/dispatch [:b/request-vendor-profile vendor-id vendor-name]))}
-      "Request a Company Profile"]]))
+      "Request Complete Profile"]]))
