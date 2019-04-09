@@ -128,11 +128,17 @@
    "Free Trial"])
 
 (defn c-display-field
-  [props field-key field-value & {:keys [has-markdown?]}]
+  [props field-key field-value & {:keys [has-markdown? info]}]
   [:> ui/GridColumn props
    [:> ui/Segment {:class "display-field"
                    :vertical true}
-    [:h3.display-field-key field-key]
+    [:h3.display-field-key
+     field-key
+     (when info
+       [:> ui/Popup {:trigger (r/as-element [:span {:style {:font-size 16}}
+                                             " " [:> ui/Icon {:name "info circle"}]])
+                     :wide true}
+        info])]
     (if has-markdown?
       (-> field-value
           (md/md->hiccup #_{:encode? true})
@@ -163,27 +169,43 @@
       [:> ui/Grid {:columns "equal"
                    :style {:margin-top 0}}
        [:> ui/GridRow
-        [c-display-field {:width 12} "Product Description"
+        [c-display-field {:width 11} "Description"
          [:<> (or (v "Describe your product or service") "No description available.")
-          (when (not-empty (v "Product Website"))
-            [:<>
-             [:br]
-             [:br]
-             "Website: " [:a {:href (v "Product Website")
-                              :target "_blank"}
-                          [:> ui/Icon {:name "external square"
-                                       :color "blue"}]
-                          (v "Product Website")]])]]]
-       [:> ui/GridRow
-        [c-display-field {:width 12} "Pitch" "Request a Preposal to get a personalized pitch."]]]]
+          [:br]
+          [:br]
+          [:h3.display-field-key "Pitch"]
+          [:p "Request a Preposal to get a personalized pitch."]]]
+        [:> ui/GridColumn {:width 5}
+         [:> ui/Grid {:columns "equal"
+                      :style {:margin-top 0}}
+          [:> ui/GridRow
+           (when (has-data? (v "Product Website"))
+             [c-display-field {:width 16} "Website"
+              [:a {:href (v "Product Website")
+                   :target "_blank"}
+               [:> ui/Icon {:name "external square"
+                            :color "blue"}]
+               (v "Product Website")]])]
+          [:> ui/GridRow
+           (when (has-data? (v "Product Demo"))
+             [c-display-field {:width 16} "Demo"
+              [:a {:href (v "Product Demo")
+                   :target "_blank"}
+               [:> ui/Icon {:name "external square"
+                            :color "blue"}]
+               (v "Product Demo")]])]]]]]]
      [:> ui/Segment {:class "detail-container profile"}
       [:h1.title "Pricing"]
       [:> ui/Grid {:columns "equal" :style {:margin-top 0}}
        [:> ui/GridRow
         (when (has-data? (v "Price Range"))
-          [c-display-field {:width 5} "Price Range" (v "Price Range")])
+          [c-display-field {:width 5} "Range"
+           [:<>
+            (v "Price Range")
+            [:br]
+            "Request a Preposal to get a personalized estimate."]])
         (when (has-data? (v "Pricing Model"))
-          [c-display-field {:width 6} "Pricing Model" (v "Pricing Model") :has-markdown? true])
+          [c-display-field {:width 6} "Model" (v "Pricing Model") :has-markdown? true])
         (if (= "Yes" (v "Do you offer a free trial?"))
           [c-display-field {:width 5} "Free Trial" (v "Please describe the terms of your trial")]
           [c-display-field {:width 5} "Free Trial" "No"])]
@@ -216,30 +238,53 @@
         (when (has-data? (v "Meeting Frequency"))
           [c-display-field {:width 16} "Meeting Frequency" (v "Meeting Frequency") :has-markdown? true])]]]
      [:> ui/Segment {:class "detail-container profile"}
-      [:h1.title "Measurement & Reporting"]
+      [:h1.title "Reporting & Measurements"]
       [:> ui/Grid {:columns "equal" :style {:margin-top 0}}
        [:> ui/GridRow
         (when (has-data? (v "Reporting"))
           [c-display-field {:width 16} "Reporting" (v "Reporting") :has-markdown? true])]
        [:> ui/GridRow
         (when (has-data? (v "KPIs"))
-          [c-display-field {:width 16} "KPIs" (v "KPIs") :has-markdown? true])]
+          [c-display-field {:width 16} "KPIs" (v "KPIs")
+           :has-markdown? true
+           :info "Key Performance Indicators"])]
        [:> ui/GridRow
         (when (has-data? (v "Integrations"))
           [c-display-field {:width 16} "Integrations" (v "Integrations") :has-markdown? true])]
        [:> ui/GridRow
         (when (has-data? (v "Data Security"))
-          [c-display-field {:width 16} "Data Security" (v "Data Security") :has-markdown? true])]
+          [c-display-field {:width 16} "Data Security" (v "Data Security") :has-markdown? true])]]]
+     [:> ui/Segment {:class "detail-container profile"}
+      [:h1.title "Market Niche"]
+      [:> ui/Grid {:columns "equal" :style {:margin-top 0}}
+       [:> ui/GridRow
+        (when (has-data? (v "Ideal Client Profile"))
+          [c-display-field {:width 16} "Ideal Client Profile" (v "Ideal Client Profile")
+           :has-markdown? true
+           :info "A typical user of this product, in terms of company size, revenue, verticals, etc."])]
+       (when (has-data? (v "Case Studies" "Links to Case Studies"))
+         [:> ui/GridRow
+          [c-display-field {:width 16} "Case Studies"
+           [:a {:href (v "Case Studies" "Links to Case Studies")
+                :target "_blank"}
+            [:> ui/Icon {:name "external square"
+                         :color "blue"}]
+            (v "Case Studies" "Links to Case Studies")]]])
+       [:> ui/GridRow
+        (when (has-data? (v "Number of Current Clients"))
+          [c-display-field {:width 6} "Number of Current Clients" (util/decimal-format (v "Number of Current Clients"))])
+        (when (has-data? (v "Example Current Clients"))
+          [c-display-field {:width 10} "Example Current Clients" (v "Example Current Clients") :has-markdown? true])]
+       [:> ui/GridRow
+        (when (has-data? (v "Competitors"))
+          [c-display-field {:width 16} "Competitors" (v "Competitors") :has-markdown? true])]
+       [:> ui/GridRow
+        (when (has-data? (v "Competitive Differentiator"))
+          [c-display-field {:width 16} "Competitive Differentiator" (v "Competitive Differentiator") :has-markdown? true])]
        [:> ui/GridRow
         (when (has-data? (v "Product Roadmap"))
-          [c-display-field {:width 16} "Product Roadmap" (v "Product Roadmap") :has-markdown? true])]
-       
+          [c-display-field {:width 16} "Product Roadmap" (v "Product Roadmap") :has-markdown? true])]]]]))
 
-       
-       ]]]))
-
-#_(when (has-data? (v "Number of Current Clients"))
-    [c-display-field {:width 6} "Number of Current Clients" (util/decimal-format (v "Number of Current Clients"))])
 
 (defn c-vendor-profile
   [{:keys [responses] :as vendor-profile-doc} vendor-id vendor-name]
