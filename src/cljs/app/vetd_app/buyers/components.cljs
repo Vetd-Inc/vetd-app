@@ -4,7 +4,8 @@
             [vetd-app.docs :as docs]
             [reagent.core :as r]
             [reagent.format :as format]
-            [re-frame.core :as rf]))
+            [re-frame.core :as rf]
+            [markdown-to-hiccup.core :as md]))
 
 (defn c-start-round-button [{:keys [etype eid ename props]}]
   [:> ui/Popup
@@ -116,12 +117,16 @@
    "Free Trial"])
 
 (defn c-display-field
-  [props field-key field-value] 
+  [props field-key field-value & {:keys [has-markdown?]}]
   [:> ui/GridColumn props
    [:> ui/Segment {:class "display-field"
                    :vertical true}
     [:h3.display-field-key field-key]
-    [:p {:whiteSpace "pre-line"} field-value]]])
+    (if has-markdown?
+      (-> field-value
+          (md/md->hiccup #_{:encode? true})
+          (md/component))
+      [:p field-value])]])
 
 (defn has-data?
   [value]
@@ -165,7 +170,7 @@
         (when (has-data? (v "Price Range"))
           [c-display-field {:width 5} "Price Range" (v "Price Range")])
         (when (has-data? (v "Pricing Model"))
-          [c-display-field {:width 6} "Pricing Model" (v "Pricing Model")])
+          [c-display-field {:width 6} "Pricing Model" (v "Pricing Model") :has-markdown? true])
         (if (= "Yes" (v "Do you offer a free trial?"))
           [c-display-field {:width 5} "Free Trial" (v "Please describe the terms of your trial")]
           [c-display-field {:width 5} "Free Trial" "No"])]
@@ -184,10 +189,10 @@
           [c-display-field {:width 16} "Estimated Time to Onboard" (v "Onboarding Process" "Estimated Time To Onboard")])]
        [:> ui/GridRow
         (when (has-data? (v "Onboarding Process"))
-          [c-display-field {:width 16} "Onboarding Process" (v "Onboarding Process")])]]]]))
+          [c-display-field {:width 16} "Onboarding Process" (v "Onboarding Process") :has-markdown? true])]]]]))
 
-      #_(when (has-data? (v "Number of Current Clients"))
-          [c-display-field {:width 6} "Number of Current Clients" (util/decimal-format (v "Number of Current Clients"))])
+#_(when (has-data? (v "Number of Current Clients"))
+    [c-display-field {:width 6} "Number of Current Clients" (util/decimal-format (v "Number of Current Clients"))])
 
 (defn c-vendor-profile
   [{:keys [responses] :as vendor-profile-doc} vendor-id vendor-name]
