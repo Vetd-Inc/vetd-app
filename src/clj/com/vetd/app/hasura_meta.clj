@@ -90,6 +90,12 @@
           {:tables [:vetd :form_docs
                     :vetd :products]
            :fields [:product :form-docs]
+           :cols [:subject :id]
+           :rel :many-one}
+
+          {:tables [:vetd :form_docs
+                    :vetd :products]
+           :fields [:doc_product :form-docs]
            :cols [:doc_subject :id]
            :rel :many-one}
 

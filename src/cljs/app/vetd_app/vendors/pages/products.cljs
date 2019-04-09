@@ -89,7 +89,7 @@
                                   [:form-docs {:ftype "product-profile"}
                                    [:id :title :ftype :fsubtype
                                     :doc-id :doc-title
-                                    [:product [:id]]
+                                    [:doc-product [:id]]
                                     [:prompts {:ref-deleted nil
                                                :_order_by {:sort :asc}}
                                      [:id :idstr :prompt :descr :sort
@@ -116,7 +116,6 @@
                                               [:id :idstr :fname :ftype
                                                :fsubtype :list? :sort]]]]]]]}])]
     (fn []
-      (def p1 @prods&)
       (let [prod-prof-form (-> @prod-prof-form&
                                :forms
                                first )]
@@ -126,10 +125,15 @@
                         :on-click #(rf/dispatch [:v/new-product @org-id&])}
           "New Product"]
          (for [{:keys [id form-docs] :as p} (:products @prods&)]
-           [:div
-            ^{:key (str "product" id)}
-            [c-product (assoc p
-                              :form-doc
-                              (or (first form-docs)
-                                  (assoc prod-prof-form
-                                         :product {:id id})))]])]))))
+           (let [{:keys [doc-product] :as form-doc} (first form-docs)
+                 form-doc' (when form-doc
+                             (assoc form-doc
+                                    :product
+                                    doc-product))]
+             [:div
+              ^{:key (str "product" id)}
+              [c-product (assoc p
+                                :form-doc
+                                (or form-doc'
+                                    (assoc prod-prof-form
+                                           :product {:id id})))]]))]))))
