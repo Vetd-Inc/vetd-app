@@ -136,8 +136,9 @@ WHERE table_schema = 'vetd' AND table_catalog = 'vetd1';")
             (recur tail)))
         nil))))
 
-(defn update-any! [{:keys [id] :as m}]
-  (if-let [tbl (-> id find-entity-table-by-id keyword)]
+(defn update-any! [{:keys [id] :as m} & [table-kw]]
+  (if-let [tbl (or table-kw
+                   (-> id find-entity-table-by-id keyword))]
     (hs-exe! {:update tbl
               :set (-> m
                        (assoc :updated (ut/now-ts))

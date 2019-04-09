@@ -46,9 +46,12 @@
 (rf/reg-event-fx
  :save-form-doc
  (fn [{:keys [db]} [_ form-doc]]
-   {:ws-send {:payload {:cmd :save-form-doc
-                        :return nil
-                        :form-doc (walk-deref-ratoms form-doc)}}}))
+   (let [fd (walk-deref-ratoms form-doc)]
+     (def fd1 fd)
+     {:ws-send {:payload {:cmd :save-form-doc
+                          :return nil
+                          :form-doc fd}}})))
+
 
 ;; TODO support multiple response fields (for where list? = true)
 (defn mk-form-doc-prompt-field-state
@@ -93,9 +96,9 @@
     [:> ui/FormField
      (when-not (= fname "value")
        [:label fname])
-     [:> ui/Input {:value @value&
-                   :onChange (fn [_ this]
-                               (reset! value& (.-value this)))}]]))
+     [ui/input {:value @value&
+                :on-change (fn [this]
+                             (reset! value& (-> this .-target .-value)))}]]))
 
 (defn c-prompt-field-textarea
   [{:keys [fname ftype fsubtype list? response] :as prompt-field}]
@@ -104,9 +107,9 @@
     [:> ui/FormField
      (when-not (= fname "value")
        [:label fname])
-     [:> ui/TextArea {:value @value&
-                      :onChange (fn [_ this]
-                                  (reset! value& (.-value this)))}]]))
+     [:textarea {:value @value&
+                 :on-change (fn [this]
+                              (reset! value& (-> this .-target .-value)))}]]))
 
 (defn c-prompt-field-int
   [{:keys [fname ftype fsubtype list? response] :as prompt-field}]
@@ -115,10 +118,10 @@
     [:> ui/FormField
      (when-not (= fname "value")
        [:label fname])
-     [:> ui/Input {:value @value&
-                   :type "number"
-                   :onChange (fn [_ this]
-                               (reset! value& (.-value this)))}]]))
+     [ui/input {:value @value&
+                :type "number"
+                :on-change (fn [_ this]
+                             (reset! value& (.-value this)))}]]))
 
 (defn c-prompt-field-enum
   [{:keys [fname ftype fsubtype list? response] :as prompt-field}]

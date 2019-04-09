@@ -31,14 +31,18 @@
                                       [:from-user [:id :uname]]
                                       [:to-org [:id :oname]]
                                       [:to-user [:id :uname]]
-                                      [:prompts
+                                      [:prompts {:_order_by {:sort :asc}
+                                                 :deleted nil
+                                                 :ref-deleted nil}
                                        [:id :idstr :prompt :descr #_:sort ;; TODO sort
-                                        [:fields
+                                        [:fields {:_order_by {:sort :asc}
+                                                  :deleted nil}
                                          [:id :idstr :fname :ftype
                                           :fsubtype :list? #_:sort]]]]
-                                      [:responses
+                                      [:responses {:ref-deleted nil}
                                        [:id :prompt-id :notes
-                                        [:fields [:id :pf-id :idx :sval :nval :dval]]]]]]]}])]
+                                        [:fields 
+                                         [:id :pf-id :idx :sval :nval :dval]]]]]]]}])]
     (fn []
       (def preq1 @prep-reqs&)
       [:div

@@ -30,10 +30,8 @@
                                                         :_limit 1}
                                             [:id :title :doc-id :doc-title
                                              :ftype :fsubtype
-                                             [:from-org [:id :oname]]
-                                             [:from-user [:id :uname]]
-                                             [:to-org [:id :oname]]
-                                             [:to-user [:id :uname]]
+                                             [:doc-from-org [:id :oname]]
+                                             [:doc-to-org [:id :oname]]
                                              [:prompts {:ref-deleted nil
                                                         :_order_by {:sort :asc}}
                                               [:id :idstr :prompt :descr #_:sort ;; TODO sort
@@ -42,18 +40,24 @@
                                                 [:id :idstr :fname :ftype
                                                  :fsubtype :list? #_:sort]]]]
                                              [:responses
+                                              {:ref-deleted nil}
                                               [:id :prompt-id :notes
-                                               [:fields [:id :pf-id :idx :sval :nval :dval]]]]]]]}])]
+                                               [:fields {:deleted nil}
+                                                [:id :pf-id :idx :sval :nval :dval]]]]]]]}])]
     (fn []
       (if (= :loading @existing-profile&)
         [cc/c-loader]
-        (if (not-empty (:form-docs @existing-profile&))
+        (if-let [form-doc (some-> @existing-profile&
+                                  :form-docs
+                                  first)]
           [docs/c-form-maybe-doc
-           (docs/mk-form-doc-state (first (:form-docs @existing-profile&)))
+           (docs/mk-form-doc-state (assoc form-doc
+                                          :to-org (:doc-from-org form-doc)))
            {:show-submit true}]
           (let [profile-forms& (rf/subscribe [:gql/sub
                                               {:queries
                                                [[:forms {:ftype "vendor-profile"
+                                                         :deleted nil
                                                          :_order_by {:created :desc}
                                                          :_limit 1}
                                                  [:id :title :ftype :fsubtype
