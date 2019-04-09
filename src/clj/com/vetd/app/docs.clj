@@ -360,7 +360,7 @@
              [:id
               [:responses
                {:ref-deleted nil}
-               [:id :ref-id 
+               [:id :ref-id :prompt-id
                 [:fields {:deleted nil}
                  [:sval :nval :dval
                   [:prompt-field [:fname]]]]]]]]]
@@ -404,14 +404,13 @@
                                        :fields new-fields})))
 
 
-
 (defn update-responses-from-form-doc
   [{:keys [doc-id prompts]}]
   (let [old-responses (->> doc-id
                            get-child-responses
-                           (group-by :id))
+                           (group-by :prompt-id))
         new-responses (->> prompts
-                           (group-by #(-> % :response :id)))]
+                           (group-by :id))]
     (doseq [k (keys new-responses)]
       (update-response-from-form-doc doc-id
                                      (-> k old-responses first)
@@ -574,3 +573,4 @@
                                   insert-form-template-prompt
                                   new-prompts
                                   use-id?))
+

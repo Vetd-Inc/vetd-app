@@ -97,9 +97,9 @@
     [:> ui/FormField
      (when-not (= fname "value")
        [:label fname])
-     [:> ui/Input {:value @value&
-                   :onChange (fn [_ this]
-                               (reset! value& (.-value this)))}]]))
+     [ui/input {:value @value&
+                :on-change (fn [this]
+                             (reset! value& (-> this .-target .-value)))}]]))
 
 (defn c-prompt-field-textarea
   [{:keys [fname ftype fsubtype list? response] :as prompt-field}]
@@ -108,9 +108,9 @@
     [:> ui/FormField
      (when-not (= fname "value")
        [:label fname])
-     [:> ui/TextArea {:value @value&
-                      :onChange (fn [_ this]
-                                  (reset! value& (.-value this)))}]]))
+     [:textarea {:value @value&
+                 :on-change (fn [this]
+                              (reset! value& (-> this .-target .-value)))}]]))
 
 (defn c-prompt-field-int
   [{:keys [fname ftype fsubtype list? response] :as prompt-field}]
@@ -119,10 +119,10 @@
     [:> ui/FormField
      (when-not (= fname "value")
        [:label fname])
-     [:> ui/Input {:value @value&
-                   :type "number"
-                   :onChange (fn [_ this]
-                               (reset! value& (.-value this)))}]]))
+     [ui/input {:value @value&
+                :type "number"
+                :on-change (fn [_ this]
+                             (reset! value& (.-value this)))}]]))
 
 (defn c-prompt-field-enum
   [{:keys [fname ftype fsubtype list? response] :as prompt-field}]

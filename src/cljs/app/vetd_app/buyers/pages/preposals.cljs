@@ -117,11 +117,14 @@
                                       [:from-user [:id :uname]]
                                       [:to-org [:id :oname]]
                                       [:to-user [:id :uname]]
-                                      [:responses
+                                      [:responses {:ref-deleted nil}
                                        [:id :prompt-id :notes
-                                        [:prompt
+                                        [:prompt {:_order_by {:sort :asc}
+                                                  :deleted nil
+                                                  :ref-deleted nil}
                                          [:id :prompt]]
-                                        [:fields
+                                        [:fields {:_order_by {:sort :asc}
+                                                  :deleted nil}
                                          [:id :pf-id :idx :sval :nval :dval
                                           [:prompt-field [:id :fname]]]]]]]]]}])]
         (fn []
