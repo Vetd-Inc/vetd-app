@@ -362,22 +362,39 @@
                {:ref-deleted nil}
                [:id :ref-id 
                 [:fields {:deleted nil}
-                 [:fname :sval :nval :dval]]]]]]]
+                 [:sval :nval :dval
+                  [:prompt-field [:fname]]]]]]]]]
            ha/sync-query
            :docs
            first
            :responses))
 
-(defn update-response-field-from-form-doc
-  [old-field new-field])
+(defn response-fields-eq?
+  [old-field {:keys [response ftype]}]
+  (let [{:keys [state]} response]
+    (case ftype
+      "s" (= (:sval old-field)
+             (:sval response))
+      "n" (= (:nval old-field)
+             (:nval response))
+      "d" (= (:dval old-field)
+             (:dval response))
+      "e" (= (:sval old-field)
+             (:sval response)))))
 
 (defn update-response-from-form-doc
-  [{old-fields :fields} {new-fields :fields}]
-  (let [old-fields' (group-by :fname old-fields)
-        new-fields' (group-by :fname new-fields)]
-    (doseq [k (keys new-fields')]
-      (update-response-field-from-form-doc (-> k old-fields' first)
-                                           (-> k new-fields' first)))))
+  [doc-id {old-fields :fields :keys [ref-id]} {new-fields :fields :keys [response]}]
+  ;; TODO handle if old or new fields are missing
+  (when (and old-fields new-fields)
+    (let [old-fields' (group-by (comp :fname :prompt-field) old-fields)
+          new-fields' (group-by :fname new-fields)
+          resp-ids (keys new-fields')]
+      (when (->> resp-ids
+                 (map #(response-fields-eq? (-> % old-fields' first)
+                                            (-> % new-fields' first)))
+                 (some false?))
+        (update-deleted :doc_resp ref-id)
+        (create-attached-doc-response doc-id response)))))
 
 (defn update-responses-from-form-doc
   [{:keys [doc-id prompts]}]
@@ -387,10 +404,9 @@
         new-responses (->> prompts
                            (group-by #(-> % :response :id)))]
     (doseq [k (keys new-responses)]
-      (update-response-from-form-doc (-> k old-responses first)
+      (update-response-from-form-doc doc-id
+                                     (-> k old-responses first)
                                      (-> k new-responses first)))))
-
-
 
 #_(clojure.pprint/pprint or1)
 
