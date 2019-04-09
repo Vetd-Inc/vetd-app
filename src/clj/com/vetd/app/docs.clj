@@ -371,30 +371,39 @@
 
 (defn response-fields-eq?
   [old-field {:keys [response ftype]}]
-  (let [{:keys [state]} response]
+  (let [{:keys [state]} (first response)]
     (case ftype
       "s" (= (:sval old-field)
-             (:sval response))
+             state)
       "n" (= (:nval old-field)
-             (:nval response))
-      "d" (= (:dval old-field)
-             (:dval response))
+             (ut/->long state))
+      "d" (= (str (:dval old-field)) ;; HACK
+             state)
       "e" (= (:sval old-field)
-             (:sval response)))))
+             state))))
 
 (defn update-response-from-form-doc
   [doc-id {old-fields :fields :keys [ref-id]} {new-fields :fields :keys [response]}]
   ;; TODO handle if old or new fields are missing
-  (when (and old-fields new-fields)
-    (let [old-fields' (group-by (comp :fname :prompt-field) old-fields)
-          new-fields' (group-by :fname new-fields)
-          resp-ids (keys new-fields')]
-      (when (->> resp-ids
-                 (map #(response-fields-eq? (-> % old-fields' first)
-                                            (-> % new-fields' first)))
-                 (some false?))
-        (update-deleted :doc_resp ref-id)
-        (create-attached-doc-response doc-id response)))))
+  (cond (and (not-empty old-fields) (not-empty new-fields))
+        (let [old-fields' (group-by (comp :fname :prompt-field) old-fields)
+              new-fields' (group-by :fname new-fields)
+              resp-ids (keys new-fields')]
+          (when (->> resp-ids
+                     (map #(response-fields-eq? (-> % old-fields' first)
+                                                (-> % new-fields' first)))
+                     (some false?))
+            (update-deleted :doc_resp ref-id)
+            (create-attached-doc-response doc-id
+                                          {:prompt-id (:prompt-id response)
+                                           :fields new-fields})))
+
+        (not-empty new-fields)
+        (create-attached-doc-response doc-id
+                                      {:prompt-id (:prompt-id response)
+                                       :fields new-fields})))
+
+
 
 (defn update-responses-from-form-doc
   [{:keys [doc-id prompts]}]

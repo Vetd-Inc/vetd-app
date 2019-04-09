@@ -92,6 +92,18 @@
            :fields [:product :form-docs]
            :cols [:doc_subject :id]
            :rel :many-one}
+
+          {:tables [:vetd :form_docs
+                    :vetd :orgs]
+           :fields [:doc-from-org :form-docs-out]
+           :cols [:doc_from_org_id :id]
+           :rel :many-one}
+
+          {:tables [:vetd :form_docs
+                    :vetd :orgs]
+           :fields [:doc-to-org :form-docs-in]
+           :cols [:doc_to_org_id :id]
+           :rel :many-one}
           
           {:tables [:vetd :docs
                     :vetd :orgs]
