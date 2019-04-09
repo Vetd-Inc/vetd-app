@@ -5,7 +5,8 @@
             [reagent.core :as r]
             [reagent.format :as format]
             [re-frame.core :as rf]
-            [markdown-to-hiccup.core :as md]))
+            [markdown-to-hiccup.core :as md]
+            [clojure.string :as s]))
 
 (defn c-start-round-button [{:keys [etype eid ename props]}]
   [:> ui/Popup
@@ -100,14 +101,24 @@
 (defn c-categories
   "Given a product map, display the categories as tags."
   [product]
-  [:<>
-   (for [c (:categories product)]
-     ^{:key (:id c)}
-     [:> ui/Label {:class "category-tag"
-                   :as "a"
-                   :onClick #(do (.stopPropagation %)
-                                 (rf/dispatch [:b/nav-search (:cname c)]))}
-      (:cname c)])])
+  (let [categories (->> (:categories product) ; combine with categories defined in profile
+                        (map :cname)
+                        (concat (some-> product
+                                        :form-docs
+                                        first
+                                        :responses
+                                        (docs/get-field-value "Categories" "value" :sval)
+                                        (s/split #",")
+                                        (#(map (comp s/lower-case s/trim) %))))
+                        distinct)]
+    [:<>
+     (for [c categories]
+       ^{:key c}
+       [:> ui/Label {:class "category-tag"
+                     :as "a"
+                     :onClick #(do (.stopPropagation %)
+                                   (rf/dispatch [:b/nav-search c]))}
+        c])]))
 
 (defn c-free-trial-tag []
   [:> ui/Label {:class "free-trial-tag"
@@ -147,6 +158,8 @@
       (if (not-empty (:rounds product))
         [c-round-in-progress {:props {:ribbon "left"}}])
       [c-categories product]
+      (when (= "Yes" (v "Do you offer a free trial?"))
+        [c-free-trial-tag])
       [:> ui/Grid {:columns "equal"
                    :style {:margin-top 0}}
        [:> ui/GridRow
@@ -189,7 +202,10 @@
           [c-display-field {:width 16} "Estimated Time to Onboard" (v "Onboarding Process" "Estimated Time To Onboard")])]
        [:> ui/GridRow
         (when (has-data? (v "Onboarding Process"))
-          [c-display-field {:width 16} "Onboarding Process" (v "Onboarding Process") :has-markdown? true])]]]
+          [c-display-field {:width 16} "Onboarding Process" (v "Onboarding Process") :has-markdown? true])]
+       [:> ui/GridRow
+        (when (has-data? (v "Onboarding Team Involvement"))
+          [c-display-field {:width 16} "Onboarding Team Involvement" (v "Onboarding Team Involvement") :has-markdown? true])]]]
      [:> ui/Segment {:class "detail-container profile"}
       [:h1.title "Client Service"]
       [:> ui/Grid {:columns "equal" :style {:margin-top 0}}
