@@ -121,7 +121,7 @@
    [:> ui/Segment {:class "display-field"
                    :vertical true}
     [:h3.display-field-key field-key]
-    [:p field-value]]])
+    [:p {:whiteSpace "pre-line"} field-value]]])
 
 (defn has-data?
   [value]
@@ -165,24 +165,29 @@
         (when (has-data? (v "Price Range"))
           [c-display-field {:width 5} "Price Range" (v "Price Range")])
         (when (has-data? (v "Pricing Model"))
-          [c-display-field {:width 11} "Pricing Model" (v "Pricing Model")])]
-       [:> ui/GridRow
+          [c-display-field {:width 6} "Pricing Model" (v "Pricing Model")])
         (if (= "Yes" (v "Do you offer a free trial?"))
           [c-display-field {:width 5} "Free Trial" (v "Please describe the terms of your trial")]
-          [c-display-field {:width 5} "Free Trial" "No"])
+          [c-display-field {:width 5} "Free Trial" "No"])]
+       [:> ui/GridRow
+        (when (has-data? (v "Payment Options"))
+          [c-display-field {:width 5} "Payment Options" (v "Payment Options")])
         (when (has-data? (v "Minimum Contract Length"))
           [c-display-field {:width 6} "Minimum Contract Length" (v "Minimum Contract Length")])
         (when (has-data? (v "Cancellation Process"))
-          [c-display-field {:width 5} "Cancellation Process" (v "Cancellation Process")])]
+          [c-display-field {:width 5} "Cancellation Process" (v "Cancellation Process")])]]]
+     [:> ui/Segment {:class "detail-container profile"}
+      [:h1.title "Onboarding"]
+      [:> ui/Grid {:columns "equal" :style {:margin-top 0}}
        [:> ui/GridRow
-        (when (has-data? (v "Payment Options"))
-          [c-display-field {:width 6} "Payment Options" (v "Payment Options")])]]
-
+        (when (has-data? (v "Onboarding Process" "Estimated Time To Onboard"))
+          [c-display-field {:width 16} "Estimated Time to Onboard" (v "Onboarding Process" "Estimated Time To Onboard")])]
+       [:> ui/GridRow
+        (when (has-data? (v "Onboarding Process"))
+          [c-display-field {:width 16} "Onboarding Process" (v "Onboarding Process")])]]]]))
 
       #_(when (has-data? (v "Number of Current Clients"))
           [c-display-field {:width 6} "Number of Current Clients" (util/decimal-format (v "Number of Current Clients"))])
-
-      ]]))
 
 (defn c-vendor-profile
   [{:keys [responses] :as vendor-profile-doc} vendor-id vendor-name]
