@@ -119,12 +119,9 @@
                                       [:to-user [:id :uname]]
                                       [:responses {:ref-deleted nil}
                                        [:id :prompt-id :notes
-                                        [:prompt {:_order_by {:sort :asc}
-                                                  :deleted nil
-                                                  :ref-deleted nil}
+                                        [:prompt 
                                          [:id :prompt]]
-                                        [:fields {:_order_by {:sort :asc}
-                                                  :deleted nil}
+                                        [:fields {:deleted nil}
                                          [:id :pf-id :idx :sval :nval :dval
                                           [:prompt-field [:id :fname]]]]]]]]]}])]
         (fn []
