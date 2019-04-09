@@ -93,42 +93,24 @@
  (fn [{:keys [product-idstr]}] product-idstr))
 
 ;; Components
-(defn c-product
-  "Component to display Product details."
-  [{:keys [id pname long-desc url logo vendor forms rounds categories] :as product}]
-  [:> ui/Segment {:class "detail-container"}
-   [:h1.product-title
-    pname " " [:small " by " (:oname vendor)]]
-   [:> ui/Image {:class "product-logo"
-                 :src (str "https://s3.amazonaws.com/vetd-logos/" logo)}]
-   (if (not-empty (:rounds product))
-     [bc/c-round-in-progress {:props {:ribbon "left"}}])
-   [bc/c-categories product]
-   [:> ui/Grid {:columns "equal"
-                :style {:margin-top 0}}
-    [:> ui/GridRow
-     [bc/c-display-field {:width 12} "Product Description"
-      [:<> (or long-desc "No description available.")
-       (when (not-empty url)
-         [:<>
-          [:br]
-          [:br]
-          "Website: " [:a {:href (str "http://" url) ; todo: fragile
-                           :target "_blank"}
-                       [:> ui/Icon {:name "external square"
-                                    :color "blue"}]
-                       url]])]]]
-    [:> ui/GridRow
-     [bc/c-display-field {:width 6} "Pitch" "Unavailable (Request a Preposal)"]
-     [bc/c-display-field {:width 6} "Estimated Price" "Unavailable (Request a Preposal)"]]]])
-
 (defn c-page []
   (let [product-idstr& (rf/subscribe [:product-idstr])
         org-id& (rf/subscribe [:org-id])
         products& (rf/subscribe [:gql/sub
                                  {:queries
                                   [[:products {:idstr @product-idstr&}
-                                    [:id :pname :logo :short-desc :long-desc :url
+                                    [:id :pname :logo
+                                     [:form-docs {:ftype "product-profile"
+                                                  :_order_by {:created :desc}
+                                                  :_limit 1}
+                                      [:id 
+                                       [:responses
+                                        [:id :prompt-id :notes
+                                         [:prompt
+                                          [:id :prompt]]
+                                         [:fields
+                                          [:id :pf-id :idx :sval :nval :dval
+                                           [:prompt-field [:id :fname]]]]]]]]
                                      [:vendor
                                       [:id :oname :url
                                        [:docs-out {:dtype "vendor-profile"
@@ -205,5 +187,5 @@
           (let [product (-> @products& :products first)
                 {:keys [docs-out id oname]} (:vendor product)]
             [:<>
-             [c-product product]
+             [bc/c-product product]
              [bc/c-vendor-profile (first docs-out) id oname]]))]])))

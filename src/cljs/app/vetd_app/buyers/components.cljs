@@ -127,6 +127,63 @@
   [value]
   (not-empty (str value)))
 
+(defn c-product
+  "Component to display Product details."
+  [{:keys [id pname logo form-docs vendor forms rounds categories] :as product}]
+  (let [product-profile-responses (-> form-docs first :responses)
+        v (fn [prompt & [field value]]
+            (docs/get-field-value product-profile-responses prompt (or field "value") (or value :sval)))]
+    [:<>
+     [:> ui/Segment {:class "detail-container"}
+      [:h1.product-title
+       pname " " [:small " by " (:oname vendor)]]
+      [:> ui/Image {:class "product-logo"
+                    :src (str "https://s3.amazonaws.com/vetd-logos/" logo)}]
+      (if (not-empty (:rounds product))
+        [c-round-in-progress {:props {:ribbon "left"}}])
+      [c-categories product]
+      [:> ui/Grid {:columns "equal"
+                   :style {:margin-top 0}}
+       [:> ui/GridRow
+        [c-display-field {:width 12} "Product Description"
+         [:<> (or (v "Describe your product or service") "No description available.")
+          (when (not-empty (v "Product Website"))
+            [:<>
+             [:br]
+             [:br]
+             "Website: " [:a {:href (v "Product Website")
+                              :target "_blank"}
+                          [:> ui/Icon {:name "external square"
+                                       :color "blue"}]
+                          (v "Product Website")]])]]]
+       [:> ui/GridRow
+        [c-display-field {:width 12} "Pitch" "Request a Preposal to get a personalized pitch."]]]]
+     [:> ui/Segment {:class "detail-container profile"}
+      [:h1.title "Pricing"]
+      [:> ui/Grid {:columns "equal" :style {:margin-top 0}}
+       [:> ui/GridRow
+        (when (has-data? (v "Price Range"))
+          [c-display-field {:width 5} "Price Range" (v "Price Range")])
+        (when (has-data? (v "Pricing Model"))
+          [c-display-field {:width 11} "Pricing Model" (v "Pricing Model")])]
+       [:> ui/GridRow
+        (if (= "Yes" (v "Do you offer a free trial?"))
+          [c-display-field {:width 5} "Free Trial" (v "Please describe the terms of your trial")]
+          [c-display-field {:width 5} "Free Trial" "No"])
+        (when (has-data? (v "Minimum Contract Length"))
+          [c-display-field {:width 6} "Minimum Contract Length" (v "Minimum Contract Length")])
+        (when (has-data? (v "Cancellation Process"))
+          [c-display-field {:width 5} "Cancellation Process" (v "Cancellation Process")])]
+       [:> ui/GridRow
+        (when (has-data? (v "Payment Options"))
+          [c-display-field {:width 6} "Payment Options" (v "Payment Options")])]]
+
+
+      #_(when (has-data? (v "Number of Current Clients"))
+          [c-display-field {:width 6} "Number of Current Clients" (util/decimal-format (v "Number of Current Clients"))])
+
+      ]]))
+
 (defn c-vendor-profile
   [{:keys [responses] :as vendor-profile-doc} vendor-id vendor-name]
   (if vendor-profile-doc
@@ -135,7 +192,7 @@
           year-founded (docs/get-field-value responses "Year Founded" "value" :sval)
           headquarters (docs/get-field-value responses "Headquarters Location" "value" :sval)
           num-employees (docs/get-field-value responses "Employee Count" "value" :nval)]
-      [:> ui/Segment {:class "detail-container vendor-profile"}
+      [:> ui/Segment {:class "detail-container profile"}
        [:h1.title "Company Profile"]
        [:> ui/Grid {:columns "equal"
                     :style {:margin-top 0}}
