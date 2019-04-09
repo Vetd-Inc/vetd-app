@@ -416,14 +416,6 @@
                                      (-> k old-responses first)
                                      (-> k new-responses first)))))
 
-#_(clojure.pprint/pprint or1)
-
-#_(def fd1 $s/*)
-
-#_(clojure.pprint/pprint  fd1)
-
-#_(update-doc-from-form-doc fd1)
-
 (defn update-doc-from-form-doc
   [{:keys [id doc-id doc-title responses from-org from-user to-org to-user
            doc-descr doc-notes doc-dtype doc-dsubtype product]

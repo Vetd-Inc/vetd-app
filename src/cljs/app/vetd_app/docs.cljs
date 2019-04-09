@@ -52,7 +52,6 @@
                           :return nil
                           :form-doc fd}}})))
 
-#_(cljs.pprint/pprint fd1)
 
 ;; TODO support multiple response fields (for where list? = true)
 (defn mk-form-doc-prompt-field-state
