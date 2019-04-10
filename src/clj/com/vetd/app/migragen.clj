@@ -146,19 +146,19 @@
         table' (name table)]
     {:name-part (format "alter-%s-table" table')
      :ext "sql"     
-     :up [(format "ALTER TABLE %s.%s %s"
+     :up [(format "ALTER TABLE %s.%s \n%s"
                   schema'
                   table'
-                  (st/join " "
+                  (st/join ",\n"
                            (for [[k vs] add]
                              (format "ADD COLUMN %s %s"
                                      (name k)
                                      (st/join " "
                                               (map name vs))))))]
-     :down [(format "ALTER TABLE %s.%s %s"
+     :down [(format "ALTER TABLE %s.%s \n%s"
                     schema'
                     table'
-                    (st/join " "
+                    (st/join ",\n"
                              (for [[k vs] add]
                                (format "DROP COLUMN %s"
                                        (name k)))))]}))

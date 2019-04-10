@@ -1,1 +1,2 @@
-ALTER TABLE vetd.rounds DROP COLUMN form_id
+ALTER TABLE vetd.rounds 
+DROP COLUMN doc_id

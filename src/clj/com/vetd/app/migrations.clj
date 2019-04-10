@@ -1073,7 +1073,7 @@
     [:alter-table {:schema :vetd
                    :name :rounds
                    :columns
-                   {:add {:form_id [:bigint]}}}]]])
+                   {:add {:doc_id [:bigint]}}}]]])
 
 #_(mig/mk-migration-files migrations
                           "migrations")
