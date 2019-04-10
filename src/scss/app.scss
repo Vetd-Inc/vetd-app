@@ -75,6 +75,10 @@ a.teal:hover {
   font-size: 12px;
   font-weight: 300;
 }
+.sidebar .segment > .button:not(:first-child),
+.sidebar .segment > .label:not(:first-child) {
+  margin-top: 1em;
+}
 
 .product-title {
   padding: 5px 180px 14px 0 !important;

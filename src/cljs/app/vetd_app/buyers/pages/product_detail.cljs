@@ -93,6 +93,34 @@
  (fn [{:keys [product-idstr]}] product-idstr))
 
 ;; Components
+(defn c-preposal-request-button
+  [{:keys [vendor forms] :as product}]
+  (if (not-empty forms) ; already requested preposal
+    [:> ui/Popup
+     {:content "We will be in touch with next steps."
+      :header "Preposal Requested!"
+      :position "bottom left"
+      :trigger (r/as-element
+                [:> ui/Label {:color "teal"
+                              :size "large"
+                              :basic true
+                              :style {:display "block"
+                                      :text-align "center"}}
+                 "Preposal Requested"])}]
+    [:> ui/Popup
+     {:content (str "Get a pricing estimate, personalized pitch, and more from "
+                    (:oname vendor) ".")
+      :header "What is a Preposal?"
+      :position "bottom left"
+      :trigger (r/as-element
+                [:> ui/Button {:onClick #(rf/dispatch [:b/create-preposal-req product vendor])
+                               :color "teal"
+                               :fluid true
+                               :icon true
+                               :labelPosition "left"}
+                 "Request Preposal"
+                 [:> ui/Icon {:name "wpforms"}]])}]))
+
 (defn c-page []
   (let [product-idstr& (rf/subscribe [:product-idstr])
         org-id& (rf/subscribe [:org-id])
@@ -144,42 +172,15 @@
           "Back to Search"
           [:> ui/Icon {:name "left arrow"}]]]
         (when-not (= :loading @products&)
-          (let [{:keys [vendor rounds forms] :as product} (-> @products& :products first)
-                requested-preposal? (not-empty forms)]
+          (let [{:keys [vendor rounds] :as product} (-> @products& :products first)]
             (when (empty? (:rounds product))
               [:> ui/Segment
                [bc/c-start-round-button {:etype :product
                                          :eid (:id product)
                                          :ename (:pname product)
                                          :props {:fluid true}}]
-               [:br]
-               (if requested-preposal?
-                 [:> ui/Popup
-                  {:content "We will be in touch with next steps."
-                   :header "Preposal Requested!"
-                   :position "bottom left"
-                   :trigger (r/as-element
-                             [:> ui/Label {:color "teal"
-                                           :size "large"
-                                           :basic true
-                                           :style {:display "block"}}
-                              "Preposal Requested"])}]
-                 [:> ui/Popup
-                  {:content (str "Get a pricing estimate, personalized pitch, and more from "
-                                 (:oname vendor) ".")
-                   :header "What is a Preposal?"
-                   :position "bottom left"
-                   :trigger (r/as-element
-                             [:> ui/Button {:onClick #(rf/dispatch [:b/create-preposal-req product vendor])
-                                            :color "teal"
-                                            :fluid true
-                                            :icon true
-                                            :labelPosition "left"}
-                              "Request Preposal"
-                              [:> ui/Icon {:name "wpforms"}]])}])
-               [:br]
+               [c-preposal-request-button product]
                [bc/c-setup-call-button product vendor]
-               [:br]
                [bc/c-ask-a-question-button product vendor]])))]
        [:div.inner-container
         (if (= :loading @products&)
