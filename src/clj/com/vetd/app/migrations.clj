@@ -186,6 +186,14 @@
    {:delete-from :form_templates
     :where [:between :id 732891594222 732891754223]}))
 
+(def mig-form-templates-2019-04-10-up
+  (mig/mk-copy-from-up-fn "mig-form-template-2019-04-10.sql"))
+
+(def mig-form-templates-2019-04-10-down
+  (mig/mk-exe-honeysql-fn
+   {:delete-from :form_templates
+    :where [:= :id 860340375214]}))
+
 
 (def migrations
   [[[2019 2 4 00 00]
@@ -1008,7 +1016,14 @@
               :join [[:prompts :p]
                      [:= :p.id :rp.prompt_id]]}
       :owner :vetd
-      :grants {:hasura [:SELECT]}}]]])
+      :grants {:hasura [:SELECT]}}]]
+
+   [[2019 4 10 00 00]
+
+    [:copy-from '{:name :mig-form-templates-2019-04-10
+                  :ns com.vetd.app.migrations
+                  :up-fn mig-form-templates-2019-04-10-up
+                  :down-fn mig-form-templates-2019-04-10-down}]]])
 
 #_(mig/mk-migration-files migrations
                           "migrations")
