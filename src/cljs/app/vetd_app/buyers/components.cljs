@@ -173,23 +173,28 @@
     "Request Complete Profile"]])
 
 (defn c-pricing
-  [product v] ; v - value function, retrieves value by prompt name
+  [product v & {:keys [:preposal-estimate]}] ; v - value function, retrieves value by prompt name
   [:> ui/Segment {:class "detail-container profile"}
    [:h1.title "Pricing"]
-   (if (has-data? (v "Price Range"))
+   (if (or preposal-estimate
+           (has-data? (v "Price Range")))
      [:> ui/Grid {:columns "equal" :style {:margin-top 0}}
       [:> ui/GridRow
-       (when (has-data? (v "Price Range"))
-         [c-display-field {:width 5} "Range"
-          [:<>
-           (v "Price Range")
-           [:br]
-           "Request a Preposal to get a personalized estimate."]])
+       ;; show Preposal Estimate if exists, otherwise Price Range
+       (if preposal-estimate
+         [c-display-field {:width 5} "Estimate" preposal-estimate]
+         (when (has-data? (v "Price Range"))
+           [c-display-field {:width 5} "Range"
+            [:<>
+             (v "Price Range")
+             [:br]
+             "Request a Preposal to get a personalized estimate."]]))
        (when (has-data? (v "Pricing Model"))
          [c-display-field {:width 6} "Model" (v "Pricing Model") :has-markdown? true])
-       (if (= "Yes" (v "Do you offer a free trial?"))
-         [c-display-field {:width 5} "Free Trial" (v "Please describe the terms of your trial")]
-         [c-display-field {:width 5} "Free Trial" "No"])]
+       (when (has-data? (v "Do you offer a free trial?"))
+         (if (= "Yes" (v "Do you offer a free trial?"))
+           [c-display-field {:width 5} "Free Trial" (v "Please describe the terms of your trial")]
+           [c-display-field {:width 5} "Free Trial" "No"]))]
       [:> ui/GridRow
        (when (has-data? (v "Payment Options"))
          [c-display-field {:width 5} "Payment Options" (v "Payment Options")])
@@ -286,57 +291,6 @@
        (when (has-data? (v "Product Roadmap"))
          [c-display-field {:width 16} "Product Roadmap" (v "Product Roadmap") :has-markdown? true])]]
      [c-request-profile "Industry Niche" :product (:id product) (:pname product)])])
-
-(defn c-product
-  "Component to display Product details."
-  [{:keys [id pname logo form-docs vendor forms rounds categories] :as product}]
-  (let [product-profile-responses (-> form-docs first :responses)
-        v (fn [prompt & [field value]]
-            (docs/get-field-value product-profile-responses prompt (or field "value") (or value :sval)))]
-    [:<>
-     [:> ui/Segment {:class "detail-container"}
-      [:h1.product-title
-       pname " " [:small " by " (:oname vendor)]]
-      [:> ui/Image {:class "product-logo"
-                    :src (str "https://s3.amazonaws.com/vetd-logos/" logo)}]
-      (if (not-empty (:rounds product))
-        [c-round-in-progress {:props {:ribbon "left"}}])
-      [c-categories product]
-      (when (= "Yes" (v "Do you offer a free trial?"))
-        [c-free-trial-tag])
-      [:> ui/Grid {:columns "equal"
-                   :style {:margin-top 0}}
-       [:> ui/GridRow
-        [c-display-field {:width 11} "Description"
-         [:<> (or (v "Describe your product or service") "No description available.")
-          [:br] ; TODO this is hacky, and causes a console warning
-          [:br]
-          [:h3.display-field-key "Pitch"]
-          [:p "Request a Preposal to get a personalized pitch."]]]
-        [:> ui/GridColumn {:width 5}
-         [:> ui/Grid {:columns "equal"
-                      :style {:margin-top 0}}
-          [:> ui/GridRow
-           (when (has-data? (v "Product Website"))
-             [c-display-field {:width 16} "Website"
-              [:a {:href (v "Product Website")
-                   :target "_blank"}
-               [:> ui/Icon {:name "external square"
-                            :color "blue"}]
-               (v "Product Website")]])]
-          [:> ui/GridRow
-           (when (has-data? (v "Product Demo"))
-             [c-display-field {:width 16} "Demo"
-              [:a {:href (v "Product Demo")
-                   :target "_blank"}
-               [:> ui/Icon {:name "external square"
-                            :color "blue"}]
-               "Watch Video"]])]]]]]]
-     [c-pricing product v]
-     [c-onboarding product v]
-     [c-client-service product v]
-     [c-reporting product v]
-     [c-market-niche product v]]))
 
 (defn c-vendor-profile
   [{:keys [responses] :as vendor-profile-doc} vendor-id vendor-name]

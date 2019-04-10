@@ -32,42 +32,76 @@
 (defn c-preposal
   "Component to display Preposal details."
   [{:keys [id product from-org responses] :as preposal}]
-  (let [pricing-estimate-value (docs/get-field-value responses "Pricing Estimate" "value" :nval)
-        pricing-estimate-unit (docs/get-field-value responses "Pricing Estimate" "unit" :sval)
-        pricing-estimate-details (docs/get-field-value responses "Pricing Estimate" "details" :sval)
-        pricing-model (docs/get-field-value responses "Pricing Model" "value" :sval)
-        free-trial? (= "yes" (docs/get-field-value responses "Do you offer a free trial?" "value" :sval))
-        free-trial-terms (docs/get-field-value responses "Please describe the terms of your trial" "value" :sval)
-        pitch (docs/get-field-value responses "Pitch" "value" :sval)
-        employee-count (docs/get-field-value responses "Employee Count" "value" :sval)
-        website (docs/get-field-value responses "Website" "value" :sval)]
-    [:> ui/Segment {:class "detail-container"}
-     [:h1.product-title
-      (:pname product) " " [:small " by " (:oname from-org)]]
-     [:> ui/Image {:class "product-logo"
-                   :src (str "https://s3.amazonaws.com/vetd-logos/" (:logo product))}]
-     (if (not-empty (:rounds product))
-       [bc/c-round-in-progress {:props {:ribbon "left"}}])
-     [bc/c-categories product]
-     (when free-trial? [bc/c-free-trial-tag])
-     [:> ui/Grid {:columns "equal"
-                  :style {:margin-top 0}}
-      [:> ui/GridRow
-       [bc/c-display-field {:width 10} "Pitch" pitch]]
-      [:> ui/GridRow
-       [bc/c-display-field {:width 16} "Product Description" (:long-desc product)]]
-      [:> ui/GridRow
-       [bc/c-display-field {:width 6} "Estimated Price"
-        (if pricing-estimate-value
-          [:<> (util/currency-format pricing-estimate-value) " / " pricing-estimate-unit
-           (when (and pricing-estimate-details
-                      (not= "" pricing-estimate-details))
-             (str " - " pricing-estimate-details))]
-          pricing-estimate-details)]
-       (when (not= "" free-trial-terms)
-         [bc/c-display-field {:width 4} "Free Trial Terms" free-trial-terms])
-       (when (not= "" pricing-model)
-         [bc/c-display-field {:width 6} "Pricing Model" pricing-model])]]]))
+  (let [preposal-pricing-estimate-value (docs/get-field-value responses
+                                                              "Pricing Estimate"
+                                                              "value"
+                                                              :nval)
+        preposal-pricing-estimate-unit (docs/get-field-value responses
+                                                             "Pricing Estimate"
+                                                             "unit"
+                                                             :sval)
+        preposal-pricing-estimate-details (docs/get-field-value responses
+                                                                "Pricing Estimate"
+                                                                "details"
+                                                                :sval)
+        preposal-pitch (docs/get-field-value responses "Pitch" "value" :sval)
+        product-profile-responses (-> product :form-docs first :responses)
+        v (fn [prompt & [field value]]
+            (docs/get-field-value product-profile-responses prompt (or field "value") (or value :sval)))
+        vendor (:vendor product)
+        rounds (:rounds product)
+        pname (:pname product)
+        logo (:logo product)]
+    [:<>
+     [:> ui/Segment {:class "detail-container"}
+      [:h1.product-title
+       pname " " [:small " by " (:oname vendor)]]
+      [:> ui/Image {:class "product-logo"
+                    :src (str "https://s3.amazonaws.com/vetd-logos/" logo)}]
+      (if (not-empty (:rounds product))
+        [bc/c-round-in-progress {:props {:ribbon "left"}}])
+      [bc/c-categories product]
+      (when (= "Yes" (v "Do you offer a free trial?"))
+        [bc/c-free-trial-tag])
+      [:> ui/Grid {:columns "equal"
+                   :style {:margin-top 0}}
+       [:> ui/GridRow
+        [bc/c-display-field {:width 11} "Description"
+         [:<> (or (v "Describe your product or service") "No description available.")
+          [:br] ; TODO this is hacky, and causes a console warning
+          [:br]
+          [:h3.display-field-key "Pitch"]
+          [:p preposal-pitch]]]
+        [:> ui/GridColumn {:width 5}
+         [:> ui/Grid {:columns "equal"
+                      :style {:margin-top 0}}
+          [:> ui/GridRow
+           (when (bc/has-data? (v "Product Website"))
+             [bc/c-display-field {:width 16} "Website"
+              [:a {:href (v "Product Website")
+                   :target "_blank"}
+               [:> ui/Icon {:name "external square"
+                            :color "blue"}]
+               (v "Product Website")]])]
+          [:> ui/GridRow
+           (when (bc/has-data? (v "Product Demo"))
+             [bc/c-display-field {:width 16} "Demo"
+              [:a {:href (v "Product Demo")
+                   :target "_blank"}
+               [:> ui/Icon {:name "external square"
+                            :color "blue"}]
+               "Watch Video"]])]]]]]]
+     [bc/c-pricing product v
+      :preposal-estimate (if preposal-pricing-estimate-value
+                           [:<> (util/currency-format preposal-pricing-estimate-value) " / " preposal-pricing-estimate-unit
+                            (when (and preposal-pricing-estimate-details
+                                       (not= "" preposal-pricing-estimate-details))
+                              (str " - " preposal-pricing-estimate-details))]
+                           preposal-pricing-estimate-details)]
+     [bc/c-onboarding product v]
+     [bc/c-client-service product v]
+     [bc/c-reporting product v]
+     [bc/c-market-niche product v]]))
 
 (defn c-page []
   (let [preposal-idstr& (rf/subscribe [:preposal-idstr])
@@ -77,7 +111,18 @@
                                [[:docs {:dtype "preposal"
                                         :idstr @preposal-idstr&}
                                  [:id :idstr :title
-                                  [:product [:id :pname :logo :short-desc :long-desc
+                                  [:product [:id :pname :logo
+                                             [:form-docs {:ftype "product-profile"
+                                                          :_order_by {:created :desc}
+                                                          :_limit 1}
+                                              [:id 
+                                               [:responses
+                                                [:id :prompt-id :notes
+                                                 [:prompt
+                                                  [:id :prompt]]
+                                                 [:fields
+                                                  [:id :pf-id :idx :sval :nval :dval
+                                                   [:prompt-field [:id :fname]]]]]]]]
                                              [:rounds {:buyer-id @org-id&
                                                        :status "active"}
                                               [:id :created :status]]

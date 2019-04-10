@@ -231,7 +231,7 @@
                                  [[:orgs {:id vendor-ids}
                                    [:id :oname :idstr :short-desc
                                     [:products {:id product-ids}
-                                     [:id :pname :idstr :short-desc :logo
+                                     [:id :pname :idstr :logo
                                       [:form-docs {:ftype "product-profile"
                                                    :_order_by {:created :desc}
                                                    :_limit 1}

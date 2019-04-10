@@ -123,6 +123,57 @@
                  "Request Preposal"
                  [:> ui/Icon {:name "wpforms"}]])}]))
 
+(defn c-product
+  "Component to display Product details."
+  [{:keys [id pname logo form-docs vendor forms rounds categories] :as product}]
+  (let [product-profile-responses (-> form-docs first :responses)
+        v (fn [prompt & [field value]]
+            (docs/get-field-value product-profile-responses prompt (or field "value") (or value :sval)))]
+    [:<>
+     [:> ui/Segment {:class "detail-container"}
+      [:h1.product-title
+       pname " " [:small " by " (:oname vendor)]]
+      [:> ui/Image {:class "product-logo"
+                    :src (str "https://s3.amazonaws.com/vetd-logos/" logo)}]
+      (if (not-empty (:rounds product))
+        [bc/c-round-in-progress {:props {:ribbon "left"}}])
+      [bc/c-categories product]
+      (when (= "Yes" (v "Do you offer a free trial?"))
+        [bc/c-free-trial-tag])
+      [:> ui/Grid {:columns "equal"
+                   :style {:margin-top 0}}
+       [:> ui/GridRow
+        [bc/c-display-field {:width 11} "Description"
+         [:<> (or (v "Describe your product or service") "No description available.")
+          [:br] ; TODO this is hacky, and causes a console warning
+          [:br]
+          [:h3.display-field-key "Pitch"]
+          [:p "Request a Preposal to get a personalized pitch."]]]
+        [:> ui/GridColumn {:width 5}
+         [:> ui/Grid {:columns "equal"
+                      :style {:margin-top 0}}
+          [:> ui/GridRow
+           (when (bc/has-data? (v "Product Website"))
+             [bc/c-display-field {:width 16} "Website"
+              [:a {:href (v "Product Website")
+                   :target "_blank"}
+               [:> ui/Icon {:name "external square"
+                            :color "blue"}]
+               (v "Product Website")]])]
+          [:> ui/GridRow
+           (when (bc/has-data? (v "Product Demo"))
+             [bc/c-display-field {:width 16} "Demo"
+              [:a {:href (v "Product Demo")
+                   :target "_blank"}
+               [:> ui/Icon {:name "external square"
+                            :color "blue"}]
+               "Watch Video"]])]]]]]]
+     [bc/c-pricing product v]
+     [bc/c-onboarding product v]
+     [bc/c-client-service product v]
+     [bc/c-reporting product v]
+     [bc/c-market-niche product v]]))
+
 (defn c-page []
   (let [product-idstr& (rf/subscribe [:product-idstr])
         org-id& (rf/subscribe [:org-id])
@@ -184,5 +235,5 @@
           (let [product (-> @products& :products first)
                 {:keys [docs-out id oname]} (:vendor product)]
             [:<>
-             [bc/c-product product]
+             [c-product product]
              [bc/c-vendor-profile (first docs-out) id oname]]))]])))
