@@ -110,14 +110,8 @@
       [:div.container-with-sidebar
        [:div.sidebar
         [:div {:style {:padding "0 15px"}}
-         [:> ui/Button {:on-click #(rf/dispatch [:b/nav-preposals])
-                        :basic true
-                        :icon true
-                        :size "small"
-                        :fluid true
-                        :labelPosition "left"}
-          "All Preposals"
-          [:> ui/Icon {:name "left arrow"}]]]
+         [bc/c-back-button {:on-click #(rf/dispatch [:b/nav-preposals])}
+          "All Preposals"]]
         (when-not (= :loading @preps&)
           (let [{:keys [product]} (-> @preps& :docs first)]
             (when (empty? (:rounds product))
@@ -126,9 +120,7 @@
                                          :eid (:id product)
                                          :ename (:pname product)
                                          :props {:fluid true}}]
-               [:br]
                [bc/c-setup-call-button product (:vendor product)]
-               [:br]
                [bc/c-ask-a-question-button product (:vendor product)]])))]
        [:div.inner-container
         (if (= :loading @preps&)

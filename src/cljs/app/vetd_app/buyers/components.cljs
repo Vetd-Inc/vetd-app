@@ -8,6 +8,19 @@
             [markdown-to-hiccup.core :as md]
             [clojure.string :as s]))
 
+(defn c-back-button
+  ([] (c-back-button {} "Back"))
+  ([text] (c-back-button {} text))
+  ([props text] [:> ui/Button (merge {:on-click #(.go js/history -1)
+                                      :basic true
+                                      :icon true
+                                      :size "small"
+                                      :fluid true
+                                      :labelPosition "left"}
+                                     props)
+                 text
+                 [:> ui/Icon {:name "left arrow"}]]))
+
 (defn c-start-round-button [{:keys [etype eid ename props]}]
   [:> ui/Popup
    {:content (str "Find and compare similar products to \""
