@@ -309,7 +309,7 @@
        [:> ui/GridRow
         [c-display-field {:width 11} "Description"
          [:<> (or (v "Describe your product or service") "No description available.")
-          [:br]
+          [:br] ; TODO this is hacky, and causes a console warning
           [:br]
           [:h3.display-field-key "Pitch"]
           [:p "Request a Preposal to get a personalized pitch."]]]
