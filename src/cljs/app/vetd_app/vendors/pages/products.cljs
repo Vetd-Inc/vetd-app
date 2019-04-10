@@ -89,13 +89,15 @@
                                   [:form-docs {:ftype "product-profile"}
                                    [:id :title :ftype :fsubtype
                                     :doc-id :doc-title
-                                    [:product [:id]]
-                                    [:prompts {:_order_by {:sort :asc}}
+                                    [:doc-product [:id]]
+                                    [:prompts {:ref-deleted nil
+                                               :_order_by {:sort :asc}}
                                      [:id :idstr :prompt :descr :sort
-                                      [:fields {:_order_by {:sort :asc}}
+                                      [:fields {:deleted nil
+                                                :_order_by {:sort :asc}}
                                        [:id :idstr :fname :ftype
                                         :fsubtype :list? :sort]]]]
-                                    [:responses
+                                    [:responses {:ref-deleted nil}
                                      [:id :prompt-id :notes
                                       [:fields [:id :pf-id :idx :sval :nval :dval]]]]]]]]]}])
         prod-prof-form& (rf/subscribe [:gql/q
@@ -106,14 +108,14 @@
                                                   :deleted nil}
                                           [:id :title :ftype :fsubtype
                                            [:prompts {:_order_by {:sort :asc}
-                                                      :deleted nil}
+                                                      :deleted nil
+                                                      :ref-deleted nil}
                                             [:id :idstr :prompt :descr :sort
                                              [:fields {:_order_by {:sort :asc}
                                                        :deleted nil}
                                               [:id :idstr :fname :ftype
                                                :fsubtype :list? :sort]]]]]]]}])]
     (fn []
-      (def p1 @prods&)
       (let [prod-prof-form (-> @prod-prof-form&
                                :forms
                                first )]
@@ -123,10 +125,15 @@
                         :on-click #(rf/dispatch [:v/new-product @org-id&])}
           "New Product"]
          (for [{:keys [id form-docs] :as p} (:products @prods&)]
-           [:div
-            ^{:key (str "product" id)}
-            [c-product (assoc p
-                              :form-doc
-                              (or (first form-docs)
-                                  (assoc prod-prof-form
-                                         :product {:id id})))]])]))))
+           (let [{:keys [doc-product] :as form-doc} (first form-docs)
+                 form-doc' (when form-doc
+                             (assoc form-doc
+                                    :product
+                                    doc-product))]
+             [:div
+              ^{:key (str "product" id)}
+              [c-product (assoc p
+                                :form-doc
+                                (or form-doc'
+                                    (assoc prod-prof-form
+                                           :product {:id id})))]]))]))))

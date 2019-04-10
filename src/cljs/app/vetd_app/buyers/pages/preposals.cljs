@@ -130,11 +130,11 @@
                                       [:from-user [:id :uname]]
                                       [:to-org [:id :oname]]
                                       [:to-user [:id :uname]]
-                                      [:responses
+                                      [:responses {:ref-deleted nil}
                                        [:id :prompt-id :notes
-                                        [:prompt
+                                        [:prompt 
                                          [:id :prompt]]
-                                        [:fields
+                                        [:fields {:deleted nil}
                                          [:id :pf-id :idx :sval :nval :dval
                                           [:prompt-field [:id :fname]]]]]]]]]}])]
         (fn []
