@@ -7,6 +7,11 @@
             [honeysql.core :as hs]
             clojure.data))
 
+(defmulti handle-doc-creation (fn [{:keys [dtype]}] (keyword dtype)))
+
+(defmethod handle-doc-creation :default [_])
+
+
 (defn get-latest-form-doc-by-ftype&from-org
   [ftype doc-from-org-id]
   (-> [[:form-docs {:ftype ftype
@@ -125,25 +130,28 @@
   [{:keys [title dtype descr notes from-org-id
            from-user-id to-org-id to-user-id
            dtype dsubtype form-id subject]}]
-  (let [[id idstr] (ut/mk-id&str)]
-    (-> (db/insert! :docs
-                    {:id id
-                     :idstr idstr
-                     :created (ut/now-ts)
-                     :updated (ut/now-ts)
-                     :deleted nil
-                     :title title
-                     :dtype dtype
-                     :dsubtype dsubtype
-                     :descr descr
-                     :notes notes
-                     :subject subject
-                     :form_id form-id
-                     :from_org_id from-org-id
-                     :from_user_id from-user-id
-                     :to_org_id to-org-id
-                     :to_user_id to-user-id})
-        first)))
+  (let [[id idstr] (ut/mk-id&str)
+        d (-> (db/insert! :docs
+                          {:id id
+                           :idstr idstr
+                           :created (ut/now-ts)
+                           :updated (ut/now-ts)
+                           :deleted nil
+                           :title title
+                           :dtype dtype
+                           :dsubtype dsubtype
+                           :descr descr
+                           :notes notes
+                           :subject subject
+                           :form_id form-id
+                           :from_org_id from-org-id
+                           :from_user_id from-user-id
+                           :to_org_id to-org-id
+                           :to_user_id to-user-id})
+              first)]
+    ;; TODO doing this here isn't great because responses likely won't be inserted yet
+    (future (handle-doc-creation d))
+    d))
 
 (defn insert-prompt
   [{:keys [prompt descr id idstr]} & [use-id?]]
@@ -282,12 +290,12 @@
                                     id)))))
 
 (defn create-form-from-template
-  [{:keys [form-temp-id from-org-id from-user-id
+  [{:keys [form-template-id from-org-id from-user-id
            title descr status notes to-org-id
            to-user-id] :as m}]
   (let [ftypes (-> {:select [:ftype :fsubtype]
                     :from [:form_templates]
-                    :where [:= :id form-temp-id]}
+                    :where [:= :id form-template-id]}
                    db/hs-query
                    first)
         {form-id :id :as form} (-> m
@@ -296,7 +304,7 @@
         ps (db/hs-query {:select [:prompt_id :sort]
                          :from [:form_template_prompt]
                          :where [:and
-                                 [:= :form_template_id form-temp-id]
+                                 [:= :form_template_id form-template-id]
                                  [:= :deleted nil]]})]
     (doseq [{prompt-id :prompt_id sort' :sort} ps]
       (insert-form-prompt form-id prompt-id sort'))

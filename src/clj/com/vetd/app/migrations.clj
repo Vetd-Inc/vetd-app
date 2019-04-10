@@ -313,7 +313,7 @@
                               :buyer_id [:bigint]
                               :user_id [:bigint] ;; TODO initiating user
                               :status [:text]
-                              :active_qm [:boolean]} ;; TODO
+                              :active_qm [:boolean]}
                     :owner :vetd
                     :grants {:hasura [:SELECT]}}]
 
@@ -1023,7 +1023,57 @@
     [:copy-from '{:name :mig-form-templates-2019-04-10
                   :ns com.vetd.app.migrations
                   :up-fn mig-form-templates-2019-04-10-up
-                  :down-fn mig-form-templates-2019-04-10-down}]]])
+                  :down-fn mig-form-templates-2019-04-10-down}]
+
+    [:create-or-replace-view
+     {:schema :vetd
+      :name :prompts_by_template
+      :honey {:select [[:rp.id :rpid]
+                       [:rp.deleted :rp_deleted]
+                       [:rp.id :ref_id]
+                       [:rp.deleted :ref_deleted]
+                       :rp.form_template_id
+                       :rp.sort
+                       :p.id
+                       :p.idstr                                    
+                       :p.created
+                       :p.updated
+                       :p.deleted
+                       :p.prompt
+                       :p.term
+                       :p.descr]
+              :from [[:form_template_prompt :rp]]
+              :join [[:prompts :p]
+                     [:= :p.id :rp.prompt_id]]}
+      :owner :vetd
+      :grants {:hasura [:SELECT]}}]
+
+    [:create-or-replace-view
+     {:schema :vetd
+      :name :prompts_by_form
+      :honey {:select [[:fp.id :rpid]
+                       [:fp.id :ref_id]
+                       [:fp.deleted :ref_deleted]
+                       :fp.form_id
+                       :fp.sort
+                       :p.id
+                       :p.idstr                                    
+                       :p.created
+                       :p.updated
+                       :p.deleted
+                       :p.prompt
+                       :p.term                       
+                       :p.descr]
+              :from [[:form_prompt :fp]]
+              :join [[:prompts :p]
+                     [:= :p.id :fp.prompt_id]]}
+      :owner :vetd
+      :grants {:hasura [:SELECT]}}]
+
+    [:alter-table {:schema :vetd
+                   :name :rounds
+                   :columns
+                   {:add {:doc_id [:bigint]}}}]]])
 
 #_(mig/mk-migration-files migrations
                           "migrations")
