@@ -6,7 +6,8 @@
             [vetd-app.docs :as docs]
             [reagent.core :as r]
             [reagent.format :as format]
-            [re-frame.core :as rf]))
+            [re-frame.core :as rf]
+            [clojure.string :as s]))
 
 (def last-query-id (atom 0))
 
@@ -29,23 +30,24 @@
                      :props {:product-idstr product-idstr}}}))
 
 (rf/reg-event-fx
- :b/request-vendor-profile
- (fn [{:keys [db]} [_ vendor-id vendor-name]]
+ :b/request-complete-profile
+ (fn [{:keys [db]} [_ etype eid ename]]
    (let [qid (get-next-query-id)]
-     {:ws-send {:payload {:cmd :b/request-vendor-profile
-                          :return {:handler :b/request-vendor-profile-return}
-                          :vendor-id vendor-id
+     {:ws-send {:payload {:cmd :b/request-complete-profile
+                          :return {:handler :b/request-complete-profile-return}
+                          :etype etype
+                          :eid eid
                           :buyer-id (util/db->current-org-id db)}}
       :analytics/track {:event "Request"
-                        :props {:category "Vendor Profile"
-                                :label vendor-name}}})))
+                        :props {:category (str (s/capitalize (name etype)) " Profile")
+                                :label ename}}})))
 
 (rf/reg-event-fx
- :b/request-vendor-profile-return
+ :b/request-complete-profile-return
  (constantly
   {:toast {:type "success"
-           :title "Company Profile Requested"
-           :message "We'll let you know when the profile is added."}}))
+           :title "Complete Profile Requested"
+           :message "We'll let you know when the profile is completed."}}))
 
 (rf/reg-event-fx
  :b/setup-call
