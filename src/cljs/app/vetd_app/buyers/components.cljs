@@ -154,8 +154,8 @@
         info])]
     (if has-markdown?
       (-> field-value
-          (md/md->hiccup #_{:encode? true})
-          (md/component))
+          md/md->hiccup
+          md/component)
       [:p field-value])]])
 
 (defn has-data?

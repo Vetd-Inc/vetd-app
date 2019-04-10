@@ -149,8 +149,8 @@
                          :vertical true}
           [:h3.display-field-key "Description"]
           (or (some-> (v "Describe your product or service")
-                      (md/md->hiccup)
-                      (md/component))
+                      md/md->hiccup
+                      md/component)
               "No description available.")]
          [:br]
          [:> ui/Segment {:class "display-field"
