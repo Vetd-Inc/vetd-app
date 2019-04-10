@@ -54,7 +54,8 @@
   (let [pricing-estimate-value (docs/get-field-value responses "Pricing Estimate" "value" :nval)
         pricing-estimate-unit (docs/get-field-value responses "Pricing Estimate" "unit" :sval)
         pricing-estimate-details (docs/get-field-value responses "Pricing Estimate" "details" :sval)
-        free-trial? (= "yes" (docs/get-field-value responses "Do you offer a free trial?" "value" :sval))]
+        free-trial? (= "yes" (docs/get-field-value responses "Do you offer a free trial?" "value" :sval))
+        product-profile-responses (-> product :form-docs first :responses)]
     [:> ui/Item {:onClick #(rf/dispatch [:b/nav-preposal-detail idstr])}
      ;; TODO make config var 's3-base-url'
      [:div.product-logo {:style {:background-image
@@ -71,7 +72,8 @@
           " "
           [:small "(estimate) " pricing-estimate-details]]
          pricing-estimate-details)]
-      [:> ui/ItemDescription (:short-desc product)]
+      [:> ui/ItemDescription (or (docs/get-field-value product-profile-responses "Describe your product or service" "value" :sval)
+                                 "No description available.")]
       
       [:> ui/ItemExtra
        (when (empty? (:rounds product))
@@ -108,7 +110,18 @@
                                    [[:docs {:dtype "preposal"
                                             :to-org-id @org-id&}
                                      [:id :idstr :title
-                                      [:product [:id :pname :logo :short-desc
+                                      [:product [:id :pname :logo
+                                                 [:form-docs {:ftype "product-profile"
+                                                              :_order_by {:created :desc}
+                                                              :_limit 1}
+                                                  [:id 
+                                                   [:responses
+                                                    [:id :prompt-id :notes
+                                                     [:prompt
+                                                      [:id :prompt]]
+                                                     [:fields
+                                                      [:id :pf-id :idx :sval :nval :dval
+                                                       [:prompt-field [:id :fname]]]]]]]]
                                                  [:rounds {:buyer-id @org-id&
                                                            :status "active"}
                                                   [:id :created :status]]

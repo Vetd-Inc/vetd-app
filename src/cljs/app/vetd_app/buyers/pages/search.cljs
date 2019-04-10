@@ -147,8 +147,10 @@
 
 ;;;; Components
 (defn c-product-search-result
-  [{:keys [id idstr pname short-desc logo rounds categories forms docs] :as product} vendor]
-  (let [preposal-responses (-> docs first :responses)
+  [{:keys [id idstr pname short-desc logo categories
+           rounds form-docs forms docs] :as product} vendor]
+  (let [product-profile-responses (-> form-docs first :responses)
+        preposal-responses (-> docs first :responses)
         requested-preposal? (not-empty forms)]
     [:> ui/Item {:onClick #(rf/dispatch (if preposal-responses
                                           [:b/nav-preposal-detail (-> docs first :idstr)]
@@ -182,7 +184,8 @@
             [:a.teal {:onClick #(do (.stopPropagation %)
                                     (rf/dispatch [:b/create-preposal-req product vendor]))}
              "Request a Preposal"]]))]
-      [:> ui/ItemDescription short-desc]
+      [:> ui/ItemDescription (or (docs/get-field-value product-profile-responses "Describe your product or service" "value" :sval)
+                                 "No description available.")]
       [:> ui/ItemExtra
        [bc/c-categories product]
        (when (and preposal-responses
@@ -228,7 +231,18 @@
                                  [[:orgs {:id vendor-ids}
                                    [:id :oname :idstr :short-desc
                                     [:products {:id product-ids}
-                                     [:id :pname :idstr :short-desc :logo
+                                     [:id :pname :idstr :logo
+                                      [:form-docs {:ftype "product-profile"
+                                                   :_order_by {:created :desc}
+                                                   :_limit 1}
+                                       [:id 
+                                        [:responses
+                                         [:id :prompt-id :notes
+                                          [:prompt
+                                           [:id :prompt]]
+                                          [:fields
+                                           [:id :pf-id :idx :sval :nval :dval
+                                            [:prompt-field [:id :fname]]]]]]]]
                                       [:forms {:ftype "preposal" ; preposal requests
                                                :from-org-id org-id}
                                        [:id]]

@@ -75,6 +75,10 @@ a.teal:hover {
   font-size: 12px;
   font-weight: 300;
 }
+.sidebar .segment > .button:not(:first-child),
+.sidebar .segment > .label:not(:first-child) {
+  margin-top: 1em;
+}
 
 .product-title {
   padding: 5px 180px 14px 0 !important;
@@ -84,9 +88,15 @@ a.teal:hover {
 .display-field {
   margin: 7px 0 7px 0 !important;
   padding: 0 !important;
+  border-bottom: none !important;
+}
+.display-field ul {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding-left: 18px !important;
 }
 .display-field-key {
-  margin: 0 0 5px 0;
+  margin: 0 0 5px 0 !important;
 }
 .detail-container > .product-logo {
   position: absolute;
@@ -112,11 +122,14 @@ a.teal:hover {
   }
 }
 
-/* Vendor Profile (under Product detail and Preposal detail) */
-.vendor-profile .title {
-  padding: 0 11px 7px 0 !important;
+/* Product Profile and Vendor Profile (under Product detail and Preposal detail) */
+.profile .title {
+  padding: 0 11px 13px 0 !important;
   margin: 0;
   font-size: 24px;
+}
+.profile .row {
+  padding-top: 7px !important;
 }
 
 
