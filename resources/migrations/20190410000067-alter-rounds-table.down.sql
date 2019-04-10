@@ -1,0 +1,1 @@
+ALTER TABLE vetd.rounds DROP COLUMN form_id

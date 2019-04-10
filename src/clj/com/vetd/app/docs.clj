@@ -282,12 +282,12 @@
                                     id)))))
 
 (defn create-form-from-template
-  [{:keys [form-temp-id from-org-id from-user-id
+  [{:keys [form-template-id from-org-id from-user-id
            title descr status notes to-org-id
            to-user-id] :as m}]
   (let [ftypes (-> {:select [:ftype :fsubtype]
                     :from [:form_templates]
-                    :where [:= :id form-temp-id]}
+                    :where [:= :id form-template-id]}
                    db/hs-query
                    first)
         {form-id :id :as form} (-> m
