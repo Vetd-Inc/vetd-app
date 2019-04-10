@@ -307,7 +307,7 @@
         [:> ui/GridRow
          (when (has-data? website-url)
            [c-display-field {:width 6} "Website"
-            [:a {:href website-url
+            [:a {:href (str (when-not (.startsWith website-url "http") "http://") website-url)
                  :target "_blank"}
              [:> ui/Icon {:name "external square"
                           :color "blue"}]

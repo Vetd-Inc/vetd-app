@@ -88,6 +88,7 @@ a.teal:hover {
 .display-field {
   margin: 7px 0 7px 0 !important;
   padding: 0 !important;
+  border-bottom: none !important;
 }
 .display-field ul {
   margin-top: 0 !important;
@@ -95,7 +96,7 @@ a.teal:hover {
   padding-left: 18px !important;
 }
 .display-field-key {
-  margin: 0 0 5px 0;
+  margin: 0 0 5px 0 !important;
 }
 .detail-container > .product-logo {
   position: absolute;

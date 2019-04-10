@@ -78,11 +78,11 @@
           [:> ui/GridRow
            (when (bc/has-data? (v "Product Website"))
              [bc/c-display-field {:width 16} "Website"
-              [:a {:href (v "Product Website")
+              [:a {:href (str (when-not (.startsWith (v "Product Website") "http") "http://") (v "Product Website"))
                    :target "_blank"}
                [:> ui/Icon {:name "external square"
                             :color "blue"}]
-               (v "Product Website")]])]
+               "Visit Product Website"]])]
           [:> ui/GridRow
            (when (bc/has-data? (v "Product Demo"))
              [bc/c-display-field {:width 16} "Demo"

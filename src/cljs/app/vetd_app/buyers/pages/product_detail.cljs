@@ -7,6 +7,7 @@
             [reagent.core :as r]
             [reagent.format :as format]
             [re-frame.core :as rf]
+            [markdown-to-hiccup.core :as md]
             [clojure.string :as s]))
 
 (def last-query-id (atom 0))
@@ -143,10 +144,17 @@
       [:> ui/Grid {:columns "equal"
                    :style {:margin-top 0}}
        [:> ui/GridRow
-        [bc/c-display-field {:width 11} "Description"
-         [:<> (or (v "Describe your product or service") "No description available.")
-          [:br] ; TODO this is hacky, and causes a console warning
-          [:br]
+        [:> ui/GridColumn {:width 11}
+         [:> ui/Segment {:class "display-field"
+                         :vertical true}
+          [:h3.display-field-key "Description"]
+          (or (some-> (v "Describe your product or service")
+                      (md/md->hiccup)
+                      (md/component))
+              "No description available.")]
+         [:br]
+         [:> ui/Segment {:class "display-field"
+                         :vertical true}
           [:h3.display-field-key "Pitch"]
           [:p "Request a Preposal to get a personalized pitch."]]]
         [:> ui/GridColumn {:width 5}
@@ -155,11 +163,11 @@
           [:> ui/GridRow
            (when (bc/has-data? (v "Product Website"))
              [bc/c-display-field {:width 16} "Website"
-              [:a {:href (v "Product Website")
+              [:a {:href (str (when-not (.startsWith (v "Product Website") "http") "http://") (v "Product Website"))
                    :target "_blank"}
                [:> ui/Icon {:name "external square"
                             :color "blue"}]
-               (v "Product Website")]])]
+               "Visit Product Website"]])]
           [:> ui/GridRow
            (when (bc/has-data? (v "Product Demo"))
              [bc/c-display-field {:width 16} "Demo"
