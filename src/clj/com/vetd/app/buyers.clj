@@ -257,3 +257,27 @@ Product: '%s'
 (defmethod com/handle-ws-inbound :b/ask-a-question
   [{:keys [product-id message buyer-id]} ws-id sub-fn]
   (send-ask-question-req product-id message buyer-id))
+
+(defmethod docs/handle-doc-creation :round-initiation
+  [{:keys [id]}]
+  (Thread/sleep 7000) ;;HACK wait til related inserts are probably done
+  ;; TODO update round rec status
+  (try
+    (let [msg (with-out-str
+                (clojure.pprint/with-pprint-dispatch clojure.pprint/code-dispatch
+                  (-> [[:docs {:id id}
+                        [:rounds
+                         [:id :created
+                          [:buyer [:oname]]
+                          [:products [:pname]]
+                          [:categories [:cname]]]]]]
+                      ha/sync-query
+                      vals
+                      ffirst
+                      clojure.pprint/pprint)))]
+      ;; TODO make msg human friendly
+      (aws/invoke sns {:TopicArn "arn:aws:sns:us-east-1:744151627940:ui-misc"
+                       :Subject "Vendor Round Requirements Form Completed"
+                       :Message (str "Vendor Round Requirements Form Completed\n\n"
+                                     msg)}))
+    (catch Throwable t)))
