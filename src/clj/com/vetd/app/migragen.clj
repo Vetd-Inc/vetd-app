@@ -139,6 +139,30 @@
       (clojure.pprint/with-pprint-dispatch clojure.pprint/code-dispatch
         (-> m (dissoc :name) clojure.pprint/pprint)))]})
 
+(defmethod mk-sql :alter-table
+  [[_ {:keys [schema columns] table :name}]]
+  (let [{:keys [add]} columns
+        schema' (name schema)
+        table' (name table)]
+    {:name-part (format "alter-%s-table" table')
+     :ext "sql"     
+     :up [(format "ALTER TABLE %s.%s \n%s"
+                  schema'
+                  table'
+                  (st/join ",\n"
+                           (for [[k vs] add]
+                             (format "ADD COLUMN %s %s"
+                                     (name k)
+                                     (st/join " "
+                                              (map name vs))))))]
+     :down [(format "ALTER TABLE %s.%s \n%s"
+                    schema'
+                    table'
+                    (st/join ",\n"
+                             (for [[k vs] add]
+                               (format "DROP COLUMN %s"
+                                       (name k)))))]}))
+
 (defn mk-migration-file-name
   [path ext idx [yr mo da hr mi] name-part up-down]
   (format "%s/%04d%02d%02d%02d%02d%02d-%s%s.%s"

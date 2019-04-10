@@ -313,7 +313,7 @@
                               :buyer_id [:bigint]
                               :user_id [:bigint] ;; TODO initiating user
                               :status [:text]
-                              :active_qm [:boolean]} ;; TODO
+                              :active_qm [:boolean]}
                     :owner :vetd
                     :grants {:hasura [:SELECT]}}]
 
@@ -1068,7 +1068,12 @@
               :join [[:prompts :p]
                      [:= :p.id :fp.prompt_id]]}
       :owner :vetd
-      :grants {:hasura [:SELECT]}}]]])
+      :grants {:hasura [:SELECT]}}]
+
+    [:alter-table {:schema :vetd
+                   :name :rounds
+                   :columns
+                   {:add {:doc_id [:bigint]}}}]]])
 
 #_(mig/mk-migration-files migrations
                           "migrations")

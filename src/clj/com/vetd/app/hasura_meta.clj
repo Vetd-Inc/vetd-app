@@ -38,6 +38,12 @@
            :fields [:buyer :rounds-out]
            :cols [:buyer_id :id]
            :rel :many-one}
+
+          {:tables [:vetd :rounds
+                    :vetd :docs]
+           :fields [:doc :rounds]
+           :cols [:doc_id :id]
+           :rel :one-one}
           
           {:tables [:vetd :orgs
                     :vetd :memberships]
