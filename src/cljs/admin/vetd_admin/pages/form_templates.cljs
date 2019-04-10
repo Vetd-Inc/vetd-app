@@ -185,16 +185,18 @@
          "Delete Field"]]])))
 
 (defn c-template-prompt
-  [{:keys [fields id rpid prompt descr form-template-id] sort' :sort}]
+  [{:keys [fields id rpid prompt term descr form-template-id] sort' :sort}]
   (let [changes& (r/atom {})
         prompt& (r/atom prompt)
+        term& (r/atom term)
         descr& (r/atom descr)
         sort-order& (r/atom sort')
         changes-fn #(-> %
                         (assoc id
                                {:id id
                                 :prompt @prompt&
-                                :descr @descr&})
+                                :descr @descr&
+                                :term @term&})
                         (assoc rpid
                                {:id rpid
                                 :sort @sort-order&}))
@@ -247,17 +249,23 @@
                          :spellCheck false
                          :onChange (mk-on-change-fn prompt&)}]]
           [:> ui/FormField {:inline true}
-           [:> ui/Label {:style {:width "200px"}} "Description"]
-           [:> ui/TextArea {:defaultValue @descr&
-                            :spellCheck false
-                            :fluid true                            
-                            :onChange (mk-on-change-fn descr&)}]]
+           [:> ui/Label {:style {:width "200px"}} "Term"]
+           [:> ui/Input {:defaultValue @term&
+                         :fluid true
+                         :spellCheck false
+                         :onChange (mk-on-change-fn term&)}]]
           [:> ui/FormField {:inline true}
            [:> ui/Label {:style {:width "200px"}} "Sort Order"]
            [:> ui/Input {:defaultValue @sort-order&
                          :spellCheck false
                          :fluid true                         
                          :onChange (mk-on-change-fn sort-order&)}]]]
+         [:> ui/FormField {:inline true}
+          [:> ui/Label {:style {:width "200px"}} "Description"]
+          [:> ui/TextArea {:defaultValue @descr&
+                           :spellCheck false
+                           :fluid true                            
+                           :onChange (mk-on-change-fn descr&)}]]         
          [ui/nx-sub-accordion
           (for [pf fields]
             ^{:key (str "template-prompt-field" (:id pf))}
@@ -308,6 +316,7 @@
                                                  :_order_by {:sort :asc}}
                                                 [:id :rpid :prompt :descr
                                                  :sort :form-template-id
+                                                 :term
                                                  [:fields
                                                   {:deleted nil
                                                    :_order_by {:sort :asc}}
