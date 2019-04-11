@@ -280,17 +280,15 @@ textarea {
 
 /* Loading Spinner */
 div.spinner {
-  animation: rotate .4s infinite ease;
-  animation-direction: alternate;
+  animation: rotate 5s infinite ease;
   position: relative;
   display: block;
   margin: auto;
   width: 142px;
   height: 142px;
-  transform: scale(1.05);
 }
 div.spinner i {
-  animation: rotate 2s infinite cubic-bezier(0.09, 0.3, 0.7, 0.03);
+  animation: rotate 3s infinite cubic-bezier(0.09, 0.3, 0.7, 0.03);
   transform-origin: 50% 100% 0;
   position: absolute;
   display: inline-block;
