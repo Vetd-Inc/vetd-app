@@ -61,7 +61,8 @@
  :init-db
  (constantly
   {:search-term ""
-   :preposals-filter {:selected-categories #{}}}))
+   :preposals-filter {:selected-categories #{}}
+   :rounds-filter {:selected-statuses #{}}}))
 
 (def public-pages #{:login :b/signup :v/signup})
 

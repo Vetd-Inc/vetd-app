@@ -23,19 +23,51 @@
    {:db (assoc db :page :b/rounds)
     :analytics/page {:name "Buyers Rounds"}}))
 
+(rf/reg-event-fx
+ :b/rounds-filter.add-selected-status
+ (fn [{:keys [db]} [_ status]]
+   {:db (update-in db [:rounds-filter :selected-statuses] conj status)
+    :analytics/track {:event "Filter"
+                      :props {:category "Rounds"
+                              :label (str "Added Status: " status)}}}))
+
+(rf/reg-event-fx
+ :b/rounds-filter.remove-selected-status
+ (fn [{:keys [db]} [_ status]]
+   {:db (update-in db [:rounds-filter :selected-statuses] disj status)}))
+
 ;;;; Subscriptions
+(rf/reg-sub
+ :rounds-filter
+ :rounds-filter)
 
-
+;; a set of statuses to allow through filter (if empty, let all statuses through)
+(rf/reg-sub
+ :rounds-filter/selected-statuses
+ :<- [:rounds-filter]
+ :selected-statuses)
 
 ;;;; Components
 (defn c-round
   [{:keys [id status] :as round}]
   [:p "Round " id " with status: " status])
 
+(defn filter-rounds
+  [rounds selected-statuses]
+  (filter #(selected-statuses (:status %)) rounds)
+  ;; (->> (for [{:keys [product] :as preposal} preposals
+  ;;            category (:categories product)]
+  ;;        (when (selected-categories (:id category))
+  ;;          preposal))
+  ;;      (remove nil?)
+  ;;      distinct)
+  )
+
 (defn c-page []
   (let [org-id& (rf/subscribe [:org-id])]
     (when @org-id&
-      (let [rounds& (rf/subscribe [:gql/sub
+      (let [selected-statuses& (rf/subscribe [:rounds-filter/selected-statuses])
+            rounds& (rf/subscribe [:gql/sub
                                    {:queries
                                     [[:rounds {:buyer-id @org-id&
                                                :status "active"}
@@ -43,11 +75,27 @@
         (fn []
           [:div.container-with-sidebar
            [:div.sidebar
-            [:h4 "No Sidebar?"]]
+            [:h4 "Filter By Status"]
+            (let [statuses (->> @rounds&
+                                :rounds
+                                (group-by :status)
+                                (merge {"active" []
+                                        "completed" []}))]
+              (doall
+               (for [[status rs] statuses]
+                 ^{:key status} 
+                 [:> ui/Checkbox
+                  {:label (str status " (" (count rs) ")")
+                   :checked (boolean (@selected-statuses& status))
+                   :onChange (fn [_ this]
+                               (if (.-checked this)
+                                 (rf/dispatch [:b/rounds-filter.add-selected-status status])
+                                 (rf/dispatch [:b/rounds-filter.remove-selected-status status])))}])))]
            [:> ui/ItemGroup {:class "inner-container results"}
             (if (= :loading @rounds&)
               [cc/c-loader]
-              (let [rounds (:rounds @rounds&)]
+              (let [rounds (cond-> (:rounds @rounds&)
+                             (seq @selected-statuses&) (filter-rounds @selected-statuses&))]
                 (if (seq rounds)
                   (for [round rounds]
                     ^{:key (:id round)}
