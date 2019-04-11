@@ -258,7 +258,7 @@
                                           [:prompt
                                            [:id :prompt]]
                                           [:fields
-                                           [:id :pf-id :idx :sval :nval :dval
+                                           [:id :pf-id :idx :sval :nval :dval :jval
                                             [:prompt-field [:id :fname]]]]]]]]
                                       [:rounds {:buyer-id org-id
                                                 :status "active"}

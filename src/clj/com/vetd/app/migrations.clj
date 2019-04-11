@@ -1073,7 +1073,78 @@
     [:alter-table {:schema :vetd
                    :name :rounds
                    :columns
-                   {:add {:doc_id [:bigint]}}}]]])
+                   {:add {:doc_id [:bigint]}}}]
+
+    [:alter-table {:schema :vetd
+                   :name :resp_fields
+                   :columns
+                   {:add {:jval [:jsonb]}}}]]
+
+   [[2019 4 11 00 00]
+
+    [:create-or-replace-view
+     {:schema :vetd
+      :name :response_prompt_by_doc
+      :honey {:select [[:dr.id :drid]
+                       [:dr.doc_id :doc_id]
+                       [:dr.id :ref_id]
+                       [:dr.deleted :ref_deleted]
+                       :r.id
+                       :r.idstr                                    
+                       :r.created
+                       :r.updated
+                       :r.deleted
+                       :r.prompt_id
+                       :r.user_id
+                       :r.notes
+                       [:p.idstr :prompt_idstr]
+                       [:p.created :prompt_created]
+                       [:p.updated :prompt_updated]
+                       [:p.deleted :prompt_deleted]
+                       [:p.prompt :prompt_prompt]
+                       [:p.term :prompt_term]                       
+                       [:p.descr :prompt_descr]]
+              :from [[:doc_resp :dr]]
+              :join [[:responses :r]
+                     [:= :r.id :dr.resp_id]
+                     [:prompts :p]
+                     [:= :p.id :r.prompt_id]]}
+      :owner :vetd
+      :grants {:hasura [:SELECT]}}]
+
+    [:create-or-replace-view
+     {:schema :vetd
+      :name :response_prompt_fields
+      :honey {:select [[:rf.id :ref_id]
+                       [:rf.deleted :ref_deleted]
+                       :rf.id
+                       :rf.idstr                                    
+                       :rf.created
+                       :rf.updated
+                       :rf.deleted
+                       :rf.resp_id
+                       :rf.pf_id
+                       :rf.idx
+                       :rf.sval
+                       :rf.nval
+                       :rf.dval
+                       :rf.jval
+                       [:pf.id :prompt_field_id]                       
+                       [:pf.idstr :prompt_field_idstr]
+                       [:pf.created :prompt_field_created]
+                       [:pf.updated :prompt_field_updated]
+                       [:pf.deleted :prompt_field_deleted]
+                       [:pf.fname :prompt_field_fname]                       
+                       [:pf.descr :prompt_field_descr]
+                       [:pf.ftype :prompt_field_ftype]
+                       [:pf.fsubtype :prompt_field_fsubtype]
+                       [:pf.list_qm :prompt_field_list_qm]
+                       [:pf.sort :prompt_field_sort]]
+              :from [[:resp_fields :rf]]
+              :join [[:prompt_fields :pf]
+                     [:= :rf.pf_id :pf.id]]}
+      :owner :vetd
+      :grants {:hasura [:SELECT]}}]]])
 
 #_(mig/mk-migration-files migrations
                           "migrations")

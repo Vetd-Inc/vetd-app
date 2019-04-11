@@ -20,6 +20,33 @@
     {:org-ids []}))
 
 
+(defn insert-round-product
+  [round-id prod-id]
+  (let [[id idstr] (ut/mk-id&str)]
+    (-> (db/insert! :round_product
+                    {:id id
+                     :idstr idstr
+                     :round_id round-id
+                     :product_id prod-id
+                     :created (ut/now-ts)
+                     :updated (ut/now-ts)})
+        first)))
+
+(defn create-round-product-form-from-round-init-doc
+  [product-id round-id]
+  (-> [[:rounds {:id round-id}
+         [:doc
+         [:id
+          ]]]]
+      ha/sync-query
+      :docs))
+
+(defn invite-product-to-round
+  [product-id round-id]
+  (insert-round-product round-id product-id)
+  ;; TODO create form
+#_  (create-round-product-form-from-round-init-doc product-id round-id))
+
 (defmethod com/handle-ws-inbound :a/search
   [{:keys [query]} ws-id sub-fn]
   (search-orgs->ids query))
@@ -57,3 +84,7 @@
 (defmethod com/handle-ws-inbound :a/update-any
   [{:keys [entity]} ws-id sub-fn]
   (db/update-any! entity))
+
+(defmethod com/handle-ws-inbound :a/invite-product-to-round
+  [{:keys [product-id round-id]} ws-id sub-fn]
+  (invite-product-to-round product-id round-id))

@@ -14,6 +14,7 @@
               [:vetd :categories_by_product] [[:vetd :categories]]
               [:vetd :categories_by_round] [[:vetd :categories]]              
               [:vetd :responses_by_doc] [[:vetd :responses]]
+              [:vetd :response_prompt_by_doc] [[:vetd :responses]]
               [:vetd :form_docs] [[:vetd :forms]]}
    :rels [{:tables [:vetd :categories
                     :vetd :rounds_by_category]
@@ -87,12 +88,24 @@
            :cols [:id :doc_id]
            :rel :many-many}
 
+          {:tables [:vetd :docs
+                    :vetd :response_prompt_by_doc]
+           :fields [:response-prompts]
+           :cols [:id :doc_id]
+           :rel :many-many}
+          
           {:tables [:vetd :form_docs
                     :vetd :responses_by_doc]
            :fields [:responses]
            :cols [:doc_id :doc_id]
            :rel :many-many}
 
+          {:tables [:vetd :form_docs
+                    :vetd :response_prompt_by_doc]
+           :fields [:response-prompts]
+           :cols [:doc_id :doc_id]
+           :rel :many-many}
+          
           {:tables [:vetd :form_docs
                     :vetd :products]
            :fields [:product :form-docs]
@@ -213,6 +226,12 @@
            :cols [:id :resp_id]
            :rel :one-many}
 
+          {:tables [:vetd :responses
+                    :vetd :response_prompt_fields]
+           :fields [:response-prompt-fields]
+           :cols [:id :resp_id]
+           :rel :one-many}
+          
           {:tables [:vetd :resp_fields
                     :vetd :prompt_fields]
            :fields [:prompt-field :resp-field]
