@@ -6,7 +6,9 @@
             [vetd-app.docs :as docs]
             [reagent.core :as r]
             [reagent.format :as format]
-            [re-frame.core :as rf]))
+            [re-frame.core :as rf]
+            [markdown-to-hiccup.core :as md]
+            [clojure.string :as s]))
 
 (def last-query-id (atom 0))
 
@@ -29,23 +31,24 @@
                      :props {:product-idstr product-idstr}}}))
 
 (rf/reg-event-fx
- :b/request-vendor-profile
- (fn [{:keys [db]} [_ vendor-id vendor-name]]
+ :b/request-complete-profile
+ (fn [{:keys [db]} [_ etype eid ename]]
    (let [qid (get-next-query-id)]
-     {:ws-send {:payload {:cmd :b/request-vendor-profile
-                          :return {:handler :b/request-vendor-profile-return}
-                          :vendor-id vendor-id
+     {:ws-send {:payload {:cmd :b/request-complete-profile
+                          :return {:handler :b/request-complete-profile-return}
+                          :etype etype
+                          :eid eid
                           :buyer-id (util/db->current-org-id db)}}
       :analytics/track {:event "Request"
-                        :props {:category "Vendor Profile"
-                                :label vendor-name}}})))
+                        :props {:category (str (s/capitalize (name etype)) " Profile")
+                                :label ename}}})))
 
 (rf/reg-event-fx
- :b/request-vendor-profile-return
+ :b/request-complete-profile-return
  (constantly
   {:toast {:type "success"
-           :title "Company Profile Requested"
-           :message "We'll let you know when the profile is added."}}))
+           :title "Complete Profile Requested"
+           :message "We'll let you know when the profile is completed."}}))
 
 (rf/reg-event-fx
  :b/setup-call
@@ -93,34 +96,91 @@
  (fn [{:keys [product-idstr]}] product-idstr))
 
 ;; Components
+(defn c-preposal-request-button
+  [{:keys [vendor forms] :as product}]
+  (if (not-empty forms) ; already requested preposal
+    [:> ui/Popup
+     {:content "We will be in touch with next steps."
+      :header "Preposal Requested!"
+      :position "bottom left"
+      :trigger (r/as-element
+                [:> ui/Label {:color "teal"
+                              :size "large"
+                              :basic true
+                              :style {:display "block"
+                                      :text-align "center"}}
+                 "Preposal Requested"])}]
+    [:> ui/Popup
+     {:content (str "Get a pricing estimate, personalized pitch, and more from "
+                    (:oname vendor) ".")
+      :header "What is a Preposal?"
+      :position "bottom left"
+      :trigger (r/as-element
+                [:> ui/Button {:onClick #(rf/dispatch [:b/create-preposal-req product vendor])
+                               :color "teal"
+                               :fluid true
+                               :icon true
+                               :labelPosition "left"}
+                 "Request Preposal"
+                 [:> ui/Icon {:name "wpforms"}]])}]))
+
 (defn c-product
   "Component to display Product details."
-  [{:keys [id pname long-desc url logo vendor forms rounds categories] :as product}]
-  [:> ui/Segment {:class "detail-container"}
-   [:h1.product-title
-    pname " " [:small " by " (:oname vendor)]]
-   [:> ui/Image {:class "product-logo"
-                 :src (str "https://s3.amazonaws.com/vetd-logos/" logo)}]
-   (if (not-empty (:rounds product))
-     [bc/c-round-in-progress {:props {:ribbon "left"}}])
-   [bc/c-categories product]
-   [:> ui/Grid {:columns "equal"
-                :style {:margin-top 0}}
-    [:> ui/GridRow
-     [bc/c-display-field {:width 12} "Product Description"
-      [:<> (or long-desc "No description available.")
-       (when (not-empty url)
-         [:<>
-          [:br]
-          [:br]
-          "Website: " [:a {:href (str "http://" url) ; todo: fragile
-                           :target "_blank"}
-                       [:> ui/Icon {:name "external square"
-                                    :color "blue"}]
-                       url]])]]]
-    [:> ui/GridRow
-     [bc/c-display-field {:width 6} "Pitch" "Unavailable (Request a Preposal)"]
-     [bc/c-display-field {:width 6} "Estimated Price" "Unavailable (Request a Preposal)"]]]])
+  [{:keys [id pname logo form-docs vendor forms rounds categories] :as product}]
+  (let [product-profile-responses (-> form-docs first :responses)
+        v (fn [prompt & [field value]]
+            (docs/get-field-value product-profile-responses prompt (or field "value") (or value :sval)))]
+    [:<>
+     [:> ui/Segment {:class "detail-container"}
+      [:h1.product-title
+       pname " " [:small " by " (:oname vendor)]]
+      [:> ui/Image {:class "product-logo"
+                    :src (str "https://s3.amazonaws.com/vetd-logos/" logo)}]
+      (if (not-empty (:rounds product))
+        [bc/c-round-in-progress {:props {:ribbon "left"}}])
+      [bc/c-categories product]
+      (when (= "Yes" (v "Do you offer a free trial?"))
+        [bc/c-free-trial-tag])
+      [:> ui/Grid {:columns "equal"
+                   :style {:margin-top 0}}
+       [:> ui/GridRow
+        [:> ui/GridColumn {:width 11}
+         [:> ui/Segment {:class "display-field"
+                         :vertical true}
+          [:h3.display-field-key "Description"]
+          (or (some-> (v "Describe your product or service")
+                      md/md->hiccup
+                      md/component)
+              "No description available.")]
+         [:br]
+         [:> ui/Segment {:class "display-field"
+                         :vertical true}
+          [:h3.display-field-key "Pitch"]
+          [:p "Request a Preposal to get a personalized pitch."]]]
+        [:> ui/GridColumn {:width 5}
+         [:> ui/Grid {:columns "equal"
+                      :style {:margin-top 0}}
+          [:> ui/GridRow
+           (when (bc/has-data? (v "Product Website"))
+             [bc/c-display-field {:width 16} "Website"
+              [:a {:href (str (when-not (.startsWith (v "Product Website") "http") "http://") (v "Product Website"))
+                   :target "_blank"}
+               [:> ui/Icon {:name "external square"
+                            :color "blue"}]
+               "Visit Product Website"]])]
+          [:> ui/GridRow
+           (when (bc/has-data? (v "Product Demo"))
+             [bc/c-display-field {:width 16} "Demo"
+              [:a {:href (v "Product Demo")
+                   :target "_blank"}
+               [:> ui/Icon {:name "external square"
+                            :color "blue"}]
+               "Watch Video"]])]]]]]]
+     [bc/c-pricing product v]
+     [bc/c-onboarding product v]
+     [bc/c-client-service product v]
+     [bc/c-reporting product v]
+     [bc/c-market-niche product v]]))
 
 (defn c-page []
   (let [product-idstr& (rf/subscribe [:product-idstr])
@@ -128,7 +188,18 @@
         products& (rf/subscribe [:gql/sub
                                  {:queries
                                   [[:products {:idstr @product-idstr&}
-                                    [:id :pname :logo :short-desc :long-desc :url
+                                    [:id :pname :logo
+                                     [:form-docs {:ftype "product-profile"
+                                                  :_order_by {:created :desc}
+                                                  :_limit 1}
+                                      [:id 
+                                       [:responses
+                                        [:id :prompt-id :notes
+                                         [:prompt
+                                          [:id :prompt]]
+                                         [:fields
+                                          [:id :pf-id :idx :sval :nval :dval
+                                           [:prompt-field [:id :fname]]]]]]]]
                                      [:vendor
                                       [:id :oname :url
                                        [:docs-out {:dtype "vendor-profile"
@@ -153,51 +224,18 @@
       [:div.container-with-sidebar
        [:div.sidebar
         [:div {:style {:padding "0 15px"}}
-         [:> ui/Button {:on-click #(rf/dispatch [:b/nav-search])
-                        :basic true
-                        :icon true
-                        :size "small"
-                        :fluid true
-                        :labelPosition "left"}
-          "Back to Search"
-          [:> ui/Icon {:name "left arrow"}]]]
+         [bc/c-back-button {:on-click #(rf/dispatch [:b/nav-search])}
+          "Back to Search"]]
         (when-not (= :loading @products&)
-          (let [{:keys [vendor rounds forms] :as product} (-> @products& :products first)
-                requested-preposal? (not-empty forms)]
+          (let [{:keys [vendor rounds] :as product} (-> @products& :products first)]
             (when (empty? (:rounds product))
               [:> ui/Segment
                [bc/c-start-round-button {:etype :product
                                          :eid (:id product)
                                          :ename (:pname product)
                                          :props {:fluid true}}]
-               [:br]
-               (if requested-preposal?
-                 [:> ui/Popup
-                  {:content "We will be in touch with next steps."
-                   :header "Preposal Requested!"
-                   :position "bottom left"
-                   :trigger (r/as-element
-                             [:> ui/Label {:color "teal"
-                                           :size "large"
-                                           :basic true
-                                           :style {:display "block"}}
-                              "Preposal Requested"])}]
-                 [:> ui/Popup
-                  {:content (str "Get a pricing estimate, personalized pitch, and more from "
-                                 (:oname vendor) ".")
-                   :header "What is a Preposal?"
-                   :position "bottom left"
-                   :trigger (r/as-element
-                             [:> ui/Button {:onClick #(rf/dispatch [:b/create-preposal-req product vendor])
-                                            :color "teal"
-                                            :fluid true
-                                            :icon true
-                                            :labelPosition "left"}
-                              "Request Preposal"
-                              [:> ui/Icon {:name "wpforms"}]])}])
-               [:br]
+               [c-preposal-request-button product]
                [bc/c-setup-call-button product vendor]
-               [:br]
                [bc/c-ask-a-question-button product vendor]])))]
        [:div.inner-container
         (if (= :loading @products&)

@@ -122,8 +122,8 @@
        [:label fname])
      [ui/input {:value @value&
                 :type "number"
-                :on-change (fn [_ this]
-                             (reset! value& (.-value this)))}]]))
+                :on-change (fn [this]
+                              (reset! value& (-> this .-target .-value)))}]]))
 
 (defn c-prompt-field-enum
   [{:keys [fname ftype fsubtype list? response] :as prompt-field}]

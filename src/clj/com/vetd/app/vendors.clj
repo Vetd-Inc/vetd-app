@@ -22,14 +22,10 @@
                  :url url})))
 
 (defn update-product
-  [{:keys [id pname short-desc long-desc logo url]}]
+  [{:keys [id pname ]}]
   (db/hs-exe! {:update :products
                :set {:updated (ut/now-ts)
-                     :pname pname
-                     :short_desc short-desc
-                     :long_desc long-desc
-                     :logo logo
-                     :url url}
+                     :pname pname}
                :where [:= :id id]}))
 
 (defn insert-product-category
@@ -75,7 +71,8 @@
 (defmethod com/handle-ws-inbound :v/save-product
   [{:keys [product]} ws-id sub-fn]
   (update-product product)
-  (replace-product-categories product))
+  ;; TODO fix this
+  #_(replace-product-categories product))
 
 (defmethod com/handle-ws-inbound :v/delete-product
   [{:keys [product-id]} ws-id sub-fn]
