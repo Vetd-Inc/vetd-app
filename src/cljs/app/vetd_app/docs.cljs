@@ -34,6 +34,17 @@
       first
       (get k)))
 
+(defn get-field-value-from-response-prompt
+  "Given a reponses map, get value for prompt->field->key"
+  [responses prompt field k]
+  (get (->> responses
+            (filter #(-> % :prompt-prompt (= prompt)))
+            first
+            :response-prompt-fields
+            (filter #(-> % :prompt-field-fname (= field)))
+            first)
+       k))
+
 (defn walk-deref-ratoms
   [frm]
   (clojure.walk/postwalk

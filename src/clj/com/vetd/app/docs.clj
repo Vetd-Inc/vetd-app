@@ -343,7 +343,7 @@
   [{:keys [to-org-id to-user-id from-org-id from-user-id prod-id] :as prep-req}]
   (create-form-from-template
    (merge prep-req
-          {:form-temp-id
+          {:form-template-id
            (find-latest-form-template-id [:= :ftype "preposal"])
            :title (str "Preposal Request " (gensym ""))
            :status "init"

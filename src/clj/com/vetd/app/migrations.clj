@@ -697,7 +697,7 @@
                                     [:d.id :doc_id]
                                     [:d.idstr :doc_idstr] 
                                     [:d.created :doc_created] 
-                                    [:d.updated :doc_updated] 
+                                    [:d.updated :doc_updated]
                                     [:d.title :doc_title] 
                                     [:d.subject :doc_subject] 
                                     [:d.descr :doc_descr] 
@@ -1144,7 +1144,49 @@
               :join [[:prompt_fields :pf]
                      [:= :rf.pf_id :pf.id]]}
       :owner :vetd
-      :grants {:hasura [:SELECT]}}]]])
+      :grants {:hasura [:SELECT]}}]
+
+    [:create-view {:schema :vetd
+                   :name :form_docs
+                   :honey {:select [:f.id
+                                    :f.idstr
+                                    :f.created
+                                    :f.updated
+                                    :f.form_template_id
+                                    :f.title
+                                    :f.subject
+                                    :f.descr
+                                    :f.notes
+                                    :f.ftype
+                                    :f.fsubtype
+                                    :f.from_org_id
+                                    :f.from_user_id
+                                    :f.to_org_id
+                                    :f.to_user_id
+                                    :f.status
+                                    [:d.id :doc_id]
+                                    [:d.idstr :doc_idstr] 
+                                    [:d.created :doc_created] 
+                                    [:d.updated :doc_updated]
+                                    [:d.deleted :doc_deleted]                                    
+                                    [:d.title :doc_title] 
+                                    [:d.subject :doc_subject] 
+                                    [:d.descr :doc_descr] 
+                                    [:d.notes :doc_notes]
+                                    [:d.dtype :doc_dtype]
+                                    [:d.dsubtype :doc_dsubtype]
+                                    [:d.from_org_id :doc_from_org_id]
+                                    [:d.from_user_id :doc_from_user_id]
+                                    [:d.to_org_id :doc_to_org_id]
+                                    [:d.to_user_id :doc_to_user_id]]
+                           :from [[:forms :f]]
+                           :left-join [[:docs :d]
+                                       [:and
+                                        [:= :d.form_id :f.id]
+                                        [:= :d.deleted nil]]]
+                           :where [:= :f.deleted nil]}
+                   :owner :vetd
+                   :grants {:hasura [:SELECT]}}]]])
 
 #_(mig/mk-migration-files migrations
                           "migrations")
