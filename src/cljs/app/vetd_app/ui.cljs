@@ -81,6 +81,11 @@
 
 ;; Misc
 (def Image (component "Image"))
+(def Step (component "Step"))
+(def StepGroup (component "Step" "Group"))
+(def StepContent (component "Step" "Content"))
+(def StepTitle (component "Step" "Title"))
+(def StepDescription (component "Step" "Description"))
 
 ;; Accordion
 (def Accordion (component "Accordion"))

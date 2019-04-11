@@ -50,7 +50,26 @@
 ;;;; Components
 (defn c-round
   [{:keys [id status] :as round}]
-  [:p "Round " id " with status: " status])
+
+  [:> ui/StepGroup {:size "small"}
+   [:> ui/Step
+    [:> ui/Icon {:name "truck"}]
+    [:> ui/StepContent
+     [:> ui/StepTitle "Requirements"]
+     [:> ui/StepDescription "What's the perfect match?"]]]
+   [:> ui/Step
+    [:> ui/Icon {:name "table"}]
+    [:> ui/StepContent
+     [:> ui/StepTitle "Round in Progress"]
+     [:> ui/StepDescription "Let's find it!"]]]
+   [:> ui/Step
+    [:> ui/Icon {:name "info"}]
+    [:> ui/StepContent
+     [:> ui/StepTitle "Decision"]
+     [:> ui/StepDescription "The perfect match!"]]]]
+  
+  ;; [:p "Round " id " with status: " status]
+  )
 
 (defn c-status-filter-checkboxes
   [rounds selected-statuses]
