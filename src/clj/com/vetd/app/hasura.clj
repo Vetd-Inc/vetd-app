@@ -4,6 +4,7 @@
             [com.vetd.app.env :as env]
             [com.vetd.app.db :as db]
             [com.vetd.app.hasura-meta :as hm]
+            [clojure.core.async :as a]
             [aleph.http :as ah]
             [manifold.stream :as ms]
             [manifold.deferred :as md]            
@@ -441,6 +442,15 @@
   (respond-to-client id {:mtype :complete
                          :payload pdata}))
 
+;; TODO do something smarter than timeout, like trigger when ws closes
+(defn delayed-unsub [qual-sub-id]
+  (a/go (a/alt! (a/timeout (* 1000 60 4)) :timeout
+                com/shutdown-ch :shutdown)
+        (when (@sub-id->resp-fn& qual-sub-id)
+          (try-send @cn&
+                    {:type (gql-msg-types-kw->str :stop)
+                     :id qual-sub-id}))))
+
 ;; ws from client
 (defmethod com/handle-ws-inbound :graphql
   [{:keys [sub-id query subscription? stop] :as msg} ws-id resp-fn]
@@ -450,6 +460,7 @@
     (if-not stop
       (do
         (register-sub-id qual-sub-id resp-fn)
+        (delayed-unsub qual-sub-id)
         (try-send @cn&
                   {:type :start
                    :id qual-sub-id

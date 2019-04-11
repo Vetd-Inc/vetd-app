@@ -1,8 +1,10 @@
 (ns com.vetd.app.common
   (:require [expound.alpha :as expound]
             [clojure.spec.alpha :as spec]
+            [clojure.core.async :as a]
             [taoensso.timbre :as log]))
 
+(defonce shutdown-ch (a/chan))
 
 #_ (def handle-ws-inbound nil)
 (defmulti handle-ws-inbound
