@@ -56,10 +56,12 @@
 ;; TODO support multiple response fields (for where list? = true)
 (defn mk-form-doc-prompt-field-state
   [fields {:keys [id] :as prompt-field}]
-  (let [{:keys [sval nval dval] :as resp-field} (some-> id fields first)
+  (let [{:keys [sval nval dval jval] :as resp-field} (some-> id fields first)
         resp-field' (merge resp-field
-                           {:state (r/atom (str (or dval nval sval
-                                                    "")))})]
+                           {:state (r/atom (or dval nval sval jval
+                                               "")
+                                           #_ (str (or dval nval sval 
+                                                       "")))})]
     (assoc prompt-field
            :response
            [resp-field'])))

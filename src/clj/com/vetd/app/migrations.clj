@@ -1073,7 +1073,12 @@
     [:alter-table {:schema :vetd
                    :name :rounds
                    :columns
-                   {:add {:doc_id [:bigint]}}}]]])
+                   {:add {:doc_id [:bigint]}}}]
+
+    [:alter-table {:schema :vetd
+                   :name :resp_fields
+                   :columns
+                   {:add {:jval [:jsonb]}}}]]])
 
 #_(mig/mk-migration-files migrations
                           "migrations")

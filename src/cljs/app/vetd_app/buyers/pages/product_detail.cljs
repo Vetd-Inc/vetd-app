@@ -140,7 +140,7 @@
                                            [:prompt
                                             [:id :prompt]]
                                            [:fields
-                                            [:id :pf-id :idx :sval :nval :dval
+                                            [:id :pf-id :idx :sval :nval :dval :jval
                                              [:prompt-field [:id :fname]]]]]]]]]]
                                      [:forms {:ftype "preposal" ; preposal requests
                                               :from-org-id @org-id&}

@@ -1,7 +1,8 @@
 (ns com.vetd.app.env
   (:require [com.vetd.app.common :as com]
             [com.vetd.app.util :as ut]
-            [environ.core :as env]))
+            [environ.core :as env]
+            [clj-postgresql.core :as pg]))
 
 (def vetd-env (env/env :vetd-env))
 
@@ -18,14 +19,19 @@
      ~@body))
 
 (build-ignore 
- ;; DB
  (def pg-db
-   {:dbtype (env/env :db-type)
+   (pg/spec
     :dbname (env/env :db-name)
     :host (env/env :db-host)
     :port (Integer. (env/env :db-port))
     :user (env/env :db-user)
-    :password (env/env :db-password)})
+    :password (env/env :db-password))
+   #_{:dbtype (env/env :db-type)
+      :dbname (env/env :db-name)
+      :host (env/env :db-host)
+      :port (Integer. (env/env :db-port))
+      :user (env/env :db-user)
+      :password (env/env :db-password)})
 
  ;; Hasura
  (def hasura-ws-url (env/env :hasura-ws-url))

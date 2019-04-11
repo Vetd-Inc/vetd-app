@@ -9,6 +9,7 @@
 
                  [org.clojure/java.jdbc "0.7.5"]
                  [org.postgresql/postgresql "42.2.2"]
+                 [clj-postgresql "0.7.0"]
                  [honeysql "0.9.3"]
                  [migratus "1.2.0"]
                  [district0x/graphql-query "1.0.5"]

@@ -99,7 +99,7 @@
                                         :fsubtype :list? :sort]]]]
                                     [:responses {:ref-deleted nil}
                                      [:id :prompt-id :notes
-                                      [:fields [:id :pf-id :idx :sval :nval :dval]]]]]]]]]}])
+                                      [:fields [:id :pf-id :idx :sval :nval :dval :jval]]]]]]]]]}])
         prod-prof-form& (rf/subscribe [:gql/q
                                        {:queries
                                         [[:forms {:ftype "product-profile"

@@ -43,7 +43,7 @@
                                               {:ref-deleted nil}
                                               [:id :prompt-id :notes
                                                [:fields {:deleted nil}
-                                                [:id :pf-id :idx :sval :nval :dval]]]]]]]}])]
+                                                [:id :pf-id :idx :sval :nval :dval :jval]]]]]]]}])]
     (fn []
       (if (= :loading @existing-profile&)
         [cc/c-loader]

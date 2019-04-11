@@ -122,7 +122,7 @@
                                         [:prompt 
                                          [:id :prompt]]
                                         [:fields {:deleted nil}
-                                         [:id :pf-id :idx :sval :nval :dval
+                                         [:id :pf-id :idx :sval :nval :dval :jval
                                           [:prompt-field [:id :fname]]]]]]]]]}])]
         (fn []
           [:div.container-with-sidebar
