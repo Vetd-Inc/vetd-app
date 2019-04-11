@@ -88,14 +88,3 @@
 (defmethod com/handle-ws-inbound :a/invite-product-to-round
   [{:keys [product-id round-id]} ws-id sub-fn]
   (invite-product-to-round product-id round-id))
-
-
-(clojure.pprint/pprint
- (ha/sync-query
-  [[:docs {:id 862227825250}
-    [:id
-     [:response-prompts {:prompt-prompt "Tagline"}
-      [:id :prompt-prompt 
-       [:response-prompt-fields 
-        [:id :prompt-field-ftype :sval]]]]]]]))
-
