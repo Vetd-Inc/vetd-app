@@ -59,9 +59,7 @@
   (let [{:keys [sval nval dval jval] :as resp-field} (some-> id fields first)
         resp-field' (merge resp-field
                            {:state (r/atom (or dval nval sval jval
-                                               "")
-                                           #_ (str (or dval nval sval 
-                                                       "")))})]
+                                               ""))})]
     (assoc prompt-field
            :response
            [resp-field'])))
