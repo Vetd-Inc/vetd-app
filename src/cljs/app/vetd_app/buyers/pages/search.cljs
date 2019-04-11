@@ -149,7 +149,7 @@
 (defn c-product-search-result
   [{:keys [id idstr pname short-desc logo categories
            rounds form-docs forms docs] :as product} vendor]
-  (let [product-profile-responses (-> form-docs first :responses)
+  (let [product-profile-responses (-> form-docs first :response-prompts)
         preposal-responses (-> docs first :responses)
         requested-preposal? (not-empty forms)]
     [:> ui/Item {:onClick #(rf/dispatch (if preposal-responses
@@ -184,7 +184,10 @@
             [:a.teal {:onClick #(do (.stopPropagation %)
                                     (rf/dispatch [:b/create-preposal-req product vendor]))}
              "Request a Preposal"]]))]
-      [:> ui/ItemDescription (or (docs/get-field-value product-profile-responses "Describe your product or service" "value" :sval)
+      [:> ui/ItemDescription (or (docs/get-field-value-from-response-prompt product-profile-responses
+                                                                            "Describe your product or service"
+                                                                            "value"
+                                                                            :sval)
                                  "No description available.")]
       [:> ui/ItemExtra
        [bc/c-categories product]
@@ -234,8 +237,15 @@
                                      [:id :pname :idstr :logo
                                       [:form-docs {:ftype "product-profile"
                                                    :_order_by {:created :desc}
-                                                   :_limit 1}
-                                       [:id 
+                                                   :_limit 1
+                                                   :doc-deleted nil}
+                                       [:id
+                                        [:response-prompts
+                                         {:prompt-prompt "Describe your product or service"
+                                          :ref_deleted nil}
+                                         [:id :prompt-id :notes :prompt-prompt
+                                          [:response-prompt-fields
+                                           [:id :prompt-field-fname :idx :sval :nval :dval]]]]
                                         [:responses
                                          [:id :prompt-id :notes
                                           [:prompt

@@ -45,9 +45,12 @@
                                                                 "details"
                                                                 :sval)
         preposal-pitch (docs/get-field-value responses "Pitch" "value" :sval)
-        product-profile-responses (-> product :form-docs first :responses)
+        product-profile-responses (-> product :form-docs first :response-prompts)
         v (fn [prompt & [field value]]
-            (docs/get-field-value product-profile-responses prompt (or field "value") (or value :sval)))
+            (docs/get-field-value-from-response-prompt product-profile-responses
+                                                       prompt
+                                                       (or field "value")
+                                                       (or value :sval)))
         vendor (:vendor product)
         rounds (:rounds product)
         pname (:pname product)
@@ -68,7 +71,7 @@
        [:> ui/GridRow
         [bc/c-display-field {:width 11} "Description"
          [:<> (or (v "Describe your product or service") "No description available.")
-          [:br] ; TODO this is hacky, and causes a console warning
+          [:br]     ; TODO this is hacky, and causes a console warning
           [:br]
           [:h3.display-field-key "Pitch"]
           [:p preposal-pitch]]]
@@ -114,15 +117,13 @@
                                   [:product [:id :pname :logo
                                              [:form-docs {:ftype "product-profile"
                                                           :_order_by {:created :desc}
-                                                          :_limit 1}
+                                                          :_limit 1
+                                                          :doc-deleted nil}
                                               [:id 
-                                               [:responses
-                                                [:id :prompt-id :notes
-                                                 [:prompt
-                                                  [:id :prompt]]
-                                                 [:fields
-                                                  [:id :pf-id :idx :sval :nval :dval
-                                                   [:prompt-field [:id :fname]]]]]]]]
+                                               [:response-prompts {:ref_deleted nil}
+                                                [:id :prompt-id :notes :prompt-prompt
+                                                 [:response-prompt-fields
+                                                  [:id :prompt-field-fname :idx :sval :nval :dval]]]]]]
                                              [:rounds {:buyer-id @org-id&
                                                        :status "active"}
                                               [:id :created :status]]

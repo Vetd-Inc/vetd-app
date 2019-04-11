@@ -114,7 +114,7 @@
                                             :to-org-id @org-id&}
                                      [:id :idstr :title
                                       [:product [:id :pname :logo
-                                                 [:form-docs {:doc_deleted nil
+                                                 [:form-docs {:doc-deleted nil
                                                               :ftype "product-profile"
                                                               :_order_by {:created :desc}
                                                               :_limit 1}
