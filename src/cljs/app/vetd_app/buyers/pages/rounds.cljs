@@ -52,16 +52,26 @@
   [{:keys [id status] :as round}]
   [:p "Round " id " with status: " status])
 
+(defn c-status-filter-checkboxes
+  [rounds selected-statuses]
+  (let [all-possible-statuses ["active" "completed"]
+        statuses (->> rounds
+                      (group-by :status)
+                      (merge (zipmap all-possible-statuses (repeatedly vec))))]
+    [:<>
+     (for [[status rs] statuses]
+       ^{:key status} 
+       [:> ui/Checkbox
+        {:label (str status " (" (count rs) ")")
+         :checked (boolean (selected-statuses status))
+         :onChange (fn [_ this]
+                     (if (.-checked this)
+                       (rf/dispatch [:b/rounds-filter.add-selected-status status])
+                       (rf/dispatch [:b/rounds-filter.remove-selected-status status])))}])]))
+
 (defn filter-rounds
   [rounds selected-statuses]
-  (filter #(selected-statuses (:status %)) rounds)
-  ;; (->> (for [{:keys [product] :as preposal} preposals
-  ;;            category (:categories product)]
-  ;;        (when (selected-categories (:id category))
-  ;;          preposal))
-  ;;      (remove nil?)
-  ;;      distinct)
-  )
+  (filter #(selected-statuses (:status %)) rounds))
 
 (defn c-page []
   (let [org-id& (rf/subscribe [:org-id])]
@@ -73,40 +83,33 @@
                                                :status "active"}
                                       [:id :created :status]]]}])]
         (fn []
-          [:div.container-with-sidebar
-           [:div.sidebar
-            [:h4 "Filter By Status"]
-            (let [statuses (->> @rounds&
-                                :rounds
-                                (group-by :status)
-                                (merge {"active" []
-                                        "completed" []}))]
-              (doall
-               (for [[status rs] statuses]
-                 ^{:key status} 
-                 [:> ui/Checkbox
-                  {:label (str status " (" (count rs) ")")
-                   :checked (boolean (@selected-statuses& status))
-                   :onChange (fn [_ this]
-                               (if (.-checked this)
-                                 (rf/dispatch [:b/rounds-filter.add-selected-status status])
-                                 (rf/dispatch [:b/rounds-filter.remove-selected-status status])))}])))]
-           [:> ui/ItemGroup {:class "inner-container results"}
-            (if (= :loading @rounds&)
-              [cc/c-loader]
-              (let [rounds (cond-> (:rounds @rounds&)
-                             (seq @selected-statuses&) (filter-rounds @selected-statuses&))]
-                (if (seq rounds)
-                  (for [round rounds]
-                    ^{:key (:id round)}
-                    [c-round round])
-                  [:div {:style {:width 500
-                                 :margin "70px auto"}}
-                   [:h3 {:style {:margin-bottom 5}} "You currently don't have any Rounds."]
-                   "To get started, request a blah blah blah from the "
-                   [:a {:style {:cursor "pointer"}
-                        :onClick #(rf/dispatch [:b/nav-search])}
-                    "Products & Categories"]
-                   " page."
-                   [:br]
-                   "Or, simply forward any sales emails you receive to forward@vetd.com."])))]])))))
+          (if (= :loading @rounds&)
+            [cc/c-loader]
+            (let [unfiltered-rounds (:rounds @rounds&)]
+              (if (seq unfiltered-rounds)
+                [:div.container-with-sidebar
+                 [:div.sidebar
+                  [:h4 "Filter By Status"]
+                  [c-status-filter-checkboxes unfiltered-rounds @selected-statuses&]]
+                 [:> ui/ItemGroup {:class "inner-container results"}
+                  (let [rounds (cond-> unfiltered-rounds
+                                 (seq @selected-statuses&) (filter-rounds @selected-statuses&))]
+                    (for [round rounds]
+                      ^{:key (:id round)}
+                      [c-round round]))]]
+                [:> ui/Grid
+                 [:> ui/GridRow
+                  [:> ui/GridColumn {:computer 2 :mobile 0}]
+                  [:> ui/GridColumn {:computer 12 :mobile 16}
+                   [:> ui/Segment {:placeholder true}
+                    [:> ui/Header {:icon true}
+                     [:> ui/Icon {:name "vetd"}]
+                     "You don't have any active VetdRounds."]
+                    [:div {:style {:text-align "center"
+                                   :margin-top 10}}
+                     "To start a new round, find a "
+                     [:a {:style {:cursor "pointer"}
+                          :onClick #(rf/dispatch [:b/nav-search])}
+                      "product or category"]
+                     " and click \"Start VetdRound\"."]]]
+                  [:> ui/GridColumn {:computer 2 :mobile 0}]]]))))))))

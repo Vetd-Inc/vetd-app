@@ -34,30 +34,36 @@
         [:> ui/Header {:as "h2"}
          "Sign Up as a Buyer"]
         [:> ui/FormField
-         [:> ui/Input {:placeholder "Full Name"
+         [:> ui/Input {:class "borderless"
+                       :placeholder "Full Name"
                        :spellCheck false
                        :onChange (fn [_ this] (reset! uname (.-value this)))}]]
         [:> ui/FormField
-         [:> ui/Input {:type "email"
+         [:> ui/Input {:class "borderless"
+                       :type "email"
                        :placeholder "Email Address"
                        :spellCheck false
                        :onChange (fn [_ this] (reset! email (.-value this)))}]]
         [:> ui/FormField
-         [:> ui/Input {:placeholder "Organization Name"
+         [:> ui/Input {:class "borderless"
+                       :placeholder "Organization Name"
                        :spellCheck false
                        :onChange (fn [_ this] (reset! org-name (.-value this)))}]]
         [:> ui/FormField
-         [:> ui/Input {:type "url"
+         [:> ui/Input {:class "borderless"
+                       :type "url"
                        :label "http://"
                        :placeholder "Organization Website"
                        :spellCheck false
                        :onChange (fn [_ this] (reset! org-url (.-value this)))}]]
         [:> ui/FormField
-         [:> ui/Input {:type "password"
+         [:> ui/Input {:class "borderless"
+                       :type "password"
                        :placeholder "Password"
                        :onChange (fn [_ this] (reset! pwd (.-value this)))}]]
         [:> ui/FormField
-         [:> ui/Input {:type "password"
+         [:> ui/Input {:class "borderless"
+                       :type "password"
                        :placeholder "Confirm Password"
                        :onChange (fn [_ this] (reset! cpwd (.-value this)))}]]
         [:> ui/FormField

@@ -323,7 +323,7 @@
        [:> ui/GridRow
         [:> ui/GridColumn {:computer 4 :mobile 0}]
         [:> ui/GridColumn {:computer 8 :mobile 16}
-         [ui/input {:class "product-search"
+         [ui/input {:class "product-search borderless"
                     :value @search-query&
                     :size "big"
                     :icon "search"
