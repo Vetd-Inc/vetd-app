@@ -39,58 +39,50 @@
 ;; Components
 (defn c-round-initiation-form
   [round-id]
-  (let [initiation-forms& (rf/subscribe
-                           [:gql/sub
-                            {:queries
-                             [[:forms {:ftype "round-initiation"
-                                       :deleted nil
-                                       :_order_by {:created :desc}
-                                       :_limit 1}
-                               [:id :title :ftype :fsubtype
-                                [:prompts {:ref-deleted nil
-                                           :_order_by {:sort :asc}}
-                                 [:id :idstr :prompt :descr
-                                  [:fields {:deleted nil
-                                            :_order_by {:sort :asc}}
-                                   [:id :idstr :fname :ftype
-                                    :fsubtype :list?]]]]]]]}])]
+  (let [goal (r/atom "")
+        start-using (r/atom "")
+        num-users (r/atom "")
+        budget (r/atom "")
+        requirements (r/atom [])
+        add-products-by-name (r/atom "")]
     (fn []
-      (let [initiation-form (first (:forms @initiation-forms&))
-            goal (r/atom "")
-            start-using (r/atom "")
-            num-users (r/atom "")
-            budget (r/atom "")
-            requirements (r/atom [])
-            add-products-by-name (r/atom "")]
-        [:> ui/Form ;; {:style {:width 500}}
-         [:> ui/FormTextArea
-          {:label "What are you hoping to accomplish with the product?"}]
-         [:> ui/FormInput
-          {:label "When would you like to start using the product?"}]
-         [:> ui/FormGroup {:widths "equal"}
-          [:> ui/FormField
-           [:label "What is your annual budget?"]
-           [:> ui/Input {:labelPosition "right"}
-            [:> ui/Label {:basic true} "$"]
-            [:input {:type "number"}]
-            [:> ui/Label " per year"]]]
-          [:> ui/FormField
-           [:label "How many people will be using the product?"]
-           [:> ui/Input {:labelPosition "right"}
-            [:input {:type "number"}]
-            [:> ui/Label "users"]]]]
-         [:> ui/FormInput
-          {:label "What are your product requirements?"}]
-         [:> ui/FormField
-          [:label "Are there specific products you want to include?"]
-          [:> ui/Dropdown {:multiple true
-                           :search true
-                           :selection true
-                           :on-change #(.log js/console %1 %2)}]]
-         [:> ui/FormButton {:color "blue"}
-          "Submit"]]
-        
-        ))))
+      [:> ui/Form
+       [:> ui/FormTextArea
+        {:label "What are you hoping to accomplish with the product?"}]
+       [:> ui/FormField
+        [:label "When would you like to start using the product?"]
+        [:> ui/Dropdown {:selection true
+                         :on-change #(.log js/console %1 %2)
+                         :options [{:key "Next Week"
+                                    :text "Next Week"
+                                    :value "Next Week"}
+                                   {:key "2 Weeks"
+                                    :text "2 Weeks"
+                                    :value "2 Weeks"}]}]]
+       [:> ui/FormGroup {:widths "equal"}
+        [:> ui/FormField
+         [:label "What is your annual budget?"]
+         [:> ui/Input {:labelPosition "right"}
+          [:> ui/Label {:basic true} "$"]
+          [:input {:type "number"}]
+          [:> ui/Label " per year"]]]
+        [:> ui/FormField
+         [:label "How many people will be using the product?"]
+         [:> ui/Input {:labelPosition "right"}
+          [:input {:type "number"}]
+          [:> ui/Label "users"]]]]
+       [:> ui/FormInput
+        {:label "What are your product requirements?"}]
+       [:> ui/FormField
+        [:label "Are there specific products you want to include?"]
+        [:> ui/Dropdown {:multiple true
+                         :search true
+                         :selection true
+                         :on-change #(.log js/console %1 %2)}]]
+       [:> ui/FormButton {:color "blue"}
+        "Submit"]]
+      
+      )))
 
 (defn c-round-initiation
   [{:keys [id status title products doc] :as round}]
