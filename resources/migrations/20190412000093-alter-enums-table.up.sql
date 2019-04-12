@@ -1,0 +1,2 @@
+ALTER TABLE vetd.enums 
+ADD PRIMARY KEY (id)

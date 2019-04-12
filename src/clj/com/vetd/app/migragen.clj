@@ -140,7 +140,7 @@
         (-> m (dissoc :name) clojure.pprint/pprint)))]})
 
 (defmethod mk-sql :alter-table
-  [[_ {:keys [schema columns] table :name}]]
+  [[_ {:keys [schema columns pk] table :name}]]
   (let [{:keys [add]} columns
         schema' (name schema)
         table' (name table)]
@@ -150,11 +150,16 @@
                   schema'
                   table'
                   (st/join ",\n"
-                           (for [[k vs] add]
-                             (format "ADD COLUMN %s %s"
-                                     (name k)
-                                     (st/join " "
-                                              (map name vs))))))]
+                           (->> (concat
+                                 (for [[k vs] add]
+                                   (format "ADD COLUMN %s %s"
+                                           (name k)
+                                           (st/join " "
+                                                    (map name vs))))
+                                 (when pk
+                                   [(format "ADD PRIMARY KEY (%s)"
+                                             (name pk))]))
+                                (remove nil?))))]
      :down [(format "ALTER TABLE %s.%s \n%s"
                     schema'
                     table'
@@ -304,9 +309,3 @@
       (dissoc :rels :inherits)
       (update :tables apply-hasura-inheritance inherits)
       proc-hasura-meta-cfg))
-
-#_
-(-> "/home/bill/repos/vetd-app/resources/hasura/metadata-gen.json"
-    slurp
-    json/parse-string
-    clojure.pprint/pprint )

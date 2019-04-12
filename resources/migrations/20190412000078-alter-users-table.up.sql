@@ -1,0 +1,2 @@
+ALTER TABLE vetd.users 
+ADD PRIMARY KEY (id)

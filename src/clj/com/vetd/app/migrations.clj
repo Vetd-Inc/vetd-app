@@ -1186,7 +1186,35 @@
                                         [:= :d.deleted nil]]]
                            :where [:= :f.deleted nil]}
                    :owner :vetd
-                   :grants {:hasura [:SELECT]}}]]])
+                   :grants {:hasura [:SELECT]}}]]
+
+   [[2019 4 12 00 00]
+    
+    [:alter-table {:schema :vetd, :name :round_category, :pk :id}]
+    [:alter-table {:schema :vetd, :name :schema_migrations, :pk :id}]
+    [:alter-table {:schema :vetd, :name :orgs, :pk :id}]
+    [:alter-table {:schema :vetd, :name :categories, :pk :id}]
+    [:alter-table {:schema :vetd, :name :products, :pk :id}]
+    [:alter-table {:schema :vetd, :name :sessions, :pk :id}]
+    [:alter-table {:schema :vetd, :name :users, :pk :id}]
+    [:alter-table {:schema :vetd, :name :product_categories, :pk :id}]
+    [:alter-table {:schema :vetd, :name :memberships, :pk :id}]
+    [:alter-table {:schema :vetd, :name :rounds, :pk :id}]
+    [:alter-table {:schema :vetd, :name :round_product, :pk :id}]
+    [:alter-table {:schema :vetd, :name :prompts, :pk :id}]
+    [:alter-table {:schema :vetd, :name :resp_fields, :pk :id}]
+    [:alter-table {:schema :vetd, :name :docs, :pk :id}]
+    [:alter-table {:schema :vetd, :name :doc_resp, :pk :id}]
+    [:alter-table {:schema :vetd, :name :form_templates, :pk :id}]
+    [:alter-table {:schema :vetd, :name :prompt_fields, :pk :id}]
+    [:alter-table {:schema :vetd, :name :form_template_prompt, :pk :id}]
+    [:alter-table {:schema :vetd, :name :forms, :pk :id}]
+    [:alter-table {:schema :vetd, :name :form_prompt, :pk :id}]
+    [:alter-table {:schema :vetd, :name :responses, :pk :id}]
+    [:alter-table {:schema :vetd, :name :enums, :pk :id}]
+    [:alter-table {:schema :vetd, :name :enum_vals, :pk :id}]
+    [:alter-table {:schema :vetd, :name :admins, :pk :id}]]])
 
 #_(mig/mk-migration-files migrations
                           "migrations")
+
