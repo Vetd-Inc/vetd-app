@@ -245,14 +245,7 @@
                                           :ref_deleted nil}
                                          [:id :prompt-id :notes :prompt-prompt
                                           [:response-prompt-fields
-                                           [:id :prompt-field-fname :idx :sval :nval :dval]]]]
-                                        [:responses
-                                         [:id :prompt-id :notes
-                                          [:prompt
-                                           [:id :prompt]]
-                                          [:fields
-                                           [:id :pf-id :idx :sval :nval :dval
-                                            [:prompt-field [:id :fname]]]]]]]]
+                                           [:id :prompt-field-fname :idx :sval :nval :dval]]]]]]
                                       [:forms {:ftype "preposal" ; preposal requests
                                                :from-org-id org-id}
                                        [:id]]
