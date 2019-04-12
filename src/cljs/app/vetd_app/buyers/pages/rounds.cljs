@@ -112,7 +112,12 @@
      (for [[status rs] statuses]
        ^{:key status} 
        [:> ui/Checkbox
-        {:label (str (s/capitalize status) " (" (count rs) ")")
+        {:label (str (-> status
+                         (s/replace  #"-" " ")
+                         (s/split #"\b")
+                         (->> (map s/capitalize))
+                         s/join) 
+                     " (" (count rs) ")")
          :checked (boolean (selected-statuses status))
          :onChange (fn [_ this]
                      (if (.-checked this)
