@@ -30,7 +30,7 @@
     :trigger (r/as-element
               [:> ui/Button
                (merge {:onClick #(do (.stopPropagation %)
-                                     (rf/dispatch [:b/start-round etype eid]))
+                                     (rf/dispatch [:b/start-round "some title" etype eid]))
                        :class "start-round-button"
                        :color "blue"
                        :icon true
