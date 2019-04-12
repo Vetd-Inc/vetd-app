@@ -1,0 +1,2 @@
+ALTER TABLE vetd.docs 
+ADD PRIMARY KEY (id)

@@ -1,0 +1,2 @@
+ALTER TABLE vetd.forms 
+ADD PRIMARY KEY (id)

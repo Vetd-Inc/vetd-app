@@ -4,6 +4,7 @@
             [com.vetd.app.env :as env]
             [migratus.core :as mig]
             [clojure.java.jdbc :as j]
+            [clj-postgresql.core :as pg]
             [clojure.core.async :as a]
             [taoensso.timbre :as log]
             [honeysql.core :as hs]

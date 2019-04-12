@@ -697,7 +697,7 @@
                                     [:d.id :doc_id]
                                     [:d.idstr :doc_idstr] 
                                     [:d.created :doc_created] 
-                                    [:d.updated :doc_updated] 
+                                    [:d.updated :doc_updated]
                                     [:d.title :doc_title] 
                                     [:d.subject :doc_subject] 
                                     [:d.descr :doc_descr] 
@@ -1073,7 +1073,148 @@
     [:alter-table {:schema :vetd
                    :name :rounds
                    :columns
-                   {:add {:doc_id [:bigint]}}}]]])
+                   {:add {:doc_id [:bigint]}}}]
+
+    [:alter-table {:schema :vetd
+                   :name :resp_fields
+                   :columns
+                   {:add {:jval [:jsonb]}}}]]
+
+   [[2019 4 11 00 00]
+
+    [:create-or-replace-view
+     {:schema :vetd
+      :name :response_prompt_by_doc
+      :honey {:select [[:dr.id :drid]
+                       [:dr.doc_id :doc_id]
+                       [:dr.id :ref_id]
+                       [:dr.deleted :ref_deleted]
+                       :r.id
+                       :r.idstr                                    
+                       :r.created
+                       :r.updated
+                       :r.deleted
+                       :r.prompt_id
+                       :r.user_id
+                       :r.notes
+                       [:p.idstr :prompt_idstr]
+                       [:p.created :prompt_created]
+                       [:p.updated :prompt_updated]
+                       [:p.deleted :prompt_deleted]
+                       [:p.prompt :prompt_prompt]
+                       [:p.term :prompt_term]                       
+                       [:p.descr :prompt_descr]]
+              :from [[:doc_resp :dr]]
+              :join [[:responses :r]
+                     [:= :r.id :dr.resp_id]
+                     [:prompts :p]
+                     [:= :p.id :r.prompt_id]]}
+      :owner :vetd
+      :grants {:hasura [:SELECT]}}]
+
+    [:create-or-replace-view
+     {:schema :vetd
+      :name :response_prompt_fields
+      :honey {:select [[:rf.id :ref_id]
+                       [:rf.deleted :ref_deleted]
+                       :rf.id
+                       :rf.idstr                                    
+                       :rf.created
+                       :rf.updated
+                       :rf.deleted
+                       :rf.resp_id
+                       :rf.pf_id
+                       :rf.idx
+                       :rf.sval
+                       :rf.nval
+                       :rf.dval
+                       :rf.jval
+                       [:pf.id :prompt_field_id]                       
+                       [:pf.idstr :prompt_field_idstr]
+                       [:pf.created :prompt_field_created]
+                       [:pf.updated :prompt_field_updated]
+                       [:pf.deleted :prompt_field_deleted]
+                       [:pf.fname :prompt_field_fname]                       
+                       [:pf.descr :prompt_field_descr]
+                       [:pf.ftype :prompt_field_ftype]
+                       [:pf.fsubtype :prompt_field_fsubtype]
+                       [:pf.list_qm :prompt_field_list_qm]
+                       [:pf.sort :prompt_field_sort]]
+              :from [[:resp_fields :rf]]
+              :join [[:prompt_fields :pf]
+                     [:= :rf.pf_id :pf.id]]}
+      :owner :vetd
+      :grants {:hasura [:SELECT]}}]
+
+    [:create-view {:schema :vetd
+                   :name :form_docs
+                   :honey {:select [:f.id
+                                    :f.idstr
+                                    :f.created
+                                    :f.updated
+                                    :f.form_template_id
+                                    :f.title
+                                    :f.subject
+                                    :f.descr
+                                    :f.notes
+                                    :f.ftype
+                                    :f.fsubtype
+                                    :f.from_org_id
+                                    :f.from_user_id
+                                    :f.to_org_id
+                                    :f.to_user_id
+                                    :f.status
+                                    [:d.id :doc_id]
+                                    [:d.idstr :doc_idstr] 
+                                    [:d.created :doc_created] 
+                                    [:d.updated :doc_updated]
+                                    [:d.deleted :doc_deleted]                                    
+                                    [:d.title :doc_title] 
+                                    [:d.subject :doc_subject] 
+                                    [:d.descr :doc_descr] 
+                                    [:d.notes :doc_notes]
+                                    [:d.dtype :doc_dtype]
+                                    [:d.dsubtype :doc_dsubtype]
+                                    [:d.from_org_id :doc_from_org_id]
+                                    [:d.from_user_id :doc_from_user_id]
+                                    [:d.to_org_id :doc_to_org_id]
+                                    [:d.to_user_id :doc_to_user_id]]
+                           :from [[:forms :f]]
+                           :left-join [[:docs :d]
+                                       [:and
+                                        [:= :d.form_id :f.id]
+                                        [:= :d.deleted nil]]]
+                           :where [:= :f.deleted nil]}
+                   :owner :vetd
+                   :grants {:hasura [:SELECT]}}]]
+
+   [[2019 4 12 00 00]
+    
+    [:alter-table {:schema :vetd, :name :round_category, :pk :id}]
+    [:alter-table {:schema :vetd, :name :schema_migrations, :pk :id}]
+    [:alter-table {:schema :vetd, :name :orgs, :pk :id}]
+    [:alter-table {:schema :vetd, :name :categories, :pk :id}]
+    [:alter-table {:schema :vetd, :name :products, :pk :id}]
+    [:alter-table {:schema :vetd, :name :sessions, :pk :id}]
+    [:alter-table {:schema :vetd, :name :users, :pk :id}]
+    [:alter-table {:schema :vetd, :name :product_categories, :pk :id}]
+    [:alter-table {:schema :vetd, :name :memberships, :pk :id}]
+    [:alter-table {:schema :vetd, :name :rounds, :pk :id}]
+    [:alter-table {:schema :vetd, :name :round_product, :pk :id}]
+    [:alter-table {:schema :vetd, :name :prompts, :pk :id}]
+    [:alter-table {:schema :vetd, :name :resp_fields, :pk :id}]
+    [:alter-table {:schema :vetd, :name :docs, :pk :id}]
+    [:alter-table {:schema :vetd, :name :doc_resp, :pk :id}]
+    [:alter-table {:schema :vetd, :name :form_templates, :pk :id}]
+    [:alter-table {:schema :vetd, :name :prompt_fields, :pk :id}]
+    [:alter-table {:schema :vetd, :name :form_template_prompt, :pk :id}]
+    [:alter-table {:schema :vetd, :name :forms, :pk :id}]
+    [:alter-table {:schema :vetd, :name :form_prompt, :pk :id}]
+    [:alter-table {:schema :vetd, :name :responses, :pk :id}]
+    [:alter-table {:schema :vetd, :name :enums, :pk :id}]
+    [:alter-table {:schema :vetd, :name :enum_vals, :pk :id}]
+    [:alter-table {:schema :vetd, :name :admins, :pk :id}]]])
 
 #_(mig/mk-migration-files migrations
                           "migrations")
+

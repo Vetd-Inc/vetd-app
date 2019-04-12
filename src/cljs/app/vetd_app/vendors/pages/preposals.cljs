@@ -42,7 +42,7 @@
                                       [:responses {:ref-deleted nil}
                                        [:id :prompt-id :notes
                                         [:fields 
-                                         [:id :pf-id :idx :sval :nval :dval]]]]]]]}])]
+                                         [:id :pf-id :idx :sval :nval :dval :jval]]]]]]]}])]
     (fn []
       (def preq1 @prep-reqs&)
       [:div

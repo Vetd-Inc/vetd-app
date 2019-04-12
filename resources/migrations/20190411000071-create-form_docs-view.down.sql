@@ -1,0 +1,1 @@
+DROP VIEW IF EXISTS vetd.form_docs;

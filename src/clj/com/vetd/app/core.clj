@@ -1,6 +1,8 @@
 (ns com.vetd.app.core
   (:require [com.vetd.app.server :as svr]
             [com.vetd.app.env :as env]
+            [com.vetd.app.common :as com]
+            [clojure.core.async :as a]
             [cheshire.core :as json]
             [clj-http.client :as http]
             [taoensso.timbre :as log]
@@ -66,6 +68,7 @@
 (defn shutdown []
   (try
     (log/info "Starting shutdown hook")
+    (a/close! (com/shutdown-ch))
     (when-let [svr (svr/stop-server)]
       (wait-to-exit svr)
       (log/info "Completed `wait-to-exit`"))

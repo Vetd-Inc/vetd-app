@@ -34,6 +34,17 @@
       first
       (get k)))
 
+(defn get-field-value-from-response-prompt
+  "Given a reponses map, get value for prompt->field->key"
+  [responses prompt field k]
+  (get (->> responses
+            (filter #(-> % :prompt-prompt (= prompt)))
+            first
+            :response-prompt-fields
+            (filter #(-> % :prompt-field-fname (= field)))
+            first)
+       k))
+
 (defn walk-deref-ratoms
   [frm]
   (clojure.walk/postwalk
@@ -56,10 +67,10 @@
 ;; TODO support multiple response fields (for where list? = true)
 (defn mk-form-doc-prompt-field-state
   [fields {:keys [id] :as prompt-field}]
-  (let [{:keys [sval nval dval] :as resp-field} (some-> id fields first)
+  (let [{:keys [sval nval dval jval] :as resp-field} (some-> id fields first)
         resp-field' (merge resp-field
-                           {:state (r/atom (str (or dval nval sval
-                                                    "")))})]
+                           {:state (r/atom (or dval nval sval jval
+                                               ""))})]
     (assoc prompt-field
            :response
            [resp-field'])))

@@ -1,0 +1,2 @@
+ALTER TABLE vetd.rounds 
+ADD PRIMARY KEY (id)

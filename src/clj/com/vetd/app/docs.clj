@@ -12,7 +12,7 @@
 (defmethod handle-doc-creation :default [_])
 
 
-(defn get-latest-form-doc-by-ftype&from-org
+#_(defn get-latest-form-doc-by-ftype&from-org
   [ftype doc-from-org-id]
   (-> [[:form-docs {:ftype ftype
                     :doc-from-org-id doc-from-org-id
@@ -37,7 +37,7 @@
       :form-docs
       first))
 
-(defn get-latest-form-doc-by-ftype&subject
+#_ (defn get-latest-form-doc-by-ftype&subject
   [ftype subject]
   (-> [[:form-docs {:ftype ftype
                     :doc-subject subject
@@ -68,13 +68,21 @@
   (case ftype
     "n" {:sval (str v)
          :nval (ut/->long v)
-         :dval nil}
+         :dval nil
+         :jval nil}
     "s" {:sval v
          :nval nil
-         :dval nil}
+         :dval nil
+         :jval nil}
     "e" {:sval v
          :nval nil
-         :dval nil}
+         :dval nil
+         :jval nil}
+    "j" {:sval nil
+         :nval nil
+         :dval nil
+         :jval v}
+
     "d" (throw (Exception. "TODO convert-field-val does not support dates"))))
 
 (defn insert-form
@@ -224,7 +232,7 @@
         first)))
 
 (defn insert-response-field
-  [resp-id {:keys [prompt-field-id idx sval nval dval response ftype fsubtype]}]
+  [resp-id {:keys [prompt-field-id idx sval nval dval jval response ftype fsubtype]}]
   (let [[id idstr] (ut/mk-id&str)]
     (->> (merge {:id id
                  :idstr idstr
@@ -236,6 +244,7 @@
                  :sval sval
                  :nval nval
                  :dval dval
+                 :jval jval                 
                  :resp_id resp-id}
                 ;; TODO support multiple response fields (for where list? = true)
                 (when-let [v (-> response first :state)]
@@ -334,7 +343,7 @@
   [{:keys [to-org-id to-user-id from-org-id from-user-id prod-id] :as prep-req}]
   (create-form-from-template
    (merge prep-req
-          {:form-temp-id
+          {:form-template-id
            (find-latest-form-template-id [:= :ftype "preposal"])
            :title (str "Preposal Request " (gensym ""))
            :status "init"
@@ -370,7 +379,7 @@
                {:ref-deleted nil}
                [:id :ref-id :prompt-id
                 [:fields {:deleted nil}
-                 [:sval :nval :dval
+                 [:sval :nval :dval :jval
                   [:prompt-field [:fname]]]]]]]]]
            ha/sync-query
            :docs
@@ -388,6 +397,8 @@
       "d" (= (str (:dval old-field)) ;; HACK
              state)
       "e" (= (:sval old-field)
+             state)
+      "j" (= (:jval old-field)
              state))))
 
 (defn update-response-from-form-doc
