@@ -62,37 +62,34 @@
             budget (r/atom "")
             requirements (r/atom [])
             add-products-by-name (r/atom "")]
-        [:> ui/Form {:style {:width 500}}
+        [:> ui/Form ;; {:style {:width 500}}
          [:> ui/FormTextArea
           {:label "What are you hoping to accomplish with the product?"}]
          [:> ui/FormInput
           {:label "When would you like to start using the product?"}]
-         [:> ui/FormField
-          [:label "How many people will be using the product?"]
-          [:> ui/Input {:labelPosition "right"}
-           [:input {:type "number"}]
-           [:> ui/Label "users"]]]
-         [:> ui/FormField
-          [:label "What is your annual budget?"]
-          [:> ui/Input {:labelPosition "right"}
-           [:> ui/Label {:basic true} "$"]
-           [:input {:type "number"}]
-           [:> ui/Label " per year"]]]
+         [:> ui/FormGroup {:widths "equal"}
+          [:> ui/FormField
+           [:label "What is your annual budget?"]
+           [:> ui/Input {:labelPosition "right"}
+            [:> ui/Label {:basic true} "$"]
+            [:input {:type "number"}]
+            [:> ui/Label " per year"]]]
+          [:> ui/FormField
+           [:label "How many people will be using the product?"]
+           [:> ui/Input {:labelPosition "right"}
+            [:input {:type "number"}]
+            [:> ui/Label "users"]]]]
          [:> ui/FormInput
           {:label "What are your product requirements?"}]
-         [:> ui/FormInput
-          {:label "Are there specific products you want to include?"}]
-         [:> ui/FormButton "Submit"]
-         
-         
-         
-
-
-         ]
+         [:> ui/FormField
+          [:label "Are there specific products you want to include?"]
+          [:> ui/Dropdown {:multiple true
+                           :search true
+                           :selection true
+                           :on-change #(.log js/console %1 %2)}]]
+         [:> ui/FormButton {:color "blue"}
+          "Submit"]]
         
-        #_[docs/c-form-maybe-doc
-           (docs/mk-form-doc-state (assoc initiation-form :round-id round-id))
-           {:show-submit true}]
         ))))
 
 (defn c-round-initiation
