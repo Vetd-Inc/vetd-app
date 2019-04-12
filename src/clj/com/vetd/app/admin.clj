@@ -79,7 +79,7 @@
 
 (defmethod com/handle-ws-inbound :a/create-form-from-template
   [{:keys [form-template-id]} ws-id sub-fn]
-  (docs/create-form-from-template {:form-temp-id form-template-id}))
+  (docs/create-form-from-template {:form-template-id form-template-id}))
 
 (defmethod com/handle-ws-inbound :a/update-any
   [{:keys [entity]} ws-id sub-fn]
