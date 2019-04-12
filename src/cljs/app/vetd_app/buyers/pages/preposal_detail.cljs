@@ -120,7 +120,7 @@
                                                           :_limit 1
                                                           :doc-deleted nil}
                                               [:id
-                                               [:response-prompts {:ref_deleted nil}
+                                               [:response-prompts {:ref-deleted nil}
                                                 [:id :prompt-id :notes :prompt-prompt
                                                  [:response-prompt-fields
                                                   [:id :prompt-field-fname :idx :sval :nval :dval]]]]]]

@@ -35,9 +35,9 @@
       (get k)))
 
 (defn get-field-value-from-response-prompt
-  "Given a reponses map, get value for prompt->field->key"
-  [responses prompt field k]
-  (get (->> responses
+  "Given a reponse-prompts map, get value for prompt->field->key"
+  [response-prompts prompt field k]
+  (get (->> response-prompts
             (filter #(-> % :prompt-prompt (= prompt)))
             first
             :response-prompt-fields
