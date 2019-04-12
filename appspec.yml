@@ -3,7 +3,7 @@ Resources:
   - TargetService:
       Type: AWS::ECS::Service
       Properties:
-        TaskDefinition: "arn:aws:ecs:us-east-1:744151627940:task-definition/vetd-app-task:140"
+        TaskDefinition: "arn:aws:ecs:us-east-1:744151627940:task-definition/vetd-app-task:142"
         LoadBalancerInfo:
           ContainerName: "vetd-app-image"
           ContainerPort: 5080
