@@ -82,6 +82,7 @@
                      :idstr idstr
                      :buyer_id buyer-id
                      :status "initiation"
+                     :title (str "TODO title it " idstr)
                      :created (ut/now-ts)
                      :updated (ut/now-ts)})
         first)))
