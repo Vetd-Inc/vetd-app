@@ -449,7 +449,8 @@
         (when (@sub-id->resp-fn& qual-sub-id)
           (try-send @cn&
                     {:type (gql-msg-types-kw->str :stop)
-                     :id qual-sub-id}))))
+                     :id qual-sub-id})
+          (unregister-sub-id qual-sub-id))))
 
 ;; ws from client
 (defmethod com/handle-ws-inbound :graphql
