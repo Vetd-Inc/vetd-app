@@ -15,6 +15,7 @@
             [vetd-app.buyers.pages.preposal-detail :as p-bpreposal-detail]
             [vetd-app.buyers.pages.product-detail :as p-bproduct-detail]
             [vetd-app.buyers.pages.rounds :as p-brounds]
+            [vetd-app.buyers.pages.round-detail :as p-bround-detail]
             [vetd-app.vendors.fixtures :as v-fix]
             [vetd-app.vendors.pages.signup :as p-vsignup]
             [vetd-app.vendors.pages.preposals :as p-vpreposals]
@@ -38,6 +39,7 @@
                    :b/preposal-detail #'p-bpreposal-detail/c-page
                    :b/product-detail #'p-bproduct-detail/c-page
                    :b/rounds #'p-brounds/c-page
+                   :b/round-detail #'p-bround-detail/c-page
                    :v/signup #'p-vsignup/c-page
                    :v/preposals #'p-vpreposals/c-page
                    :v/products #'p-vprods/c-page
@@ -51,6 +53,7 @@
                    :b/preposal-detail #'b-fix/container
                    :b/product-detail #'b-fix/container
                    :b/rounds #'b-fix/container
+                   :b/round-detail #'b-fix/container
                    :v/signup #'pub-fix/container
                    :v/preposals #'v-fix/container
                    :v/products #'v-fix/container
@@ -165,6 +168,9 @@
 
 (sec/defroute buyers-rounds "/b/rounds" [query-params]
   (rf/dispatch [:b/route-rounds query-params]))
+
+(sec/defroute buyers-round-detail "/b/rounds/:idstr" [idstr]
+  (rf/dispatch [:b/route-round-detail idstr]))
 
 (sec/defroute vendors-preposals "/v/preposals" [query-params]
   (rf/dispatch [:v/route-preposals query-params]))

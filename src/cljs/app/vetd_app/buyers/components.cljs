@@ -57,6 +57,40 @@
                            :eid (:id product)
                            :ename (:pname product)}]))
 
+(defn c-round-status
+  [status]
+  "Display a round's status with a Step Group."
+  [:> ui/StepGroup {:size "small"
+                    :widths 3
+                    :style {:user-select "none"}}
+   [:> ui/Step (merge {:style {:cursor "pointer"}}
+                      (case status
+                        "initiation" {:active true}
+                        {}))
+    [:> ui/Icon {:name "clipboard outline"}]
+    [:> ui/StepContent
+     [:> ui/StepTitle "Initiation"]
+     [:> ui/StepDescription "Define your requirements"]]]
+   [:> ui/Step (merge {:style {:cursor "pointer"}}
+                      (case status
+                        "initiation" {:disabled true}
+                        "in-progress" {:active true}
+                        {}))
+    [:> ui/Icon {:name "chart bar"}]
+    [:> ui/StepContent
+     [:> ui/StepTitle "In Progress"]
+     [:> ui/StepDescription "Comparison and dialogue"]]]
+   [:> ui/Step (merge {:style {:cursor "pointer"}}
+                      (case status
+                        "initiation" {:disabled true}
+                        "in-progress" {:disabled true}
+                        "complete" {:active true}
+                        {}))
+    [:> ui/Icon {:name "check"}]
+    [:> ui/StepContent
+     [:> ui/StepTitle "Complete"]
+     [:> ui/StepDescription "Final decision"]]]])
+
 (defn c-setup-call-button
   [{:keys [id pname] :as product} {:keys [oname] :as vendor}]
   (fn []

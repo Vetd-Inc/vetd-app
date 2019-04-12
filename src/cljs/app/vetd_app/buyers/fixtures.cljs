@@ -10,7 +10,7 @@
                    :pages #{:b/search :b/product-detail}
                    :event [:b/nav-search]}
                   {:text "VetdRounds"
-                   :pages #{:b/rounds}
+                   :pages #{:b/rounds :b/round-detail}
                    :event [:b/nav-rounds]}
                   {:text "Preposals"
                    :pages #{:b/preposals :b/preposal-detail}

@@ -232,15 +232,6 @@ i.icon.vetd-icon:before {
   // animation: 1s infinite party;
 }
 
-/* TODO put this as less variable */
-.ui.teal.label, .ui.teal.labels .label {
-  background: linear-gradient(to right, #32abde, #6dccce) !important;
-  border: none !important;
-  color: #fff !important;
-}
-.ui.teal.ribbon.label {
-  border-color: #187399 !important;
-}
 
 .borderless > input {
   border: none !important;

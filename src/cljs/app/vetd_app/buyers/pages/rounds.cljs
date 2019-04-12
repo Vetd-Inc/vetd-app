@@ -50,53 +50,25 @@
 
 ;;;; Components
 (defn c-round
-  [{:keys [id status title products] :as round}]
-  [:> ui/Item {:onClick #(.log js/console "clicked")}
-   [:> ui/ItemContent
-    [:> ui/ItemHeader
-     [:> ui/Button {:onClick #(do (.stopPropagation %)
-                                  (.log js/console "hey"))
-                    :class "start-round-button"
-                    :color "blue"
-                    :icon true
-                    :labelPosition "right"
-                    :floated "right"}
-      "View / Manage"
-      [:> ui/Icon {:name "right arrow"}]]
-     title
-     [:div {:style {:margin-top 3
-                    :font-weight 400}} 
-      [:small (apply str (interpose ", " (map :pname products)))]]]
-    [:> ui/StepGroup {:size "small"
-                      :widths 3
-                      :style {:user-select "none"}}
-     [:> ui/Step (merge {:style {:cursor "pointer"}}
-                        (case status
-                          "initiation" {:active true}
-                          {}))
-      [:> ui/Icon {:name "clipboard outline"}]
-      [:> ui/StepContent
-       [:> ui/StepTitle "Initiation"]
-       [:> ui/StepDescription "Define your requirements"]]]
-     [:> ui/Step (merge {:style {:cursor "pointer"}}
-                        (case status
-                          "initiation" {:disabled true}
-                          "in-progress" {:active true}
-                          {}))
-      [:> ui/Icon {:name "chart bar"}]
-      [:> ui/StepContent
-       [:> ui/StepTitle "In Progress"]
-       [:> ui/StepDescription "Comparison and dialogue"]]]
-     [:> ui/Step (merge {:style {:cursor "pointer"}}
-                        (case status
-                          "initiation" {:disabled true}
-                          "in-progress" {:disabled true}
-                          "complete" {:active true}
-                          {}))
-      [:> ui/Icon {:name "check"}]
-      [:> ui/StepContent
-       [:> ui/StepTitle "Complete"]
-       [:> ui/StepDescription "Final decision"]]]]]])
+  [{:keys [id idstr status title products] :as round}]
+  (let [nav-click #(do (.stopPropagation %)
+                       (rf/dispatch [:b/nav-round-detail idstr]))]
+    [:> ui/Item {:onClick nav-click}
+     [:> ui/ItemContent
+      [:> ui/ItemHeader
+       [:> ui/Button {:onClick nav-click
+                      :class "start-round-button"
+                      :color "blue"
+                      :icon true
+                      :labelPosition "right"
+                      :floated "right"}
+        "View / Manage"
+        [:> ui/Icon {:name "right arrow"}]]
+       title
+       [:div {:style {:margin-top 3
+                      :font-weight 400}} 
+        [:small (apply str (interpose ", " (map :pname products)))]]]
+      [bc/c-round-status status]]]))
 
 (defn c-status-filter-checkboxes
   [rounds selected-statuses]
