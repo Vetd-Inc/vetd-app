@@ -50,7 +50,7 @@
 
 ;;;; Components
 (defn c-round
-  [{:keys [id status products] :as round}]
+  [{:keys [id status title products] :as round}]
   [:> ui/Item {:onClick #(.log js/console "clicked")}
    [:> ui/ItemContent
     [:> ui/ItemHeader
@@ -63,7 +63,7 @@
                     :floated "right"}
       "View / Manage"
       [:> ui/Icon {:name "right arrow"}]]
-     "Round " id (.log js/console round)
+     title
      [:div {:style {:margin-top 3
                     :font-weight 400}} 
       [:small (apply str (interpose ", " (map :pname products)))]]]
@@ -96,11 +96,7 @@
       [:> ui/Icon {:name "check"}]
       [:> ui/StepContent
        [:> ui/StepTitle "Complete"]
-       [:> ui/StepDescription "Final decision"]]]]
-    ]]
-  
-  ;; [:p "Round " id " with status: " status]
-  )
+       [:> ui/StepDescription "Final decision"]]]]]])
 
 (defn c-status-filter-checkboxes
   [rounds selected-statuses]
@@ -135,7 +131,7 @@
             rounds& (rf/subscribe [:gql/sub
                                    {:queries
                                     [[:rounds {:buyer-id @org-id&}
-                                      [:id :created :status
+                                      [:id :idstr :created :status :title
                                        [:products [:pname]]]]]}])]
         (fn []
           (if (= :loading @rounds&)
