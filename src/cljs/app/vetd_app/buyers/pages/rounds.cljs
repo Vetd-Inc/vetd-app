@@ -6,7 +6,8 @@
             [vetd-app.docs :as docs]
             [reagent.core :as r]
             [re-frame.core :as rf]
-            [re-com.core :as rc]))
+            [re-com.core :as rc]
+            [clojure.string :as s]))
 
 ;;;; Events
 (rf/reg-event-fx
@@ -49,31 +50,61 @@
 
 ;;;; Components
 (defn c-round
-  [{:keys [id status] :as round}]
-
-  [:> ui/StepGroup {:size "small"}
-   [:> ui/Step
-    [:> ui/Icon {:name "truck"}]
-    [:> ui/StepContent
-     [:> ui/StepTitle "Requirements"]
-     [:> ui/StepDescription "What's the perfect match?"]]]
-   [:> ui/Step
-    [:> ui/Icon {:name "table"}]
-    [:> ui/StepContent
-     [:> ui/StepTitle "Round in Progress"]
-     [:> ui/StepDescription "Let's find it!"]]]
-   [:> ui/Step
-    [:> ui/Icon {:name "info"}]
-    [:> ui/StepContent
-     [:> ui/StepTitle "Decision"]
-     [:> ui/StepDescription "The perfect match!"]]]]
+  [{:keys [id status products] :as round}]
+  [:> ui/Item {:onClick #(.log js/console "clicked")}
+   [:> ui/ItemContent
+    [:> ui/ItemHeader
+     [:> ui/Button {:onClick #(do (.stopPropagation %)
+                                  (.log js/console "hey"))
+                    :class "start-round-button"
+                    :color "blue"
+                    :icon true
+                    :labelPosition "right"
+                    :floated "right"}
+      "View / Manage"
+      [:> ui/Icon {:name "right arrow"}]]
+     "Round " id (.log js/console round)
+     [:div {:style {:margin-top 3
+                    :font-weight 400}} 
+      [:small (apply str (interpose ", " (map :pname products)))]]]
+    [:> ui/StepGroup {:size "small"
+                      :widths 3
+                      :style {:user-select "none"}}
+     [:> ui/Step (merge {:style {:cursor "pointer"}}
+                        (case status
+                          "initiation" {:active true}
+                          {}))
+      [:> ui/Icon {:name "clipboard outline"}]
+      [:> ui/StepContent
+       [:> ui/StepTitle "Initiation"]
+       [:> ui/StepDescription "Define your requirements"]]]
+     [:> ui/Step (merge {:style {:cursor "pointer"}}
+                        (case status
+                          "initiation" {:disabled true}
+                          "in-progress" {:active true}
+                          {}))
+      [:> ui/Icon {:name "chart bar"}]
+      [:> ui/StepContent
+       [:> ui/StepTitle "In Progress"]
+       [:> ui/StepDescription "Comparison and dialogue"]]]
+     [:> ui/Step (merge {:style {:cursor "pointer"}}
+                        (case status
+                          "initiation" {:disabled true}
+                          "in-progress" {:disabled true}
+                          "complete" {:active true}
+                          {}))
+      [:> ui/Icon {:name "check"}]
+      [:> ui/StepContent
+       [:> ui/StepTitle "Complete"]
+       [:> ui/StepDescription "Final decision"]]]]
+    ]]
   
   ;; [:p "Round " id " with status: " status]
   )
 
 (defn c-status-filter-checkboxes
   [rounds selected-statuses]
-  (let [all-possible-statuses ["active" "completed"]
+  (let [all-possible-statuses ["initiation" "in-progress" "complete"]
         statuses (->> rounds
                       (group-by :status)
                       (merge (zipmap all-possible-statuses (repeatedly vec))))]
@@ -81,7 +112,7 @@
      (for [[status rs] statuses]
        ^{:key status} 
        [:> ui/Checkbox
-        {:label (str status " (" (count rs) ")")
+        {:label (str (s/capitalize status) " (" (count rs) ")")
          :checked (boolean (selected-statuses status))
          :onChange (fn [_ this]
                      (if (.-checked this)
@@ -98,9 +129,9 @@
       (let [selected-statuses& (rf/subscribe [:rounds-filter/selected-statuses])
             rounds& (rf/subscribe [:gql/sub
                                    {:queries
-                                    [[:rounds {:buyer-id @org-id&
-                                               :status "active"}
-                                      [:id :created :status]]]}])]
+                                    [[:rounds {:buyer-id @org-id&}
+                                      [:id :created :status
+                                       [:products [:pname]]]]]}])]
         (fn []
           (if (= :loading @rounds&)
             [cc/c-loader]

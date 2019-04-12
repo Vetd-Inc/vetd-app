@@ -41,7 +41,10 @@
 
 (defn c-round-in-progress [{:keys [props]}]
   [:> ui/Label (merge {:color "teal"
-                       :size "medium"}
+                       :size "medium"
+                       :as "a"
+                       :onClick #(do (.stopPropagation %)
+                                     (rf/dispatch [:b/nav-rounds]))}
                       props)
    "VetdRound In Progress"])
 

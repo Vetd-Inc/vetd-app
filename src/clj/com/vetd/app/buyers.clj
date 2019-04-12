@@ -81,7 +81,7 @@
                     {:id id
                      :idstr idstr
                      :buyer_id buyer-id
-                     :status "active"
+                     :status "initiation"
                      :created (ut/now-ts)
                      :updated (ut/now-ts)})
         first)))

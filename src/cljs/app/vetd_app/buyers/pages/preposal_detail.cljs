@@ -123,8 +123,7 @@
                                                  [:fields
                                                   [:id :pf-id :idx :sval :nval :dval
                                                    [:prompt-field [:id :fname]]]]]]]]
-                                             [:rounds {:buyer-id @org-id&
-                                                       :status "active"}
+                                             [:rounds {:buyer-id @org-id&}
                                               [:id :created :status]]
                                              [:categories [:id :idstr :cname]]
                                              [:vendor
