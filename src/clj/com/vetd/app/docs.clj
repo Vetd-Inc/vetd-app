@@ -402,7 +402,7 @@
              state))))
 
 (defn update-response-from-form-doc
-  [doc-id {old-fields :fields :keys [ref-id]} {new-fields :fields :keys [response]}]
+  [doc-id {old-fields :fields :keys [ref-id]} {prompt-id :id new-fields :fields :keys [response]}] 
   ;; TODO handle if old or new fields are missing
   (cond (and (not-empty old-fields) (not-empty new-fields))
         (let [old-fields' (group-by (comp :fname :prompt-field) old-fields)
@@ -414,12 +414,13 @@
                      (some false?))
             (update-deleted :doc_resp ref-id)
             (create-attached-doc-response doc-id
-                                          {:prompt-id (:prompt-id response)
+                                          {:prompt-id (or (:prompt-id response)
+                                                          prompt-id) ;; TODO I don't know -- Bill
                                            :fields new-fields})))
 
         (not-empty new-fields)
         (create-attached-doc-response doc-id
-                                      {:prompt-id (:prompt-id response)
+                                      {:prompt-id prompt-id
                                        :fields new-fields})))
 
 
