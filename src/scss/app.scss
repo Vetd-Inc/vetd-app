@@ -75,6 +75,13 @@ a.teal:hover {
   font-size: 12px;
   font-weight: 300;
 }
+.sidebar .back-button {
+  box-shadow: 0 0px 1px 0 rgba(50, 50, 50, 0.7) !important;
+}
+.sidebar .segment {
+  box-shadow: 0 2px 14px 0 rgba(50,50,50,0.1) !important;
+  border: none !important;
+}
 .sidebar .segment > .button:not(:first-child),
 .sidebar .segment > .label:not(:first-child) {
   margin-top: 1em;
@@ -97,6 +104,10 @@ a.teal:hover {
 }
 .display-field-key {
   margin: 0 0 5px 0 !important;
+}
+.detail-container {
+  box-shadow: 0 2px 14px 0 rgba(50,50,50,0.1) !important;
+  border: none !important;
 }
 .detail-container > .product-logo {
   position: absolute;
@@ -133,6 +144,11 @@ a.teal:hover {
   padding-top: 7px !important;
 }
 
+
+.round-details .round-status {
+  box-shadow: 0 0px 1px 0 rgba(50, 50, 50, 0.7) !important;
+  border: none;
+}
 
 /* to make segment look the same as item results */
 /* .segment { */

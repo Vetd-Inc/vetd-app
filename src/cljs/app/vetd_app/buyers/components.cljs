@@ -11,7 +11,8 @@
 (defn c-back-button
   ([] (c-back-button {} "Back"))
   ([text] (c-back-button {} text))
-  ([props text] [:> ui/Button (merge {:on-click #(.go js/history -1)
+  ([props text] [:> ui/Button (merge {:class "back-button"
+                                      :on-click #(.go js/history -1)
                                       :basic true
                                       :icon true
                                       :size "small"
@@ -66,7 +67,8 @@
 (defn c-round-status
   [status]
   "Display a round's status with a Step Group."
-  [:> ui/StepGroup {:size "small"
+  [:> ui/StepGroup {:class "round-status"
+                    :size "small"
                     :widths 3
                     :style {:user-select "none"}}
    [:> ui/Step (merge {:style {:cursor "pointer"}}
