@@ -73,7 +73,7 @@
    (let [qid (get-next-query-id)]
      {:ws-send {:payload {:cmd :b/start-round
                           :return {:handler :b/start-round-return}
-                          :round-title title
+                          :title title
                           :etype etype
                           :eid eid
                           :buyer-id (util/db->current-org-id db)}}

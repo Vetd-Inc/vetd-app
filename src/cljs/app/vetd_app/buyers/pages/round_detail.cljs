@@ -46,41 +46,59 @@
         requirements (r/atom [])
         add-products-by-name (r/atom "")]
     (fn []
-      [:> ui/Form
-       [:> ui/FormTextArea
-        {:label "What are you hoping to accomplish with the product?"}]
-       [:> ui/FormField
-        [:label "When would you like to start using the product?"]
-        [:> ui/Dropdown {:selection true
-                         :on-change #(.log js/console %1 %2)
-                         :options [{:key "Next Week"
-                                    :text "Next Week"
-                                    :value "Next Week"}
-                                   {:key "2 Weeks"
-                                    :text "2 Weeks"
-                                    :value "2 Weeks"}]}]]
-       [:> ui/FormGroup {:widths "equal"}
+      [:<>
+       [:h3 "Round Initiation Form"]
+       [:p "Let us now a little more about who will be using this product and what features you are looking for. Then, we'll gather quotes for you to compare right away."]
+       [:> ui/Form {:style {:padding-top 10}}
+        [:> ui/FormTextArea
+         {:label "What are you hoping to accomplish with the product?"}]
         [:> ui/FormField
-         [:label "What is your annual budget?"]
-         [:> ui/Input {:labelPosition "right"}
-          [:> ui/Label {:basic true} "$"]
-          [:input {:type "number"}]
-          [:> ui/Label " per year"]]]
+         [:label "When would you like to start using the product?"]
+         [:> ui/Dropdown {:selection true
+                          :on-change #(.log js/console %1 %2)
+                          :options [{:key "Within 1 Week"
+                                     :text "Within 1 Week"
+                                     :value "Within 1 Week"}
+                                    {:key "Within 2 Weeks"
+                                     :text "Within 2 Weeks"
+                                     :value "Within 2 Weeks"}
+                                    {:key "Within 3 Weeks"
+                                     :text "Within 3 Weeks"
+                                     :value "Within 3 Weeks"}
+                                    {:key "Within 1 Month"
+                                     :text "Within 1 Month"
+                                     :value "Within 1 Month"}
+                                    {:key "Within 2 Months"
+                                     :text "Within 2 Months"
+                                     :value "Within 2 Months"}
+                                    {:key "Within 6 Months"
+                                     :text "Within 6 Months"
+                                     :value "Within 6 Months"}
+                                    {:key "Within 12 Months"
+                                     :text "Within 12 Months"
+                                     :value "Within 12 Months"}]}]]
+        [:> ui/FormGroup {:widths "equal"}
+         [:> ui/FormField
+          [:label "What is your annual budget?"]
+          [:> ui/Input {:labelPosition "right"}
+           [:> ui/Label {:basic true} "$"]
+           [:input {:type "number"}]
+           [:> ui/Label " per year"]]]
+         [:> ui/FormField
+          [:label "How many people will be using the product?"]
+          [:> ui/Input {:labelPosition "right"}
+           [:input {:type "number"}]
+           [:> ui/Label "users"]]]]
+        [:> ui/FormInput
+         {:label "What are your product requirements?"}]
         [:> ui/FormField
-         [:label "How many people will be using the product?"]
-         [:> ui/Input {:labelPosition "right"}
-          [:input {:type "number"}]
-          [:> ui/Label "users"]]]]
-       [:> ui/FormInput
-        {:label "What are your product requirements?"}]
-       [:> ui/FormField
-        [:label "Are there specific products you want to include?"]
-        [:> ui/Dropdown {:multiple true
-                         :search true
-                         :selection true
-                         :on-change #(.log js/console %1 %2)}]]
-       [:> ui/FormButton {:color "blue"}
-        "Submit"]]
+         [:label "Are there specific products you want to include?"]
+         [:> ui/Dropdown {:multiple true
+                          :search true
+                          :selection true
+                          :on-change #(.log js/console %1 %2)}]]
+        [:> ui/FormButton {:color "blue"}
+         "Submit"]]]
       
       )))
 
@@ -100,7 +118,7 @@
   [:<>
    [bc/c-round-status status]
    [:> ui/Segment {:class "detail-container"}
-    [:h1.product-title title]
+    [:h1 title]
     (case status
       "initiation" [c-round-initiation round]
       "in-progress" [c-round-grid round]

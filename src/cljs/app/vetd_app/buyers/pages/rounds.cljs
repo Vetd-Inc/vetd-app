@@ -82,9 +82,7 @@
        [:> ui/Checkbox
         {:label (str (-> status
                          (s/replace  #"-" " ")
-                         (s/split #"\b")
-                         (->> (map s/capitalize))
-                         s/join) 
+                         util/capitalize-words) 
                      " (" (count rs) ")")
          :checked (boolean (selected-statuses status))
          :onChange (fn [_ this]

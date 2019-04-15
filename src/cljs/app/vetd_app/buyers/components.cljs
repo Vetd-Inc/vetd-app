@@ -27,17 +27,23 @@
                   ename "\" that meet your needs.")
     :header "What is a VetdRound?"
     :position "bottom left"
-    :trigger (r/as-element
-              [:> ui/Button
-               (merge {:onClick #(do (.stopPropagation %)
-                                     (rf/dispatch [:b/start-round "some title" etype eid]))
-                       :class "start-round-button"
-                       :color "blue"
-                       :icon true
-                       :labelPosition "left"}
-                      props)
-               "Start VetdRound"
-               [:> ui/Icon {:name "vetd-icon"}]])}])
+    :trigger
+    (r/as-element
+     [:> ui/Button
+      (merge {:onClick #(do (.stopPropagation %)
+                            (rf/dispatch
+                             [:b/start-round
+                              (if (= :product etype)
+                                (str "Products Similar to " ename)
+                                (str (util/capitalize-words ename) " Products"))
+                              etype eid]))
+              :class "start-round-button"
+              :color "blue"
+              :icon true
+              :labelPosition "left"}
+             props)
+      "Start VetdRound"
+      [:> ui/Icon {:name "vetd-icon"}]])}])
 
 (defn c-round-in-progress [{:keys [props]}]
   [:> ui/Label (merge {:color "teal"
