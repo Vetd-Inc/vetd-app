@@ -82,6 +82,8 @@
                           ["cljsbuild" "once" "min-public" "min-full"]
                           ["jsass" "once"]]
              :dependencies [[nrepl "0.6.0"]
+                            [cider/cider-nrepl "0.21.1"]
+                            [org.clojure/tools.nrepl "0.2.13"]
                             [com.billpiel/sayid "0.0.17"]]
              :cljsbuild
              {:builds
