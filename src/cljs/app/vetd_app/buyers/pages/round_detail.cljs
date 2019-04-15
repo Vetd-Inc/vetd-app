@@ -39,12 +39,13 @@
 ;; Components
 (defn c-round-initiation-form
   [round-id]
-  (let [requirements-options (r/atom [{:key "Subscription Billing"
-                                       :text "Subscription Billing"
-                                       :value "Subscription Billing"}
-                                      {:key "Free Trial"
-                                       :text "Free Trial"
-                                       :value "Free Trial"}])
+  (let [requirements-options (r/atom [;; {:key "Subscription Billing"
+                                      ;;  :text "Subscription Billing"
+                                      ;;  :value "Subscription Billing"}
+                                      ;; {:key "Free Trial"
+                                      ;;  :text "Free Trial"
+                                      ;;  :value "Free Trial"}
+                                      ])
         ;; form data
         goal (r/atom "")
         start-using (r/atom "")
@@ -106,6 +107,7 @@
                           :selection true
                           :multiple true
                           :allowAdditions true
+                          :additionLabel "Hit 'Enter' to Add "
                           :noResultsMessage "Type to add a new requirement..."
                           :onAddItem (fn [_ this]
                                        (let [value (.-value this)]
