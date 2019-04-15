@@ -54,7 +54,6 @@
   (let [pricing-estimate-value (docs/get-field-value responses "Pricing Estimate" "value" :nval)
         pricing-estimate-unit (docs/get-field-value responses "Pricing Estimate" "unit" :sval)
         pricing-estimate-details (docs/get-field-value responses "Pricing Estimate" "details" :sval)
-        free-trial? (= "yes" (docs/get-field-value responses "Do you offer a free trial?" "value" :sval))
         product-profile-responses (-> product :form-docs first :response-prompts)]
     [:> ui/Item {:onClick #(rf/dispatch [:b/nav-preposal-detail idstr])}
      ;; TODO make config var 's3-base-url'
@@ -85,7 +84,7 @@
                                    :ename (:pname product)
                                    :props {:floated "right"}}])
        [bc/c-categories product]
-       (when free-trial? [:> ui/Label {:class "free-trial-tag"
+       #_(when free-trial? [:> ui/Label {:class "free-trial-tag"
                                        :color "gray"
                                        :size "small"
                                        :tag true}

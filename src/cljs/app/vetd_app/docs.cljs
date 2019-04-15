@@ -137,10 +137,10 @@
      (when-not (= fname "value")
        [:label fname])
      [ui/input {:value @value&
-                :type "number"
                 :on-change (fn [this]
                              (reset! value& (-> this .-target .-value)))
-                :attrs {:data-response-field-id response-id
+                :attrs {:type "number"
+                        :data-response-field-id response-id
                         :data-prompt-field-id prompt-field-id}}]]))
 
 (defn c-prompt-field-enum
