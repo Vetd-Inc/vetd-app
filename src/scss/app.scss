@@ -298,6 +298,16 @@ textarea {
 }
 
 
+/* Round Initiation Form */
+.ui.form.round-initiation-form {
+  margin-top: 20px;
+
+  > .field,
+  > .fields {
+    margin-top: 15px;
+  }
+}
+
 
 /* Loading Spinner */
 div.spinner {

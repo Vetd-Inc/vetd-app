@@ -39,7 +39,14 @@
 ;; Components
 (defn c-round-initiation-form
   [round-id]
-  (let [goal (r/atom "")
+  (let [requirements-options (r/atom [{:key "Subscription Billing"
+                                       :text "Subscription Billing"
+                                       :value "Subscription Billing"}
+                                      {:key "Free Trial"
+                                       :text "Free Trial"
+                                       :value "Free Trial"}])
+        ;; form data
+        goal (r/atom "")
         start-using (r/atom "")
         num-users (r/atom "")
         budget (r/atom "")
@@ -49,7 +56,7 @@
       [:<>
        [:h3 "Round Initiation Form"]
        [:p "Let us now a little more about who will be using this product and what features you are looking for. Then, we'll gather quotes for you to compare right away."]
-       [:> ui/Form {:style {:padding-top 10}}
+       [:> ui/Form {:class "round-initiation-form"}
         [:> ui/FormTextArea
          {:label "What are you hoping to accomplish with the product?"
           :on-change (fn [_ this] (reset! goal (.-value this)))}]
@@ -90,17 +97,33 @@
            [:input {:type "number"
                     :on-change #(reset! num-users (-> % .-target .-value))}]
            [:> ui/Label {:basic true} "users"]]]]
-        [:> ui/FormInput
-         {:label "What are your product requirements?"
-          :on-change (fn [_ this] (reset! requirements (.-value this)))}]
         [:> ui/FormField
-         [:label "Are there specific products you want to include?"]
-         [:> ui/Dropdown {:multiple true
+         [:label "What are your product requirements?"]
+         [:> ui/Dropdown {:value @requirements
+                          :options @requirements-options
+                          :placeholder "Add your requirements..."
                           :search true
                           :selection true
-                          ;; :on-change (fn [_ this]
-                          ;;              (reset! add-products-by-name (.-value this)))
-                          :on-change #(.log js/console %1 %2)}]]
+                          :multiple true
+                          :allowAdditions true
+                          :noResultsMessage "Type to add a new requirement..."
+                          :onAddItem (fn [_ this]
+                                       (let [value (.-value this)]
+                                         (swap! requirements-options
+                                                conj
+                                                {:key value
+                                                 :text value
+                                                 :value value})))
+                          :onChange (fn [_ this]
+                                      (reset! requirements (.-value this)))}]]
+        #_[:> ui/FormField
+           [:label "Are there specific products you want to include?"]
+           [:> ui/Dropdown {:multiple true
+                            :search true
+                            :selection true
+                            ;; :on-change (fn [_ this]
+                            ;;              (reset! add-products-by-name (.-value this)))
+                            :on-change #(.log js/console %1 %2)}]]
         [:> ui/FormButton
          {:color "blue"
           :on-click
