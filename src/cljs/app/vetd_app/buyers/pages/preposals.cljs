@@ -84,11 +84,9 @@
                                    :ename (:pname product)
                                    :props {:floated "right"}}])
        [bc/c-categories product]
-       #_(when free-trial? [:> ui/Label {:class "free-trial-tag"
-                                       :color "gray"
-                                       :size "small"
-                                       :tag true}
-                          "Free Trial"])]]
+       (when (= "Yes" (docs/get-field-value-from-response-prompt
+                       product-profile-responses "Do you offer a free trial?" "value" :sval))
+         [bc/c-free-trial-tag])]]
      (when (not-empty (:rounds product))
        [bc/c-round-in-progress {:props {:ribbon "right"
                                         :style {:position "absolute"
@@ -118,7 +116,8 @@
                                                               :_order_by {:created :desc}
                                                               :_limit 1}
                                                   [:id 
-                                                   [:response-prompts {:prompt-prompt "Describe your product or service"
+                                                   [:response-prompts {:prompt-prompt ["Describe your product or service"
+                                                                                       "Do you offer a free trial?"]
                                                                        :ref_deleted nil}
                                                     [:id :prompt-id :notes :prompt-prompt
                                                      [:response-prompt-fields
