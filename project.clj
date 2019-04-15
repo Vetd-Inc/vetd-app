@@ -3,7 +3,7 @@
   :description "Vetd is a buying platform for B2B SaaS products."
   :url "https://app.vetd.com"
   
-  :dependencies [[org.clojure/clojure "1.10.0"]
+  :dependencies [[org.clojure/clojure "1.10.1-beta2"]
                  [org.clojure/clojurescript "1.10.516" :scope "provided"]
                  [org.clojure/core.async "0.4.474"]
 
@@ -81,7 +81,10 @@
              :prep-tasks ["compile"
                           ["cljsbuild" "once" "min-public" "min-full"]
                           ["jsass" "once"]]
-             :dependencies [[nrepl "0.6.0"]]
+             :dependencies [[nrepl "0.6.0"]
+                            [cider/cider-nrepl "0.21.1"]
+                            [org.clojure/tools.nrepl "0.2.13"]
+                            [com.billpiel/sayid "0.0.17"]]
              :cljsbuild
              {:builds
               {:min-public

@@ -11,9 +11,47 @@
             com.vetd.app.db)
   (:gen-class))
 
-(def nrepl-server& (atom nil))
+(defonce nrepl-server& (atom nil))
 
 (log/set-level! :info)
+
+(.setLevel (org.slf4j.LoggerFactory/getLogger org.slf4j.Logger/ROOT_LOGGER_NAME)
+           ch.qos.logback.classic.Level/INFO)
+
+(def addl-middleware
+  '[com.billpiel.sayid.nrepl-middleware/wrap-sayid])
+
+(defn resolve-default-handler-fn []
+  (try
+    (load "/nrepl/server")
+    (ns-resolve 'nrepl.server 'default-handler)
+    (catch Throwable t
+      nil)))
+
+(defn resolve-cider-middleware []
+  (try
+    (load "/cider/nrepl")
+    (some-> (ns-resolve 'cider.nrepl 'cider-middleware)
+            deref)
+    (catch Throwable t
+      nil)))
+
+(defn load-sayid-nrepl-middleware []
+  (try
+    (load "/com/billpiel/sayid/nrepl_middleware")
+    (catch Throwable t
+      nil)))
+
+(defn cider-nrepl-handler-override
+  []
+  (let [cider-middleware (resolve-cider-middleware)
+        default-handler-fn (resolve-default-handler-fn)]
+    (when (and cider-middleware default-handler-fn)
+      (load-sayid-nrepl-middleware)
+      (->> cider-middleware
+           (into addl-middleware)
+           (keep resolve)
+           (apply default-handler-fn)))))
 
 (defn resolve-start-server-fn []
   (try
@@ -34,7 +72,9 @@
     (if-not @nrepl-server&
       (if-let [start-fn (resolve-start-server-fn)]
         (do (log/info "starting nrepl server...")
-            (reset! nrepl-server& (start-fn :bind "0.0.0.0" :port 4001)) ; TODO add cider middleware
+            (reset! nrepl-server& (start-fn :bind "0.0.0.0"
+                                            :port 4001
+                                            :handler (cider-nrepl-handler-override))) 
             (log/info "started nrepl server on port 4001")
             @nrepl-server&)
         (log/info "Could not resolve `nrepl.server/start-server`"))
@@ -55,6 +95,8 @@
       (log/info "nrepl server is not running"))
     (catch Throwable t
       (log/error t "EXCEPTION while trying to stop nrepl server"))))
+
+#_ (try-stop-nrepl-server)
 
 (defn wait-to-exit [s]
   [s]

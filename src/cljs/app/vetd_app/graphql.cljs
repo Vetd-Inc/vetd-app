@@ -13,6 +13,8 @@
 
 #_ (println @sub-id->ratom&)
 
+#_ (println (keys @sub-id->ratom&))
+
 (def last-sub-id& (atom (mod (util/now) 10000)))
 
 (defn get-next-sub-id []
@@ -45,7 +47,8 @@
    (let [{:keys [sub-id]} return]
      (case mtype
        :data (if-let [ratom (@sub-id->ratom& sub-id)]
-               (reset! ratom payload)
+               (when-not (= payload @ratom)
+                 (reset! ratom payload))
                (do (def no-ratom1 resp)
                    (println "NO GRAPHQL RATOM!")
                    (println resp)))
@@ -84,7 +87,7 @@
      (rf/dispatch-sync [:gql/q query sub-id]) 
      {:computation (fn [r]
                      (util/dispatch-debounce [:gql/q query sub-id]
-                                           5000)
+                                             5000)
                      r)})))
 
 (util/reg-sub-special

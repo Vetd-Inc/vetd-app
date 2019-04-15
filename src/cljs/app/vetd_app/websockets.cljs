@@ -14,18 +14,6 @@
   (and (exists? js/log_ws)
        (true? js/log_ws)))
 
-(comment
-    #_(def ws1 (mk-ws-conn "ws://localhost:8080/v1alpha1/graphql"))
-
-    (def ws1  (js/WebSocket. "ws://localhost:8080/v1alpha1/graphql" "graphql-ws"))
-
-    (.-onopen ws1 #(.log js/console %))
-
-    (set! (.-onmessage ws1) #(.log js/console %))
-
-    (.close ws1))
-
-
 (rf/reg-event-db
  :ws-connected
  (fn [db [_ url]]
@@ -86,7 +74,6 @@
          "ws://")
        (.-host js/location) "/ws"))
 
-;; TODO use wss:// in prod
 (rf/reg-event-fx
  :ws-init
  [(rf/inject-cofx :ws-conn (mk-ws-url))]
