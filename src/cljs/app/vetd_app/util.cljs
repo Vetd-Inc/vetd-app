@@ -1,5 +1,5 @@
 (ns vetd-app.util
-  (:require [clojure.string]
+  (:require [clojure.string :as s]
             [clojure.set]
             [re-frame.core :as rf]
             [re-frame.interop :refer [deref? reagent-id]]
@@ -198,3 +198,9 @@
        (filter #(= (:id %) (:active-memb-id db)))
        first
        :org-id))
+
+(defn capitalize-words
+  [string]
+  (->> (s/split string #"\b")
+       (map s/capitalize)
+       s/join))

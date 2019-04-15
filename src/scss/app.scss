@@ -81,7 +81,7 @@ a.teal:hover {
 }
 
 .product-title {
-  padding: 5px 180px 14px 0 !important;
+  padding: 0 180px 14px 0 !important;
   margin: 0;
   font-size: 34px;
 }
@@ -102,7 +102,8 @@ a.teal:hover {
   position: absolute;
   right: 0px;
   top: 0px;
-  padding: 15px;
+  width: 110px;
+  margin: 15px 15px 0px 0px;
 }
 
 @media only screen and (max-width: 600px) {
@@ -207,7 +208,15 @@ a.teal:hover {
   padding-right: 0px !important;
   text-align: left !important;
 }
-
+i.icon.vetd {
+  width: 50px !important;
+  height: 50px !important;
+  background-image: url(../images/vetd-arrow.svg) !important;
+  background-size: contain !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  filter: grayscale(1) brightness(0.6);
+}
 i.icon.vetd-icon:before {
   content: " " !important;
   width: 100%;
@@ -223,14 +232,10 @@ i.icon.vetd-icon:before {
   // animation: 1s infinite party;
 }
 
-/* TODO put this as less variable */
-.ui.teal.label, .ui.teal.labels .label {
-  background: linear-gradient(to right, #32abde, #6dccce) !important;
+
+.borderless > input {
   border: none !important;
-  color: #fff !important;
-}
-.ui.teal.ribbon.label {
-  border-color: #187399 !important;
+  box-shadow: 0 2px 10px 0 rgba(50, 50, 50, 0.08) !important;
 }
 
 
@@ -238,10 +243,10 @@ i.icon.vetd-icon:before {
 .category-tag {
   background: #fff !important;
   border: 1px solid #ddd !important;
+  font-weight: 400 !important
 }
 a.category-tag:hover {
   border-color: #777 !important;
-  color: #777 !important;
 }
 
 textarea {
@@ -280,17 +285,15 @@ textarea {
 
 /* Loading Spinner */
 div.spinner {
-  animation: rotate .4s infinite ease;
-  animation-direction: alternate;
+  animation: rotate 5s infinite ease;
   position: relative;
   display: block;
   margin: auto;
   width: 142px;
   height: 142px;
-  transform: scale(1.05);
 }
 div.spinner i {
-  animation: rotate 2s infinite cubic-bezier(0.09, 0.3, 0.7, 0.03);
+  animation: rotate 3s infinite cubic-bezier(0.09, 0.3, 0.7, 0.03);
   transform-origin: 50% 100% 0;
   position: absolute;
   display: inline-block;

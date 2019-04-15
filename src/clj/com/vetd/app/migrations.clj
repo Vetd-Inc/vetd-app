@@ -1213,7 +1213,11 @@
     [:alter-table {:schema :vetd, :name :responses, :pk :id}]
     [:alter-table {:schema :vetd, :name :enums, :pk :id}]
     [:alter-table {:schema :vetd, :name :enum_vals, :pk :id}]
-    [:alter-table {:schema :vetd, :name :admins, :pk :id}]]])
+    [:alter-table {:schema :vetd, :name :admins, :pk :id}]
+    [:alter-table {:schema :vetd
+                   :name :rounds
+                   :columns
+                   {:add {:title [:text]}}}]]])
 
 #_(mig/mk-migration-files migrations
                           "migrations")

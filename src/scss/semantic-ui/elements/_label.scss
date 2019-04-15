@@ -715,16 +715,15 @@ a.ui.basic.green.label:hover {
 
 .ui.teal.labels .label,
 .ui.teal.label {
-  background-color: #00B5AD !important;
-  border-color: #00B5AD !important;
-  color: #FFFFFF !important;
+  background: linear-gradient(to right, #32abde, #6dccce) !important;
+  border: none !important;
+  color: #fff !important;
 }
 
 /* Link */
 .ui.teal.labels .label:hover,
 a.ui.teal.label:hover {
-  background-color: #009c95 !important;
-  border-color: #009c95 !important;
+  filter: brightness(1.1);
   color: #FFFFFF !important;
 }
 
@@ -736,7 +735,7 @@ a.ui.teal.label:hover {
 
 /* Ribbon */
 .ui.teal.ribbon.label {
-  border-color: #00827c !important;
+  border-color: #187399 !important;
 }
 
 /* Basic */

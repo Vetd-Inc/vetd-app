@@ -51,6 +51,10 @@
 (def Form (component "Form"))
 (def FormField (component "Form" "Field"))
 (def FormGroup (component "Form" "Group"))
+(def FormInput (component "Form" "Input"))
+(def FormTextArea (component "Form" "TextArea"))
+(def FormSelect (component "Form" "Select"))
+(def FormButton (component "Form" "Button"))
 (def Button (component "Button"))
 (def ButtonGroup (component "Button" "Group"))
 (def ButtonOr (component "Button" "Or"))
@@ -82,6 +86,11 @@
 
 ;; Misc
 (def Image (component "Image"))
+(def Step (component "Step"))
+(def StepGroup (component "Step" "Group"))
+(def StepContent (component "Step" "Content"))
+(def StepTitle (component "Step" "Title"))
+(def StepDescription (component "Step" "Description"))
 
 ;; Accordion
 (def Accordion (component "Accordion"))

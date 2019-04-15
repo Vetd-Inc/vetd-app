@@ -21,27 +21,36 @@
                  text
                  [:> ui/Icon {:name "left arrow"}]]))
 
+;; note: there is another type of start-round button in category search results
 (defn c-start-round-button [{:keys [etype eid ename props]}]
   [:> ui/Popup
    {:content (str "Find and compare similar products to \""
                   ename "\" that meet your needs.")
     :header "What is a VetdRound?"
     :position "bottom left"
-    :trigger (r/as-element
-              [:> ui/Button
-               (merge {:onClick #(do (.stopPropagation %)
-                                     (rf/dispatch [:b/start-round etype eid]))
-                       :class "start-round-button"
-                       :color "blue"
-                       :icon true
-                       :labelPosition "left"}
-                      props)
-               "Start VetdRound"
-               [:> ui/Icon {:name "vetd-icon"}]])}])
+    :trigger
+    (r/as-element
+     [:> ui/Button
+      (merge {:onClick #(do (.stopPropagation %)
+                            (rf/dispatch
+                             [:b/start-round
+                              (str "Products Similar to " ename)
+                              etype
+                              eid]))
+              :class "start-round-button"
+              :color "blue"
+              :icon true
+              :labelPosition "left"}
+             props)
+      "Start VetdRound"
+      [:> ui/Icon {:name "vetd-icon"}]])}])
 
 (defn c-round-in-progress [{:keys [props]}]
   [:> ui/Label (merge {:color "teal"
-                       :size "medium"}
+                       :size "medium"
+                       :as "a"
+                       :onClick #(do (.stopPropagation %)
+                                     (rf/dispatch [:b/nav-rounds]))}
                       props)
    "VetdRound In Progress"])
 
@@ -53,6 +62,40 @@
     [c-start-round-button {:etype :product
                            :eid (:id product)
                            :ename (:pname product)}]))
+
+(defn c-round-status
+  [status]
+  "Display a round's status with a Step Group."
+  [:> ui/StepGroup {:size "small"
+                    :widths 3
+                    :style {:user-select "none"}}
+   [:> ui/Step (merge {:style {:cursor "pointer"}}
+                      (case status
+                        "initiation" {:active true}
+                        {}))
+    [:> ui/Icon {:name "clipboard outline"}]
+    [:> ui/StepContent
+     [:> ui/StepTitle "Initiation"]
+     [:> ui/StepDescription "Define your requirements"]]]
+   [:> ui/Step (merge {:style {:cursor "pointer"}}
+                      (case status
+                        "initiation" {:disabled true}
+                        "in-progress" {:active true}
+                        {}))
+    [:> ui/Icon {:name "chart bar"}]
+    [:> ui/StepContent
+     [:> ui/StepTitle "In Progress"]
+     [:> ui/StepDescription "Comparison and dialogue"]]]
+   [:> ui/Step (merge {:style {:cursor "pointer"}}
+                      (case status
+                        "initiation" {:disabled true}
+                        "in-progress" {:disabled true}
+                        "complete" {:active true}
+                        {}))
+    [:> ui/Icon {:name "check"}]
+    [:> ui/StepContent
+     [:> ui/StepTitle "Complete"]
+     [:> ui/StepDescription "Final decision"]]]])
 
 (defn c-setup-call-button
   [{:keys [id pname] :as product} {:keys [oname] :as vendor}]
