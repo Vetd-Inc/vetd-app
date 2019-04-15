@@ -132,7 +132,7 @@
      [ui/input {:value @value&
                 :type "number"
                 :on-change (fn [this]
-                              (reset! value& (-> this .-target .-value)))}]]))
+                             (reset! value& (-> this .-target .-value)))}]]))
 
 (defn c-prompt-field-enum
   [{:keys [fname ftype fsubtype list? response] :as prompt-field}]
@@ -190,21 +190,21 @@
               [:> ui/Form {:style {:width 400
                                    :margin-bottom 50}}])
           [:div
-	   (or doc-title title)
-	   (when product
-	     [:div.product-name (:pname product)])
-	   (when from-org
-	     [:div.org-name (:oname from-org)])
-	   (when from-user
-	     [:div.user-name (:uname from-user)])
-	   (for [p (sort-by :sort prompts)]
-	     ^{:key (str "prompt" (:id p))}
-	     [(hooks/c-prompt :default) p])
-	   (when show-submit
-	     [:> ui/Button {:color "blue"
-	                    :fluid true
-	                    :on-click save-fn}
-	      "Submit"])])))
+	         (or doc-title title)
+	         (when product
+	           [:div.product-name (:pname product)])
+	         (when from-org
+	           [:div.org-name (:oname from-org)])
+	         (when from-user
+	           [:div.user-name (:uname from-user)])
+	         (for [p (sort-by :sort prompts)]
+	           ^{:key (str "prompt" (:id p))}
+	           [(hooks/c-prompt :default) p])
+	         (when show-submit
+	           [:> ui/Button {:color "blue"
+	                          :fluid true
+	                          :on-click save-fn}
+	            "Submit"])])))
 
 
 (hooks/reg-hooks! hooks/c-prompt
@@ -215,3 +215,32 @@
                    ["s" "multi"] #'c-prompt-field-textarea
                    ["n" "int"] #'c-prompt-field-int
                    "e" #'c-prompt-field-enum})
+
+
+;; "data" can have term->field->value's
+;;          and/or prompt-id->field->value's
+;; E.g.,
+;; {:terms {:product/goal {:value "We need everything."}
+;;          :product/budget {:value 2400
+;;                           :period "Annual"}
+;;          :product/someterm {:value "Hello sir.\nWhat's up?"}}
+;;  :prompt-ids {126786722 {:value "Justanother Value"}}}
+(rf/reg-event-fx
+ :save-doc ; one of ftype or update-doc-id are required
+ (fn [{:keys [db]} [_ {:keys [ftype update-doc-id round-id]} data]]
+   {:ws-send
+    {:payload
+     {:cmd :save-doc
+      :return {:handler :save-doc-return}
+      :data data
+      :ftype ftype
+      :update-doc-id update-doc-id
+      :round-id round-id
+      :from-user-id (util/db->current-org-id db)}}}))
+
+(rf/reg-event-fx
+ :save-doc-return
+ (constantly
+  {:toast {:type "success"
+           :title "Form Saved"
+           :message "Your form has been saved."}}))

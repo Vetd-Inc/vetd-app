@@ -51,15 +51,12 @@
        [:p "Let us now a little more about who will be using this product and what features you are looking for. Then, we'll gather quotes for you to compare right away."]
        [:> ui/Form {:style {:padding-top 10}}
         [:> ui/FormTextArea
-         {:label "What are you hoping to accomplish with the product?"}]
+         {:label "What are you hoping to accomplish with the product?"
+          :on-change (fn [_ this] (reset! goal (.-value this)))}]
         [:> ui/FormField
          [:label "When would you like to start using the product?"]
          [:> ui/Dropdown {:selection true
-                          :on-change #(.log js/console %1 %2)
-                          :options [{:key "Within 1 Week"
-                                     :text "Within 1 Week"
-                                     :value "Within 1 Week"}
-                                    {:key "Within 2 Weeks"
+                          :options [{:key "Within 2 Weeks"
                                      :text "Within 2 Weeks"
                                      :value "Within 2 Weeks"}
                                     {:key "Within 3 Weeks"
@@ -76,31 +73,48 @@
                                      :value "Within 6 Months"}
                                     {:key "Within 12 Months"
                                      :text "Within 12 Months"
-                                     :value "Within 12 Months"}]}]]
+                                     :value "Within 12 Months"}]
+                          :on-change (fn [_ this]
+                                       (reset! start-using (.-value this)))}]]
         [:> ui/FormGroup {:widths "equal"}
          [:> ui/FormField
           [:label "What is your annual budget?"]
           [:> ui/Input {:labelPosition "right"}
            [:> ui/Label {:basic true} "$"]
-           [:input {:type "number"}]
+           [:input {:type "number"
+                    :on-change #(reset! budget (-> % .-target .-value))}]
            [:> ui/Label " per year"]]]
          [:> ui/FormField
           [:label "How many people will be using the product?"]
           [:> ui/Input {:labelPosition "right"}
-           [:input {:type "number"}]
+           [:input {:type "number"
+                    :on-change #(reset! num-users (-> % .-target .-value))}]
            [:> ui/Label "users"]]]]
         [:> ui/FormInput
-         {:label "What are your product requirements?"}]
+         {:label "What are your product requirements?"
+          :on-change (fn [_ this] (reset! requirements (.-value this)))}]
         [:> ui/FormField
          [:label "Are there specific products you want to include?"]
          [:> ui/Dropdown {:multiple true
                           :search true
                           :selection true
+                          ;; :on-change (fn [_ this]
+                          ;;              (reset! add-products-by-name (.-value this)))
                           :on-change #(.log js/console %1 %2)}]]
-        [:> ui/FormButton {:color "blue"}
-         "Submit"]]]
-      
-      )))
+        [:> ui/FormButton
+         {:color "blue"
+          :on-click
+          #(rf/dispatch
+            [:save-doc
+             {:ftype "round-initiation"
+              :round-id round-id}
+             {:rounds/goal {:value @goal}
+              :rounds/start-using {:value @start-using}
+              :rounds/num-users {:value @num-users}
+              :rounds/budget {:value @budget}
+              :rounds/requirements {:value @requirements}
+              :rounds/add-products-by-name {:value @add-products-by-name}}])}
+         "Submit"]]])))
 
 (defn c-round-initiation
   [{:keys [id status title products doc] :as round}]
