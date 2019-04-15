@@ -103,42 +103,52 @@
 (defn c-prompt-field-default
   [{:keys [fname ftype fsubtype list? response] :as prompt-field}]
   ;; TODO support multiple response fields (for where list? = true)
-  (let [value& (some-> response first :state)]
+  (let [value& (some-> response first :state)
+        {response-id :id prompt-field-id :pf-id} (first response)]
     [:> ui/FormField
      (when-not (= fname "value")
        [:label fname])
      [ui/input {:value @value&
                 :on-change (fn [this]
-                             (reset! value& (-> this .-target .-value)))}]]))
+                             (reset! value& (-> this .-target .-value)))
+                :attrs {:data-response-field-id response-id
+                        :data-prompt-field-id prompt-field-id}}]]))
 
 (defn c-prompt-field-textarea
   [{:keys [fname ftype fsubtype list? response] :as prompt-field}]
   ;; TODO support multiple response fields (for where list? = true)
-  (let [value& (some-> response first :state)]
+  (let [value& (some-> response first :state)
+        {response-id :id prompt-field-id :pf-id} (first response)]
     [:> ui/FormField
      (when-not (= fname "value")
        [:label fname])
      [:textarea {:value @value&
                  :on-change (fn [this]
-                              (reset! value& (-> this .-target .-value)))}]]))
+                              (reset! value& (-> this .-target .-value)))
+                 :data-response-field-id response-id
+                 :data-prompt-field-id prompt-field-id}]]))
 
 (defn c-prompt-field-int
   [{:keys [fname ftype fsubtype list? response] :as prompt-field}]
   ;; TODO support multiple response fields (for where list? = true)
-  (let [value& (some-> response first :state)]
+  (let [value& (some-> response first :state)
+        {response-id :id prompt-field-id :pf-id} (first response)]
     [:> ui/FormField
      (when-not (= fname "value")
        [:label fname])
      [ui/input {:value @value&
                 :type "number"
                 :on-change (fn [this]
-                              (reset! value& (-> this .-target .-value)))}]]))
+                             (reset! value& (-> this .-target .-value)))
+                :attrs {:data-response-field-id response-id
+                        :data-prompt-field-id prompt-field-id}}]]))
 
 (defn c-prompt-field-enum
   [{:keys [fname ftype fsubtype list? response] :as prompt-field}]
   ;; TODO support multiple response fields (for where list? = true)
   (let [value& (some-> response first :state)
-        enum-vals (rf/subscribe [:docs/enums fsubtype])]
+        enum-vals (rf/subscribe [:docs/enums fsubtype])
+        {response-id :id prompt-field-id :pf-id} (first response)]
     (fn [{:keys [fname ftype fsubtype list? response] :as prompt-field}]
       [:> ui/FormField
        (when-not (= fname "value")
@@ -147,7 +157,9 @@
                         :onChange #(reset! value& (.-value %2))
                         ;; :placeholder "Select Product"
                         :selection true
-                        :options @enum-vals}]])))
+                        :options @enum-vals
+                        :data-response-field-id response-id
+                        :data-prompt-field-id prompt-field-id}]])))
 
 (defn c-prompt-default
   [{:keys [prompt descr fields]}]

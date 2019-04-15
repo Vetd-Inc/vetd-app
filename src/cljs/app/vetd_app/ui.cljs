@@ -61,17 +61,18 @@
 (defn input
   "Creates a controlled text input with limited support for Semantic UI features.
   Fixes the bug where value updates cause cursor position to move to end of input."
-  [{:keys [value on-change class size icon autoFocus spellCheck placeholder]}]
+  [{:keys [value on-change class size icon autoFocus spellCheck placeholder attrs]}]
   [:div.ui.input
    {:class (str class " "
                 size " "
                 (when icon "icon"))}
-   [:input {:type "text"
-            :value value
-            :autoFocus autoFocus
-            :spellCheck spellCheck
-            :on-change on-change
-            :placeholder placeholder}]
+   [:input (merge {:type "text"
+                   :value value
+                   :autoFocus autoFocus
+                   :spellCheck spellCheck
+                   :on-change on-change
+                   :placeholder placeholder}
+                  attrs)]
    (when icon [:> Icon {:name icon}])])
 
 (def TextArea (component "TextArea"))

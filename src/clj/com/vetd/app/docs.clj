@@ -423,7 +423,6 @@
                                       {:prompt-id prompt-id
                                        :fields new-fields})))
 
-
 (defn update-responses-from-form-doc
   [{:keys [doc-id prompts]}]
   (let [old-responses (->> doc-id
