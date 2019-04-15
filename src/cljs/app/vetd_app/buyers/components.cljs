@@ -53,7 +53,7 @@
                        :onClick #(do (.stopPropagation %)
                                      (rf/dispatch [:b/nav-rounds]))}
                       props)
-   "VetdRound In Progress"])
+   "Product In VetdRound"])
 
 (defn c-rounds
   "Given a product map, display the Round data."
@@ -71,7 +71,7 @@
                     :size "small"
                     :widths 3
                     :style {:user-select "none"}}
-   [:> ui/Step (merge {:style {:cursor "pointer"}}
+   [:> ui/Step (merge {:style {:cursor "inherit"}}
                       (case status
                         "initiation" {:active true}
                         {}))
@@ -79,7 +79,7 @@
     [:> ui/StepContent
      [:> ui/StepTitle "Initiation"]
      [:> ui/StepDescription "Define your requirements"]]]
-   [:> ui/Step (merge {:style {:cursor "pointer"}}
+   [:> ui/Step (merge {:style {:cursor "inherit"}}
                       (case status
                         "initiation" {:disabled true}
                         "in-progress" {:active true}
@@ -88,7 +88,7 @@
     [:> ui/StepContent
      [:> ui/StepTitle "In Progress"]
      [:> ui/StepDescription "Comparison and dialogue"]]]
-   [:> ui/Step (merge {:style {:cursor "pointer"}}
+   [:> ui/Step (merge {:style {:cursor "inherit"}}
                       (case status
                         "initiation" {:disabled true}
                         "in-progress" {:disabled true}
