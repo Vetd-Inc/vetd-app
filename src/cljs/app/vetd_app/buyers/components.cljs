@@ -21,6 +21,7 @@
                  text
                  [:> ui/Icon {:name "left arrow"}]]))
 
+;; note: there is another type of start-round button in category search results
 (defn c-start-round-button [{:keys [etype eid ename props]}]
   [:> ui/Popup
    {:content (str "Find and compare similar products to \""
@@ -33,10 +34,9 @@
       (merge {:onClick #(do (.stopPropagation %)
                             (rf/dispatch
                              [:b/start-round
-                              (if (= :product etype)
-                                (str "Products Similar to " ename)
-                                (str (util/capitalize-words ename) " Products"))
-                              etype eid]))
+                              (str "Products Similar to " ename)
+                              etype
+                              eid]))
               :class "start-round-button"
               :color "blue"
               :icon true

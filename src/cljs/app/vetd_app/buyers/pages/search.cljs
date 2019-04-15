@@ -215,14 +215,22 @@
   [{:keys [cname id idstr rounds] :as cat}]
   [:div.category-search-result
    (if (empty? rounds)
-     [:> ui/Button {:on-click #(rf/dispatch [:b/start-round :category id])
+     [:> ui/Button {:on-click
+                    #(rf/dispatch
+                      [:b/start-round
+                       (str (util/capitalize-words cname) " Products")
+                       :category
+                       id])
                     :color "blue"
                     :icon true
                     :labelPosition "right"}
       (str "Start VetdRound for \"" cname "\"")
       [:> ui/Icon {:name "right arrow"}]]
      [:> ui/Label {:color "teal"
-                   :size "large"}
+                   :size "large"
+                   :as "a"
+                   :onClick #(do (.stopPropagation %)
+                                 (rf/dispatch [:b/nav-rounds]))}
       "VetdRound In Progress for \"" cname "\""])])
 
 (defn c-search-results
