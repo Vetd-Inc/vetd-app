@@ -309,7 +309,39 @@ textarea {
 }
 
 /* Round Grid */
-.round-grid.dragging {
+.round-grid .column {
+  width: 250px;
+  // height: 200;
+  flex: 0 0 auto;
+}
+.round-grid .cell {
+  height: 215px;
+  padding: 14px 28px 14px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  // transition: transform .05s ease-out !important;
+  // transform: scale(0.98);
+  
+  cursor: pointer;
+}
+.round-grid .column:last-of-type .cell {
+  padding-right: 0;
+}
+.round-grid .cell:hover {
+  // transform: scale(1);
+}
+.round-grid .cell .actions {
+  margin-top: 10px;
+  opacity: 0;
+  transition: opacity .1s .15s ease-in !important;
+}
+.round-grid .cell:hover .actions {
+  opacity: 1;
+}
+.round-grid.dragging,
+.round-grid.dragging .cell {
   cursor: grabbing !important;
 }
 
