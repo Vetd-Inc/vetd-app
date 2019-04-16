@@ -57,8 +57,11 @@
   margin: 0em 0em 0.28571429rem 0em;
   color: rgba(0, 0, 0, 0.87);
   font-size: 0.92857143em;
-  font-weight: bold;
+  font-weight: 400;
   text-transform: none;
+}
+.ui.form .field .ui.label {
+  font-weight: 400;
 }
 
 /*--------------------

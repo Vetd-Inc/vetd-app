@@ -83,13 +83,13 @@
            [:> ui/Label {:basic true} "$"]
            [:input {:type "number"
                     :on-change #(reset! budget (-> % .-target .-value))}]
-           [:> ui/Label " per year"]]]
+           [:> ui/Label {:basic true} " per year"]]]
          [:> ui/FormField
           [:label "How many people will be using the product?"]
           [:> ui/Input {:labelPosition "right"}
            [:input {:type "number"
                     :on-change #(reset! num-users (-> % .-target .-value))}]
-           [:> ui/Label "users"]]]]
+           [:> ui/Label {:basic true} "users"]]]]
         [:> ui/FormInput
          {:label "What are your product requirements?"
           :on-change (fn [_ this] (reset! requirements (.-value this)))}]
@@ -154,7 +154,7 @@
                                              [:id :prompt-field-fname :idx
                                               :sval :nval :dval]]]]]]]]]}])]
     (fn []
-      [:div.container-with-sidebar
+      [:div.container-with-sidebar.round-details
        [:div.sidebar
         [:div {:style {:padding "0 15px"}}
          [bc/c-back-button {:on-click #(rf/dispatch [:b/nav-rounds])}
