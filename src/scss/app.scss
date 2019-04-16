@@ -322,6 +322,9 @@ textarea {
   // height: 200;
   flex: 0 0 auto;
 }
+.round-grid .column:first-of-type {
+  margin-left: 6px;
+}
 .round-grid .column .requirement {
   height: 38px;
   display: flex;
