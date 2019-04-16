@@ -150,44 +150,81 @@
 (defn c-round-grid
   [{:keys [id status title products] :as round}]
   (let []
-    (fn []
-      (if (or true (seq products))
-        [:div.round-grid
-         {:style {:display "flex"
-                  :flex-wrap "nowrap"   ; unnecessary?
-                  :overflow-x "auto"
-                  :box-sizing "border-box"
-                  ;; :border "20px solid transparent"
-                  :position "relative"
-                  }}
-         (for [i (range 40)]
-           [:div {:style {:width 250
-                          
-                          ;; :height 200
+    (r/create-class
+     {:component-did-mount
+      (fn [this]
+        (let [node (r/dom-node this)
+              mousedown? (atom false)
+              x-at-mousedown (atom nil)
+              scrollleft-at-mousedown (atom nil)
+              handle-mousedown
+              (fn [e]
+                (reset! x-at-mousedown (- (.-pageX e) (.-offsetLeft node)))
+                (reset! scrollleft-at-mousedown (.-scrollLeft node))
+                (reset! mousedown? true))
+              handle-mouseup
+              (fn [e]
+                (reset! mousedown? false))
+              handle-mousemove
+              (fn [e]
+                (when @mousedown?
+                  (do (.preventDefault e)
+                      (aset node
+                            "scrollLeft"
+                            (- @scrollleft-at-mousedown
+                               (* 3 (- (- (.-pageX e) (.-offsetLeft node))
+                                       @x-at-mousedown)))))))]
+          (.addEventListener node "mousedown" handle-mousedown)
+          (.addEventListener node "mouseup" handle-mouseup)
+          (.addEventListener node "mouseleave" handle-mouseup)
+          ;; add mouseleave?
+          (.addEventListener node "mousemove" handle-mousemove)))
+      
+      :reagent-render
+      (fn []
+        (if (or true (seq products))
+          [:div.round-grid
+           {:style {:display "flex"
+                    :flex-wrap "nowrap"     ; unnecessary?
+                    :overflow-x "auto"
+                    :box-sizing "border-box"
+                    ;; :border "20px solid transparent"
+                    :position "relative"
+                    :cursor "move"
+                    }}
+           (for [i (range 40)]
+             ^{:key i}
+             [:div {:style {:width 250
+                            
+                            ;; :height 200
 
-                          :flex "0 0 auto"
-                          
-                          ;; :float "left"
-                          }}
-            [:h3 "Product Name"]
-            [:p "Lorem ipsum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum."]
-            [:p "Lorem ipsum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum."]
-            [:p "Lorem ipsum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum."]
-            [:p "Lorem ipsum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum."]
-            [:p "Lorem ipsum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum."]])
-         [:div {:style {:clear "both"}}]]
-        [:<>
-         [:p [:em "Your requirements have been submitted."]]
-         [:p "We are gathering information for you to review from all relevant vendors. Check back soon for updates."]]))))
+                            :flex "0 0 auto"
+                            
+                            ;; :float "left"
+                            }}
+              [:h4 "Subscription Billing"]
+              [:p "Lorem ipsum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum."]
+              [:p "Lorem ipsum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum."]
+              [:p "Lorem ipsum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum."]
+              [:p "Lorem ipsum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum."]
+              [:p "Lorem ipsum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum."]])
+           [:div {:style {:clear "both"}}]]
+          [:<>
+           [:p [:em "Your requirements have been submitted."]]
+           [:p "We are gathering information for you to review from all relevant vendors. Check back soon for updates."]]))})))
 
 (defn c-round
   "Component to display Round details."
   [{:keys [id status title products] :as round}]
   (let [status "in-progress"] ; DEV ONLY, REMOVE
     [:<>
-     [bc/c-round-status status]
+     
      [:> ui/Segment {:class "detail-container"}
-      [:h1 title]
+      [:h1 {:style {:margin-top 0}}
+       title]]
+     [:> ui/Segment {:class "detail-container"}
+      [bc/c-round-status status]]
+     [:> ui/Segment {:class "detail-container"}
       (case status
         "initiation" [c-round-initiation round]
         "in-progress" [c-round-grid round]
@@ -214,6 +251,7 @@
          [:div {:style {:padding "0 15px"}}
           [bc/c-back-button {:on-click #(rf/dispatch [:b/nav-rounds])}
            "All VetdRounds"]]
+         [:div {:style {:height 190}}] ; spacer
          (when-not (= :loading @rounds&)
            [:<>
             [:> ui/Segment
@@ -226,14 +264,86 @@
                (r/as-element
                 [:> ui/Button {:onClick #(do (.stopPropagation %)
                                              #_(rf/dispatch [:b/do-something]))
-                               :class "start-round-button"
-                               :color "blue"
+                               :color "vetd-gradient"
+                               :fluid true
                                :icon true
                                :labelPosition "left"}
-                 "Some Action"
-                 [:> ui/Icon {:name "vetd-icon"}]])}]]
+                 "Declare Winner"
+                 [:> ui/Icon {:name "checkmark"}]])}]
+             [:> ui/Popup
+              {:content "what is does"
+               :header "What is it Called?"
+               :position "bottom left"
+               :trigger
+               (r/as-element
+                [:> ui/Button {:onClick #(do (.stopPropagation %)
+                                             #_(rf/dispatch [:b/do-something]))
+                               :color "grey"
+                               :fluid true
+                               :icon true
+                               :labelPosition "left"}
+                 "Disqualify"
+                 [:> ui/Icon {:name "close"}]])}]
+             [:> ui/Popup
+              {:content (str "Let us setup a call for you with " 88888
+                             " to discuss " 88888 ".")
+               :header "Setup a Call"
+               :position "bottom left"
+               :trigger (r/as-element
+                         [:> ui/Button { ;; :onClick #(rf/dispatch [:b/setup-call id pname])
+                                        :color "grey"
+                                        :fluid true
+                                        :icon true
+                                        :labelPosition "left"
+                                        :style {:margin-right 15}}
+                          "Setup a Call"
+                          [:> ui/Icon {:name "left call"}]])}]
+             ]
             [:> ui/Segment
-             [:h3 "Authorize.Net"]]]
+             [:h3 "Authorize.Net"]
+             [:> ui/Popup
+              {:content "what is does"
+               :header "What is it Called?"
+               :position "bottom left"
+               :trigger
+               (r/as-element
+                [:> ui/Button {:onClick #(do (.stopPropagation %)
+                                             #_(rf/dispatch [:b/do-something]))
+                               :color "vetd-gradient"
+                               :fluid true
+                               :icon true
+                               :labelPosition "left"}
+                 "Declare Winner"
+                 [:> ui/Icon {:name "checkmark"}]])}]
+             [:> ui/Popup
+              {:content "what is does"
+               :header "What is it Called?"
+               :position "bottom left"
+               :trigger
+               (r/as-element
+                [:> ui/Button {:onClick #(do (.stopPropagation %)
+                                             #_(rf/dispatch [:b/do-something]))
+                               :color "grey"
+                               :fluid true
+                               :icon true
+                               :labelPosition "left"}
+                 "Disqualify"
+                 [:> ui/Icon {:name "close"}]])}]
+             [:> ui/Popup
+              {:content (str "Let us setup a call for you with " 88888
+                             " to discuss " 88888 ".")
+               :header "Setup a Call"
+               :position "bottom left"
+               :trigger (r/as-element
+                         [:> ui/Button { ;; :onClick #(rf/dispatch [:b/setup-call id pname])
+                                        :color "grey"
+                                        :fluid true
+                                        :icon true
+                                        :labelPosition "left"
+                                        :style {:margin-right 15}}
+                          "Setup a Call"
+                          [:> ui/Icon {:name "left call"}]])}]
+             ]]
            #_(let [{:keys [vendor rounds] :as product} (-> @products& :products first)]
                (when (empty? (:rounds product))
                  [:> ui/Segment
