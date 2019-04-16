@@ -308,6 +308,11 @@ textarea {
   }
 }
 
+/* Round Grid */
+.round-grid.dragging {
+  cursor: grabbing !important;
+}
+
 
 /* Loading Spinner */
 div.spinner {

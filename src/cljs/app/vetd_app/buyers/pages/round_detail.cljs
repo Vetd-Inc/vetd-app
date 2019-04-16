@@ -159,11 +159,13 @@
               scrollleft-at-mousedown (atom nil)
               handle-mousedown
               (fn [e]
+                (.add (.-classList node) "dragging")
                 (reset! x-at-mousedown (- (.-pageX e) (.-offsetLeft node)))
                 (reset! scrollleft-at-mousedown (.-scrollLeft node))
                 (reset! mousedown? true))
               handle-mouseup
               (fn [e]
+                (.remove (.-classList node) "dragging")
                 (reset! mousedown? false))
               handle-mousemove
               (fn [e]
@@ -185,23 +187,17 @@
         (if (or true (seq products))
           [:div.round-grid
            {:style {:display "flex"
-                    :flex-wrap "nowrap"     ; unnecessary?
+                    :flex-wrap "nowrap" ; unnecessary?
                     :overflow-x "auto"
                     :box-sizing "border-box"
                     ;; :border "20px solid transparent"
                     :position "relative"
-                    :cursor "move"
-                    }}
-           (for [i (range 40)]
+                    :cursor "ew-resize"}}
+           (for [i (range 8)]
              ^{:key i}
              [:div {:style {:width 250
-                            
                             ;; :height 200
-
-                            :flex "0 0 auto"
-                            
-                            ;; :float "left"
-                            }}
+                            :flex "0 0 auto"}}
               [:h4 "Subscription Billing"]
               [:p "Lorem ipsum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum."]
               [:p "Lorem ipsum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum."]
@@ -301,6 +297,51 @@
              ]
             [:> ui/Segment
              [:h3 "Authorize.Net"]
+             [:> ui/Popup
+              {:content "what is does"
+               :header "What is it Called?"
+               :position "bottom left"
+               :trigger
+               (r/as-element
+                [:> ui/Button {:onClick #(do (.stopPropagation %)
+                                             #_(rf/dispatch [:b/do-something]))
+                               :color "vetd-gradient"
+                               :fluid true
+                               :icon true
+                               :labelPosition "left"}
+                 "Declare Winner"
+                 [:> ui/Icon {:name "checkmark"}]])}]
+             [:> ui/Popup
+              {:content "what is does"
+               :header "What is it Called?"
+               :position "bottom left"
+               :trigger
+               (r/as-element
+                [:> ui/Button {:onClick #(do (.stopPropagation %)
+                                             #_(rf/dispatch [:b/do-something]))
+                               :color "grey"
+                               :fluid true
+                               :icon true
+                               :labelPosition "left"}
+                 "Disqualify"
+                 [:> ui/Icon {:name "close"}]])}]
+             [:> ui/Popup
+              {:content (str "Let us setup a call for you with " 88888
+                             " to discuss " 88888 ".")
+               :header "Setup a Call"
+               :position "bottom left"
+               :trigger (r/as-element
+                         [:> ui/Button { ;; :onClick #(rf/dispatch [:b/setup-call id pname])
+                                        :color "grey"
+                                        :fluid true
+                                        :icon true
+                                        :labelPosition "left"
+                                        :style {:margin-right 15}}
+                          "Setup a Call"
+                          [:> ui/Icon {:name "left call"}]])}]
+             ]
+            [:> ui/Segment
+             [:h3 "Dollar Tree"]
              [:> ui/Popup
               {:content "what is does"
                :header "What is it Called?"
