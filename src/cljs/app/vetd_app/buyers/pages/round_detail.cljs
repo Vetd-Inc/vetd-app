@@ -230,11 +230,11 @@
        title]]
      [:> ui/Segment {:class "detail-container"}
       [bc/c-round-status status]]
-     [:> ui/Segment {:class "detail-container"}
-      (case status
-        "initiation" [c-round-initiation round]
-        "in-progress" [c-round-grid round]
-        "complete" [c-round-grid round])]]))
+     (case status
+       "initiation" [:> ui/Segment {:class "detail-container"}
+                     [c-round-initiation round]]
+       "in-progress" [c-round-grid round]
+       "complete" [c-round-grid round])]))
 
 (defn c-page []
   (let [round-idstr& (rf/subscribe [:round-idstr])

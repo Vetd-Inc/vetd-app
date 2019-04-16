@@ -315,16 +315,24 @@ textarea {
   flex: 0 0 auto;
 }
 .round-grid .cell {
-  height: 215px;
-  padding: 14px 28px 14px 0;
+  height: 187px;
+  padding: 14px 14px 14px 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   // transition: transform .05s ease-out !important;
   // transform: scale(0.98);
-  
   cursor: pointer;
+
+
+  box-shadow: 0 2px 14px 0 rgba(50,50,50,0.1) !important;
+  border: none !important;  
+  background: #fff;
+  margin: 14px 14px 14px 0;
+  // box-shadow: 0 2px 14px 0 rgba(50, 50, 50, 0.1) !important;
+  
+  
 }
 .round-grid .column:last-of-type .cell {
   padding-right: 0;
