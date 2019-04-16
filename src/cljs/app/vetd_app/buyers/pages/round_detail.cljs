@@ -186,17 +186,12 @@
       (fn []
         (if (or true (seq products))
           [:div.round-grid
-           {:style {:display "flex"
-                    :flex-wrap "nowrap" ; unnecessary?
-                    :overflow-x "auto"
-                    :box-sizing "border-box"
-                    ;; :border "20px solid transparent"
-                    :position "relative"
-                    :cursor "ew-resize"}}
+           {:style {}}
            (for [i (range 8)]
              ^{:key i}
              [:div.column 
-              [:h4 (rand-nth ["Price Estimate" "Subscription Billing" "Parent / Child Hierarchial" "Prepay Option" "Integration with GMail" "Coffee Flavors"])]
+              [:h4.requirement
+               (rand-nth ["Price Estimate Without a Long Title" "Subscription Billing" "Parent / Child Hierarchial" "Prepay Option" "Integration with GMail" "Coffee Flavors"])]
               (for [j (range 4)]
                 ^{:key (str "j" j)}
                 [:div.cell
@@ -225,10 +220,12 @@
   [{:keys [id status title products] :as round}]
   (let [status "in-progress"] ; DEV ONLY, REMOVE
     [:<>
-     [:> ui/Segment {:class "detail-container"}
+     [:> ui/Segment {:class "detail-container"
+                     :style {:margin-left 20}}
       [:h1 {:style {:margin-top 0}}
        title]]
-     [:> ui/Segment {:class "detail-container"}
+     [:> ui/Segment {:class "detail-container"
+                     :style {:margin-left 20}}
       [bc/c-round-status status]]
      (case status
        "initiation" [:> ui/Segment {:class "detail-container"}
@@ -253,7 +250,7 @@
     (fn []
       [:<>
        [:div.container-with-sidebar.round-details
-        [:div.sidebar
+        [:div.sidebar {:style {:margin-right 0}}
          [:div {:style {:padding "0 15px"}}
           [bc/c-back-button {:on-click #(rf/dispatch [:b/nav-rounds])}
            "All VetdRounds"]]

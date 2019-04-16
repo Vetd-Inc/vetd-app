@@ -73,7 +73,7 @@
   }
 
   .round-grid {
-    width: 723px - ($sidebar-width + $sidebar-margin-right);
+    width: 723px - ($sidebar-width + $segment-padding * 2);
     margin-left: auto !important;
     margin-right: auto !important;
   }
@@ -97,7 +97,7 @@
   }
 
   .round-grid {
-    width: 933px - ($sidebar-width + $sidebar-margin-right);
+    width: 933px - ($sidebar-width + $segment-padding * 2);
     margin-left: auto !important;
     margin-right: auto !important;
   }
@@ -121,7 +121,8 @@
   }
 
   .round-grid {
-    width: 1127px - ($sidebar-width + $sidebar-margin-right + $segment-padding * 2);
+    // width: 1127px - ($sidebar-width + $sidebar-margin-right + $segment-padding * 2);
+    width: 1127px - ($sidebar-width + $segment-padding * 2);
     margin-left: auto !important;
     margin-right: auto !important;
   }

@@ -309,14 +309,28 @@ textarea {
 }
 
 /* Round Grid */
+.round-grid {
+  display: flex;
+  flex-wrap: nowrap; // unnecessary?
+  overflow-x: auto;
+  box-sizing: border-box;
+  position: relative;
+  cursor: ew-resize;
+}
 .round-grid .column {
   width: 250px;
   // height: 200;
   flex: 0 0 auto;
 }
+.round-grid .column .requirement {
+  height: 38px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
 .round-grid .cell {
-  height: 187px;
-  padding: 14px 14px 14px 0;
+  height: 201px;
+  padding: 14px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -327,7 +341,8 @@ textarea {
 
 
   box-shadow: 0 2px 14px 0 rgba(50,50,50,0.1) !important;
-  border: none !important;  
+  border: none !important;
+  border-radius: 4px;
   background: #fff;
   margin: 14px 14px 14px 0;
   // box-shadow: 0 2px 14px 0 rgba(50, 50, 50, 0.1) !important;
