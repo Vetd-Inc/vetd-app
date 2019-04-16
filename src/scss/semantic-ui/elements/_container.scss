@@ -8,11 +8,24 @@
  *
  */
 
+.round-grid {
+  
+}
+
+// .round-grid::-webkit-scrollbar {
+//     height: 2.4rem;
+// }
+
+// .ground-grid::-webkit-scrollbar-thumb {
+//     background-color: #66a3c7;
+//     border: 0.8rem solid #0079bf;
+//     border-top-width: 0;
+// }
+
 
 /*******************************
             Container
 *******************************/
-
 
 /* All Sizes */
 .ui.container {
@@ -36,6 +49,10 @@
   .ui.very.relaxed.grid.container {
     width: auto !important;
   }
+
+  .round-grid {
+    width: auto !important;
+  }
 }
 
 /* Tablet */
@@ -53,6 +70,12 @@
   }
   .ui.very.relaxed.grid.container {
     width: calc( 723px  +  5rem ) !important;
+  }
+
+  .round-grid {
+    width: 723px - ($sidebar-width + $sidebar-margin-right);
+    margin-left: auto !important;
+    margin-right: auto !important;
   }
 }
 
@@ -72,6 +95,12 @@
   .ui.very.relaxed.grid.container {
     width: calc( 933px  +  5rem ) !important;
   }
+
+  .round-grid {
+    width: 933px - ($sidebar-width + $sidebar-margin-right);
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
 }
 
 /* Large Monitor */
@@ -89,6 +118,12 @@
   }
   .ui.very.relaxed.grid.container {
     width: calc( 1127px  +  5rem ) !important;
+  }
+
+  .round-grid {
+    width: 1127px - ($sidebar-width + $sidebar-margin-right + $segment-padding * 2);
+    margin-left: auto !important;
+    margin-right: auto !important;
   }
 }
 

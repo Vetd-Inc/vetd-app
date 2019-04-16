@@ -63,8 +63,8 @@ a.teal:hover {
   margin-top: 0 !important;
 }
 .sidebar {
-  width: 223px;
-  margin-right: 20px;
+  width: $sidebar-width;
+  margin-right: $sidebar-margin-right;
   font-weight: 400 !important;
 }
 .sidebar > .checkbox {
@@ -82,9 +82,9 @@ a.teal:hover {
   box-shadow: 0 2px 14px 0 rgba(50,50,50,0.1) !important;
   border: none !important;
 }
-.sidebar .segment > .button:not(:first-child),
-.sidebar .segment > .label:not(:first-child) {
-  margin-top: 1em;
+.sidebar .segment > .button:not(:first-of-type),
+.sidebar .segment > .label:not(:first-of-type) {
+  margin-top: $segment-padding;
 }
 
 .product-title {

@@ -148,20 +148,50 @@
     [c-round-initiation-form id]))
 
 (defn c-round-grid
-  [round]
-  "Show the grid.")
+  [{:keys [id status title products] :as round}]
+  (let []
+    (fn []
+      (if (or true (seq products))
+        [:div.round-grid
+         {:style {:display "flex"
+                  :flex-wrap "nowrap"   ; unnecessary?
+                  :overflow-x "auto"
+                  :box-sizing "border-box"
+                  ;; :border "20px solid transparent"
+                  :position "relative"
+                  }}
+         (for [i (range 40)]
+           [:div {:style {:width 250
+                          
+                          ;; :height 200
+
+                          :flex "0 0 auto"
+                          
+                          ;; :float "left"
+                          }}
+            [:h3 "Product Name"]
+            [:p "Lorem ipsum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum."]
+            [:p "Lorem ipsum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum."]
+            [:p "Lorem ipsum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum."]
+            [:p "Lorem ipsum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum."]
+            [:p "Lorem ipsum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum lorem ispum."]])
+         [:div {:style {:clear "both"}}]]
+        [:<>
+         [:p [:em "Your requirements have been submitted."]]
+         [:p "We are gathering information for you to review from all relevant vendors. Check back soon for updates."]]))))
 
 (defn c-round
   "Component to display Round details."
   [{:keys [id status title products] :as round}]
-  [:<>
-   [bc/c-round-status status]
-   [:> ui/Segment {:class "detail-container"}
-    [:h1 title]
-    (case status
-      "initiation" [c-round-initiation round]
-      "in-progress" [c-round-grid round]
-      "complete" [c-round-grid round])]])
+  (let [status "in-progress"] ; DEV ONLY, REMOVE
+    [:<>
+     [bc/c-round-status status]
+     [:> ui/Segment {:class "detail-container"}
+      [:h1 title]
+      (case status
+        "initiation" [c-round-initiation round]
+        "in-progress" [c-round-grid round]
+        "complete" [c-round-grid round])]]))
 
 (defn c-page []
   (let [round-idstr& (rf/subscribe [:round-idstr])
@@ -178,24 +208,46 @@
                                              [:id :prompt-field-fname :idx
                                               :sval :nval :dval]]]]]]]]]}])]
     (fn []
-      [:div.container-with-sidebar.round-details
-       [:div.sidebar
-        [:div {:style {:padding "0 15px"}}
-         [bc/c-back-button {:on-click #(rf/dispatch [:b/nav-rounds])}
-          "All VetdRounds"]]
-        #_(when-not (= :loading @products&)
-            (let [{:keys [vendor rounds] :as product} (-> @products& :products first)]
-              (when (empty? (:rounds product))
-                [:> ui/Segment
-                 [bc/c-start-round-button {:etype :product
-                                           :eid (:id product)
-                                           :ename (:pname product)
-                                           :props {:fluid true}}]
-                 [c-preposal-request-button product]
-                 [bc/c-setup-call-button product vendor]
-                 [bc/c-ask-a-question-button product vendor]])))]
-       [:div.inner-container
-        (if (= :loading @rounds&)
-          [cc/c-loader]
-          (let [round (-> @rounds& :rounds first)]
-            [c-round round]))]])))
+      [:<>
+       [:div.container-with-sidebar.round-details
+        [:div.sidebar
+         [:div {:style {:padding "0 15px"}}
+          [bc/c-back-button {:on-click #(rf/dispatch [:b/nav-rounds])}
+           "All VetdRounds"]]
+         (when-not (= :loading @rounds&)
+           [:<>
+            [:> ui/Segment
+             [:h3 "Stripe Billing"]
+             [:> ui/Popup
+              {:content "what is does"
+               :header "What is it Called?"
+               :position "bottom left"
+               :trigger
+               (r/as-element
+                [:> ui/Button {:onClick #(do (.stopPropagation %)
+                                             #_(rf/dispatch [:b/do-something]))
+                               :class "start-round-button"
+                               :color "blue"
+                               :icon true
+                               :labelPosition "left"}
+                 "Some Action"
+                 [:> ui/Icon {:name "vetd-icon"}]])}]]
+            [:> ui/Segment
+             [:h3 "Authorize.Net"]]]
+           #_(let [{:keys [vendor rounds] :as product} (-> @products& :products first)]
+               (when (empty? (:rounds product))
+                 [:> ui/Segment
+                  [bc/c-start-round-button {:etype :product
+                                            :eid (:id product)
+                                            :ename (:pname product)
+                                            :props {:fluid true}}]
+                  [c-preposal-request-button product]
+                  [bc/c-setup-call-button product vendor]
+                  [bc/c-ask-a-question-button product vendor]])))]
+        [:div.inner-container
+         (if (= :loading @rounds&)
+           [cc/c-loader]
+           (let [round (-> @rounds& :rounds first)]
+             [c-round round]))]]
+
+       ])))
