@@ -5,6 +5,10 @@ body {
   font-size: 14px;
   font-weight: 300;
   color: #444;
+
+  // avoid jarring displacement when modal appears
+  // or when search results cause page to lengthen
+  overflow-y: scroll !important;
 }
 
 a {
@@ -63,8 +67,8 @@ a.teal:hover {
   margin-top: 0 !important;
 }
 .sidebar {
-  width: 223px;
-  margin-right: 20px;
+  width: $sidebar-width;
+  margin-right: $sidebar-margin-right;
   font-weight: 400 !important;
 }
 .sidebar > .checkbox {
@@ -82,9 +86,9 @@ a.teal:hover {
   box-shadow: 0 2px 14px 0 rgba(50,50,50,0.1) !important;
   border: none !important;
 }
-.sidebar .segment > .button:not(:first-child),
-.sidebar .segment > .label:not(:first-child) {
-  margin-top: 1em;
+.sidebar .segment > .button:not(:first-of-type),
+.sidebar .segment > .label:not(:first-of-type) {
+  margin-top: $segment-padding;
 }
 
 .product-title {
@@ -298,6 +302,97 @@ textarea {
 }
 
 
+/* Round Initiation Form */
+.ui.form.round-initiation-form {
+  margin-top: 20px;
+
+  > .field,
+  > .fields {
+    margin-top: 15px;
+  }
+}
+
+/* Round Grid */
+$cell-width: 250px;
+$cell-height: 201px;
+
+.round-grid {
+  display: flex;
+  flex-wrap: nowrap; // unnecessary?
+  overflow-x: auto;
+  box-sizing: border-box;
+  position: relative;
+  cursor: ew-resize;
+
+  .column {
+    width: $cell-width;
+    flex: 0 0 auto;
+    
+    &:first-of-type {
+      margin-left: 6px;
+    }
+    .requirement {
+      width: $cell-width - 14px;
+      height: 38px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+  }
+
+  // &:hover .column:not(:hover) {
+  //   opacity: 0.6;
+  // }
+  
+  .cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: $cell-height;
+    padding: 14px;
+    margin: 14px 14px 14px 0;
+    box-shadow: 0 2px 14px 0 rgba(50,50,50,0.1) !important;
+    border: none !important;
+    border-radius: 4px;
+    background: #fff;
+    font-weight: 400;
+    transition: transform .05s ease-out !important;
+    transform: scale(0.98);
+    
+    &:hover {
+      transform: scale(1);
+    }
+    .text {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      text-align: center;
+      padding-top: 14px;
+    }
+    .actions {
+      margin-top: 10px;
+      opacity: 0.3;
+      transition: opacity .05s ease-out !important;
+    }
+    &:hover .actions {
+      opacity: 1;
+    }
+    
+  }
+
+  .column:last-of-type .cell {
+    padding-right: 0;
+  }
+  
+  &.dragging,
+  &.dragging .cell {
+    cursor: grabbing !important;
+  }
+}
 
 /* Loading Spinner */
 div.spinner {
