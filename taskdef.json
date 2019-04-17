@@ -42,7 +42,7 @@
         },
         {
           "name": "DB_HOST",
-          "value": "vetd-db.chwslkxwld9a.us-east-1.rds.amazonaws.com"
+          "value": "vetd-db-us-east-1e.chwslkxwld9a.us-east-1.rds.amazonaws.com"
         },
         {
           "name": "DB_PORT",
@@ -182,6 +182,6 @@
   ],
   "networkMode": "awsvpc",
   "cpu": "1024",
-  "revision": 142,
+  "revision": 151,
   "volumes": []
 }
