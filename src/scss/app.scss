@@ -313,6 +313,9 @@ textarea {
 }
 
 /* Round Grid */
+$cell-width: 250px;
+$cell-height: 201px;
+
 .round-grid {
   display: flex;
   flex-wrap: nowrap; // unnecessary?
@@ -322,13 +325,14 @@ textarea {
   cursor: ew-resize;
 
   .column {
-    width: 250px;
+    width: $cell-width;
     flex: 0 0 auto;
     
     &:first-of-type {
       margin-left: 6px;
     }
     .requirement {
+      width: $cell-width - 14px;
       height: 38px;
       display: flex;
       flex-direction: column;
@@ -346,7 +350,7 @@ textarea {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    height: 201px;
+    height: $cell-height;
     padding: 14px;
     margin: 14px 14px 14px 0;
     box-shadow: 0 2px 14px 0 rgba(50,50,50,0.1) !important;
