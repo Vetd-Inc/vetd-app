@@ -204,3 +204,11 @@
   (->> (s/split string #"\b")
        (map s/capitalize)
        s/join))
+
+;; TODO truncate leaving words intact (i.e., don't split a word)
+(defn truncate-text
+  "Truncates text, adding ellipsis."
+  [string length]
+  (str (subs string 0 length)
+       (when (> (count string) length)
+         "...")))

@@ -196,9 +196,13 @@
                 ^{:key (str "j" j)}
                 [:div.cell
                  [:div.text
-                  (rand-nth ["Lorem ipsum lorem ispum lorem ispum lorem ispum loremum lorem ispum lorem m ispum."
-                             "Yes"
-                             "Lorem ipsum lorem ispum."])]
+                  (util/truncate-text
+                   (rand-nth ["Lorem ipsum lorem ispum lorem ispum lorem ispum loremum lorem ispum lorem m ispum."
+                              "Lorem ipsum lorem ispum lorem ispum lorem ispum loremum lorem ispum lorem m ispum. Lorem ipsum lorem ispum lorem ispum lorem ispum loremum lorem ispum lorem m ispum."
+                              "Ipsum lorem ispum lorem ispum lorem ispum lorem m ispum. Lorem ipsum lorem ispum lorem ispum lorem ispum loremum lorem ispum lorem m ispum. Ipsum lorem ispum lorem ispum lorem ipsum ipsum ipsum ipsum ispum loremum lorem ispum lorem m ispum. Lorem ipsum lorem ispum lorem ispum lorem ispum loremum lorem ispum lorem m ispum."
+                              "Yes"
+                              "Lorem ipsum lorem ispum."])
+                   150)]
                  [:div.actions
                   [:> ui/Button {:icon "chat"
                                  :basic true
@@ -258,11 +262,11 @@
          [:div {:style {:height 154}}] ; spacer
          [:div {:style {:padding "0 15px"}}
           [:> ui/Button {:color "teal"
-                        :icon true
-                        :fluid true
-                        :labelPosition "left"}
-          "Add Requirement"
-          [:> ui/Icon {:name "plus"}]]]
+                         :icon true
+                         :fluid true
+                         :labelPosition "left"}
+           "Add Requirement"
+           [:> ui/Icon {:name "plus"}]]]
          (when-not (= :loading @rounds&)
            [:<>
             [:> ui/Segment
