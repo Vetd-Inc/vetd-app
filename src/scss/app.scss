@@ -338,6 +338,7 @@ $cell-height: 201px;
       flex-direction: column;
       justify-content: center;
       align-items: center;
+      text-align: center;
     }
   }
 
@@ -369,6 +370,8 @@ $cell-height: 201px;
       display: flex;
       flex-direction: column;
       justify-content: center;
+      text-align: center;
+      padding-top: 14px;
     }
     .actions {
       margin-top: 10px;

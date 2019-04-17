@@ -189,29 +189,26 @@
         (if (or true (seq products))
           [:<>
            [:div.round-grid
-            (for [i (range 8)]
-              ^{:key i}
+            (for [dummy ["Pricing Estimate" "Free Trial" "Current Customers" "Integration with GMail"
+                         "Subscription Billing" "One Time Billing" "Parent / Child Heirarchical Billing"]]
+              ^{:key dummy}
               [:div.column 
-               [:h4.requirement {:style {:position "sticky"
-                                         :top 0}}
-                (nth ["Subscription Billing" "Free Trial Details" "Prepay Option"  "Integration with GMail" "Example Of A Longer Requirement Title Is Here" "Coffee Flavors"]
-                     (mod i 6))]
-               (for [j (range 4)]
+               [:h4.requirement dummy]
+               (for [j (range 4)
+                     :let [resps (get {"Pricing Estimate" ["$45 / mo." "$200 / mo." "If you are in the $0-2M pricing tier, the base fee is $4,000." "Unavailable"]
+                                       "Free Trial" ["First 30 days." "Yes, with limited features." "Yes" "Yes"]
+                                       "Current Customers" ["Google, Patreon, YouTube, Vetd, Make Offices" "Apple, Cisco Enterprise, Symantec, Tommy's Coffee" "Heinz, Philadelphia Business Group, Wizards of the Coast" "None currently."]
+                                       "Integration with GMail" ["Yes" "Yes" "Yes, with PRO account." "No"]
+                                       "Subscription Billing" ["Yes" "Yes" "Yes" "No"]
+                                       "One Time Billing" ["Yes" "No" "Yes" "Yes"]
+                                       "Parent / Child Heirarchical Billing" ["Yes" "Yes" "Yes" "No"]}
+                                      dummy)]]
                  ^{:key (str "j" j)}
                  [:div.cell {:on-mouse-down #(reset! cell-click-disabled? false)
                              :on-mouse-up #(when-not @cell-click-disabled?
                                              (reset! modal-showing? true))}
                   [:div.text
-                   (util/truncate-text
-                    (nth ["Lorem ipsum lorem ispum lorem ispum lorem ispum loremum lorem ispum lorem m ispum."
-                          "We can set up the account and offer you a free trial, but you can't do it on your own."
-                          "Ipsum lorem ispum lorem ispum lorem ispum lorem m ispum. Lorem ipsum lorem ispum lorem ispum lorem ispum loremum lorem ispum lorem m ispum. Ipsum lorem ispum lorem ispum lorem ipsum ipsum ipsum ipsum ispum loremum lorem ispum lorem m ispum. Lorem ipsum lorem ispum lorem ispum lorem ispum loremum lorem ispum lorem m ispum."
-                          "Yes"
-                          "Lorem ipsum lorem ispum."
-                          "Basic Plan - $49/month/employee Plus - $69/employee/month https://justworks.com/pricing"
-                          "This varies quite a bit, but could be $100-$200 per month."]
-                         (mod (+ i j) 7))
-                    150)]
+                   (util/truncate-text (get resps j) 150)]
                   [:div.actions
                    [:> ui/Button {:icon "chat"
                                   :basic true
@@ -304,7 +301,7 @@
          (when-not (= :loading @rounds&)
            [:<>
             [:> ui/Segment
-             [:h3 "Stripe Billing"]
+             [:h3 "SendGrid"]
              [:> ui/Button {:onClick #(do (.stopPropagation %)
                                           #_(rf/dispatch [:b/do-something]))
                             :color "vetd-gradient"
@@ -331,7 +328,7 @@
               "Disqualify"
               [:> ui/Icon {:name "close"}]]]
             [:> ui/Segment
-             [:h3 "Capital One"]
+             [:h3 "Mailchimp"]
              [:> ui/Button {:onClick #(do (.stopPropagation %)
                                           #_(rf/dispatch [:b/do-something]))
                             :color "vetd-gradient"
@@ -357,7 +354,34 @@
               "Disqualify"
               [:> ui/Icon {:name "close"}]]]
             [:> ui/Segment
-             [:h3 "PayPal Developers"]
+             [:h3 "Mandrill"]
+             [:> ui/Button {:onClick #(do (.stopPropagation %)
+                                          #_(rf/dispatch [:b/do-something]))
+                            :color "vetd-gradient"
+                            :fluid true
+                            :icon true
+                            :labelPosition "left"}
+              "Declare Winner"
+              [:> ui/Icon {:name "checkmark"}]]
+             
+             [:> ui/Button {:onClick #(do (.stopPropagation %)
+                                          #_(rf/dispatch [:b/do-something]))
+                            :color "grey"
+                            :fluid true
+                            :icon true
+                            :labelPosition "left"}
+              "Setup a Call"
+              [:> ui/Icon {:name "left call"}]]
+             [:> ui/Button {:onClick #(do (.stopPropagation %)
+                                          #_(rf/dispatch [:b/do-something]))
+                            :color "grey"
+                            :fluid true
+                            :icon true
+                            :labelPosition "left"}
+              "Disqualify"
+              [:> ui/Icon {:name "close"}]]]
+            [:> ui/Segment
+             [:h3 "iContact"]
              [:> ui/Button {:onClick #(do (.stopPropagation %)
                                           #_(rf/dispatch [:b/do-something]))
                             :color "vetd-gradient"
@@ -384,33 +408,6 @@
                             :labelPosition "left"}
               "Undo Disqualify"
               [:> ui/Icon {:name "undo"}]]]
-            [:> ui/Segment
-             [:h3 "Cryptocurrency"]
-             [:> ui/Button {:onClick #(do (.stopPropagation %)
-                                          #_(rf/dispatch [:b/do-something]))
-                            :color "vetd-gradient"
-                            :fluid true
-                            :icon true
-                            :labelPosition "left"}
-              "Declare Winner"
-              [:> ui/Icon {:name "checkmark"}]]
-             
-             [:> ui/Button {:onClick #(do (.stopPropagation %)
-                                          #_(rf/dispatch [:b/do-something]))
-                            :color "grey"
-                            :fluid true
-                            :icon true
-                            :labelPosition "left"}
-              "Setup a Call"
-              [:> ui/Icon {:name "left call"}]]
-             [:> ui/Button {:onClick #(do (.stopPropagation %)
-                                          #_(rf/dispatch [:b/do-something]))
-                            :color "grey"
-                            :fluid true
-                            :icon true
-                            :labelPosition "left"}
-              "Disqualify"
-              [:> ui/Icon {:name "close"}]]]
             ]
            #_(let [{:keys [vendor rounds] :as product} (-> @products& :products first)]
                (when (empty? (:rounds product))
