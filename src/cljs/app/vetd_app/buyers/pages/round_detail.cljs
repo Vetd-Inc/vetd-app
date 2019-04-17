@@ -153,8 +153,6 @@
     (r/create-class
      {:component-did-mount
       (fn [this]
-        ;; prepare for modal (TODO consider having this class add on login, because other pages might as well have scroll)
-        (.add (.-classList (aget (.getElementsByTagName js/document "body") 0)) "always-show-vertical-scroll")
         ;; draggable grid
         (let [node (r/dom-node this)
               mousedown? (atom false)
@@ -183,11 +181,8 @@
           (.addEventListener node "mouseup" handle-mouseup)
           (.addEventListener node "mouseleave" handle-mouseup)
           (.addEventListener node "mousemove" handle-mousemove)))
-
-      :component-will-unmount
-      (fn [this]
-        ;; clean up model helper
-        (.remove (.-classList (aget (.getElementsByTagName js/document "body") 0)) "always-show-vertical-scroll"))
+      ;; TODO will the above garbage collect fine?
+      ;; or need to removeEventListener on component-will-unmount?
       
       :reagent-render
       (fn []
