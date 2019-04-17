@@ -620,14 +620,16 @@
 
 (def diff-4tree-children-with-existing-l2 [])
 
+
+
 (def diff-4tree-children-with-existing*
-  [parent-id get-children-fn children existing-group-fn new-group-fn]
+  [parent-id get-children-fn children existing-group-id-fn new-group-id-fn]
   (let [existing-kids (get-children-fn parent-id)
         existing-groups (->> existing-kids
-                             existing-group-fn
+                             (group-by (comp existing-group-id-fn :value))
                              (ut/fmap first))
         new-groups (->> children
-                        new-group-fn
+                        (group-by (comp new-group-id-fn  :value))
                         (ut/fmap first))
         all-keys (keys (merge existing-groups new-groups))]
     (reduce (fn [agg k]
