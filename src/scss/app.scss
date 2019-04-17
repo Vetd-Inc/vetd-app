@@ -316,61 +316,73 @@ textarea {
   box-sizing: border-box;
   position: relative;
   cursor: ew-resize;
-}
-.round-grid .column {
-  width: 250px;
-  // height: 200;
-  flex: 0 0 auto;
-}
-.round-grid .column:first-of-type {
-  margin-left: 6px;
-}
-.round-grid .column .requirement {
-  height: 38px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-.round-grid .cell {
-  height: 201px;
-  padding: 14px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  // transition: transform .05s ease-out !important;
-  // transform: scale(0.98);
-  cursor: pointer;
 
+  .column {
+    width: 250px;
+    flex: 0 0 auto;
+    
+    &:first-of-type {
+      margin-left: 6px;
+    }
+    .requirement {
+      height: 38px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+  }
 
-  box-shadow: 0 2px 14px 0 rgba(50,50,50,0.1) !important;
-  border: none !important;
-  border-radius: 4px;
-  background: #fff;
-  margin: 14px 14px 14px 0;
-  // box-shadow: 0 2px 14px 0 rgba(50, 50, 50, 0.1) !important;
+  // &:hover .column:not(:hover) {
+  //   opacity: 0.6;
+  // }
   
-  
-}
-.round-grid .column:last-of-type .cell {
-  padding-right: 0;
-}
-.round-grid .cell:hover {
-  // transform: scale(1);
-}
-.round-grid .cell .actions {
-  margin-top: 10px;
-  opacity: 0;
-  transition: opacity .1s .15s ease-in !important;
-}
-.round-grid .cell:hover .actions {
-  opacity: 1;
-}
-.round-grid.dragging,
-.round-grid.dragging .cell {
-  cursor: grabbing !important;
-}
+  .cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 201px;
+    padding: 14px;
+    margin: 14px 14px 14px 0;
+    box-shadow: 0 2px 14px 0 rgba(50,50,50,0.1) !important;
+    border: none !important;
+    border-radius: 4px;
+    background: #fff;
+    font-weight: 400;
+    cursor: pointer;
+    transition: transform .05s ease-out !important;
+    transform: scale(0.98);
 
+    &:hover {
+      transform: scale(1);
+    }
+    .text {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .actions {
+      margin-top: 10px;
+      opacity: 0.3;
+      transition: opacity .05s ease-out !important;
+    }
+    &:hover .actions {
+      opacity: 1;
+    }
+    
+  }
+
+  .column:last-of-type .cell {
+    padding-right: 0;
+  }
+  
+  &.dragging,
+  &.dragging .cell {
+    cursor: grabbing !important;
+  }
+}
 
 /* Loading Spinner */
 div.spinner {

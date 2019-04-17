@@ -195,9 +195,10 @@
               (for [j (range 4)]
                 ^{:key (str "j" j)}
                 [:div.cell
-                 (rand-nth ["Lorem ipsum lorem ispum lorem ispum lorem ispum loremum lorem ispum lorem m ispum."
-                            "Yes"
-                            "Lorem ipsum lorem ispum."])
+                 [:div.text
+                  (rand-nth ["Lorem ipsum lorem ispum lorem ispum lorem ispum loremum lorem ispum lorem m ispum."
+                             "Yes"
+                             "Lorem ipsum lorem ispum."])]
                  [:div.actions
                   [:> ui/Button {:icon "chat"
                                  :basic true
@@ -255,12 +256,13 @@
           [bc/c-back-button {:on-click #(rf/dispatch [:b/nav-rounds])}
            "All VetdRounds"]]
          [:div {:style {:height 154}}] ; spacer
-         [:> ui/Button {:color "teal"
+         [:div {:style {:padding "0 15px"}}
+          [:> ui/Button {:color "teal"
                         :icon true
                         :fluid true
                         :labelPosition "left"}
-          "New Question"
-          [:> ui/Icon {:name "plus"}]]
+          "Add Requirement"
+          [:> ui/Icon {:name "plus"}]]]
          (when-not (= :loading @rounds&)
            [:<>
             [:> ui/Segment
