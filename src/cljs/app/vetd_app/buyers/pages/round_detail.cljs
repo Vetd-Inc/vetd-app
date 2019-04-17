@@ -149,40 +149,40 @@
 
 (defn c-round-grid
   [{:keys [id status title products] :as round}]
-  (let [modal-showing? (r/atom false)]
+  (let [modal-showing? (r/atom false)
+        cell-click-disabled? (r/atom false)]
     (r/create-class
      {:component-did-mount
       (fn [this]
-        ;; draggable grid
+        ;; set up draggable grid
         (let [node (r/dom-node this)
               mousedown? (atom false)
               x-at-mousedown (atom nil)
-              scrollleft-at-mousedown (atom nil)
-              handle-mousedown
-              (fn [e]
-                (.add (.-classList node) "dragging")
-                (reset! x-at-mousedown (- (.-pageX e) (.-offsetLeft node)))
-                (reset! scrollleft-at-mousedown (.-scrollLeft node))
-                (reset! mousedown? true))
-              handle-mouseup
-              (fn [e]
-                (.remove (.-classList node) "dragging")
-                (reset! mousedown? false))
-              handle-mousemove
-              (fn [e]
-                (when @mousedown?
-                  (do (.preventDefault e)
-                      (aset node
-                            "scrollLeft"
-                            (- @scrollleft-at-mousedown
-                               (* 3 (- (- (.-pageX e) (.-offsetLeft node))
-                                       @x-at-mousedown)))))))]
-          (.addEventListener node "mousedown" handle-mousedown)
-          (.addEventListener node "mouseup" handle-mouseup)
-          (.addEventListener node "mouseleave" handle-mouseup)
-          (.addEventListener node "mousemove" handle-mousemove)))
-      ;; TODO will the above garbage collect fine?
-      ;; or need to removeEventListener on component-will-unmount?
+              scroll-left-at-mousedown (atom nil)
+              mousedown (fn [e]
+                          (.add (.-classList node) "dragging")
+                          (reset! mousedown? true)
+                          (reset! x-at-mousedown (- (.-pageX e) (.-offsetLeft node)))
+                          (reset! scroll-left-at-mousedown (.-scrollLeft node)))
+              mousemove (fn [e]
+                          (when @mousedown?
+                            (let [x-displacement (- (- (.-pageX e) (.-offsetLeft node))
+                                                    @x-at-mousedown)
+                                  new-scroll-left (- @scroll-left-at-mousedown
+                                                     (* 3 x-displacement))]
+                              (.preventDefault e)
+                              (aset node "scrollLeft" new-scroll-left)
+                              ;; if you drag more than 3px, disable the cell clickability
+                              (when (and (> (Math/abs x-displacement) 3)
+                                         (not @cell-click-disabled?))
+                                (reset! cell-click-disabled? true)))))
+              mouseup (fn [e]
+                        (.remove (.-classList node) "dragging")
+                        (reset! mousedown? false))]
+          (.addEventListener node "mousedown" mousedown)
+          (.addEventListener node "mousemove" mousemove)
+          (.addEventListener node "mouseup" mouseup)
+          (.addEventListener node "mouseleave" mouseup)))
       
       :reagent-render
       (fn []
@@ -192,20 +192,25 @@
             (for [i (range 8)]
               ^{:key i}
               [:div.column 
-               [:h4.requirement
-                (nth ["Subscription Billing" "Parent / Child Hierarchial" "Prepay Option"  "Integration with GMail" "Example Of A Longer Requirement Title Is Here" "Coffee Flavors"]
+               [:h4.requirement {:style {:position "sticky"
+                                         :top 0}}
+                (nth ["Subscription Billing" "Free Trial Details" "Prepay Option"  "Integration with GMail" "Example Of A Longer Requirement Title Is Here" "Coffee Flavors"]
                      (mod i 6))]
                (for [j (range 4)]
                  ^{:key (str "j" j)}
-                 [:div.cell {:on-click #(reset! modal-showing? true)}
+                 [:div.cell {:on-mouse-down #(reset! cell-click-disabled? false)
+                             :on-mouse-up #(when-not @cell-click-disabled?
+                                             (reset! modal-showing? true))}
                   [:div.text
                    (util/truncate-text
                     (nth ["Lorem ipsum lorem ispum lorem ispum lorem ispum loremum lorem ispum lorem m ispum."
-                          "Lorem ipsum lorem ispum lorem ispum lorem ispum loremum lorem ispum lorem m ispum. Lorem ipsum lorem ispum lorem ispum lorem ispum loremum lorem ispum lorem m ispum."
+                          "We can set up the account and offer you a free trial, but you can't do it on your own."
                           "Ipsum lorem ispum lorem ispum lorem ispum lorem m ispum. Lorem ipsum lorem ispum lorem ispum lorem ispum loremum lorem ispum lorem m ispum. Ipsum lorem ispum lorem ispum lorem ipsum ipsum ipsum ipsum ispum loremum lorem ispum lorem m ispum. Lorem ipsum lorem ispum lorem ispum lorem ispum loremum lorem ispum lorem m ispum."
                           "Yes"
-                          "Lorem ipsum lorem ispum."]
-                         (mod (+ i j) 5))
+                          "Lorem ipsum lorem ispum."
+                          "Basic Plan - $49/month/employee Plus - $69/employee/month https://justworks.com/pricing"
+                          "This varies quite a bit, but could be $100-$200 per month."]
+                         (mod (+ i j) 7))
                     150)]
                   [:div.actions
                    [:> ui/Button {:icon "chat"
