@@ -204,69 +204,79 @@
               ^{:key dummy}
               [:div.column 
                [:h4.requirement dummy]
-               (for [j (range 4)
-                     :let [resps (get {"Pricing Estimate" ["$45 / mo." "$200 / mo." "If you are in the $0-2M pricing tier, the base fee is $4,000." "Unavailable"]
-                                       "Free Trial" ["First 30 days." "Yes, with limited features." "Yes" "Yes"]
-                                       "Current Customers" ["Google, Patreon, YouTube, Vetd, Make Offices" "Apple, Cisco Enterprise, Symantec, Tommy's Coffee" "Heinz, Philadelphia Business Group, Wizards of the Coast" "None currently."]
-                                       "Integration with GMail" ["Yes" "Yes" "Yes, with PRO account." "No"]
-                                       "Subscription Billing" ["Yes" "Yes" "Yes" "No"]
-                                       "One Time Billing" ["Yes" "No" "Yes" "Yes"]
-                                       "Parent / Child Heirarchical Billing" ["Yes" "Yes" "Yes" "No"]}
-                                      dummy)]]
-                 ^{:key (str "j" j)}
-                 
-                 [:div.cell {:on-mouse-down #(reset! cell-click-disabled? false)
-                             :on-mouse-up #(when-not @cell-click-disabled?
-                                             (show-modal {:title dummy} {:pname "Some Product"} (get resps j)))}
-                  [:div.text (util/truncate-text (get resps j) 150)]
-                  [:div.actions
-                   [:> ui/Button {:icon "chat"
-                                  :basic true
-                                  :size "mini"}]
-                   [:> ui/Button {:icon "check"
-                                  :basic true
-                                  :size "mini"}]
-                   [:> ui/Button {:icon "close"
-                                  :basic true
-                                  :size "mini"}]]])])]
+               (let [dummy-products ["SendGrid" "Mailchimp" "Mandrill" "iContact"]]
+                 (for [dummy-product dummy-products
+                       :let [resps (get {"Pricing Estimate" ["$45 / mo." "$200 / mo." "If you are in the $0-2M pricing tier, the base fee is $4,000." "Unavailable"]
+                                         "Free Trial" ["First 30 days." "Yes, with limited features." "Yes" "Yes"]
+                                         "Current Customers" ["Google, Patreon, YouTube, Vetd, Make Offices" "Apple, Cisco Enterprise, Symantec, Tommy's Coffee" "Heinz, Philadelphia Business Group, Wizards of the Coast" "None currently."]
+                                         "Integration with GMail" ["Yes" "Yes" "Yes, with PRO account." "No"]
+                                         "Subscription Billing" ["Yes" "Yes" "Yes" "No"]
+                                         "One Time Billing" ["Yes" "No" "Yes" "Yes"]
+                                         "Parent / Child Heirarchical Billing" ["Yes" "Yes" "Yes" "No"]}
+                                        dummy)
+                             response (get resps (.indexOf dummy-products dummy-product))]]
+                   ^{:key dummy-product}
+                   [:div.cell {:on-mouse-down #(reset! cell-click-disabled? false)
+                               :on-mouse-up #(when-not @cell-click-disabled?
+                                               (show-modal {:title dummy} {:pname dummy-product} response))}
+                    [:div.text (util/truncate-text response 150)]
+                    [:div.actions
+                     [:> ui/Button {:icon "chat"
+                                    :basic true
+                                    :size "mini"}]
+                     [:> ui/Button {:icon "thumbs up outline"
+                                    :basic true
+                                    :size "mini"}]
+                     [:> ui/Button {:icon "thumbs down outline"
+                                    :basic true
+                                    :size "mini"}]]]))])]
            [:> ui/Modal {:open @modal-showing?
+                         :on-close #(reset! modal-showing? false)
                          :size "tiny"
                          :dimmer "inverted"
                          :closeOnDimmerClick true
-                         :closeOnEscape true}
-            [:> ui/ModalHeader
-             (str (-> @modal-response :product :pname)
-                  " - "
-                  (-> @modal-response :requirement :title))]
+                         :closeOnEscape true
+                         :closeIcon true}
+            [:> ui/ModalHeader (-> @modal-response :product :pname)]
             [:> ui/ModalContent
-             (-> @modal-response :response)
+             [:h4 {:style {:padding-bottom 10}}
+              [:> ui/Button {:icon "thumbs down outline"
+                             :basic true
+                             :size "mini"
+                             :style {:float "right"
+                                     :margin-right 0}}]
+              [:> ui/Button {:icon "thumbs up outline"
+                             :basic true
+                             :size "mini"
+                             :style {:float "right"
+                                     :margin-right 4}}]
+              (-> @modal-response :requirement :title)]
+             (-> @modal-response :response)]
+            [:> ui/ModalActions
              [:> ui/Form
               [:> ui/FormField
-               [:> ui/TextArea {:placeholder ""
+               [:> ui/TextArea {:placeholder "Ask a follow-up question..."
                                 :autoFocus true
                                 :spellCheck true
                                 ;; :onChange (fn [_ this]
                                 ;;             (reset! message (.-value this)))
-                                }]]]]
-            [:> ui/ModalActions {:style {:text-align "center"}}
-             [:> ui/Button {:onClick #(reset! modal-showing? false)
-                            :color "teal"
-                            :icon true
-                            :labelPosition "left"}
-              "Ask Question"
-              [:> ui/Icon {:name "chat"}]]
-             [:> ui/Button {:onClick #(reset! modal-showing? false)
-                            :color "red"
-                            :icon true
-                            :labelPosition "left"}
-              "Unacceptable"
-              [:> ui/Icon {:name "close"}]]
-             [:> ui/Button {:onClick #(reset! modal-showing? false)
-                            :color "blue"
-                            :icon true
-                            :labelPosition "left"}
-              "Acceptable"
-              [:> ui/Icon {:name "check"}]]]]]
+                                }]]
+              [:> ui/Button {:onClick #(reset! modal-showing? false)
+                             :color "grey"
+                             ;; :icon true
+                             ;; :labelPosition "left"
+                             }
+               "Cancel"
+               ;; [:> ui/Icon {:name "chat"}]
+               ]
+              [:> ui/Button {:onClick #(reset! modal-showing? false)
+                             :color "blue"
+                             ;; :icon true
+                             ;; :labelPosition "left"
+                             }
+               "Submit Question"
+               ;; [:> ui/Icon {:name "chat"}]
+               ]]]]]
           [:<>
            [:p [:em "Your requirements have been submitted."]]
            [:p "We are gathering information for you to review from all relevant vendors. Check back soon for updates."]]))})))
