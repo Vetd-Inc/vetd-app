@@ -248,7 +248,7 @@
       :ftype ftype
       :update-doc-id update-doc-id
       :round-id round-id
-      :from-user-id (util/db->current-org-id db)}}}))
+      :from-org-id (util/db->current-org-id db)}}}))
 
 (rf/reg-event-fx
  :save-doc-return

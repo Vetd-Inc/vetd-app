@@ -319,6 +319,8 @@
       (insert-form-prompt form-id prompt-id sort'))
     form))
 
+#_ {:form-template-id 732891754223}
+
 (defn- update-deleted [tbl-kw id]
   (db/hs-exe! {:update tbl-kw
                :set {:deleted (ut/now-ts)}
@@ -585,3 +587,1717 @@
                                   new-prompts
                                   use-id?))
 
+(defn apply-4tree-l0
+  [{:keys [l0] :as cfg} {:keys [value]}]
+  (let [{:keys [exists?-fn update-fn insert-fn use-id? ignore-id? delete-fn]} l0
+        exists? (when (not ignore-id?)
+                  (exists?-fn value))]
+    (cond (and delete-fn
+               (not exists?))
+          (throw (Exception. "delete-fn provided, but entity does not exist."))
+
+          delete-fn {:l0 (delete-fn value)
+                     :new? false}
+          
+          (and exists?
+               (nil? update-fn))
+          (throw (Exception. "No update-fn provided. exists? = true; ignore-id? = false"))
+          
+          exists? {:l0 (or (update-fn value)
+                           value)
+                   :new? false}
+          
+          (and (true? ignore-id?)
+               (nil? insert-fn))
+          (throw (Exception. "No insert-fn provided. ignore-id? = true"))
+
+          (not exists?)
+          {:l0 (insert-fn value)
+           :new? true})))
+
+
+(def diff-4tree-children-with-existing-l3 [])
+
+(def diff-4tree-children-with-existing-l2 [])
+
+(def diff-4tree-children-with-existing*
+  [parent-id get-children-fn children existing-group-fn new-group-fn]
+  (let [existing-kids (get-children-fn parent-id)
+        existing-groups (->> existing-kids
+                             existing-group-fn
+                             (ut/fmap first))
+        new-groups (->> children
+                        new-group-fn
+                        (ut/fmap first))
+        all-keys (keys (merge existing-groups new-groups))]
+    (reduce (fn [agg k]
+              (let [existing (existing-groups k)
+                    new (new-groups k)]
+                (cond (nil? existing) (update agg :new assoc k new)
+                      (nil? new) (update agg :missing assoc k existing)
+                      :else (update agg :common assoc k new))))
+            {:missing {}
+             :common {}
+             :new {}})))
+
+(def diff-4tree-children-with-existing
+  [{l0-cfg :l0 l1-cfg :l1} {:keys [value children]} {:keys [l0 new?]}]
+  (let [{:keys [id]} l0
+        {:keys [get-children-fn]} l0-cfg
+        {:keys [existing-group-fn new-group-fn]} l0-cfg
+        {:keys [common new] :as r} (diff-4tree-children-with-existing*
+                                    id
+                                    get-children-fn
+                                    children
+                                    existing-group-fn
+                                    new-group-fn)]
+    (assoc r
+           :common (ut/fmap #()
+                            common)
+           :new (ut/fmap #()
+                         new))))
+
+{:missing {:some-id {:value {}
+                     :children
+                     [{:missing {:some-id {:value {}
+                                           :children
+                                           [{:missing {:some-id {:value {}
+                                                                 :children []}
+                                                       :some-id2 {}}
+                                             :common {:some-id3 {}
+                                                      :some-id4 {}}
+                                             :new {:some-id5 {}
+                                                   :some-id6 {}}}]}
+                                 :some-id2 {}}
+                       :common {:some-id3 {}
+                                :some-id4 {}}
+                       :new {:some-id5 {}
+                             :some-id6 {}}}]}
+           :some-id2 {}}
+ :common {:some-id3 {}
+          :some-id4 {}}
+ :new {:some-id5 {}
+       :some-id6 {}}}
+
+(defn apply-4tree [cfg tr]
+  (let [l0-result (apply-4tree-l0 cfg tr)
+        diff (diff-4tree-children-with-existing cfg tr l0-result)]
+    (apply-4tree-dff cfg diff)))
+
+
+{:value {:id 0}
+ :children [{:value {:id 2}
+             :children [{:value {:id 3}}]}]}
+
+
+;; update-doc-from-form-doc
+
+#_
+{:doc-dtype "product-profile",
+ :doc-title " doc",
+ :doc-notes "",
+ :doc-descr "",
+ :prompts
+ [{:id 740547877574,
+   :idstr "jqhlddnc",
+   :prompt "Competitive Differentiator",
+   :descr
+   "What makes this product different from its closest competitors",
+   :sort 100,
+   :fields
+   [{:id 851290884048,
+     :idstr "k5c2wcbm",
+     :fname "value",
+     :ftype "s",
+     :fsubtype "multi",
+     :list? false,
+     :sort nil,
+     :response
+     [{:id 879299906408,
+       :pf-id 851290884048,
+       :idx nil,
+       :sval "anything??",
+       :nval nil,
+       :dval nil,
+       :jval nil,
+       :state "anything??"}]}],
+   :response
+   {:id 879299896406,
+    :prompt-id 740547877574,
+    :notes nil,
+    :fields
+    [{:id 879299906408,
+      :pf-id 851290884048,
+      :idx nil,
+      :sval "anything??",
+      :nval nil,
+      :dval nil,
+      :jval nil}],
+    :notes-state ""}}
+  {:id 740458537534,
+   :idstr "jqf36ifk",
+   :prompt "Cancellation Process",
+   :descr "How does cancelling work",
+   :sort 100,
+   :fields
+   [{:id 851290884050,
+     :idstr "k5c2wcbo",
+     :fname "value",
+     :ftype "s",
+     :fsubtype "multi",
+     :list? false,
+     :sort nil,
+     :response
+     [{:id 904513149677,
+       :pf-id 851290884050,
+       :idx nil,
+       :sval "nopppeee  333 444",
+       :nval nil,
+       :dval nil,
+       :jval nil,
+       :state "nopppeee  555"}]}],
+   :response
+   {:id 904513149675,
+    :prompt-id 740458537534,
+    :notes nil,
+    :fields
+    [{:id 904513149677,
+      :pf-id 851290884050,
+      :idx nil,
+      :sval "nopppeee  333 444",
+      :nval nil,
+      :dval nil,
+      :jval nil}],
+    :notes-state ""}}
+  {:id 791676936590,
+   :idstr "kdy6aj2o",
+   :prompt "Product Website",
+   :descr "Unique product website (URL)",
+   :sort 100,
+   :fields
+   [{:id 851290884052,
+     :idstr "k5c2wcbq",
+     :fname "value",
+     :ftype "s",
+     :fsubtype "single",
+     :list? false,
+     :sort nil,
+     :response
+     [{:id 862227835259,
+       :pf-id 851290884052,
+       :idx nil,
+       :sval "",
+       :nval nil,
+       :dval nil,
+       :jval nil,
+       :state ""}]}],
+   :response
+   {:id 862227825257,
+    :prompt-id 791676936590,
+    :notes nil,
+    :fields
+    [{:id 862227835259,
+      :pf-id 851290884052,
+      :idx nil,
+      :sval "",
+      :nval nil,
+      :dval nil,
+      :jval nil}],
+    :notes-state ""}}
+  {:id 740517187557,
+   :idstr "jqg23k2v",
+   :prompt "Integrations",
+   :descr "List of other products the vendor can integrate with",
+   :sort 100,
+   :fields
+   [{:id 851290894054,
+     :idstr "k5c2wj1k",
+     :fname "value",
+     :ftype "s",
+     :fsubtype "multi",
+     :list? nil,
+     :sort nil,
+     :response
+     [{:id 879594746442,
+       :pf-id 851290894054,
+       :idx nil,
+       :sval "dsfsdfsdfasdsdfsdfsdfsd11111111111111111",
+       :nval nil,
+       :dval nil,
+       :jval nil,
+       :state "dsfsdfsdfasdsdfsdfsdfsd11111111111111111"}]}],
+   :response
+   {:id 879594746440,
+    :prompt-id 740517187557,
+    :notes nil,
+    :fields
+    [{:id 879594746442,
+      :pf-id 851290894054,
+      :idx nil,
+      :sval "dsfsdfsdfasdsdfsdfsdfsd11111111111111111",
+      :nval nil,
+      :dval nil,
+      :jval nil}],
+    :notes-state ""}}
+  {:id 740668010733,
+   :idstr "jqjkv8zj",
+   :prompt "Product Demo",
+   :descr "Link to product demo",
+   :sort 100,
+   :fields
+   [{:id 851290894056,
+     :idstr "k5c2wj1m",
+     :fname "value",
+     :ftype "s",
+     :fsubtype "single",
+     :list? false,
+     :sort nil,
+     :response
+     [{:id 862227835265,
+       :pf-id 851290894056,
+       :idx nil,
+       :sval "",
+       :nval nil,
+       :dval nil,
+       :jval nil,
+       :state ""}]}],
+   :response
+   {:id 862227835263,
+    :prompt-id 740668010733,
+    :notes nil,
+    :fields
+    [{:id 862227835265,
+      :pf-id 851290894056,
+      :idx nil,
+      :sval "",
+      :nval nil,
+      :dval nil,
+      :jval nil}],
+    :notes-state ""}}
+  {:id 740568977578,
+   :idstr "jqhxxmik",
+   :prompt "Tagline",
+   :descr "Describe your product in fewer than 10 words",
+   :sort 100,
+   :fields
+   [{:id 851290894058,
+     :idstr "k5c2wj1o",
+     :fname "value",
+     :ftype "s",
+     :fsubtype "single",
+     :list? false,
+     :sort nil,
+     :response
+     [{:id 862227835268,
+       :pf-id 851290894058,
+       :idx nil,
+       :sval "",
+       :nval nil,
+       :dval nil,
+       :jval nil,
+       :state ""}]}],
+   :response
+   {:id 862227835266,
+    :prompt-id 740568977578,
+    :notes nil,
+    :fields
+    [{:id 862227835268,
+      :pf-id 851290894058,
+      :idx nil,
+      :sval "",
+      :nval nil,
+      :dval nil,
+      :jval nil}],
+    :notes-state ""}}
+  {:id 740439647531,
+   :idstr "jqfsxms9",
+   :prompt "Minimum Contract Length",
+   :descr "Is there a minimum contract length?",
+   :sort 100,
+   :fields
+   [{:id 851290894060,
+     :idstr "k5c2wj1q",
+     :fname "value",
+     :ftype "s",
+     :fsubtype "single",
+     :list? false,
+     :sort nil,
+     :response
+     [{:id 862227835271,
+       :pf-id 851290894060,
+       :idx nil,
+       :sval "",
+       :nval nil,
+       :dval nil,
+       :jval nil,
+       :state ""}]}],
+   :response
+   {:id 862227835269,
+    :prompt-id 740439647531,
+    :notes nil,
+    :fields
+    [{:id 862227835271,
+      :pf-id 851290894060,
+      :idx nil,
+      :sval "",
+      :nval nil,
+      :dval nil,
+      :jval nil}],
+    :notes-state ""}}
+  {:id 740619217590,
+   :idstr "jqirufyg",
+   :prompt "Number of Current Clients",
+   :descr "Number of current clients",
+   :sort 100,
+   :fields
+   [{:id 851290894062,
+     :idstr "k5c2wj1s",
+     :fname "value",
+     :ftype "n",
+     :fsubtype "int",
+     :list? false,
+     :sort nil,
+     :response
+     [{:id 862227835274,
+       :pf-id 851290894062,
+       :idx nil,
+       :sval "",
+       :nval nil,
+       :dval nil,
+       :jval nil,
+       :state ""}]}],
+   :response
+   {:id 862227835272,
+    :prompt-id 740619217590,
+    :notes nil,
+    :fields
+    [{:id 862227835274,
+      :pf-id 851290894062,
+      :idx nil,
+      :sval "",
+      :nval nil,
+      :dval nil,
+      :jval nil}],
+    :notes-state ""}}
+  {:id 791684236593,
+   :idstr "kdzam0sj",
+   :prompt "Product Logo",
+   :descr "URL for the product logo",
+   :sort 100,
+   :fields
+   [{:id 851290904064,
+     :idstr "k5c2wrrm",
+     :fname "value",
+     :ftype "s",
+     :fsubtype "single",
+     :list? false,
+     :sort nil,
+     :response
+     [{:id 862227845277,
+       :pf-id 851290904064,
+       :idx nil,
+       :sval "",
+       :nval nil,
+       :dval nil,
+       :jval nil,
+       :state ""}]}],
+   :response
+   {:id 862227835275,
+    :prompt-id 791684236593,
+    :notes nil,
+    :fields
+    [{:id 862227845277,
+      :pf-id 851290904064,
+      :idx nil,
+      :sval "",
+      :nval nil,
+      :dval nil,
+      :jval nil}],
+    :notes-state ""}}
+  {:id 740520667560,
+   :idstr "jqg4559m",
+   :prompt "Product Roadmap",
+   :descr
+   "Overview of the features on the vendor's roadmap for the next 6-12 months",
+   :sort 100,
+   :fields
+   [{:id 851290904066,
+     :idstr "k5c2wrro",
+     :fname "value",
+     :ftype "s",
+     :fsubtype "multi",
+     :list? false,
+     :sort nil,
+     :response
+     [{:id 862227845280,
+       :pf-id 851290904066,
+       :idx nil,
+       :sval "",
+       :nval nil,
+       :dval nil,
+       :jval nil,
+       :state ""}]}],
+   :response
+   {:id 862227845278,
+    :prompt-id 740520667560,
+    :notes nil,
+    :fields
+    [{:id 862227845280,
+      :pf-id 851290904066,
+      :idx nil,
+      :sval "",
+      :nval nil,
+      :dval nil,
+      :jval nil}],
+    :notes-state ""}}
+  {:id 740544647571,
+   :idstr "jqhjf5c1",
+   :prompt "Competitors",
+   :descr "List of closest competitors",
+   :sort 100,
+   :fields
+   [{:id 851290904068,
+     :idstr "k5c2wrrq",
+     :fname "value",
+     :ftype "s",
+     :fsubtype "single",
+     :list? nil,
+     :sort nil,
+     :response
+     [{:id 862227845283,
+       :pf-id 851290904068,
+       :idx nil,
+       :sval "",
+       :nval nil,
+       :dval nil,
+       :jval nil,
+       :state ""}]}],
+   :response
+   {:id 862227845281,
+    :prompt-id 740544647571,
+    :notes nil,
+    :fields
+    [{:id 862227845283,
+      :pf-id 851290904068,
+      :idx nil,
+      :sval "",
+      :nval nil,
+      :dval nil,
+      :jval nil}],
+    :notes-state ""}}
+  {:id 740396517525,
+   :idstr "jqe287hj",
+   :prompt "Price Range",
+   :descr "Descripe the different pricing tiers or options available",
+   :sort 100,
+   :fields
+   [{:id 851290904070,
+     :idstr "k5c2wrrs",
+     :fname "value",
+     :ftype "s",
+     :fsubtype "single",
+     :list? false,
+     :sort nil,
+     :response
+     [{:id 862227855286,
+       :pf-id 851290904070,
+       :idx nil,
+       :sval "",
+       :nval nil,
+       :dval nil,
+       :jval nil,
+       :state ""}]}],
+   :response
+   {:id 862227845284,
+    :prompt-id 740396517525,
+    :notes nil,
+    :fields
+    [{:id 862227855286,
+      :pf-id 851290904070,
+      :idx nil,
+      :sval "",
+      :nval nil,
+      :dval nil,
+      :jval nil}],
+    :notes-state ""}}
+  {:id 740504037548,
+   :idstr "jqgu9qgu",
+   :prompt "Data Security",
+   :descr "What the vendor does to ensure the buyer's data is secure",
+   :sort 100,
+   :fields
+   [{:id 851290904072,
+     :idstr "k5c2wrru",
+     :fname "value",
+     :ftype "s",
+     :fsubtype "multi",
+     :list? false,
+     :sort nil,
+     :response
+     [{:id 862227855289,
+       :pf-id 851290904072,
+       :idx nil,
+       :sval "",
+       :nval nil,
+       :dval nil,
+       :jval nil,
+       :state ""}]}],
+   :response
+   {:id 862227855287,
+    :prompt-id 740504037548,
+    :notes nil,
+    :fields
+    [{:id 862227855289,
+      :pf-id 851290904072,
+      :idx nil,
+      :sval "",
+      :nval nil,
+      :dval nil,
+      :jval nil}],
+    :notes-state ""}}
+  {:id 740681080738,
+   :idstr "jqjsodu8",
+   :prompt "Case Studies",
+   :descr "Links to case studies",
+   :sort 100,
+   :fields
+   [{:id 851290904074,
+     :idstr "k5c2wrrw",
+     :fname "Links to Case Studies",
+     :ftype "s",
+     :fsubtype "single",
+     :list? nil,
+     :sort nil,
+     :response
+     [{:id 862227855292,
+       :pf-id 851290904074,
+       :idx nil,
+       :sval "",
+       :nval nil,
+       :dval nil,
+       :jval nil,
+       :state ""}]}],
+   :response
+   {:id 862227855290,
+    :prompt-id 740681080738,
+    :notes nil,
+    :fields
+    [{:id 862227855292,
+      :pf-id 851290904074,
+      :idx nil,
+      :sval "",
+      :nval nil,
+      :dval nil,
+      :jval nil}],
+    :notes-state ""}}
+  {:id 740493817542,
+   :idstr "jqgo6ons",
+   :prompt "Reporting",
+   :descr "What reporting is available to the client (if applicable)",
+   :sort 100,
+   :fields
+   [{:id 851290914076,
+     :idstr "k5c2wzhq",
+     :fname "value",
+     :ftype "s",
+     :fsubtype "multi",
+     :list? false,
+     :sort nil,
+     :response
+     [{:id 862227855295,
+       :pf-id 851290914076,
+       :idx nil,
+       :sval "",
+       :nval nil,
+       :dval nil,
+       :jval nil,
+       :state ""}]}],
+   :response
+   {:id 862227855293,
+    :prompt-id 740493817542,
+    :notes nil,
+    :fields
+    [{:id 862227855295,
+      :pf-id 851290914076,
+      :idx nil,
+      :sval "",
+      :nval nil,
+      :dval nil,
+      :jval nil}],
+    :notes-state ""}}
+  {:id 558587751456,
+   :idstr "hewa0drm",
+   :prompt "Please describe the terms of your trial",
+   :descr nil,
+   :sort 100,
+   :fields
+   [{:id 558588011461,
+     :idstr "hewa5ydz",
+     :fname "value",
+     :ftype "s",
+     :fsubtype "multi",
+     :list? false,
+     :sort 0,
+     :response
+     [{:id 862227855298,
+       :pf-id 558588011461,
+       :idx nil,
+       :sval "",
+       :nval nil,
+       :dval nil,
+       :jval nil,
+       :state ""}]}],
+   :response
+   {:id 862227855296,
+    :prompt-id 558587751456,
+    :notes nil,
+    :fields
+    [{:id 862227855298,
+      :pf-id 558588011461,
+      :idx nil,
+      :sval "",
+      :nval nil,
+      :dval nil,
+      :jval nil}],
+    :notes-state ""}}
+  {:id 740599617585,
+   :idstr "jqif6chv",
+   :prompt "Onboarding Process",
+   :descr "Steps involved with onboarding or implementing product",
+   :sort 100,
+   :fields
+   [{:id 851290924079,
+     :idstr "k5c2w67l",
+     :fname "value",
+     :ftype "s",
+     :fsubtype "multi",
+     :list? false,
+     :sort nil,
+     :response
+     [{:id 862227855301,
+       :pf-id 851290924079,
+       :idx nil,
+       :sval "",
+       :nval nil,
+       :dval nil,
+       :jval nil,
+       :state ""}]}
+    {:id 851290924080,
+     :idstr "k5c2w67m",
+     :fname "Estimated Time To Onboard",
+     :ftype "s",
+     :fsubtype "single",
+     :list? false,
+     :sort nil,
+     :response
+     [{:id 862227855302,
+       :pf-id 851290924080,
+       :idx nil,
+       :sval "",
+       :nval nil,
+       :dval nil,
+       :jval nil,
+       :state ""}]}],
+   :response
+   {:id 862227855299,
+    :prompt-id 740599617585,
+    :notes nil,
+    :fields
+    [{:id 862227855301,
+      :pf-id 851290924079,
+      :idx nil,
+      :sval "",
+      :nval nil,
+      :dval nil,
+      :jval nil}
+     {:id 862227855302,
+      :pf-id 851290924080,
+      :idx nil,
+      :sval "",
+      :nval nil,
+      :dval nil,
+      :jval nil}],
+    :notes-state ""}}
+  {:id 740532527564,
+   :idstr "jqhb8dh6",
+   :prompt "Ideal Client Profile",
+   :descr
+   "Description of the ideal profile (# of employees, revenue, vertical, etc.) for this product",
+   :sort 100,
+   :fields
+   [{:id 851290924082,
+     :idstr "k5c2w67o",
+     :fname "value",
+     :ftype "s",
+     :fsubtype "multi",
+     :list? false,
+     :sort nil,
+     :response
+     [{:id 862227865305,
+       :pf-id 851290924082,
+       :idx nil,
+       :sval "",
+       :nval nil,
+       :dval nil,
+       :jval nil,
+       :state ""}]}],
+   :response
+   {:id 862227855303,
+    :prompt-id 740532527564,
+    :notes nil,
+    :fields
+    [{:id 862227865305,
+      :pf-id 851290924082,
+      :idx nil,
+      :sval "",
+      :nval nil,
+      :dval nil,
+      :jval nil}],
+    :notes-state ""}}
+  {:id 740599447583,
+   :idstr "jqif2pbl",
+   :prompt "Onboarding Team Involvement",
+   :descr
+   "What roles are involved in onboarding/implementation of this product, and what level of effort is needed from each of them?",
+   :sort 100,
+   :fields
+   [{:id 851290924084,
+     :idstr "k5c2w67q",
+     :fname "value",
+     :ftype "s",
+     :fsubtype "multi",
+     :list? false,
+     :sort nil,
+     :response
+     [{:id 862227865308,
+       :pf-id 851290924084,
+       :idx nil,
+       :sval "",
+       :nval nil,
+       :dval nil,
+       :jval nil,
+       :state ""}]}],
+   :response
+   {:id 862227865306,
+    :prompt-id 740599447583,
+    :notes nil,
+    :fields
+    [{:id 862227865308,
+      :pf-id 851290924084,
+      :idx nil,
+      :sval "",
+      :nval nil,
+      :dval nil,
+      :jval nil}],
+    :notes-state ""}}
+  {:id 740514557554,
+   :idstr "jqg1i7q8",
+   :prompt "Meeting Frequency",
+   :descr "How often meetings will be held",
+   :sort 100,
+   :fields
+   [{:id 851290934086,
+     :idstr "k5c2xexk",
+     :fname "value",
+     :ftype "s",
+     :fsubtype "multi",
+     :list? false,
+     :sort nil,
+     :response
+     [{:id 862227865311,
+       :pf-id 851290934086,
+       :idx nil,
+       :sval "",
+       :nval nil,
+       :dval nil,
+       :jval nil,
+       :state ""}]}],
+   :response
+   {:id 862227865309,
+    :prompt-id 740514557554,
+    :notes nil,
+    :fields
+    [{:id 862227865311,
+      :pf-id 851290934086,
+      :idx nil,
+      :sval "",
+      :nval nil,
+      :dval nil,
+      :jval nil}],
+    :notes-state ""}}
+  {:id 558587581453,
+   :idstr "hewawqlb",
+   :prompt "Describe your product or service",
+   :descr nil,
+   :sort 100,
+   :fields
+   [{:id 558587851458,
+     :idstr "hewa2ixg",
+     :fname "value",
+     :ftype "s",
+     :fsubtype "multi",
+     :list? false,
+     :sort 0,
+     :response
+     [{:id 870328816349,
+       :pf-id 558587851458,
+       :idx nil,
+       :sval "This is a description of the MailChimp promduct",
+       :nval nil,
+       :dval nil,
+       :jval nil,
+       :state "This is a description of the MailChimp promduct"}]}],
+   :response
+   {:id 870328816347,
+    :prompt-id 558587581453,
+    :notes nil,
+    :fields
+    [{:id 870328816349,
+      :pf-id 558587851458,
+      :idx nil,
+      :sval "This is a description of the MailChimp promduct",
+      :nval nil,
+      :dval nil,
+      :jval nil}],
+    :notes-state ""}}
+  {:id 740499107545,
+   :idstr "jqgsb2gb",
+   :prompt "KPIs",
+   :descr "KPIs that the vendor focuses on improving",
+   :sort 100,
+   :fields
+   [{:id 851290944089,
+     :idstr "k5c2xmnf",
+     :fname "value",
+     :ftype "s",
+     :fsubtype "multi",
+     :list? nil,
+     :sort nil,
+     :response
+     [{:id 862227875317,
+       :pf-id 851290944089,
+       :idx nil,
+       :sval "",
+       :nval nil,
+       :dval nil,
+       :jval nil,
+       :state ""}]}],
+   :response
+   {:id 862227865315,
+    :prompt-id 740499107545,
+    :notes nil,
+    :fields
+    [{:id 862227875317,
+      :pf-id 851290944089,
+      :idx nil,
+      :sval "",
+      :nval nil,
+      :dval nil,
+      :jval nil}],
+    :notes-state ""}}
+  {:id 740404407528,
+   :idstr "jqe7ybga",
+   :prompt "Payment Options",
+   :descr
+   "What options does a user have to pay (Credit Card, Invoice, etc.)",
+   :sort 100,
+   :fields
+   [{:id 851290944091,
+     :idstr "k5c2xmnh",
+     :fname "value",
+     :ftype "s",
+     :fsubtype "single",
+     :list? nil,
+     :sort nil,
+     :response
+     [{:id 862227875320,
+       :pf-id 851290944091,
+       :idx nil,
+       :sval "",
+       :nval nil,
+       :dval nil,
+       :jval nil,
+       :state ""}]}],
+   :response
+   {:id 862227875318,
+    :prompt-id 740404407528,
+    :notes nil,
+    :fields
+    [{:id 862227875320,
+      :pf-id 851290944091,
+      :idx nil,
+      :sval "",
+      :nval nil,
+      :dval nil,
+      :jval nil}],
+    :notes-state ""}}
+  {:id 740621457593,
+   :idstr "jqis6gcr",
+   :prompt "Example Current Clients",
+   :descr "Example current clients",
+   :sort 100,
+   :fields
+   [{:id 851290944093,
+     :idstr "k5c2xmnj",
+     :fname "value",
+     :ftype "s",
+     :fsubtype "single",
+     :list? nil,
+     :sort nil,
+     :response
+     [{:id 862227875323,
+       :pf-id 851290944093,
+       :idx nil,
+       :sval "",
+       :nval nil,
+       :dval nil,
+       :jval nil,
+       :state ""}]}],
+   :response
+   {:id 862227875321,
+    :prompt-id 740621457593,
+    :notes nil,
+    :fields
+    [{:id 862227875323,
+      :pf-id 851290944093,
+      :idx nil,
+      :sval "",
+      :nval nil,
+      :dval nil,
+      :jval nil}],
+    :notes-state ""}}
+  {:id 740508717551,
+   :idstr "jqgx11kx",
+   :prompt "Point of Contact",
+   :descr
+   "Person the buyer will interact with the buyer most regularly",
+   :sort 100,
+   :fields
+   [{:id 851290944095,
+     :idstr "k5c2xmnl",
+     :fname "value",
+     :ftype "s",
+     :fsubtype "single",
+     :list? false,
+     :sort nil,
+     :response
+     [{:id 862227875326,
+       :pf-id 851290944095,
+       :idx nil,
+       :sval "",
+       :nval nil,
+       :dval nil,
+       :jval nil,
+       :state ""}]}],
+   :response
+   {:id 862227875324,
+    :prompt-id 740508717551,
+    :notes nil,
+    :fields
+    [{:id 862227875326,
+      :pf-id 851290944095,
+      :idx nil,
+      :sval "",
+      :nval nil,
+      :dval nil,
+      :jval nil}],
+    :notes-state ""}}
+  {:id 567926257448,
+   :idstr "hi6qwy3u",
+   :prompt "Categories",
+   :descr "examples: zoo, forestry, cemetary",
+   :sort 100,
+   :fields
+   [{:id 567926257451,
+     :idstr "hi6qwy3x",
+     :fname "value",
+     :ftype "s",
+     :fsubtype "single",
+     :list? nil,
+     :sort 0,
+     :response
+     [{:id 862227875329,
+       :pf-id 567926257451,
+       :idx nil,
+       :sval "",
+       :nval nil,
+       :dval nil,
+       :jval nil,
+       :state ""}]}],
+   :response
+   {:id 862227875327,
+    :prompt-id 567926257448,
+    :notes nil,
+    :fields
+    [{:id 862227875329,
+      :pf-id 567926257451,
+      :idx nil,
+      :sval "",
+      :nval nil,
+      :dval nil,
+      :jval nil}],
+    :notes-state ""}}
+  {:id 558587701455,
+   :idstr "hewaza6p",
+   :prompt "Do you offer a free trial?",
+   :descr "Free as in beer",
+   :sort 100,
+   :fields
+   [{:id 558587961460,
+     :idstr "hewa4vs2",
+     :fname "value",
+     :ftype "e",
+     :fsubtype "e-yes-no",
+     :list? false,
+     :sort 0,
+     :response
+     [{:id 862227885332,
+       :pf-id 558587961460,
+       :idx nil,
+       :sval "",
+       :nval nil,
+       :dval nil,
+       :jval nil,
+       :state ""}]}],
+   :response
+   {:id 862227875330,
+    :prompt-id 558587701455,
+    :notes nil,
+    :fields
+    [{:id 862227885332,
+      :pf-id 558587961460,
+      :idx nil,
+      :sval "",
+      :nval nil,
+      :dval nil,
+      :jval nil}],
+    :notes-state ""}}
+  {:id 567926257446,
+   :idstr "hi6qwy3s",
+   :prompt "Pricing Model",
+   :descr "Describe the method used to calculate price",
+   :sort 100,
+   :fields
+   [{:id 567926257449,
+     :idstr "hi6qwy3v",
+     :fname "value",
+     :ftype "s",
+     :fsubtype "multi",
+     :list? false,
+     :sort 0,
+     :response
+     [{:id 862227885335,
+       :pf-id 567926257449,
+       :idx nil,
+       :sval "",
+       :nval nil,
+       :dval nil,
+       :jval nil,
+       :state ""}]}],
+   :response
+   {:id 862227885333,
+    :prompt-id 567926257446,
+    :notes nil,
+    :fields
+    [{:id 862227885335,
+      :pf-id 567926257449,
+      :idx nil,
+      :sval "",
+      :nval nil,
+      :dval nil,
+      :jval nil}],
+    :notes-state ""}}],
+ :title nil,
+ :product {:id 272814725271},
+ :id 851292794100,
+ :responses
+ [{:id 862227825257,
+   :prompt-id 791676936590,
+   :notes nil,
+   :fields
+   [{:id 862227835259,
+     :pf-id 851290884052,
+     :idx nil,
+     :sval "",
+     :nval nil,
+     :dval nil,
+     :jval nil}]}
+  {:id 862227835263,
+   :prompt-id 740668010733,
+   :notes nil,
+   :fields
+   [{:id 862227835265,
+     :pf-id 851290894056,
+     :idx nil,
+     :sval "",
+     :nval nil,
+     :dval nil,
+     :jval nil}]}
+  {:id 862227835266,
+   :prompt-id 740568977578,
+   :notes nil,
+   :fields
+   [{:id 862227835268,
+     :pf-id 851290894058,
+     :idx nil,
+     :sval "",
+     :nval nil,
+     :dval nil,
+     :jval nil}]}
+  {:id 862227835269,
+   :prompt-id 740439647531,
+   :notes nil,
+   :fields
+   [{:id 862227835271,
+     :pf-id 851290894060,
+     :idx nil,
+     :sval "",
+     :nval nil,
+     :dval nil,
+     :jval nil}]}
+  {:id 862227835272,
+   :prompt-id 740619217590,
+   :notes nil,
+   :fields
+   [{:id 862227835274,
+     :pf-id 851290894062,
+     :idx nil,
+     :sval "",
+     :nval nil,
+     :dval nil,
+     :jval nil}]}
+  {:id 862227835275,
+   :prompt-id 791684236593,
+   :notes nil,
+   :fields
+   [{:id 862227845277,
+     :pf-id 851290904064,
+     :idx nil,
+     :sval "",
+     :nval nil,
+     :dval nil,
+     :jval nil}]}
+  {:id 862227845278,
+   :prompt-id 740520667560,
+   :notes nil,
+   :fields
+   [{:id 862227845280,
+     :pf-id 851290904066,
+     :idx nil,
+     :sval "",
+     :nval nil,
+     :dval nil,
+     :jval nil}]}
+  {:id 862227845281,
+   :prompt-id 740544647571,
+   :notes nil,
+   :fields
+   [{:id 862227845283,
+     :pf-id 851290904068,
+     :idx nil,
+     :sval "",
+     :nval nil,
+     :dval nil,
+     :jval nil}]}
+  {:id 862227845284,
+   :prompt-id 740396517525,
+   :notes nil,
+   :fields
+   [{:id 862227855286,
+     :pf-id 851290904070,
+     :idx nil,
+     :sval "",
+     :nval nil,
+     :dval nil,
+     :jval nil}]}
+  {:id 862227855287,
+   :prompt-id 740504037548,
+   :notes nil,
+   :fields
+   [{:id 862227855289,
+     :pf-id 851290904072,
+     :idx nil,
+     :sval "",
+     :nval nil,
+     :dval nil,
+     :jval nil}]}
+  {:id 862227855290,
+   :prompt-id 740681080738,
+   :notes nil,
+   :fields
+   [{:id 862227855292,
+     :pf-id 851290904074,
+     :idx nil,
+     :sval "",
+     :nval nil,
+     :dval nil,
+     :jval nil}]}
+  {:id 862227855293,
+   :prompt-id 740493817542,
+   :notes nil,
+   :fields
+   [{:id 862227855295,
+     :pf-id 851290914076,
+     :idx nil,
+     :sval "",
+     :nval nil,
+     :dval nil,
+     :jval nil}]}
+  {:id 862227855296,
+   :prompt-id 558587751456,
+   :notes nil,
+   :fields
+   [{:id 862227855298,
+     :pf-id 558588011461,
+     :idx nil,
+     :sval "",
+     :nval nil,
+     :dval nil,
+     :jval nil}]}
+  {:id 862227855299,
+   :prompt-id 740599617585,
+   :notes nil,
+   :fields
+   [{:id 862227855301,
+     :pf-id 851290924079,
+     :idx nil,
+     :sval "",
+     :nval nil,
+     :dval nil,
+     :jval nil}
+    {:id 862227855302,
+     :pf-id 851290924080,
+     :idx nil,
+     :sval "",
+     :nval nil,
+     :dval nil,
+     :jval nil}]}
+  {:id 862227855303,
+   :prompt-id 740532527564,
+   :notes nil,
+   :fields
+   [{:id 862227865305,
+     :pf-id 851290924082,
+     :idx nil,
+     :sval "",
+     :nval nil,
+     :dval nil,
+     :jval nil}]}
+  {:id 862227865306,
+   :prompt-id 740599447583,
+   :notes nil,
+   :fields
+   [{:id 862227865308,
+     :pf-id 851290924084,
+     :idx nil,
+     :sval "",
+     :nval nil,
+     :dval nil,
+     :jval nil}]}
+  {:id 862227865309,
+   :prompt-id 740514557554,
+   :notes nil,
+   :fields
+   [{:id 862227865311,
+     :pf-id 851290934086,
+     :idx nil,
+     :sval "",
+     :nval nil,
+     :dval nil,
+     :jval nil}]}
+  {:id 862227865315,
+   :prompt-id 740499107545,
+   :notes nil,
+   :fields
+   [{:id 862227875317,
+     :pf-id 851290944089,
+     :idx nil,
+     :sval "",
+     :nval nil,
+     :dval nil,
+     :jval nil}]}
+  {:id 862227875318,
+   :prompt-id 740404407528,
+   :notes nil,
+   :fields
+   [{:id 862227875320,
+     :pf-id 851290944091,
+     :idx nil,
+     :sval "",
+     :nval nil,
+     :dval nil,
+     :jval nil}]}
+  {:id 862227875321,
+   :prompt-id 740621457593,
+   :notes nil,
+   :fields
+   [{:id 862227875323,
+     :pf-id 851290944093,
+     :idx nil,
+     :sval "",
+     :nval nil,
+     :dval nil,
+     :jval nil}]}
+  {:id 862227875324,
+   :prompt-id 740508717551,
+   :notes nil,
+   :fields
+   [{:id 862227875326,
+     :pf-id 851290944095,
+     :idx nil,
+     :sval "",
+     :nval nil,
+     :dval nil,
+     :jval nil}]}
+  {:id 862227875327,
+   :prompt-id 567926257448,
+   :notes nil,
+   :fields
+   [{:id 862227875329,
+     :pf-id 567926257451,
+     :idx nil,
+     :sval "",
+     :nval nil,
+     :dval nil,
+     :jval nil}]}
+  {:id 862227875330,
+   :prompt-id 558587701455,
+   :notes nil,
+   :fields
+   [{:id 862227885332,
+     :pf-id 558587961460,
+     :idx nil,
+     :sval "",
+     :nval nil,
+     :dval nil,
+     :jval nil}]}
+  {:id 862227885333,
+   :prompt-id 567926257446,
+   :notes nil,
+   :fields
+   [{:id 862227885335,
+     :pf-id 567926257449,
+     :idx nil,
+     :sval "",
+     :nval nil,
+     :dval nil,
+     :jval nil}]}
+  {:id 870328816347,
+   :prompt-id 558587581453,
+   :notes nil,
+   :fields
+   [{:id 870328816349,
+     :pf-id 558587851458,
+     :idx nil,
+     :sval "This is a description of the MailChimp promduct",
+     :nval nil,
+     :dval nil,
+     :jval nil}]}
+  {:id 879299896406,
+   :prompt-id 740547877574,
+   :notes nil,
+   :fields
+   [{:id 879299906408,
+     :pf-id 851290884048,
+     :idx nil,
+     :sval "anything??",
+     :nval nil,
+     :dval nil,
+     :jval nil}]}
+  {:id 879594746440,
+   :prompt-id 740517187557,
+   :notes nil,
+   :fields
+   [{:id 879594746442,
+     :pf-id 851290894054,
+     :idx nil,
+     :sval "dsfsdfsdfasdsdfsdfsdfsd11111111111111111",
+     :nval nil,
+     :dval nil,
+     :jval nil}]}
+  {:id 904513149675,
+   :prompt-id 740458537534,
+   :notes nil,
+   :fields
+   [{:id 904513149677,
+     :pf-id 851290884050,
+     :idx nil,
+     :sval "nopppeee  333 444",
+     :nval nil,
+     :dval nil,
+     :jval nil}]}],
+ :doc-id 862227825250,
+ :ftype "product-profile",
+ :doc-product {:id 272814725271},
+ :doc-dsubtype "product-profile1",
+ :fsubtype "product-profile1"}
+
+
+
+;; create-doc-from-form-doc
+
+#_
+{:doc-dtype "vendor-profile",
+ :doc-title " doc",
+ :to-org {:id 920694689711},
+ :doc-notes "",
+ :doc-descr "",
+ :prompts
+ [{:id 558587521452,
+   :idstr "hewavgam",
+   :prompt "Employee Count",
+   :descr "About how many people does your organzation employ?",
+   :fields
+   [{:id 558587801457,
+     :idstr "hewa1gcj",
+     :fname "value",
+     :ftype "n",
+     :fsubtype "int",
+     :list? false,
+     :response [{:state "2"}]}],
+   :response {:notes-state ""}}
+  {:id 558587631454,
+   :idstr "hewaxs58",
+   :prompt "Website",
+   :descr
+   "At which universal resource locator (URL) may your marketing website be found?",
+   :fields
+   [{:id 558587901459,
+     :idstr "hewa3lid",
+     :fname "value",
+     :ftype "s",
+     :fsubtype "single",
+     :list? false,
+     :response [{:state "v.com"}]}],
+   :response {:notes-state ""}}
+  {:id 567926257447,
+   :idstr "hi6qwy3t",
+   :prompt "Logo URL",
+   :descr "Where that logo at? Interwebs?",
+   :fields
+   [{:id 567926257450,
+     :idstr "hi6qwy3w",
+     :fname "value",
+     :ftype "s",
+     :fsubtype "single",
+     :list? false,
+     :response [{:state "vlogo"}]}],
+   :response {:notes-state ""}}
+  {:id 739253242143,
+   :idstr "jpv6kuj1",
+   :prompt "Year Founded",
+   :descr "The year the vendor was founded",
+   :fields
+   [{:id 851290874042,
+     :idstr "k5c2v4lo",
+     :fname "value",
+     :ftype "s",
+     :fsubtype "single",
+     :list? false,
+     :response [{:state "1900"}]}],
+   :response {:notes-state ""}}
+  {:id 739612789895,
+   :idstr "jp14m7dl",
+   :prompt "Funding Status",
+   :descr
+   "What funding stage the vendor is at/if it has reached profitability ",
+   :fields
+   [{:id 851290874044,
+     :idstr "k5c2v4lq",
+     :fname "value",
+     :ftype "s",
+     :fsubtype "single",
+     :list? false,
+     :response [{:state "early"}]}],
+   :response {:notes-state ""}}
+  {:id 739620209898,
+   :idstr "jp1818os",
+   :prompt "Headquarters Location",
+   :descr "Location of the vendor's headquarters",
+   :fields
+   [{:id 851290874046,
+     :idstr "k5c2v4ls",
+     :fname "value",
+     :ftype "s",
+     :fsubtype "single",
+     :list? false,
+     :response [{:state "space"}]}],
+   :response {:notes-state ""}}],
+ :title nil,
+ :id 851293464129,
+ :ftype "vendor-profile",
+ :doc-dsubtype "vendor-profile1",
+ :fsubtype "vendor-profile1"}
+
+
+;; create-preposal-req-form
+
+#_
+{:from-org-id 852106324668,
+ :from-user-id 852106304667,
+ :prod-id 272814695158}
+
+
+;; create-preposal-req-form => create-form-from-template
+
+#_
+{:from-org-id 852106324668,
+ :from-user-id 852106304667,
+ :prod-id 272814695158,
+ :form-template-id 370382503635,
+ :title "Preposal Request 70722",
+ :status "init",
+ :subject 272814695158}
+
+
+;; upsert-form-template
+
+#_
+{:deleted nil,
+ :updated "2019-03-26T15:00:00+00:00",
+ :created "2019-03-26T15:00:00+00:00",
+ :idstr "jmyy0nls",
+ :title "Vendor Profile",
+ :id 732891594222,
+ :descr "Vendor Profile",
+ :ftype "vendor-profile",
+ :fsubtype "vendor-profile1"}
+
+
+;; upsert-form-template-prompts
+
+#_
+[{:deleted nil,
+  :updated "2019-03-06T10:40:00+00:00",
+  :fields
+  [{:prompt-id 558587521452,
+    :deleted nil,
+    :fname "value",
+    :updated "2019-03-06T10:40:00+00:00",
+    :created "2019-03-06T10:40:00+00:00",
+    :idstr "hewa1gcj",
+    :id 558587801457,
+    :list? false,
+    :descr nil,
+    :ftype "n",
+    :sort 0,
+    :fsubtype "int"}],
+  :created "2019-03-06T10:40:00+00:00",
+  :idstr "hewavgam",
+  :prompt "Employee Count",
+  :id 558587521452,
+  :form-template-id 732891594222,
+  :descr "About how many people does your organzation employ?",
+  :sort 100}
+ {:deleted nil,
+  :updated "2019-03-06T10:40:00+00:00",
+  :fields
+  [{:prompt-id 558587631454,
+    :deleted nil,
+    :fname "value",
+    :updated "2019-03-06T10:40:00+00:00",
+    :created "2019-03-06T10:40:00+00:00",
+    :idstr "hewa3lid",
+    :id 558587901459,
+    :list? false,
+    :descr nil,
+    :ftype "s",
+    :sort 0,
+    :fsubtype "single"}],
+  :created "2019-03-06T10:40:00+00:00",
+  :idstr "hewaxs58",
+  :prompt "Website",
+  :id 558587631454,
+  :form-template-id 732891594222,
+  :descr
+  "At which universal resource locator (URL) may your marketing website be found?",
+  :sort 100}
+ {:deleted nil,
+  :updated "2019-03-07T10:40:00+00:00",
+  :fields
+  [{:prompt-id 567926257447,
+    :deleted nil,
+    :fname "value",
+    :updated "2019-03-07T10:40:00+00:00",
+    :created "2019-03-07T10:40:00+00:00",
+    :idstr "hi6qwy3w",
+    :id 567926257450,
+    :list? false,
+    :descr nil,
+    :ftype "s",
+    :sort 0,
+    :fsubtype "single"}],
+  :created "2019-03-07T10:40:00+00:00",
+  :idstr "hi6qwy3t",
+  :prompt "Logo URL",
+  :id 567926257447,
+  :form-template-id 732891594222,
+  :descr "Where that logo at? Interwebs?",
+  :sort 100}
+ {:deleted nil,
+  :updated "2019-03-27T14:28:43.033+00:00",
+  :fields
+  [{:prompt-id 739253242143,
+    :deleted nil,
+    :fname "value",
+    :updated "2019-03-28T13:57:57.679+00:00",
+    :created "2019-03-27T13:29:55.15+00:00",
+    :idstr "jpwaa8ir",
+    :id 739259512145,
+    :list? false,
+    :descr "",
+    :ftype "s",
+    :sort nil,
+    :fsubtype "single"}],
+  :created "2019-03-27T13:28:52.474+00:00",
+  :idstr "jpv6kuj1",
+  :prompt "Year Founded",
+  :id 739253242143,
+  :form-template-id 732891594222,
+  :descr "The year the vendor was founded",
+  :sort 100}
+ {:deleted nil,
+  :updated "2019-03-27T14:29:58.093+00:00",
+  :fields
+  [{:prompt-id 739612789895,
+    :deleted nil,
+    :fname "value",
+    :updated "2019-03-27T14:29:58.246+00:00",
+    :created "2019-03-27T14:29:32.144+00:00",
+    :idstr "jp1695k7",
+    :id 739617219897,
+    :list? false,
+    :descr "",
+    :ftype "s",
+    :sort nil,
+    :fsubtype "single"}],
+  :created "2019-03-27T14:28:47.811+00:00",
+  :idstr "jp14m7dl",
+  :prompt "Funding Status",
+  :id 739612789895,
+  :form-template-id 732891594222,
+  :descr
+  "What funding stage the vendor is at/if it has reached profitability ",
+  :sort 100}
+ {:deleted nil,
+  :updated "2019-03-27T14:30:24.018+00:00",
+  :fields
+  [{:prompt-id 739620209898,
+    :deleted nil,
+    :fname "value",
+    :updated "2019-03-27T14:30:24.156+00:00",
+    :created "2019-03-27T14:30:15.336+00:00",
+    :idstr "jp19uqxa",
+    :id 739621539900,
+    :list? false,
+    :descr "",
+    :ftype "s",
+    :sort nil,
+    :fsubtype "single"}],
+  :created "2019-03-27T14:30:02.036+00:00",
+  :idstr "jp1818os",
+  :prompt "Headquarters Location",
+  :id 739620209898,
+  :form-template-id 732891594222,
+  :descr "Location of the vendor's headquarters",
+  :sort 100}]

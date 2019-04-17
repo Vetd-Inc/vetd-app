@@ -282,3 +282,9 @@ Product: '%s'
                        :Message (str "Vendor Round Requirements Form Completed\n\n"
                                      msg)}))
     (catch Throwable t)))
+
+(defmethod com/handle-ws-inbound :save-doc
+  [{:keys [data ftype update-doc-id from-org-id] :as req} ws-id sub-fn]
+  (if (nil? update-doc-id)
+    (docs/create-doc req)
+    :TODO))
