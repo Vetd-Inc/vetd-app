@@ -150,6 +150,7 @@
 (defn c-round-grid
   [{:keys [id status title products] :as round}]
   (let [modal-showing? (r/atom false)
+        modal-message (r/atom "")
         cell-click-disabled? (r/atom false)
         ;; the response currently in the modal
         modal-response (r/atom {:requirement {:title nil}
@@ -258,25 +259,14 @@
                [:> ui/TextArea {:placeholder "Ask a follow-up question..."
                                 :autoFocus true
                                 :spellCheck true
-                                ;; :onChange (fn [_ this]
-                                ;;             (reset! message (.-value this)))
-                                }]]
+                                :onChange (fn [_ this]
+                                            (reset! modal-message (.-value this)))}]]
               [:> ui/Button {:onClick #(reset! modal-showing? false)
-                             :color "grey"
-                             ;; :icon true
-                             ;; :labelPosition "left"
-                             }
-               "Cancel"
-               ;; [:> ui/Icon {:name "chat"}]
-               ]
+                             :color "grey"}
+               "Cancel"]
               [:> ui/Button {:onClick #(reset! modal-showing? false)
-                             :color "blue"
-                             ;; :icon true
-                             ;; :labelPosition "left"
-                             }
-               "Submit Question"
-               ;; [:> ui/Icon {:name "chat"}]
-               ]]]]]
+                             :color "blue"}
+               "Submit Question"]]]]]
           [:<>
            [:p [:em "Your requirements have been submitted."]]
            [:p "We are gathering information for you to review from all relevant vendors. Check back soon for updates."]]))})))
