@@ -150,7 +150,17 @@
 (defn c-round-grid
   [{:keys [id status title products] :as round}]
   (let [modal-showing? (r/atom false)
-        cell-click-disabled? (r/atom false)]
+        cell-click-disabled? (r/atom false)
+        ;; the response currently in the modal
+        modal-response (r/atom {:requirement {:title nil}
+                                :product {:pname nil}
+                                :response nil})
+        show-modal (fn [requirement product response]
+                     (swap! modal-response assoc
+                            :requirement requirement
+                            :product product
+                            :response response)
+                     (reset! modal-showing? true))]
     (r/create-class
      {:component-did-mount
       (fn [this]
@@ -204,31 +214,32 @@
                                        "Parent / Child Heirarchical Billing" ["Yes" "Yes" "Yes" "No"]}
                                       dummy)]]
                  ^{:key (str "j" j)}
+                 
                  [:div.cell {:on-mouse-down #(reset! cell-click-disabled? false)
                              :on-mouse-up #(when-not @cell-click-disabled?
-                                             (reset! modal-showing? true))}
-                  [:div.text
-                   (util/truncate-text (get resps j) 150)]
+                                             (show-modal {:title dummy} {:pname "Some Product"} (get resps j)))}
+                  [:div.text (util/truncate-text (get resps j) 150)]
                   [:div.actions
                    [:> ui/Button {:icon "chat"
                                   :basic true
-                                  :size "mini"
-                                  }]
+                                  :size "mini"}]
                    [:> ui/Button {:icon "check"
                                   :basic true
-                                  :size "mini"
-                                  }]
+                                  :size "mini"}]
                    [:> ui/Button {:icon "close"
                                   :basic true
-                                  :size "mini"
-                                  }]]])])]
+                                  :size "mini"}]]])])]
            [:> ui/Modal {:open @modal-showing?
                          :size "tiny"
                          :dimmer "inverted"
-                         :closeOnDimmerClick false
-                         :closeOnEscape false}
-            [:> ui/ModalHeader "Ask a Question About"]
+                         :closeOnDimmerClick true
+                         :closeOnEscape true}
+            [:> ui/ModalHeader
+             (str (-> @modal-response :product :pname)
+                  " - "
+                  (-> @modal-response :requirement :title))]
             [:> ui/ModalContent
+             (-> @modal-response :response)
              [:> ui/Form
               [:> ui/FormField
                [:> ui/TextArea {:placeholder ""
@@ -237,16 +248,25 @@
                                 ;; :onChange (fn [_ this]
                                 ;;             (reset! message (.-value this)))
                                 }]]]]
-            [:> ui/ModalActions
-             [:> ui/Button {:onClick #(reset! modal-showing? false)}
-              "Cancel"]
-             [:> ui/Button {:onClick #(do ;; (rf/dispatch [:b/ask-a-question
-                                        ;;               id
-                                        ;;               pname
-                                        ;;               @message])
-                                        (reset! modal-showing? false))
-                            :color "blue"}
-              "Submit"]]]]
+            [:> ui/ModalActions {:style {:text-align "center"}}
+             [:> ui/Button {:onClick #(reset! modal-showing? false)
+                            :color "teal"
+                            :icon true
+                            :labelPosition "left"}
+              "Ask Question"
+              [:> ui/Icon {:name "chat"}]]
+             [:> ui/Button {:onClick #(reset! modal-showing? false)
+                            :color "red"
+                            :icon true
+                            :labelPosition "left"}
+              "Unacceptable"
+              [:> ui/Icon {:name "close"}]]
+             [:> ui/Button {:onClick #(reset! modal-showing? false)
+                            :color "blue"
+                            :icon true
+                            :labelPosition "left"}
+              "Acceptable"
+              [:> ui/Icon {:name "check"}]]]]]
           [:<>
            [:p [:em "Your requirements have been submitted."]]
            [:p "We are gathering information for you to review from all relevant vendors. Check back soon for updates."]]))})))
