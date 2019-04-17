@@ -147,6 +147,25 @@
     (println doc)
     [c-round-initiation-form id]))
 
+(def dummy-reqs
+  ["Pricing Estimate" "Free Trial" "Current Customers" "Integration with GMail"
+   "Subscription Billing" "One Time Billing" "Parent / Child Heirarchical Billing"])
+(def dummy-products["SendGrid" "Mailchimp" "Mandrill" "iContact"])
+(def dummy-resps
+  {"Pricing Estimate" ["$45 / mo."
+                       "$200 / mo."
+                       "If you are in the $0-2M pricing tier, the base fee is $4,000."
+                       "Unavailable"]
+   "Free Trial" ["First 30 days." "Yes, with limited features." "Yes" "Yes"]
+   "Current Customers" ["Google, Patreon, YouTube, Vetd, Make Offices"
+                        "Apple, Cisco Enterprise, Symantec, Tommy's Coffee"
+                        "Heinz, Philadelphia Business Group, Wizards of the Coast"
+                        "None currently."]
+   "Integration with GMail" ["Yes" "Yes" "Yes, with PRO account." "No"]
+   "Subscription Billing" ["Yes" "Yes" "Yes" "No"]
+   "One Time Billing" ["Yes" "No" "Yes" "Yes"]
+   "Parent / Child Heirarchical Billing" ["Yes" "Yes" "Yes" "No"]})
+
 (defn c-round-grid
   [{:keys [id status title products] :as round}]
   (let [modal-showing? (r/atom false)
@@ -200,37 +219,27 @@
         (if (or true (seq products))
           [:<>
            [:div.round-grid
-            (for [dummy ["Pricing Estimate" "Free Trial" "Current Customers" "Integration with GMail"
-                         "Subscription Billing" "One Time Billing" "Parent / Child Heirarchical Billing"]]
+            (for [dummy dummy-reqs]
               ^{:key dummy}
               [:div.column 
                [:h4.requirement dummy]
-               (let [dummy-products ["SendGrid" "Mailchimp" "Mandrill" "iContact"]]
-                 (for [dummy-product dummy-products
-                       :let [resps (get {"Pricing Estimate" ["$45 / mo." "$200 / mo." "If you are in the $0-2M pricing tier, the base fee is $4,000." "Unavailable"]
-                                         "Free Trial" ["First 30 days." "Yes, with limited features." "Yes" "Yes"]
-                                         "Current Customers" ["Google, Patreon, YouTube, Vetd, Make Offices" "Apple, Cisco Enterprise, Symantec, Tommy's Coffee" "Heinz, Philadelphia Business Group, Wizards of the Coast" "None currently."]
-                                         "Integration with GMail" ["Yes" "Yes" "Yes, with PRO account." "No"]
-                                         "Subscription Billing" ["Yes" "Yes" "Yes" "No"]
-                                         "One Time Billing" ["Yes" "No" "Yes" "Yes"]
-                                         "Parent / Child Heirarchical Billing" ["Yes" "Yes" "Yes" "No"]}
-                                        dummy)
-                             response (get resps (.indexOf dummy-products dummy-product))]]
-                   ^{:key dummy-product}
-                   [:div.cell {:on-mouse-down #(reset! cell-click-disabled? false)
-                               :on-mouse-up #(when-not @cell-click-disabled?
-                                               (show-modal {:title dummy} {:pname dummy-product} response))}
-                    [:div.text (util/truncate-text response 150)]
-                    [:div.actions
-                     [:> ui/Button {:icon "chat"
-                                    :basic true
-                                    :size "mini"}]
-                     [:> ui/Button {:icon "thumbs up outline"
-                                    :basic true
-                                    :size "mini"}]
-                     [:> ui/Button {:icon "thumbs down outline"
-                                    :basic true
-                                    :size "mini"}]]]))])]
+               (for [dummy-product dummy-products
+                     :let [resps (get dummy-resps dummy)
+                           response (get resps (.indexOf dummy-products dummy-product))]]
+                 ^{:key dummy-product}
+                 [:div.cell {:on-mouse-down #(reset! cell-click-disabled? false)
+                             :on-mouse-up #(when-not @cell-click-disabled?
+                                             (show-modal {:title dummy} {:pname dummy-product} response))}
+                  [:div.text (util/truncate-text response 150)]
+                  [:div.actions
+                   [:> ui/Button {:icon "chat" :basic true
+                                  :size "mini"}]
+                   [:> ui/Button {:icon "thumbs up outline"
+                                  :basic true
+                                  :size "mini"}]
+                   [:> ui/Button {:icon "thumbs down outline"
+                                  :basic true
+                                  :size "mini"}]]])])]
            [:> ui/Modal {:open @modal-showing?
                          :on-close #(reset! modal-showing? false)
                          :size "tiny"
