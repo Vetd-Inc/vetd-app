@@ -54,7 +54,6 @@
   (let [pricing-estimate-value (docs/get-field-value responses "Pricing Estimate" "value" :nval)
         pricing-estimate-unit (docs/get-field-value responses "Pricing Estimate" "unit" :sval)
         pricing-estimate-details (docs/get-field-value responses "Pricing Estimate" "details" :sval)
-        free-trial? (= "yes" (docs/get-field-value responses "Do you offer a free trial?" "value" :sval))
         product-profile-responses (-> product :form-docs first :response-prompts)]
     [:> ui/Item {:onClick #(rf/dispatch [:b/nav-preposal-detail idstr])}
      ;; TODO make config var 's3-base-url'
@@ -85,11 +84,9 @@
                                    :ename (:pname product)
                                    :props {:floated "right"}}])
        [bc/c-categories product]
-       (when free-trial? [:> ui/Label {:class "free-trial-tag"
-                                       :color "gray"
-                                       :size "small"
-                                       :tag true}
-                          "Free Trial"])]]
+       (when (= "Yes" (docs/get-field-value-from-response-prompt
+                       product-profile-responses "Do you offer a free trial?" "value" :sval))
+         [bc/c-free-trial-tag])]]
      (when (not-empty (:rounds product))
        [bc/c-round-in-progress {:props {:ribbon "right"
                                         :style {:position "absolute"
@@ -119,13 +116,13 @@
                                                               :_order_by {:created :desc}
                                                               :_limit 1}
                                                   [:id 
-                                                   [:response-prompts {:prompt-prompt "Describe your product or service"
+                                                   [:response-prompts {:prompt-prompt ["Describe your product or service"
+                                                                                       "Do you offer a free trial?"]
                                                                        :ref_deleted nil}
                                                     [:id :prompt-id :notes :prompt-prompt
                                                      [:response-prompt-fields
                                                       [:id :prompt-field-fname :idx :sval :nval :dval]]]]]]
-                                                 [:rounds {:buyer-id @org-id&
-                                                           :status "active"}
+                                                 [:rounds {:buyer-id @org-id&}
                                                   [:id :created :status]]
                                                  [:categories [:id :idstr :cname]]]]
                                       [:from-org [:id :oname]]
@@ -140,42 +137,50 @@
                                          [:id :pf-id :idx :sval :nval :dval :jval
                                           [:prompt-field [:id :fname]]]]]]]]]}])]
         (fn []
-          [:div.container-with-sidebar
-           (let [categories (->> @preps&
-                                 :docs
-                                 (map (comp :categories :product))
-                                 flatten
-                                 (map #(select-keys % [:id :cname]))
-                                 (group-by :id))]
-             (when (not-empty categories)
-               [:div.sidebar
-                [:h4 "Filter By Category"]
-                (doall
-                 (for [[id v] categories]
-                   (let [category (first v)]
-                     ^{:key id} 
-                     [:> ui/Checkbox {:label (str (:cname category) " (" (count v) ")")
-                                      :checked (boolean (@selected-categories& id))
-                                      :onChange (fn [_ this]
-                                                  (if (.-checked this)
-                                                    (rf/dispatch [:b/preposals-filter.add-selected-category category])
-                                                    (rf/dispatch [:b/preposals-filter.remove-selected-category category])))}])))]))
-           [:> ui/ItemGroup {:class "inner-container results"}
-            (if (= :loading @preps&)
-              [cc/c-loader]
-              (let [preposals (cond-> (:docs @preps&)
-                                (seq @selected-categories&) (filter-preposals @selected-categories&))]
-                (if (seq preposals)
-                  (for [preposal preposals]
-                    ^{:key (:id preposal)}
-                    [c-preposal preposal])
-                  [:div {:style {:width 500
-                                 :margin "70px auto"}}
-                   [:h3 {:style {:margin-bottom 5}} "You currently don't have any Preposals."]
-                   "To get started, request a Preposal from the "
-                   [:a {:style {:cursor "pointer"}
-                        :onClick #(rf/dispatch [:b/nav-search])}
-                    "Products & Categories"]
-                   " page."
-                   [:br]
-                   "Or, simply forward any sales emails you receive to forward@vetd.com."])))]])))))
+          (if (= :loading @preps&)
+            [cc/c-loader]
+            (let [unfiltered-preposals (:docs @preps&)]
+              (if (seq unfiltered-preposals)
+                [:div.container-with-sidebar
+                 (let [categories (->> unfiltered-preposals
+                                       (map (comp :categories :product))
+                                       flatten
+                                       (map #(select-keys % [:id :cname]))
+                                       (group-by :id))]
+                   (when (not-empty categories)
+                     [:div.sidebar
+                      [:h4 "Filter By Category"]
+                      (doall
+                       (for [[id v] categories]
+                         (let [category (first v)]
+                           ^{:key id} 
+                           [:> ui/Checkbox {:label (str (:cname category) " (" (count v) ")")
+                                            :checked (boolean (@selected-categories& id))
+                                            :onChange (fn [_ this]
+                                                        (if (.-checked this)
+                                                          (rf/dispatch [:b/preposals-filter.add-selected-category category])
+                                                          (rf/dispatch [:b/preposals-filter.remove-selected-category category])))}])))]))
+                 [:> ui/ItemGroup {:class "inner-container results"}  
+                  (let [preposals (cond-> unfiltered-preposals
+                                    (seq @selected-categories&) (filter-preposals @selected-categories&))]
+                    (for [preposal preposals]
+                      ^{:key (:id preposal)}
+                      [c-preposal preposal]))]]
+                [:> ui/Grid
+                 [:> ui/GridRow
+                  [:> ui/GridColumn {:computer 2 :mobile 0}]
+                  [:> ui/GridColumn {:computer 12 :mobile 16}
+                   [:> ui/Segment {:placeholder true}
+                    [:> ui/Header {:icon true}
+                     [:> ui/Icon {:name "wpforms"}]
+                     "You don't have any Preposals."]
+                    [:div {:style {:text-align "center"
+                                   :margin-top 10}}
+                     "To get started, request a Preposal from the "
+                     [:a {:style {:cursor "pointer"}
+                          :onClick #(rf/dispatch [:b/nav-search])}
+                      "Products & Categories"]
+                     " page."
+                     [:br] [:br]
+                     "Or, simply forward any sales emails you receive to forward@vetd.com."]]]
+                  [:> ui/GridColumn {:computer 2 :mobile 0}]]]))))))))

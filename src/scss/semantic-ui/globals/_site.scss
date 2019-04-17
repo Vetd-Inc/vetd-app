@@ -18,7 +18,10 @@
 }
 html,
 body {
-  height: 100%;
+  // celwell: I removed this to clean up the scroll bar
+  // behavior. Let's keep an eye on whether or not that
+  // negatively effects a certain browser.
+  // height: 100%;
 }
 html {
   font-size: 14px;

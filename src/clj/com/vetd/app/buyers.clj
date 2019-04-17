@@ -75,13 +75,14 @@
             paths)))
 
 (defn insert-round
-  [buyer-id]
+  [buyer-id title]
   (let [[id idstr] (ut/mk-id&str)]
     (-> (db/insert! :rounds
                     {:id id
                      :idstr idstr
                      :buyer_id buyer-id
-                     :status "active"
+                     :status "initiation"
+                     :title title
                      :created (ut/now-ts)
                      :updated (ut/now-ts)})
         first)))
@@ -111,8 +112,8 @@
         first)))
 
 (defn create-round
-  [buyer-id eid etype]
-  (let [{:keys [id] :as r} (insert-round buyer-id)]
+  [buyer-id title eid etype]
+  (let [{:keys [id] :as r} (insert-round buyer-id title)]
     (case etype
       :product (insert-round-product id eid)
       :category (insert-round-category id eid))
@@ -239,8 +240,8 @@ Product: '%s'
 
 ;; TODO record which user started round
 (defmethod com/handle-ws-inbound :b/start-round
-  [{:keys [etype buyer-id eid]} ws-id sub-fn]
-  (create-round buyer-id eid etype))
+  [{:keys [buyer-id title etype eid]} ws-id sub-fn]
+  (create-round buyer-id title eid etype))
 
 (defmethod com/handle-ws-inbound :b/req-new-prod-cat
   [{:keys [user-id org-id req]} ws-id sub-fn]

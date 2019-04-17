@@ -69,10 +69,11 @@
 
 (rf/reg-event-fx
  :b/start-round
- (fn [{:keys [db]} [_ etype eid]]
+ (fn [{:keys [db]} [_ title etype eid]]
    (let [qid (get-next-query-id)]
      {:ws-send {:payload {:cmd :b/start-round
                           :return {:handler :b/start-round-return}
+                          :title title
                           :etype etype
                           :eid eid
                           :buyer-id (util/db->current-org-id db)}}
@@ -191,13 +192,9 @@
                                  "No description available.")]
       [:> ui/ItemExtra
        [bc/c-categories product]
-       (when (and preposal-responses
-                  (= "yes" (docs/get-field-value preposal-responses "Do you offer a free trial?" "value" :sval)))
-         [:> ui/Label {:class "free-trial-tag"
-                       :color "gray"
-                       :size "small"
-                       :tag true}
-          "Free Trial"])]]
+       (when (= "Yes" (docs/get-field-value-from-response-prompt
+                       product-profile-responses "Do you offer a free trial?" "value" :sval))
+         [bc/c-free-trial-tag])]]
      (when (not-empty rounds)
        [bc/c-round-in-progress {:props {:ribbon "right"
                                         :style {:position "absolute"
@@ -214,14 +211,22 @@
   [{:keys [cname id idstr rounds] :as cat}]
   [:div.category-search-result
    (if (empty? rounds)
-     [:> ui/Button {:on-click #(rf/dispatch [:b/start-round :category id])
+     [:> ui/Button {:on-click
+                    #(rf/dispatch
+                      [:b/start-round
+                       (str (util/capitalize-words cname) " Products")
+                       :category
+                       id])
                     :color "blue"
                     :icon true
                     :labelPosition "right"}
       (str "Start VetdRound for \"" cname "\"")
       [:> ui/Icon {:name "right arrow"}]]
      [:> ui/Label {:color "teal"
-                   :size "large"}
+                   :size "large"
+                   :as "a"
+                   :onClick #(do (.stopPropagation %)
+                                 (rf/dispatch [:b/nav-rounds]))}
       "VetdRound In Progress for \"" cname "\""])])
 
 (defn c-search-results
@@ -241,7 +246,8 @@
                                                    :doc-deleted nil}
                                        [:id
                                         [:response-prompts
-                                         {:prompt-prompt "Describe your product or service"
+                                         {:prompt-prompt ["Describe your product or service"
+                                                          "Do you offer a free trial?"]
                                           :ref_deleted nil}
                                          [:id :prompt-id :notes :prompt-prompt
                                           [:response-prompt-fields
@@ -263,8 +269,7 @@
                                           [:fields
                                            [:id :pf-id :idx :sval :nval :dval :jval
                                             [:prompt-field [:id :fname]]]]]]]]
-                                      [:rounds {:buyer-id org-id
-                                                :status "active"}
+                                      [:rounds {:buyer-id org-id}
                                        [:id :created :status]]
                                       [:categories [:id :idstr :cname]]]]]]]}])
                 [])
@@ -273,8 +278,7 @@
                                      {:queries
                                       [[:categories {:id category-ids}
                                         [:id :idstr :cname
-                                         [:rounds {:buyer-id org-id
-                                                   :status "active"}
+                                         [:rounds {:buyer-id org-id}
                                           [:id :created :status]]]]]}])
                      [])
         loading? (or @(rf/subscribe [:waiting-for-debounce?])
@@ -326,7 +330,7 @@
        [:> ui/GridRow
         [:> ui/GridColumn {:computer 4 :mobile 0}]
         [:> ui/GridColumn {:computer 8 :mobile 16}
-         [ui/input {:class "product-search"
+         [ui/input {:class "product-search borderless"
                     :value @search-query&
                     :size "big"
                     :icon "search"

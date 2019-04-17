@@ -119,13 +119,12 @@
                                                           :_order_by {:created :desc}
                                                           :_limit 1
                                                           :doc-deleted nil}
-                                              [:id 
-                                               [:response-prompts {:ref_deleted nil}
+                                              [:id
+                                               [:response-prompts {:ref-deleted nil}
                                                 [:id :prompt-id :notes :prompt-prompt
                                                  [:response-prompt-fields
                                                   [:id :prompt-field-fname :idx :sval :nval :dval]]]]]]
-                                             [:rounds {:buyer-id @org-id&
-                                                       :status "active"}
+                                             [:rounds {:buyer-id @org-id&}
                                               [:id :created :status]]
                                              [:categories [:id :idstr :cname]]
                                              [:vendor

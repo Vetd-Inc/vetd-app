@@ -18,8 +18,8 @@
   background: #FFFFFF;
   -webkit-box-shadow: 0px 1px 2px 0 rgba(34, 36, 38, 0.15);
           box-shadow: 0px 1px 2px 0 rgba(34, 36, 38, 0.15);
-  margin: 1rem 0em;
-  padding: 1em 1em;
+  margin: 14px 0em;
+  padding: $segment-padding;
   border-radius: 0.28571429rem;
   border: 1px solid rgba(34, 36, 38, 0.15);
 }
@@ -127,10 +127,11 @@
   overflow: visible;
   padding: 1em 1em;
   min-height: 18rem;
-  background: #F9FAFB;
-  border-color: rgba(34, 36, 38, 0.15);
-  -webkit-box-shadow: 0px 2px 25px 0 rgba(34, 36, 38, 0.05) inset;
-          box-shadow: 0px 2px 25px 0 rgba(34, 36, 38, 0.05) inset;
+  background: #FFFFFF;
+  border: none;
+  border-radius: 8px;
+  -webkit-box-shadow: 0 2px 14px 0 rgba(50, 50, 50, 0.1);
+          box-shadow: 0 2px 14px 0 rgba(50, 50, 50, 0.1);
 }
 .ui.placeholder.segment .button,
 .ui.placeholder.segment textarea {

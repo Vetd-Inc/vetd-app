@@ -1,5 +1,5 @@
 $import-google-fonts: true !default;
-$font-url: 'https://fonts.googleapis.com/css?family=Montserrat:300,400|Raleway:300,400' !default;
+$font-url: 'https://fonts.googleapis.com/css?family=Montserrat:300,400,600|Raleway:300,400' !default;
 $font-name: 'Montserrat' !default;
 $font-family: $font-name, 'Helvetica Neue', Arial, Helvetica, sans-serif !default;
 
@@ -8,3 +8,8 @@ $teal: #4ec2c4;
 $teal-highlight: #84d4d6; 
 $blue: #32abde;
 $blue-highlight: #6ec3e7;
+
+
+$sidebar-width: 223px;
+$sidebar-margin-right: 20px;
+$segment-padding: 14px;

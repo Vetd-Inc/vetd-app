@@ -14,8 +14,8 @@
 
 
 #_(mig/migrate
- {:store :database
-  :db env/pg-db})
+   {:store :database
+    :db env/pg-db})
 
 #_ (mig/reset {:store :database
                :db env/pg-db})
