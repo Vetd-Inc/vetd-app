@@ -5,6 +5,13 @@ body {
   font-size: 14px;
   font-weight: 300;
   color: #444;
+
+  // The following class is added to pages that expect a modal.
+  // Without it, the modal will cause the page's vertical scrollbar 
+  // to disappear, which causes a jarring shift of page elements.
+  &.always-show-vertical-scroll {
+    overflow-y: scroll !important;
+  }
 }
 
 a {
@@ -350,11 +357,10 @@ textarea {
     border-radius: 4px;
     background: #fff;
     font-weight: 400;
-    
     cursor: pointer;
     transition: transform .05s ease-out !important;
     transform: scale(0.98);
-
+    
     &:hover {
       transform: scale(1);
     }

@@ -149,10 +149,13 @@
 
 (defn c-round-grid
   [{:keys [id status title products] :as round}]
-  (let []
+  (let [modal-showing? (r/atom false)]
     (r/create-class
      {:component-did-mount
       (fn [this]
+        ;; prepare for modal (TODO consider having this class add on login, because other pages might as well have scroll)
+        (.add (.-classList (aget (.getElementsByTagName js/document "body") 0)) "always-show-vertical-scroll")
+        ;; draggable grid
         (let [node (r/dom-node this)
               mousedown? (atom false)
               x-at-mousedown (atom nil)
@@ -179,43 +182,74 @@
           (.addEventListener node "mousedown" handle-mousedown)
           (.addEventListener node "mouseup" handle-mouseup)
           (.addEventListener node "mouseleave" handle-mouseup)
-          ;; add mouseleave?
           (.addEventListener node "mousemove" handle-mousemove)))
+
+      :component-will-unmount
+      (fn [this]
+        ;; clean up model helper
+        (.remove (.-classList (aget (.getElementsByTagName js/document "body") 0)) "always-show-vertical-scroll"))
       
       :reagent-render
       (fn []
         (if (or true (seq products))
-          [:div.round-grid
-           {:style {}}
-           (for [i (range 8)]
-             ^{:key i}
-             [:div.column 
-              [:h4.requirement
-               (rand-nth ["Price Estimate Without a Long Title" "Subscription Billing" "Parent / Child Hierarchial" "Prepay Option" "Integration with GMail" "Coffee Flavors"])]
-              (for [j (range 4)]
-                ^{:key (str "j" j)}
-                [:div.cell
-                 [:div.text
-                  (util/truncate-text
-                   (rand-nth ["Lorem ipsum lorem ispum lorem ispum lorem ispum loremum lorem ispum lorem m ispum."
-                              "Lorem ipsum lorem ispum lorem ispum lorem ispum loremum lorem ispum lorem m ispum. Lorem ipsum lorem ispum lorem ispum lorem ispum loremum lorem ispum lorem m ispum."
-                              "Ipsum lorem ispum lorem ispum lorem ispum lorem m ispum. Lorem ipsum lorem ispum lorem ispum lorem ispum loremum lorem ispum lorem m ispum. Ipsum lorem ispum lorem ispum lorem ipsum ipsum ipsum ipsum ispum loremum lorem ispum lorem m ispum. Lorem ipsum lorem ispum lorem ispum lorem ispum loremum lorem ispum lorem m ispum."
-                              "Yes"
-                              "Lorem ipsum lorem ispum."])
-                   150)]
-                 [:div.actions
-                  [:> ui/Button {:icon "chat"
-                                 :basic true
-                                 :size "mini"
-                                 }]
-                  [:> ui/Button {:icon "check"
-                                 :basic true
-                                 :size "mini"
-                                 }]
-                  [:> ui/Button {:icon "close"
-                                 :basic true
-                                 :size "mini"
-                                 }]]])])]
+          [:<>
+           [:div.round-grid
+            (for [i (range 8)]
+              ^{:key i}
+              [:div.column 
+               [:h4.requirement
+                (nth ["Subscription Billing" "Parent / Child Hierarchial" "Prepay Option"  "Integration with GMail" "Example Of A Longer Requirement Title Is Here" "Coffee Flavors"]
+                     (mod i 6))]
+               (for [j (range 4)]
+                 ^{:key (str "j" j)}
+                 [:div.cell {:on-click #(reset! modal-showing? true)}
+                  [:div.text
+                   (util/truncate-text
+                    (nth ["Lorem ipsum lorem ispum lorem ispum lorem ispum loremum lorem ispum lorem m ispum."
+                          "Lorem ipsum lorem ispum lorem ispum lorem ispum loremum lorem ispum lorem m ispum. Lorem ipsum lorem ispum lorem ispum lorem ispum loremum lorem ispum lorem m ispum."
+                          "Ipsum lorem ispum lorem ispum lorem ispum lorem m ispum. Lorem ipsum lorem ispum lorem ispum lorem ispum loremum lorem ispum lorem m ispum. Ipsum lorem ispum lorem ispum lorem ipsum ipsum ipsum ipsum ispum loremum lorem ispum lorem m ispum. Lorem ipsum lorem ispum lorem ispum lorem ispum loremum lorem ispum lorem m ispum."
+                          "Yes"
+                          "Lorem ipsum lorem ispum."]
+                         (mod (+ i j) 5))
+                    150)]
+                  [:div.actions
+                   [:> ui/Button {:icon "chat"
+                                  :basic true
+                                  :size "mini"
+                                  }]
+                   [:> ui/Button {:icon "check"
+                                  :basic true
+                                  :size "mini"
+                                  }]
+                   [:> ui/Button {:icon "close"
+                                  :basic true
+                                  :size "mini"
+                                  }]]])])]
+           [:> ui/Modal {:open @modal-showing?
+                         :size "tiny"
+                         :dimmer "inverted"
+                         :closeOnDimmerClick false
+                         :closeOnEscape false}
+            [:> ui/ModalHeader "Ask a Question About"]
+            [:> ui/ModalContent
+             [:> ui/Form
+              [:> ui/FormField
+               [:> ui/TextArea {:placeholder ""
+                                :autoFocus true
+                                :spellCheck true
+                                ;; :onChange (fn [_ this]
+                                ;;             (reset! message (.-value this)))
+                                }]]]]
+            [:> ui/ModalActions
+             [:> ui/Button {:onClick #(reset! modal-showing? false)}
+              "Cancel"]
+             [:> ui/Button {:onClick #(do ;; (rf/dispatch [:b/ask-a-question
+                                        ;;               id
+                                        ;;               pname
+                                        ;;               @message])
+                                        (reset! modal-showing? false))
+                            :color "blue"}
+              "Submit"]]]]
           [:<>
            [:p [:em "Your requirements have been submitted."]]
            [:p "We are gathering information for you to review from all relevant vendors. Check back soon for updates."]]))})))
