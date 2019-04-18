@@ -358,6 +358,8 @@ $cell-height: 201px;
     z-index: 999;
     background: white;
     box-shadow: 0 2px 14px 0 rgba(50,50,50,0.1) !important;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
   }
 
   // &:hover .column:not(:hover) {

@@ -150,7 +150,8 @@
 (def dummy-reqs
   ["Pricing Estimate" "Free Trial" "Current Customers" "Integration with GMail"
    "Subscription Billing" "One Time Billing" "Parent / Child Heirarchical Billing"])
-(def dummy-products["SendGrid" "Mailchimp" "Mandrill" "iContact" "iContact" "iContact"])
+(def dummy-products["SendGrid" "Mailchimp" ;; "Mandrill" "iContact"
+                    ])
 (def dummy-resps
   {"Pricing Estimate" ["$45 / mo."
                        "$200 / mo."
@@ -165,6 +166,18 @@
    "Subscription Billing" ["Yes" "Yes" "Yes" "No"]
    "One Time Billing" ["Yes" "No" "Yes" "Yes"]
    "Parent / Child Heirarchical Billing" ["Yes" "Yes" "Yes" "No"]})
+
+(defn c-action-button
+  [{:keys [icon on-click popup-text props]}]
+  [:> ui/Popup
+   {:content popup-text
+    :position "bottom center"
+    :trigger (r/as-element
+              [:> ui/Button (merge {:on-click on-click
+                                    :icon icon
+                                    :basic true
+                                    :size "mini"}
+                                   props)])}])
 
 (defn c-round-grid
   [{:keys [id status title products] :as round}]
@@ -187,7 +200,7 @@
     (r/create-class
      {:component-did-mount
       (fn [this]
-        (let [;; draggable grid
+        (let [ ;; draggable grid
               node (r/dom-node this)
               mousedown? (atom false)
               x-at-mousedown (atom nil)
@@ -277,14 +290,15 @@
                                              (show-modal {:title dummy} {:pname dummy-product} response))}
                   [:div.text (util/truncate-text response 150)]
                   [:div.actions
-                   [:> ui/Button {:icon "chat" :basic true
-                                  :size "mini"}]
-                   [:> ui/Button {:icon "thumbs up outline"
-                                  :basic true
-                                  :size "mini"}]
-                   [:> ui/Button {:icon "thumbs down outline"
-                                  :basic true
-                                  :size "mini"}]]])])]
+                   [c-action-button {:on-click #()
+                                     :icon "chat outline"
+                                     :popup-text "Ask Question"}]
+                   [c-action-button {:on-click #()
+                                     :icon "thumbs up outline"
+                                     :popup-text "Approve"}]
+                   [c-action-button {:on-click #()
+                                     :icon "thumbs down outline"
+                                     :popup-text "Disapprove"}]]])])]
            [:> ui/Modal {:open @modal-showing?
                          :on-close #(reset! modal-showing? false)
                          :size "tiny"
@@ -295,16 +309,16 @@
             [:> ui/ModalHeader (-> @modal-response :product :pname)]
             [:> ui/ModalContent
              [:h4 {:style {:padding-bottom 10}}
-              [:> ui/Button {:icon "thumbs down outline"
-                             :basic true
-                             :size "mini"
-                             :style {:float "right"
-                                     :margin-right 0}}]
-              [:> ui/Button {:icon "thumbs up outline"
-                             :basic true
-                             :size "mini"
-                             :style {:float "right"
-                                     :margin-right 4}}]
+              [c-action-button {:on-click #()
+                                :icon "thumbs down outline"
+                                :popup-text "Disapprove"
+                                :props {:style {:float "right"
+                                                :margin-right 0}}}]
+              [c-action-button {:on-click #()
+                                :icon "thumbs up outline"
+                                :popup-text "Approve"
+                                :props {:style {:float "right"
+                                                :margin-right 4}}}]
               (-> @modal-response :requirement :title)]
              (-> @modal-response :response)]
             [:> ui/ModalActions
