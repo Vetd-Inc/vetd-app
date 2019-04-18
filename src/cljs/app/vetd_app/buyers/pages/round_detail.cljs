@@ -399,7 +399,8 @@
                                  :labelPosition "left"}
                    "Add Requirement"
                    [:> ui/Icon {:name "plus"}]]]
-                 (for [{:keys [product-id pname vendor] :as product} products]
+                 (for [{:keys [product-id pname vendor] :as product} products
+                       :let [disqualified? false]]
                    ^{:key product-id}
                    [:> ui/Segment
                     [:h3 pname]
@@ -407,7 +408,8 @@
                                    :color "vetd-gradient"
                                    :fluid true
                                    :icon true
-                                   :labelPosition "left"}
+                                   :labelPosition "left"
+                                   :disabled disqualified?}
                      "Declare Winner"
                      [:> ui/Icon {:name "checkmark"}]]
                     [bc/c-setup-call-button product vendor]
@@ -416,46 +418,6 @@
                                    :fluid true
                                    :icon true
                                    :labelPosition "left"}
-                     "Disqualify"
-                     [:> ui/Icon {:name "ban"}]]]
-                   
-                   #_[:> ui/Segment
-                      [:h3 "iContact"]
-                      [:> ui/Button {:onClick #(do (.stopPropagation %)
-                                                   #_(rf/dispatch [:b/do-something]))
-                                     :color "vetd-gradient"
-                                     :fluid true
-                                     :disabled true
-                                     :icon true
-                                     :labelPosition "left"}
-                       "Declare Winner"
-                       [:> ui/Icon {:name "checkmark"}]]
-                      [:> ui/Button {:onClick #(do (.stopPropagation %)
-                                                   #_(rf/dispatch [:b/do-something]))
-                                     :color "grey"
-                                     :fluid true
-                                     :disabled true
-                                     :icon true
-                                     :labelPosition "left"}
-                       "Setup a Call"
-                       [:> ui/Icon {:name "left call"}]]
-                      [:> ui/Button {:onClick #(do (.stopPropagation %)
-                                                   #_(rf/dispatch [:b/do-something]))
-                                     :color "grey"
-                                     :fluid true
-                                     :icon true
-                                     :labelPosition "left"}
-                       "Undo Disqualify"
-                       [:> ui/Icon {:name "undo"}]]]
-                   )])
-              #_(let [{:keys [vendor rounds] :as product} (-> @products& :products first)]
-                  (when (empty? (:rounds product))
-                    [:> ui/Segment
-                     [bc/c-start-round-button {:etype :product
-                                               :eid (:id product)
-                                               :ename (:pname product)
-                                               :props {:fluid true}}]
-                     [c-preposal-request-button product]
-                     [bc/c-setup-call-button product vendor]
-                     [bc/c-ask-a-question-button product vendor]]))]
+                     (if disqualified? "Undo Disqualify" "Disqualify")
+                     [:> ui/Icon {:name (if disqualified? "undo" "ban")}]]])])]
              [:div.inner-container [c-round round]]]))]])))
