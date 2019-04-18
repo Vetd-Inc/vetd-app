@@ -342,6 +342,15 @@ $cell-height: 201px;
     }
   }
 
+  &.fixed {
+    margin-top: 52px;
+  }
+  &.fixed .requirement {
+    position: fixed;
+    top: 0;
+    z-index: 999;
+  }
+
   // &:hover .column:not(:hover) {
   //   opacity: 0.6;
   // }

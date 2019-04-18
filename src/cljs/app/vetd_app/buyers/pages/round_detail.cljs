@@ -150,7 +150,7 @@
 (def dummy-reqs
   ["Pricing Estimate" "Free Trial" "Current Customers" "Integration with GMail"
    "Subscription Billing" "One Time Billing" "Parent / Child Heirarchical Billing"])
-(def dummy-products["SendGrid" "Mailchimp" "Mandrill" "iContact"])
+(def dummy-products["SendGrid" "Mailchimp" "Mandrill" "iContact" "iContact" "iContact"])
 (def dummy-resps
   {"Pricing Estimate" ["$45 / mo."
                        "$200 / mo."
@@ -184,8 +184,9 @@
     (r/create-class
      {:component-did-mount
       (fn [this]
-        ;; set up draggable grid
-        (let [node (r/dom-node this)
+
+        (let [;; draggable grid
+              node (r/dom-node this)
               mousedown? (atom false)
               x-at-mousedown (atom nil)
               scroll-left-at-mousedown (atom nil)
@@ -208,11 +209,56 @@
                                 (reset! cell-click-disabled? true)))))
               mouseup (fn [e]
                         (.remove (.-classList node) "dragging")
-                        (reset! mousedown? false))]
+                        (reset! mousedown? false))
+              
+              
+              ;; make requirements row 'sticky' upon window scroll
+              requirements-pickup-y (atom nil) ; nil when not in 'sticky mode'
+              all-requirements-nodes #(array-seq (.getElementsByClassName js/document "requirement"))
+              ;; the horizontal position of the requirement row needs to
+              ;; be manually updated when in 'sticky mode'
+              scroll (fn []
+                       (.requestAnimationFrame
+                        js/window
+                        (fn []
+                          (when @requirements-pickup-y
+                            (doseq [req-node (all-requirements-nodes)]
+                              (aset (.-style req-node) "marginLeft" (str (* -1 (.-scrollLeft node)) "px")))))))
+              ;; zero out the artificial horizontal scrolling of the requirements row
+              ;; this needs to be called when we leave 'sticky mode'
+              zero-out-req-scroll (fn []
+                                    (doseq [req-node (all-requirements-nodes)]
+                                      (aset (.-style req-node) "marginLeft" "0px")))
+              ;; turn on and off requirements row 'sticky mode' as needed
+              window-scroll (fn []
+                              (.requestAnimationFrame
+                               js/window
+                               (fn []
+                                 (if @requirements-pickup-y
+                                   (when (< (.-scrollY js/window) @requirements-pickup-y)
+                                     (reset! requirements-pickup-y nil)
+                                     (.remove (.-classList node) "fixed")
+                                     (zero-out-req-scroll))
+                                   (when (> (.-scrollY js/window) (.-offsetTop node))
+                                     (reset! requirements-pickup-y (.-offsetTop node))
+                                     (.add (.-classList node) "fixed")
+                                     ;; call 'scroll' to update horiz pos of req row
+                                     ;; (only matters if grid was horiz scrolled/dragged)
+                                     (scroll))))))
+              ]
           (.addEventListener node "mousedown" mousedown)
           (.addEventListener node "mousemove" mousemove)
           (.addEventListener node "mouseup" mouseup)
-          (.addEventListener node "mouseleave" mouseup)))
+          (.addEventListener node "mouseleave" mouseup)
+          (.addEventListener node "scroll" scroll)
+
+          
+          ;; does the following event listener need to be removed on unmount?
+          ;; to avoid multiple created after each mouny of round-grid?
+          (.addEventListener js/window "scroll" window-scroll)
+
+          
+          ))
       
       :reagent-render
       (fn []
