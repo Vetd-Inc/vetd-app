@@ -46,12 +46,12 @@
       "Start VetdRound"
       [:> ui/Icon {:name "vetd-icon"}]])}])
 
-(defn c-round-in-progress [{:keys [props]}]
+(defn c-round-in-progress [{:keys [round-idstr props]}]
   [:> ui/Label (merge {:color "teal"
                        :size "medium"
                        :as "a"
                        :onClick #(do (.stopPropagation %)
-                                     (rf/dispatch [:b/nav-rounds]))}
+                                     (rf/dispatch [:b/nav-round-detail round-idstr]))}
                       props)
    "Product In VetdRound"])
 

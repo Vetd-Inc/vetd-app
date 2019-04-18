@@ -137,7 +137,8 @@
       [:> ui/Image {:class "product-logo"
                     :src (str "https://s3.amazonaws.com/vetd-logos/" logo)}]
       (if (not-empty (:rounds product))
-        [bc/c-round-in-progress {:props {:ribbon "left"}}])
+        [bc/c-round-in-progress {:round-idstr (-> rounds first :idstr)
+                                 :props {:ribbon "left"}}])
       [bc/c-categories product]
       (when (= "Yes" (v "Do you offer a free trial?"))
         [bc/c-free-trial-tag])
@@ -217,7 +218,7 @@
                                               :from-org-id @org-id&}
                                       [:id]]
                                      [:rounds {:buyer-id @org-id&}
-                                      [:id :created :status]]
+                                      [:id :idstr :created :status]]
                                      [:categories [:id :idstr :cname]]]]]}])]
     (fn []
       [:div.container-with-sidebar
