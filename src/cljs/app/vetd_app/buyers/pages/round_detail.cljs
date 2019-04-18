@@ -336,7 +336,8 @@
     [:h1 {:style {:margin-top 0}}
      title]]
    [:> ui/Segment {:class "detail-container"
-                   :style {:margin-left 20}}
+                   :style {:margin-left 20
+                           :margin-bottom 0}}
     [bc/c-round-status status]]
    (case status
      "initiation" [:> ui/Segment {:class "detail-container"

@@ -323,6 +323,7 @@ $cell-height: 201px;
   box-sizing: border-box;
   position: relative;
   cursor: ew-resize;
+  padding-top: 14px;
 
   .column {
     width: $cell-width;
@@ -339,6 +340,10 @@ $cell-height: 201px;
       justify-content: center;
       align-items: center;
       text-align: center;
+
+      background: white;
+      box-shadow: 0 2px 14px 0 rgba(50,50,50,0.1) !important;
+      border-radius: 4px;
     }
   }
 
@@ -349,6 +354,8 @@ $cell-height: 201px;
     position: fixed;
     top: 0;
     z-index: 999;
+    background: white;
+    box-shadow: 0 2px 14px 0 rgba(50,50,50,0.1) !important;
   }
 
   // &:hover .column:not(:hover) {
