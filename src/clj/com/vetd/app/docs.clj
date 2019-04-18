@@ -167,6 +167,7 @@
                      :user_id user-id})
         first)))
 
+;; TODO add sort field??
 (defn insert-doc-response
   [doc-id resp-id]
   (let [[id idstr] (ut/mk-id&str)]
@@ -613,10 +614,13 @@
                             (get-existing-children-fn parent-value parent-result)
                             [])
         existing-groups (->> existing-children
-                             (group-by existing-children-group-fn)
+                             (group-by (or existing-children-group-fn
+                                           (fn [_] (gensym))))
                              (ut/fmap first))
         given-groups (->> children
-                          (group-by (comp given-children-group-fn :value))
+                          (group-by (comp (or given-children-group-fn
+                                           (fn [_] (gensym)))
+                                          :value))
                           (ut/fmap first))
         all-keys (keys (merge existing-groups given-groups))]
     (reduce (fn [agg k]
@@ -635,31 +639,40 @@
              :new #{}}
             all-keys)))
 
+(defmacro with-doc-handling
+  [handler-args & body]
+  body)
+
 (defn apply-tree
-  [{:keys [pre] :as cfg} {:keys [value children mode] :as tr}]
-  (let [{:keys [exists? existing] :as tr'} (merge tr
-                                                 (determine-tree-existence pre tr))
-        mode' (or mode
-                  (if (or exists? existing)
-                    :common
-                    :new))
-        {:keys [post] :as cfg'} (mode' cfg)
-        result (apply-tree-top-value (merge pre post) tr)
-        diff (diff-tree-children-with-existing post tr result)]
-    ((post :finalize-fn identity)
-     {:result result
-      :missing (apply-tree-children cfg'
-                                    (:missing diff)
-                                    value
-                                    result)
-      :common (apply-tree-children cfg'
-                                   (:common diff)
-                                   value
-                                   result)
-      :new (apply-tree-children cfg'
-                                (:new diff)
-                                value
-                                result)})))
+  [{:keys [pre] :as cfg} {:keys [value children mode handler-args] :as tr}]
+  (with-doc-handling handler-args
+    (let [{:keys [exists? existing] :as tr'} (merge tr
+                                                    (determine-tree-existence pre tr))
+          mode' (or mode
+                    (if (or exists? existing)
+                      :common
+                      :new))
+          {:keys [post] :as cfg'} (mode' cfg)
+          result (apply-tree-top-value (merge pre post) tr)
+          diff (diff-tree-children-with-existing post tr result)
+          m1 {:result result
+              :missing (apply-tree-children cfg'
+                                            (:missing diff)
+                                            value
+                                            result)
+              :common (apply-tree-children cfg'
+                                           (:common diff)
+                                           value
+                                           result)
+              :new (apply-tree-children cfg'
+                                        (:new diff)
+                                        value
+                                        result)}]
+      (assoc m1
+             :result
+             (if-let [finalize-fn (post :finalize-fn)]
+               (finalize-fn m1 tr)
+               result)))))
 
 
 (defn create-form-from-template
@@ -688,6 +701,149 @@
                                                 (insert-form-prompt id prompt-id sort'))}}}})
        :result))
 
+#_
+(clojure.pprint/pprint
+ (apply-tree
+  {:pre {}
+   :new {:post {:action :insert
+                :insert-fn (fn [v _ _]
+                             (insert-doc v))}
+         :new {:post {:action nil
+                      :finalize-fn (fn [r {:keys [parent]}]
+                                     (insert-doc-response (:id parent)
+                                                          (-> r
+                                                              (dissoc :result)
+                                                              vals
+                                                              flatten
+                                                              first
+                                                              :result
+                                                              :id)))}
+               :new {:post {:action :insert
+                            :insert-fn (fn [v _ _] (insert-response v))}
+                     :new {:post {:action :insert
+                                  :insert-fn (fn [v {resp-id :id} _]
+                                               (insert-response-field resp-id v))}}}}}}
+  {:value {:ftype "ftype"
+           :fsubtype "fsubtype"
+           :id 123
+           :round-id 456
+           :from-org-id 567}
+   :children [{:value {}
+               :children [{:value {:prompt-id 111}
+                           :children [{:value {:fname "value"
+                                               :ftype "xxx"
+                                               :sval "We need everything."
+                                               :pf-id 2323}}]}]}
+              {:value {}
+               :children [{:value {:prompt-id 222}
+                           :children [{:value {:fname "value"
+                                               :ftype "n"
+                                               :nval 2400
+                                               :pf-id 1212}}
+                                      {:value {:fname "period"
+                                               :ftype "e-period"
+                                               :sval "Annual"
+                                               :pf-id 3434}}]}]}
+              {:value {}
+               :children [{:value {:prompt-id 126786722}
+                           :children [{:value {:fname "value"
+                                               :ftype "s"
+                                               :nval 2400
+                                               :pf-id 5656}}]}]}]}))
+
+(defn doc->appliable--find-form
+  [{:keys [dtype dsubtype update-doc-id] :as d}]
+  (when (or dtype dsubtype update-doc-id)
+    (let [form-fields [:id :ftype :fsubtype
+                       [:prompts
+                        [:id :term
+                         [:fields
+                          [:id :fname :ftype :fsubtype]]]]]
+          form-args (merge {:_order_by {:created :desc}
+                            :_limit 1
+                            :deleted nil}
+                           (when dtype
+                             {:ftype dtype})
+                           (when dsubtype
+                             {:fsubtype dsubtype}))]
+      (if update-doc-id
+        (-> [[:docs {:id update-doc-id}
+              [[:form form-fields]]]]
+            ha/sync-query
+            :docs
+            first
+            :form)
+        (-> [[:forms form-args
+              form-fields]]
+            ha/sync-query
+            :forms
+            first)))))
+
+
+(defn fields->appliable-tree
+  [resp-fields fields]
+  (let [fields-by-fname (group-by :fname fields)]
+    (vec (for [[k value] resp-fields]
+           (let [{:keys [fname ftype fsubtype id]} (-> k name fields-by-fname)]
+             {:value (merge {:fname fname
+                             :ftype ftype
+                             :fsubtype fsubtype
+                             :pf-id id}
+                            (convert-field-val value
+                                               ftype
+                                               fsubtype))})))))
+
+(defn response-prompts->appliable-tree
+  [{:keys [terms prompt-ids]} prompts]
+  (let [responses (merge terms prompt-ids)
+        grouped-prompts (-> (merge (group-by (comp keyword :terms) prompts)
+                                   (group-by :id prompts))
+                            (dissoc nil))]
+    {:value {}
+     :children
+     (vec (for [[k r] responses]
+            (let [{prompt-id :id :keys [fields]} (-> k grouped-prompts first)]
+              (if prompt-id
+                {:value {:prompt-id prompt-id}
+                 :children (fields->appliable-tree r fields)}
+                (throw (Exception. (str "Could not find prompt with term or id: " k)))))))}))
+
+[{:value {:prompt-id 111}
+                 :children [{:value {:fname "value"
+                                     :ftype "xxx"
+                                     :sval "We need everything."
+                                     :pf-id 2323}}]}]
+
+;; TODO set responses.subject
+(defn doc->appliable-tree
+  [{:keys [data dtype dsubtype update-doc-id] :as d}]
+  (if-let [{:keys [prompts]} (doc->appliable--find-form d)]
+    {:handler-args d
+     :value (merge (select-keys d ;; TODO hard-coded fields sucks -- Bill
+                                [:title :dtype :descr :notes :from-org-id
+                                 :from-user-id :to-org-id :to-user-id
+                                 :dtype :dsubtype :form-id :subject])
+                   (when update-doc-id
+                     {:id update-doc-id}))
+     :children (response-prompts->appliable-tree data
+                                                 prompts)}
+    (throw (Exception. (str "Couldn't find form by querying with: "
+                            {:ftype dtype
+                             :fsubtype dsubtype
+                             :doc-id update-doc-id})))))
+
+
+
+
+(doc->appliable-tree {:data {:terms {:product/goal {:value "We need everything."}
+                                     :product/budget {:value 2400
+                                                      :period "Annual"}
+                                     :product/someterm {:value "Hello sir.\nWhat's up?"}}
+                             :prompt-ids {126786722 {:value "Justanother Value"}}}
+                      :dtype "vendor-profile"
+                      ;:update-doc-id 123
+                      :round-id 456
+                      :from-org-id 567})
 
 #_
 (clojure.pprint/pprint 
@@ -2378,6 +2534,7 @@
  :from-org-id 567}
 
 #_{:value {:ftype "ftype"
+           :fsubtype "fsubtype"
            :id 123
            :round-id 456
            :from-org-id 567}
@@ -2396,23 +2553,34 @@
                                       {:value {:fname "period"
                                                :ftype "e-period"
                                                :sval "Annual"
-                                               :pf-id 3434}}]}]}]}
+                                               :pf-id 3434}}]}]}
+              {:value {}
+               :children [{:value {:prompt-id 126786722}
+                           :children [{:value {:fname "value"
+                                               :ftype "s"
+                                               :nval 2400
+                                               :pf-id 5656}}]}]}]}
 
 ;; TODO support new doc that includes existring responses
 
 #_
 {:pre {}
  :new {:post {:action :insert
-              :insert-fn #(:insert-doc)}
+              :insert-fn (fn [v _ _]
+                           (insert-doc v))}
        :new {:post {:action nil
-                    :finalize-fn #(:insert-doc-resp)
-                    :given-children-group-fn :prompt-id}
-             :pre {:select-fn #(:select-response-by........)}
+                    :finalize-fn (fn [r ({:keys [parent]})]
+                                   (insert-doc-response (:id parent)
+                                                        (-> r
+                                                            (dissoc :result)
+                                                            vals
+                                                            flatten
+                                                            first
+                                                            :id)))}
              :new {:post {:action :insert
-                          :insert-fn #(:insert-response)
-                          :existing-children-group-fn :prompt-id
-                          :given-children-group-fn :prompt-id}
+                          :insert-fn (fn [v _ _] (insert-response v))}
                    :new {:post {:action :insert
-                                :insert-fn #(:insert-response-field)
-                                :existing-children-group-fn :pf-id
-                                :given-children-group-fn :prompt-id}}}}}}
+                                :insert-fn (fn [v {resp-id :id} _]
+                                             (-> v
+                                                 (assoc :resp-id resp-id)
+                                                 insert-response-field))}}}}}}
