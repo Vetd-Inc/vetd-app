@@ -11,57 +11,6 @@
 
 (defmethod handle-doc-creation :default [_])
 
-
-#_(defn get-latest-form-doc-by-ftype&from-org
-  [ftype doc-from-org-id]
-  (-> [[:form-docs {:ftype ftype
-                    :doc-from-org-id doc-from-org-id
-                    :_order_by {:created :desc}
-                    :_limit 1}
-        [:id :title :doc-id :doc-title :doc-from-org-id
-         :ftype :fsubtype
-         [:from-org [:id :oname]]
-         [:from-user [:id :uname]]
-         [:to-org [:id :oname]]
-         [:to-user [:id :uname]]
-         [:prompts {:deleted nil
-                    :_order_by {:sort :asc}}
-          [:id :idstr :prompt :descr
-           [:fields
-            [:id :idstr :fname :ftype
-             :fsubtype :list?]]]]
-         [:responses
-          [:id :prompt-id :notes
-           [:fields [:id :pf-id :idx :sval :nval :dval]]]]]]]
-      ha/sync-query
-      :form-docs
-      first))
-
-#_ (defn get-latest-form-doc-by-ftype&subject
-  [ftype subject]
-  (-> [[:form-docs {:ftype ftype
-                    :doc-subject subject
-                    :_order_by {:created :desc}
-                    :_limit 1}
-        [:id :title :doc-id :doc-title :doc-from-org-id
-         :ftype :fsubtype
-         [:from-org [:id :oname]]
-         [:from-user [:id :uname]]
-         [:to-org [:id :oname]]
-         [:to-user [:id :uname]]
-         [:prompts {:deleted nil
-                    :_order_by {:sort :asc}}
-          [:id :idstr :prompt :descr
-           [:fields
-            [:id :idstr :fname :ftype
-             :fsubtype :list?]]]]
-         [:responses
-          [:id :prompt-id :notes
-           [:fields [:id :pf-id :idx :sval :nval :dval]]]]]]]
-      ha/sync-query
-      :form-docs
-      first))
-
 ;; TODO use prompt-field data type
 (defn convert-field-val
   [v ftype fsubtype]
@@ -86,7 +35,7 @@
     "d" (throw (Exception. "TODO convert-field-val does not support dates"))))
 
 (defn insert-form
-  [{:keys [form-temp-id title descr notes from-org-id
+  [{:keys [form-template-id title descr notes from-org-id
            from-user-id to-org-id to-user-id status
            ftype fsubtype subject
            id idstr]}
@@ -100,7 +49,7 @@
                      :created (ut/now-ts)
                      :updated (ut/now-ts)
                      :deleted nil
-                     :form_template_id form-temp-id
+                     :form_template_id form-template-id
                      :ftype ftype
                      :fsubtype fsubtype
                      :title title
@@ -298,6 +247,15 @@
                                     :prompt-field-id
                                     id)))))
 
+(defn select-form-template-prompts-by-parent-id
+  [form-template-id]
+  (->> (db/hs-query {:select [:prompt_id :sort]
+                     :from [:form_template_prompt]
+                     :where [:and
+                             [:= :form_template_id form-template-id]
+                             [:= :deleted nil]]})
+       (map ha/walk-sql-field->clj-kw)))
+
 (defn create-form-from-template
   [{:keys [form-template-id from-org-id from-user-id
            title descr status notes to-org-id
@@ -489,11 +447,23 @@
            form
            use-id?))
 
-(defn prompt-exists? [{:keys [id] :as prompt} & [use-id?]]
+(defn prompt-exists? [{:keys [id] :as prompt}]
   (-> [[:prompts {:id id} [:id]]]
       ha/sync-query
       :prompts
       empty?
+      not))
+
+(defn form-prompt-exists? [{:keys [form-id prompt-id] :as form-prompt}]
+  (-> {:select [[:%count.* :c]]
+       :from [:form_prompt]
+       :where [:and
+               [:= :form_id form-id]
+               [:= :prompt_id prompt-id]]}
+      db/hs-query
+      first
+      :c
+      zero?
       not))
 
 (defn upsert-prompt [{:keys [id] :as prompt} & [use-id?]]
@@ -587,105 +557,145 @@
                                   new-prompts
                                   use-id?))
 
-(defn apply-4tree-l0
-  [{:keys [l0] :as cfg} {:keys [value]}]
-  (let [{:keys [exists?-fn update-fn insert-fn use-id? ignore-id? delete-fn]} l0
-        exists? (when (not ignore-id?)
-                  (exists?-fn value))]
-    (cond (and delete-fn
-               (not exists?))
-          (throw (Exception. "delete-fn provided, but entity does not exist."))
+(defn determine-tree-existence
+  [{:keys [exists?-fn select-fn use-id? ignore-id?] :as opts}
+   {:keys [value existing exists? parent] :as tr}]
+  (let [existing'  (or existing
+                       (when (and (not ignore-id?)
+                                  (-> exists? false? not)
+                                  select-fn)
+                         (select-fn value parent)))
+        exists?' (cond (or existing' select-fn) (boolean existing')
+                       (boolean? exists?) exists?
+                       (and (not ignore-id?) exists?-fn) (exists?-fn value parent))]
+    {:existing existing'
+     :exists? exists?'}))
 
-          delete-fn {:l0 (delete-fn value)
-                     :new? false}
-          
-          (and exists?
-               (nil? update-fn))
-          (throw (Exception. "No update-fn provided. exists? = true; ignore-id? = false"))
-          
-          exists? {:l0 (or (update-fn value)
-                           value)
-                   :new? false}
-          
-          (and (true? ignore-id?)
-               (nil? insert-fn))
-          (throw (Exception. "No insert-fn provided. ignore-id? = true"))
+(defn apply-tree-top-value
+  [{:keys [action insert-fn update-fn delete-fn use-id? ignore-id?] :as opts}
+   {:keys [value children parent] :as tr}]
+  (when action
+    (let [{existing' :existing exists?' :exists?} (determine-tree-existence opts tr)
+          u-fn #(ha/walk-sql-field->clj-kw (update-fn value parent))
+          i-fn #(ha/walk-sql-field->clj-kw (insert-fn value parent))
+          d-fn #(delete-fn existing')]
+      (case action
+        :upsert (if exists?'
+                  (or (u-fn) value)
+                  (i-fn))
+        :insert (when-not exists?'
+                  (i-fn))
+        :force-insert (i-fn)
+        :update (or (u-fn) value)
+        :replace (do (when existing'
+                       (d-fn))
+                     (i-fn))
+        :delete (d-fn)))))
 
-          (not exists?)
-          {:l0 (insert-fn value)
-           :new? true})))
+(declare apply-tree)
 
+(defn apply-tree-children
+  [cfg children parent-value parent-result]
+  (mapv #(apply-tree cfg
+                     (assoc %
+                            :parent parent-result))
+        children))
 
-(def diff-4tree-children-with-existing-l3 [])
-
-(def diff-4tree-children-with-existing-l2 [])
-
-
-
-(def diff-4tree-children-with-existing*
-  [parent-id get-children-fn children existing-group-id-fn new-group-id-fn]
-  (let [existing-kids (get-children-fn parent-id)
-        existing-groups (->> existing-kids
-                             (group-by (comp existing-group-id-fn :value))
+(defn diff-tree-children-with-existing
+  [post-opts {:keys [children] parent-value :value} parent-result]
+  (let [{:keys [get-existing-children-fn existing-children-group-fn given-children-group-fn]} post-opts
+        existing-children (if get-existing-children-fn
+                            (get-existing-children-fn parent-value parent-result)
+                            [])
+        existing-groups (->> existing-children
+                             (group-by existing-children-group-fn)
                              (ut/fmap first))
-        new-groups (->> children
-                        (group-by (comp new-group-id-fn  :value))
-                        (ut/fmap first))
-        all-keys (keys (merge existing-groups new-groups))]
+        given-groups (->> children
+                          (group-by (comp given-children-group-fn :value))
+                          (ut/fmap first))
+        all-keys (keys (merge existing-groups given-groups))]
     (reduce (fn [agg k]
               (let [existing (existing-groups k)
-                    new (new-groups k)]
-                (cond (nil? existing) (update agg :new assoc k new)
-                      (nil? new) (update agg :missing assoc k existing)
-                      :else (update agg :common assoc k new))))
-            {:missing {}
-             :common {}
-             :new {}})))
+                    given (given-groups k)]
+                (cond (nil? existing) (update agg :new conj (assoc given
+                                                                   :exists? false))
+                      (nil? given) (update agg :missing conj {:value existing
+                                                              :mode :missing
+                                                              :exists? true})
+                      :else (update agg :common conj (assoc given
+                                                            :existing existing
+                                                            :exists? true)))))
+            {:missing #{}
+             :common #{}
+             :new #{}}
+            all-keys)))
 
-(def diff-4tree-children-with-existing
-  [{l0-cfg :l0 l1-cfg :l1} {:keys [value children]} {:keys [l0 new?]}]
-  (let [{:keys [id]} l0
-        {:keys [get-children-fn]} l0-cfg
-        {:keys [existing-group-fn new-group-fn]} l0-cfg
-        {:keys [common new] :as r} (diff-4tree-children-with-existing*
-                                    id
-                                    get-children-fn
-                                    children
-                                    existing-group-fn
-                                    new-group-fn)]
-    (assoc r
-           :common (ut/fmap #()
-                            common)
-           :new (ut/fmap #()
-                         new))))
+(defn apply-tree
+  [{:keys [pre] :as cfg} {:keys [value children mode] :as tr}]
+  (let [{:keys [exists? existing] :as tr'} (merge tr
+                                                 (determine-tree-existence pre tr))
+        mode' (or mode
+                  (if (or exists? existing)
+                    :common
+                    :new))
+        {:keys [post] :as cfg'} (mode' cfg)
+        result (apply-tree-top-value (merge pre post) tr)
+        diff (diff-tree-children-with-existing post tr result)]
+    {:result result
+     :missing (apply-tree-children cfg'
+                                   (:missing diff)
+                                   value
+                                   result)
+     :common (apply-tree-children cfg'
+                                  (:common diff)
+                                  value
+                                  result)
+     :new (apply-tree-children cfg'
+                               (:new diff)
+                               value
+                               result)}))
 
-{:missing {:some-id {:value {}
-                     :children
-                     [{:missing {:some-id {:value {}
-                                           :children
-                                           [{:missing {:some-id {:value {}
-                                                                 :children []}
-                                                       :some-id2 {}}
-                                             :common {:some-id3 {}
-                                                      :some-id4 {}}
-                                             :new {:some-id5 {}
-                                                   :some-id6 {}}}]}
-                                 :some-id2 {}}
-                       :common {:some-id3 {}
-                                :some-id4 {}}
-                       :new {:some-id5 {}
-                             :some-id6 {}}}]}
-           :some-id2 {}}
- :common {:some-id3 {}
-          :some-id4 {}}
- :new {:some-id5 {}
-       :some-id6 {}}}
 
-(defn apply-4tree [cfg tr]
-  (let [l0-result (apply-4tree-l0 cfg tr)
-        diff (diff-4tree-children-with-existing cfg tr l0-result)]
-    (apply-4tree-dff cfg diff)))
+#_
 
+(clojure.pprint/pprint 
+ (apply-tree
+  {:pre {}
+   :new {:post {:action :insert
+                :insert-fn insert-form
+                :get-existing-children-fn (constantly
+                                           (select-form-template-prompts-by-parent-id 370382503635))
+                :existing-children-group-fn :prompt-id
+                :given-children-group-fn (constantly nil)}
+         :missing {:post {:action :force-insert
+                          :insert-fn (fn [{:keys [prompt-id] sort' :sort} {:keys [id]}]
+                                       (insert-form-prompt id prompt-id sort'))}}}} 
+  {:value {:from-org-id 852106324668,
+           :from-user-id 852106304667,
+           :prod-id 272814695158,
+           :form-template-id 370382503635,
+           :title "Preposal Request 70722",
+           :status "init",
+           :subject 272814695158}}))
+
+#_
+
+(apply-4tree
+ {:l0 {:get-children-fn (constantly (select-form-template-prompts-by-parent-id 370382503635))
+       :insert-fn insert-form}
+  :l1 {:existing-group-id-fn :prompt-id
+       :new-group-fn (constantly {})
+       :missing :create
+       :insert-fn insert-form-prompt}
+  :l2 {:ignore? true}
+  :l3 {:ignore? true}} 
+ {:value {:from-org-id 852106324668,
+          :from-user-id 852106304667,
+          :prod-id 272814695158,
+          :form-template-id 370382503635,
+          :title "Preposal Request 70722",
+          :status "init",
+          :subject 272814695158}})
 
 {:value {:id 0}
  :children [{:value {:id 2}
@@ -2151,6 +2161,16 @@
  :status "init",
  :subject 272814695158}
 
+
+#_
+{:value {:from-org-id 852106324668,
+         :from-user-id 852106304667,
+         :prod-id 272814695158,
+         :form-template-id 370382503635,
+         :title "Preposal Request 70722",
+         :status "init",
+         :subject 272814695158}
+ :children [:...form_prompts...]}
 
 ;; upsert-form-template
 
