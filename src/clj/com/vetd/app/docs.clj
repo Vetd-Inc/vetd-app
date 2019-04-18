@@ -11,7 +11,6 @@
 
 (defmethod handle-doc-creation :default [_])
 
-;; TODO use prompt-field data type
 (defn convert-field-val
   [v ftype fsubtype]
   (case ftype
@@ -31,7 +30,6 @@
          :nval nil
          :dval nil
          :jval v}
-
     "d" (throw (Exception. "TODO convert-field-val does not support dates"))))
 
 (defn insert-form
@@ -346,6 +344,7 @@
            :docs
            first
            :responses))
+
 
 (defn response-fields-eq?
   [old-field {:keys [response ftype]}]
@@ -862,17 +861,19 @@
                              [(fn [{:keys [parents item] :as x}]
                                 (assoc x
                                        :item (insert-response-field (-> parents
-                                                                        first
+                                                                        last
                                                                         :id)
                                                                     item)))]}]}
                           (fn [{:keys [item children parents] :as x}]
                             (assoc x
                                    :item
-                                   (insert-doc-response (-> parents first :id)
-                                                        (-> children first :id))))]}])))
+                                   (insert-doc-response (-> parents last :id)
+                                                        (-> children :responses first :item :id))))]}])))
 
+
+#_
 (defn update-doc [d]
-  #_(->> d
+  (->> d
        doc->appliable-tree
        (apply-tree
         {:label  :root
@@ -908,12 +909,50 @@
                                                                (insert-response-field resp-id v))}}}}}})))
 
 
-{:pass1-down-fn #()
- :pass1-up-fn #()
- :pass2-down-fn #()
- :pass2-up-fn #()
- :handlers1 {:a {}}
- :handlers2 {:a {}}}
+(defn group-doc-responses
+  [existing-responses given-doc-resps]
+  (def er1 existing-responses)
+  (def gdr1 given-doc-resps)
+  {})
+
+(defn update-doc [d]
+  (->> d
+       doc->appliable-tree
+       (apply-it
+        [(fn [{:keys [item children] :as v}]
+           (assoc v
+                  :item (-> item
+                            ha/walk-clj-kw->sql-field
+                            (select-keys [:doc_id :user_id :id :user_id :resp_id])
+                            (db/update-any! :doc_resp))
+                  :children (group-doc-responses
+                             (-> item :id get-child-responses)
+                             children)))
+         {:delete [#(->> % :item :id (update-deleted :doc_resp))]
+          :responses-exist [#(:insert-doc-resp)]
+          :new-responses [#(:group-children)
+                          {:responses [#(:insert-responses)
+                                       {:fields [#(:insert-response-fields)]}]}
+                          #{:save-doc-resp}]}])))
+
+
+(clojure.pprint/pprint 
+ (update-doc {:data {:terms {:round/requirements {:value "We need everything."}
+                             :round/annual-budget {:value 2400}}
+                     :prompt-ids {861404785216 {:value "Justanother Value"}}}
+              :dtype "round-initiation"
+              :update-doc-id 931297091690
+              :round-id 456
+              :from-org-id 567}))
+
+(clojure.pprint/pprint 
+ (doc->appliable-tree {:data {:terms {:round/requirements {:value "We need everything."}
+                                      :round/annual-budget {:value 2400}}
+                              :prompt-ids {861404785216 {:value "Justanother Value"}}}
+                       :dtype "round-initiation"
+                       :update-doc-id 930816461660
+                       :round-id 456
+                       :from-org-id 567}))
 
 (defn or-identity
   [f & xs]
@@ -985,6 +1024,7 @@
                (head v')))
       v')))
 
+#_
 (apply-it
  [(fn [{:keys [item children] :as x}]
     (assoc x
@@ -1060,7 +1100,7 @@
 
 
 
-
+#_
 (clojure.pprint/pprint 
  (create-doc {:data {:terms {:round/requirements {:value "We need everything."}
                              :round/annual-budget {:value 2400}}
