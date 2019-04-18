@@ -366,13 +366,17 @@
                                {:queries
                                 [[:rounds {:idstr @round-idstr&}
                                   [:id :idstr :created :status :title
-                                   [:products [:pname]]
-                                   [:doc [:id
-                                          [:response-prompts {:ref-deleted nil}
-                                           [:id :prompt-id :prompt-prompt :prompt-term
-                                            [:response-prompt-fields
-                                             [:id :prompt-field-fname :idx
-                                              :sval :nval :dval]]]]]]]]]}])]
+                                   [:products
+                                    [:pname
+                                     [:vendor
+                                      [:id :oname]]]]
+                                   [:doc
+                                    [:id
+                                     [:response-prompts {:ref-deleted nil}
+                                      [:id :prompt-id :prompt-prompt :prompt-term
+                                       [:response-prompt-fields
+                                        [:id :prompt-field-fname :idx
+                                         :sval :nval :dval]]]]]]]]]}])]
     (fn []
       [:<>
        [:div.container-with-sidebar.round-details
@@ -395,35 +399,25 @@
                                  :labelPosition "left"}
                    "Add Requirement"
                    [:> ui/Icon {:name "plus"}]]]
-                 (for [product products]
-                   ^{:key (:id product)}
+                 (for [{:keys [product-id pname vendor] :as product} products]
+                   ^{:key product-id}
                    [:> ui/Segment
-                    [:h3 (:pname product)]
-                    [:> ui/Button {:onClick #(do (.stopPropagation %)
-                                                 #_(rf/dispatch [:b/do-something]))
+                    [:h3 pname]
+                    [:> ui/Button {:onClick #(rf/dispatch [:b/round.declare-winner product-id])
                                    :color "vetd-gradient"
                                    :fluid true
                                    :icon true
                                    :labelPosition "left"}
                      "Declare Winner"
                      [:> ui/Icon {:name "checkmark"}]]
-                    
-                    [:> ui/Button {:onClick #(do (.stopPropagation %)
-                                                 #_(rf/dispatch [:b/do-something]))
-                                   :color "grey"
-                                   :fluid true
-                                   :icon true
-                                   :labelPosition "left"}
-                     "Setup a Call"
-                     [:> ui/Icon {:name "left call"}]]
-                    [:> ui/Button {:onClick #(do (.stopPropagation %)
-                                                 #_(rf/dispatch [:b/do-something]))
+                    [bc/c-setup-call-button product vendor]
+                    [:> ui/Button {:onClick #(rf/dispatch [:b/round.disqualify product-id])
                                    :color "grey"
                                    :fluid true
                                    :icon true
                                    :labelPosition "left"}
                      "Disqualify"
-                     [:> ui/Icon {:name "close"}]]]
+                     [:> ui/Icon {:name "ban"}]]]
                    
                    #_[:> ui/Segment
                       [:h3 "iContact"]

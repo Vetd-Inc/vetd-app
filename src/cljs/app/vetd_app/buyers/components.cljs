@@ -103,8 +103,7 @@
                                :color "grey"
                                :fluid true
                                :icon true
-                               :labelPosition "left"
-                               :style {:margin-right 15}}
+                               :labelPosition "left"}
                  "Setup a Call"
                  [:> ui/Icon {:name "left call"}]])}]))
 
