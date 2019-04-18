@@ -646,19 +646,20 @@
         {:keys [post] :as cfg'} (mode' cfg)
         result (apply-tree-top-value (merge pre post) tr)
         diff (diff-tree-children-with-existing post tr result)]
-    {:result result
-     :missing (apply-tree-children cfg'
-                                   (:missing diff)
+    ((post :finalize-fn identity)
+     {:result result
+      :missing (apply-tree-children cfg'
+                                    (:missing diff)
+                                    value
+                                    result)
+      :common (apply-tree-children cfg'
+                                   (:common diff)
                                    value
                                    result)
-     :common (apply-tree-children cfg'
-                                  (:common diff)
-                                  value
-                                  result)
-     :new (apply-tree-children cfg'
-                               (:new diff)
-                               value
-                               result)}))
+      :new (apply-tree-children cfg'
+                                (:new diff)
+                                value
+                                result)})))
 
 
 (defn create-form-from-template
@@ -2362,3 +2363,56 @@
   :form-template-id 732891594222,
   :descr "Location of the vendor's headquarters",
   :sort 100}]
+
+
+#_
+
+{:data {:terms {:product/goal {:value "We need everything."}
+                :product/budget {:value 2400
+                                 :period "Annual"}
+                :product/someterm {:value "Hello sir.\nWhat's up?"}}
+        :prompt-ids {126786722 {:value "Justanother Value"}}}
+ :ftype "ftype"
+ :update-doc-id 123
+ :round-id 456
+ :from-org-id 567}
+
+#_{:value {:ftype "ftype"
+           :id 123
+           :round-id 456
+           :from-org-id 567}
+   :children [{:value {}
+               :children [{:value {:prompt-id 111}
+                           :children [{:value {:fname "value"
+                                               :ftype "xxx"
+                                               :sval "We need everything."
+                                               :pf-id 2323}}]}]}
+              {:value {}
+               :children [{:value {:prompt-id 222}
+                           :children [{:value {:fname "value"
+                                               :ftype "n"
+                                               :nval 2400
+                                               :pf-id 1212}}
+                                      {:value {:fname "period"
+                                               :ftype "e-period"
+                                               :sval "Annual"
+                                               :pf-id 3434}}]}]}]}
+
+;; TODO support new doc that includes existring responses
+
+#_
+{:pre {}
+ :new {:post {:action :insert
+              :insert-fn #(:insert-doc)}
+       :new {:post {:action nil
+                    :finalize-fn #(:insert-doc-resp)
+                    :given-children-group-fn :prompt-id}
+             :pre {:select-fn #(:select-response-by........)}
+             :new {:post {:action :insert
+                          :insert-fn #(:insert-response)
+                          :existing-children-group-fn :prompt-id
+                          :given-children-group-fn :prompt-id}
+                   :new {:post {:action :insert
+                                :insert-fn #(:insert-response-field)
+                                :existing-children-group-fn :pf-id
+                                :given-children-group-fn :prompt-id}}}}}}
