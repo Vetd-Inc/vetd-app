@@ -352,12 +352,12 @@
                    :style {:margin-left 20
                            :margin-bottom 0}}
     [bc/c-round-status status]]
-   (case status
-     "initiation" [:> ui/Segment {:class "detail-container"
-                                  :style {:margin-left 20}}
-                   [c-round-initiation round]]
-     "in-progress" [c-round-grid round]
-     "complete" [c-round-grid round])])
+   (condp contains? status
+     #{"initiation"} [:> ui/Segment {:class "detail-container"
+                                     :style {:margin-left 20}}
+                      [c-round-initiation round]]
+     #{"in-progress"
+       "complete"} [c-round-grid round])])
 
 (defn c-products
   "Component to display product boxes with various buttons."
@@ -367,6 +367,7 @@
           pname :pname
           vendor :vendor
           :as product} products
+         ;; TODO disqualified? needs to be dynamic
          :let [disqualified? false]]
      ^{:key product-id}
      [:> ui/Segment
@@ -396,7 +397,8 @@
     :content (r/as-element
               (let [new-requirement (atom "")]
                 [:> ui/Form
-                 [:> ui/Input {:placeholder "Enter requirement..."
+                 [:> ui/Input {:class "auto-width-input"
+                               :placeholder "Enter requirement..."
                                :on-change (fn [_ this]
                                             (reset! new-requirement (.-value this)))
                                :action (r/as-element
@@ -404,8 +406,7 @@
                                          {:color "teal"
                                           :on-click #(rf/dispatch [:b/round.add-requirement
                                                                    @new-requirement])}
-                                         "Add"])
-                               :style {:width "auto"}}]]))
+                                         "Add"])}]]))
     :trigger (r/as-element
               [:> ui/Button {:color "teal"
                              :icon true
@@ -416,7 +417,6 @@
 
 (defn c-page []
   (let [round-idstr& (rf/subscribe [:round-idstr])
-        org-id& (rf/subscribe [:org-id])
         rounds& (rf/subscribe [:gql/sub
                                {:queries
                                 [[:rounds {:idstr @round-idstr&}
@@ -437,7 +437,7 @@
        (if (= :loading @rounds&)
          [cc/c-loader]
          (let [{:keys [status products] :as round} (-> @rounds& :rounds first)]
-           [:<>
+           [:<> ; sidebar margins (and detail container margins) are customized on this page
             [:div.sidebar {:style {:margin-right 0}}
              [:div {:style {:padding "0 15px"}}
               [bc/c-back-button {:on-click #(rf/dispatch [:b/nav-rounds])}
