@@ -793,7 +793,7 @@
   (let [fields-by-fname (group-by :fname fields)]
     (vec (for [[k value] resp-fields]
            (let [{:keys [fname ftype fsubtype id]} (-> k name fields-by-fname first)]
-             {:value (merge {:fname fname
+             {:item (merge {:fname fname
                              :ftype ftype
                              :fsubtype fsubtype
                              :prompt-field-id id}
@@ -810,13 +810,13 @@
     (vec (for [[k r] responses]
            (let [{prompt-id :id :keys [fields]} (-> k grouped-prompts first)]
              (if prompt-id
-               {:value {}
-                :children [{:value {:prompt-id prompt-id}
+               {:item {}
+                :children [{:item {:prompt-id prompt-id}
                              :children (fields->appliable-tree r fields)}]}
                (throw (Exception. (str "Could not find prompt with term or id: " k)))))))))
 
-[{:value {:prompt-id 111}
-                 :children [{:value {:fname "value"
+[{:item {:prompt-id 111}
+                 :children [{:item {:fname "value"
                                      :ftype "xxx"
                                      :sval "We need everything."
                                      :pf-id 2323}}]}]
@@ -824,13 +824,14 @@
 ;; TODO set responses.subject
 (defn doc->appliable-tree
   [{:keys [data dtype dsubtype update-doc-id] :as d}]
-  (if-let [{:keys [ftype fsubtype prompts]} (doc->appliable--find-form d)]
+  (if-let [{:keys [id ftype fsubtype prompts]} (doc->appliable--find-form d)]
     {:handler-args d
-     :value (merge (select-keys d ;; TODO hard-coded fields sucks -- Bill
+     :item (merge (select-keys d ;; TODO hard-coded fields sucks -- Bill
                                 [:title :dtype :descr :notes :from-org-id
                                  :from-user-id :to-org-id :to-user-id
                                  :dtype :dsubtype :form-id :subject])
-                   {:dtype ftype
+                  {:form-id id
+                   :dtype ftype
                     :dsubtype fsubtype}
                    (when update-doc-id
                      {:id update-doc-id}))
@@ -844,29 +845,34 @@
 (defn create-doc [d]
   (->> d
        doc->appliable-tree
-       (apply-tree
-        {:pre {}
-         :new {:post {:action :insert
-                      :insert-fn (fn [v _ _]
-                                   (insert-doc v))}
-               :new {:post {:action nil
-                            :finalize-fn (fn [r {:keys [parent]}]
-                                           (insert-doc-response (:id parent)
-                                                                (-> r
-                                                                    (dissoc :result)
-                                                                    vals
-                                                                    flatten
-                                                                    first
-                                                                    :result
-                                                                    :id)))}
-                     :new {:post {:action :insert
-                                  :insert-fn (fn [v _ _] (insert-response v))}
-                           :new {:post {:action :insert
-                                        :insert-fn (fn [v {resp-id :id} _]
-                                                     (insert-response-field resp-id v))}}}}}})))
+       (apply-it
+        [(fn [{:keys [item children] :as x}]
+           (assoc x
+                  :item (insert-doc item)
+                  :children {:doc-responses children}))
+         {:doc-responses [(fn [{:keys [item children] :as x}]
+                            (assoc x
+                                   :children {:responses children}))
+                          {:responses
+                           [(fn [{:keys [item children] :as x}]
+                              (assoc x
+                                     :item (insert-response item)
+                                     :children {:fields children}))
+                            {:fields
+                             [(fn [{:keys [parents item] :as x}]
+                                (assoc x
+                                       :item (insert-response-field (-> parents
+                                                                        first
+                                                                        :id)
+                                                                    item)))]}]}
+                          (fn [{:keys [item children1 parents] :as x}]
+                            (assoc x
+                                   :item
+                                   (insert-doc-response (-> parents first :id)
+                                                        (-> children1 first :id))))]}])))
 
 (defn update-doc [d]
-  (->> d
+  #_(->> d
        doc->appliable-tree
        (apply-tree
         {:label  :root
@@ -911,80 +917,99 @@
 
 (defn or-identity
   [f & xs]
-  (apply (or f identity) xs))
+  (if f
+    (apply f xs)
+    (first xs)))
 
 (declare apply-it*)
 
-(defn apply-it-child-reducer
-  [handlers children-kw m agg [k v]]
-  (if-let [k-handler (and handlers
-                          (handlers k))]
-    (assoc agg
-           k (apply-it*
-              k-handler
-              children-kw
-              (assoc m
-                     :item v)))
-    agg))
+
 
 (defn apply-it*
   [{:keys [up-fn down-fn handlers]} children-kw {:keys [parents] :as x}]
   (let [{:keys [item children ctx] :as x1} (or-identity down-fn x)
         parents' (conj (or parents [])
                        item)
-        x2 (dissoc x1
-                   :item-out
-                   :children)]
-    (-> x1
-        (assoc children-kw
+        x2 (-> x1
+               (dissoc :item
+                       :children)
+               (assoc :parents parents'))]
+    (as-> x1 $
+      (assoc $ children-kw
+             (when handlers
                (reduce (partial apply-it-child-reducer
                                 handlers
                                 children-kw
                                 x2)
                        {}
-                       children))
-        (or-identity up-fn x))))
+                       children)))
+      (or-identity up-fn $ x))))
+
+(declare apply-it)
+
+(defn apply-it-child-reducer
+  [m v' agg [k vs]]
+  (if-let [mk (and m (m k))]
+    (assoc agg
+           k
+           (mapv #(apply-it
+                   mk
+                   (merge v' %))
+                 vs))
+    agg))
+
+(defn apply-it-map
+  [m {:keys [item children parents] :as v}]
+  (let [parents' (conj (or parents [])
+                       item)
+        v' (-> v
+               (dissoc :item
+                       :children)
+               (assoc :parents parents'))]
+    (assoc v
+           :children
+           (reduce (partial apply-it-child-reducer
+                            m
+                            v')
+                   {}
+                   children))))
 
 (defn apply-it
-  [{:keys [pass1-down-fn pass1-up-fn pass2-down-fn pass2-up-fn handlers1 handlers2]} x]
-  (->> x
-       (apply-it* {:up-fn pass1-up-fn
-                   :down-fn pass1-down-fn
-                   :handlers handlers1}
-                  :children1)
-       (apply-it* {:up-fn pass2-up-fn
-                   :down-fn pass2-down-fn
-                   :handlers handlers2}
-                  :children2)))
+  [[& ops] v]
+  (loop [[head & tail] (flatten ops)
+         v' v]
+    (if head
+      (recur (flatten tail)
+             (if (map? head)
+               (apply-it-map head v')
+               (head v')))
+      v')))
 
 (apply-it
- {:pass1-down-fn (fn [{:keys [item children] :as x}]
-                   (assoc x
-                          :item (insert-doc item)
-                          :children {:doc-responses children}))
-  :handlers1 {:doc-responses
-              {:pass1-down-fn (fn [{:keys [item children] :as x}]
-                                (assoc x
-                                       :children {:responses children}))
-               :handlers1 {:responses
-                           {:pass1-down-fn
-                            (fn [{:keys [item children] :as x}]
-                              (assoc x
-                                     :item (insert-response item)
-                                     :children {:fields children}))
-                            :handlers1 {:fields
-                                        {:pass1-down-fn
-                                         (fn [{:keys [parents item] :as x}]
-                                           (assoc x
-                                                  :item (insert-response-field (-> parents
-                                                                                   first
-                                                                                   :id)
-                                                                               item)))}}}}                              
-               :pass1-up-fn (fn [{:keys [item children1 parents] :as x}]
-                              (assoc x
-                                     :item
-                                     (insert-doc-response (-> parents first :id)
-                                                          (-> children1 first :id))))}}}
+ [(fn [{:keys [item children] :as x}]
+    (assoc x
+           :item (insert-doc item)
+           :children {:doc-responses children}))
+  {:doc-responses [(fn [{:keys [item children] :as x}]
+                     (assoc x
+                            :children {:responses children}))
+                   {:responses
+                    [(fn [{:keys [item children] :as x}]
+                       (assoc x
+                              :item (insert-response item)
+                              :children {:fields children}))
+                     {:fields
+                      [(fn [{:keys [parents item] :as x}]
+                         (assoc x
+                                :item (insert-response-field (-> parents
+                                                                 first
+                                                                 :id)
+                                                             item)))]}]}
+                   (fn [{:keys [item children1 parents] :as x}]
+                     (assoc x
+                            :item
+                            (insert-doc-response (-> parents first :id)
+                                                 (-> children1 first :id))))]}]
  {:item
   {:dtype "round-initiation",
    :from-org-id 567,
@@ -1029,6 +1054,11 @@
          :nval nil,
          :dval nil,
          :jval nil}}]}]}]})
+
+
+
+
+
 
 
 (clojure.pprint/pprint 
