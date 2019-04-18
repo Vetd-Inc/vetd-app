@@ -180,11 +180,13 @@
                             :requirement requirement
                             :product product
                             :response response)
-                     (reset! modal-showing? true))]
+                     (reset! modal-showing? true))
+        ;; keep a reference to the window-scroll fn (will be created on mount)
+        ;; so we can remove the event listener upon unmount
+        window-scroll-fn-ref (atom nil)]
     (r/create-class
      {:component-did-mount
       (fn [this]
-
         (let [;; draggable grid
               node (r/dom-node this)
               mousedown? (atom false)
@@ -210,7 +212,6 @@
               mouseup (fn [e]
                         (.remove (.-classList node) "dragging")
                         (reset! mousedown? false))
-              
               
               ;; make requirements row 'sticky' upon window scroll
               requirements-pickup-y (atom nil) ; nil when not in 'sticky mode'
@@ -245,20 +246,18 @@
                                      ;; call 'scroll' to update horiz pos of req row
                                      ;; (only matters if grid was horiz scrolled/dragged)
                                      (scroll))))))
-              ]
+              _ (reset! window-scroll-fn-ref window-scroll)]
           (.addEventListener node "mousedown" mousedown)
           (.addEventListener node "mousemove" mousemove)
           (.addEventListener node "mouseup" mouseup)
           (.addEventListener node "mouseleave" mouseup)
           (.addEventListener node "scroll" scroll)
+          (.addEventListener js/window "scroll" window-scroll)))
 
-          
-          ;; does the following event listener need to be removed on unmount?
-          ;; to avoid multiple created after each mouny of round-grid?
-          (.addEventListener js/window "scroll" window-scroll)
-
-          
-          ))
+      :component-will-unmount
+      (fn [this]
+        (when @window-scroll-fn-ref
+          (.removeEventListener js/window "scroll" @window-scroll-fn-ref)))
       
       :reagent-render
       (fn []
