@@ -324,6 +324,9 @@ $cell-height: 201px;
   position: relative;
   cursor: ew-resize;
   padding-top: 14px;
+  // since the requirements are fixed position
+  // this keeps them from overflowing
+  clip-path: inset(-100px 0px 0px 0px);
 
   .column {
     width: $cell-width;
@@ -340,7 +343,6 @@ $cell-height: 201px;
       justify-content: center;
       align-items: center;
       text-align: center;
-
       background: white;
       box-shadow: 0 2px 14px 0 rgba(50,50,50,0.1) !important;
       border-radius: 4px;
