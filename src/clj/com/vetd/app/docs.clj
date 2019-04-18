@@ -909,11 +909,60 @@
                                                                (insert-response-field resp-id v))}}}}}})))
 
 
+(defn group-doc-responses*1
+  [{:keys [prompt-id fields]}]
+  [prompt-id
+   (mapv (fn [{:keys [sval nval dval jval prompt-field]}]
+           [(:fname prompt-field)
+            (or sval nval dval jval)])
+         fields)])
+
+(defn group-doc-responses*2
+  [{:keys [children]}]
+  (let [[{item :item kids :children :as kid1}] children
+        prompt-id (-> kid1 :item :prompt-id)]
+    [prompt-id
+     (mapv (fn [{:keys [item]}]
+             (let [{:keys [sval nval dval jval fname]} item]
+               [fname
+                (or sval nval dval jval)]))
+           kids)]))
+
 (defn group-doc-responses
   [existing-responses given-doc-resps]
-  (def er1 existing-responses)
-  (def gdr1 given-doc-resps)
-  {})
+  (let [er-group (->> existing-responses
+                      (group-by group-doc-responses*1)
+                      (ut/fmap first))
+        gdr-group (->> given-doc-resps
+                       (group-by group-doc-responses*2)
+                       (ut/fmap first))
+        all-keys (-> (merge er-group gdr-group)
+                     keys)]
+    
+    ))
+
+(clojure.pprint/pprint  er1)
+
+(clojure.pprint/pprint  gdr1)
+
+(mapv (fn [{:keys [prompt-id fields]}]
+        [prompt-id
+         (mapv (fn [{:keys [sval nval dval jval prompt-field]}]
+                 [(:fname prompt-field)
+                  (or sval nval dval jval)])
+               fields)])
+      er1)
+
+(mapv (fn [{:keys [children]}]
+        (let [[{item :item kids :children :as kid1}] children
+              prompt-id (-> kid1 :item :prompt-id)]
+          [prompt-id
+           (mapv (fn [{:keys [item]}]
+                   (let [{:keys [sval nval dval jval fname]} item]
+                     [fname
+                      (or sval nval dval jval)]))
+                 kids)]))
+      gdr1)
 
 (defn update-doc [d]
   (->> d
