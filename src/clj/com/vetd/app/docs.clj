@@ -578,25 +578,29 @@
      :exists? exists?'}))
 
 (defn apply-tree-top-value
-  [{:keys [action insert-fn update-fn delete-fn use-id? ignore-id?] :as opts}
-   {:keys [value children parent existing'] :as tr}]
-  (when action
-    (let [{existing' :existing exists?' :exists?} (determine-tree-existence opts tr)
-          u-fn #(ha/walk-sql-field->clj-kw (update-fn value parent existing'))
-          i-fn #(ha/walk-sql-field->clj-kw (insert-fn value parent existing'))
-          d-fn #(delete-fn existing')]
-      (case action
-        :upsert (if exists?'
-                  (or (u-fn) value)
-                  (i-fn))
-        :insert (when-not exists?'
-                  (i-fn))
-        :force-insert (i-fn)
-        :update (or (u-fn) value)
-        :replace (do (when existing'
-                       (d-fn))
-                     (i-fn))
-        :delete (d-fn)))))
+  [{:keys [action action-fn insert-fn update-fn delete-fn use-id? ignore-id?] :as opts}
+   {:keys [value children parent existing'] :as tr}
+   children-diff]
+  (let [action' (or action
+                    (when action-fn
+                      (action-fn tr children-diff)))]
+    (when action'
+      (let [{existing' :existing exists?' :exists?} (determine-tree-existence opts tr)
+            u-fn #(ha/walk-sql-field->clj-kw (update-fn value parent existing'))
+            i-fn #(ha/walk-sql-field->clj-kw (insert-fn value parent existing'))
+            d-fn #(delete-fn existing')]
+        (case action'
+          :upsert (if exists?'
+                    (or (u-fn) value)
+                    (i-fn))
+          :insert (when-not exists?'
+                    (i-fn))
+          :force-insert (i-fn)
+          :update (or (u-fn) value)
+          :replace (do (when existing'
+                         (d-fn))
+                       (i-fn))
+          :delete (d-fn))))))
 
 (declare apply-tree)
 
@@ -657,8 +661,8 @@
                       :common
                       :new))
           {:keys [post] :as cfg'} (mode' cfg)
-          result (apply-tree-top-value (merge pre post) tr)
-          diff (diff-tree-children-with-existing post tr result)
+          diff (diff-tree-children-with-existing post tr')          
+          result (apply-tree-top-value (merge pre post) tr' diff)
           m1 {:result result
               :missing (apply-tree-children cfg'
                                             (:missing diff)
@@ -836,6 +840,7 @@
                             {:ftype dtype
                              :fsubtype dsubtype
                              :doc-id update-doc-id})))))
+
 (defn create-doc [d]
   (->> d
        doc->appliable-tree
@@ -859,6 +864,172 @@
                            :new {:post {:action :insert
                                         :insert-fn (fn [v {resp-id :id} _]
                                                      (insert-response-field resp-id v))}}}}}})))
+
+(defn update-doc [d]
+  (->> d
+       doc->appliable-tree
+       (apply-tree
+        {:label  :root
+         :pre    {exists?-fn (constantly true)}
+         :common {:label  :doc
+                  :post   {:action :update
+                           :update-fn (fn [v _ _]
+                                        :TODOooooooooooooooooooooo)
+                           :get-existing-children-fn #()
+                           :existing-children-group-fn #()
+                           :given-children-group-fn #()}
+                  :common {:label :doc-resp
+                           :post  {:action nil
+                                   :get-existing-children-fn #(:get-responses-by-doc-resp)
+                                   :existing-children-group-fn :prompt-id
+                                   :given-children-group-fn :prompt-id}}
+                  :new    {:label  :doc-resp
+                           :post  {:action nil
+                                   :finalize-fn (fn [r {:keys [parent]}]
+                                                  (insert-doc-response (:id parent)
+                                                                       (-> r
+                                                                           (dissoc :result)
+                                                                           vals
+                                                                           flatten
+                                                                           first
+                                                                           :result
+                                                                           :id)))}
+                           :new   {:label :response
+                                   :post  {:action    :insert
+                                           :insert-fn (fn [v _ _] (insert-response v))}
+                                   :new   {:post {:action :insert
+                                                  :insert-fn (fn [v {resp-id :id} _]
+                                                               (insert-response-field resp-id v))}}}}}})))
+
+
+{:pass1-down-fn #()
+ :pass1-up-fn #()
+ :pass2-down-fn #()
+ :pass2-up-fn #()
+ :handlers1 {:a {}}
+ :handlers2 {:a {}}}
+
+(defn or-identity
+  [f & xs]
+  (apply (or f identity) xs))
+
+(declare apply-it*)
+
+(defn apply-it-child-reducer
+  [handlers children-kw m agg [k v]]
+  (if-let [k-handler (and handlers
+                          (handlers k))]
+    (assoc agg
+           k (apply-it*
+              k-handler
+              children-kw
+              (assoc m
+                     :item v)))
+    agg))
+
+(defn apply-it*
+  [{:keys [up-fn down-fn handlers]} children-kw {:keys [parents] :as x}]
+  (let [{:keys [item children ctx] :as x1} (or-identity down-fn x)
+        parents' (conj (or parents [])
+                       item)
+        x2 (dissoc x1
+                   :item-out
+                   :children)]
+    (-> x1
+        (assoc children-kw
+               (reduce (partial apply-it-child-reducer
+                                handlers
+                                children-kw
+                                x2)
+                       {}
+                       children))
+        (or-identity up-fn x))))
+
+(defn apply-it
+  [{:keys [pass1-down-fn pass1-up-fn pass2-down-fn pass2-up-fn handlers1 handlers2]} x]
+  (->> x
+       (apply-it* {:up-fn pass1-up-fn
+                   :down-fn pass1-down-fn
+                   :handlers handlers1}
+                  :children1)
+       (apply-it* {:up-fn pass2-up-fn
+                   :down-fn pass2-down-fn
+                   :handlers handlers2}
+                  :children2)))
+
+(apply-it
+ {:pass1-down-fn (fn [{:keys [item children] :as x}]
+                   (assoc x
+                          :item (insert-doc item)
+                          :children {:doc-responses children}))
+  :handlers1 {:doc-responses
+              {:pass1-down-fn (fn [{:keys [item children] :as x}]
+                                (assoc x
+                                       :children {:responses children}))
+               :handlers1 {:responses
+                           {:pass1-down-fn
+                            (fn [{:keys [item children] :as x}]
+                              (assoc x
+                                     :item (insert-response item)
+                                     :children {:fields children}))
+                            :handlers1 {:fields
+                                        {:pass1-down-fn
+                                         (fn [{:keys [parents item] :as x}]
+                                           (assoc x
+                                                  :item (insert-response-field (-> parents
+                                                                                   first
+                                                                                   :id)
+                                                                               item)))}}}}                              
+               :pass1-up-fn (fn [{:keys [item children1 parents] :as x}]
+                              (assoc x
+                                     :item
+                                     (insert-doc-response (-> parents first :id)
+                                                          (-> children1 first :id))))}}}
+ {:item
+  {:dtype "round-initiation",
+   :from-org-id 567,
+   :dsubtype "round-initiation1"},
+  :children
+  [{:item {},
+    :children
+    [{:item {:prompt-id 861489895228},
+      :children
+      [{:item
+        {:fname "value",
+         :ftype "s",
+         :fsubtype "single",
+         :prompt-field-id 861504475230,
+         :sval "We need everything.",
+         :nval nil,
+         :dval nil,
+         :jval nil}}]}]}
+   {:item {},
+    :children
+    [{:item {:prompt-id 861480315225},
+      :children
+      [{:item
+        {:fname "value",
+         :ftype "s",
+         :fsubtype "single",
+         :prompt-field-id 861486955227,
+         :sval 2400,
+         :nval nil,
+         :dval nil,
+         :jval nil}}]}]}
+   {:item {},
+    :children
+    [{:item {:prompt-id 861404785216},
+      :children
+      [{:item
+        {:fname "value",
+         :ftype "s",
+         :fsubtype "single",
+         :prompt-field-id 861411015218,
+         :sval "Justanother Value",
+         :nval nil,
+         :dval nil,
+         :jval nil}}]}]}]})
+
 
 (clojure.pprint/pprint 
  (create-doc {:data {:terms {:round/requirements {:value "We need everything."}
@@ -2565,7 +2736,7 @@
  :ftype "ftype"
  :update-doc-id 123
  :round-id 456
- :from-org-id 567}
+ "from-org-id" 567}
 
 #_{:value {:ftype "ftype"
            :fsubtype "fsubtype"
