@@ -607,6 +607,19 @@
                             :parent parent-result))
         children))
 
+(defn diff-tree-children-with-existing-reducer
+  [existing-groups given-groups agg k]
+  (let [existing (existing-groups k)
+        given (given-groups k)]
+    (cond (nil? existing) (update agg :new conj (assoc given
+                                                       :exists? false))
+          (nil? given) (update agg :missing conj {:value existing
+                                                  :mode :missing
+                                                  :exists? true})
+          :else (update agg :common conj (assoc given
+                                                :existing existing
+                                                :exists? true)))))
+
 (defn diff-tree-children-with-existing
   [post-opts {:keys [children] parent-value :value} parent-result]
   (let [{:keys [get-existing-children-fn existing-children-group-fn given-children-group-fn]} post-opts
@@ -623,17 +636,8 @@
                                           :value))
                           (ut/fmap first))
         all-keys (keys (merge existing-groups given-groups))]
-    (reduce (fn [agg k]
-              (let [existing (existing-groups k)
-                    given (given-groups k)]
-                (cond (nil? existing) (update agg :new conj (assoc given
-                                                                   :exists? false))
-                      (nil? given) (update agg :missing conj {:value existing
-                                                              :mode :missing
-                                                              :exists? true})
-                      :else (update agg :common conj (assoc given
-                                                            :existing existing
-                                                            :exists? true)))))
+    (reduce (partial diff-tree-children-with-existing-reducer
+                     existing-groups given-groups)
             {:missing #{}
              :common #{}
              :new #{}}
@@ -641,7 +645,7 @@
 
 (defmacro with-doc-handling
   [handler-args & body]
-  body)
+  `(do ~@body))
 
 (defn apply-tree
   [{:keys [pre] :as cfg} {:keys [value children mode handler-args] :as tr}]
@@ -784,11 +788,11 @@
   [resp-fields fields]
   (let [fields-by-fname (group-by :fname fields)]
     (vec (for [[k value] resp-fields]
-           (let [{:keys [fname ftype fsubtype id]} (-> k name fields-by-fname)]
+           (let [{:keys [fname ftype fsubtype id]} (-> k name fields-by-fname first)]
              {:value (merge {:fname fname
                              :ftype ftype
                              :fsubtype fsubtype
-                             :pf-id id}
+                             :prompt-field-id id}
                             (convert-field-val value
                                                ftype
                                                fsubtype))})))))
@@ -796,17 +800,16 @@
 (defn response-prompts->appliable-tree
   [{:keys [terms prompt-ids]} prompts]
   (let [responses (merge terms prompt-ids)
-        grouped-prompts (-> (merge (group-by (comp keyword :terms) prompts)
+        grouped-prompts (-> (merge (group-by (comp keyword :term) prompts)
                                    (group-by :id prompts))
                             (dissoc nil))]
-    {:value {}
-     :children
-     (vec (for [[k r] responses]
-            (let [{prompt-id :id :keys [fields]} (-> k grouped-prompts first)]
-              (if prompt-id
-                {:value {:prompt-id prompt-id}
-                 :children (fields->appliable-tree r fields)}
-                (throw (Exception. (str "Could not find prompt with term or id: " k)))))))}))
+    (vec (for [[k r] responses]
+           (let [{prompt-id :id :keys [fields]} (-> k grouped-prompts first)]
+             (if prompt-id
+               {:value {}
+                :children [{:value {:prompt-id prompt-id}
+                             :children (fields->appliable-tree r fields)}]}
+               (throw (Exception. (str "Could not find prompt with term or id: " k)))))))))
 
 [{:value {:prompt-id 111}
                  :children [{:value {:fname "value"
@@ -817,12 +820,14 @@
 ;; TODO set responses.subject
 (defn doc->appliable-tree
   [{:keys [data dtype dsubtype update-doc-id] :as d}]
-  (if-let [{:keys [prompts]} (doc->appliable--find-form d)]
+  (if-let [{:keys [ftype fsubtype prompts]} (doc->appliable--find-form d)]
     {:handler-args d
      :value (merge (select-keys d ;; TODO hard-coded fields sucks -- Bill
                                 [:title :dtype :descr :notes :from-org-id
                                  :from-user-id :to-org-id :to-user-id
                                  :dtype :dsubtype :form-id :subject])
+                   {:dtype ftype
+                    :dsubtype fsubtype}
                    (when update-doc-id
                      {:id update-doc-id}))
      :children (response-prompts->appliable-tree data
@@ -831,19 +836,48 @@
                             {:ftype dtype
                              :fsubtype dsubtype
                              :doc-id update-doc-id})))))
+(defn create-doc [d]
+  (->> d
+       doc->appliable-tree
+       (apply-tree
+        {:pre {}
+         :new {:post {:action :insert
+                      :insert-fn (fn [v _ _]
+                                   (insert-doc v))}
+               :new {:post {:action nil
+                            :finalize-fn (fn [r {:keys [parent]}]
+                                           (insert-doc-response (:id parent)
+                                                                (-> r
+                                                                    (dissoc :result)
+                                                                    vals
+                                                                    flatten
+                                                                    first
+                                                                    :result
+                                                                    :id)))}
+                     :new {:post {:action :insert
+                                  :insert-fn (fn [v _ _] (insert-response v))}
+                           :new {:post {:action :insert
+                                        :insert-fn (fn [v {resp-id :id} _]
+                                                     (insert-response-field resp-id v))}}}}}})))
 
+(clojure.pprint/pprint 
+ (create-doc {:data {:terms {:round/requirements {:value "We need everything."}
+                             :round/annual-budget {:value 2400}}
+                     :prompt-ids {861404785216 {:value "Justanother Value"}}}
+              :dtype "round-initiation"
+                                        ;:update-doc-id 123
+              :round-id 456
+              :from-org-id 567}))
 
-
-
-(doc->appliable-tree {:data {:terms {:product/goal {:value "We need everything."}
-                                     :product/budget {:value 2400
-                                                      :period "Annual"}
-                                     :product/someterm {:value "Hello sir.\nWhat's up?"}}
-                             :prompt-ids {126786722 {:value "Justanother Value"}}}
-                      :dtype "vendor-profile"
-                      ;:update-doc-id 123
-                      :round-id 456
-                      :from-org-id 567})
+#_
+(clojure.pprint/pprint 
+ (doc->appliable-tree {:data {:terms {:round/requirements {:value "We need everything."}
+                                      :round/annual-budget {:value 2400}}
+                              :prompt-ids {861404785216 {:value "Justanother Value"}}}
+                       :dtype "round-initiation"
+                                        ;:update-doc-id 123
+                       :round-id 456
+                       :from-org-id 567}))
 
 #_
 (clojure.pprint/pprint 

@@ -285,6 +285,6 @@ Product: '%s'
 
 (defmethod com/handle-ws-inbound :save-doc
   [{:keys [data ftype update-doc-id from-org-id] :as req} ws-id sub-fn]
-  (if (nil? update-doc-id)
+#_  (if (nil? update-doc-id)
     (docs/create-doc req)
     :TODO))
