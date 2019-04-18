@@ -87,7 +87,7 @@ a.teal:hover {
   border: none !important;
 }
 .sidebar .segment > .button:not(:first-of-type),
-.sidebar .segment > .label:not(:first-of-type) {
+.sidebar .segment > .label {
   margin-top: $segment-padding;
 }
 
