@@ -473,10 +473,15 @@
            prompt
            use-id?))
 
-(defn form-template-exists? [{:keys [id] :as form-template}]
-  (-> [[:form-templates {:id id} [:id]]]
+(defn select-form-templates [form-template-id & [fields]]
+  (-> [[:form-templates {:id form-template-id}
+        (or fields [:id])]]
       ha/sync-query
-      :form-templates
+      :form-templates))
+
+(defn form-template-exists? [{:keys [id] :as form-template}]
+  (-> id
+      select-form-templates
       empty?
       not))
 
@@ -573,11 +578,11 @@
 
 (defn apply-tree-top-value
   [{:keys [action insert-fn update-fn delete-fn use-id? ignore-id?] :as opts}
-   {:keys [value children parent] :as tr}]
+   {:keys [value children parent existing'] :as tr}]
   (when action
     (let [{existing' :existing exists?' :exists?} (determine-tree-existence opts tr)
-          u-fn #(ha/walk-sql-field->clj-kw (update-fn value parent))
-          i-fn #(ha/walk-sql-field->clj-kw (insert-fn value parent))
+          u-fn #(ha/walk-sql-field->clj-kw (update-fn value parent existing'))
+          i-fn #(ha/walk-sql-field->clj-kw (insert-fn value parent existing'))
           d-fn #(delete-fn existing')]
       (case action
         :upsert (if exists?'
@@ -656,20 +661,54 @@
                                result)}))
 
 
-#_
+(defn create-form-from-template
+  [{:keys [form-template-id from-org-id from-user-id
+           title descr status notes to-org-id
+           to-user-id] :as m}]
+  (->> m
+       (apply-tree
+        {:pre {:select-fn (fn [{:keys [form-template-id]} _]
+                            (-> form-template-id
+                                (select-form-templates [:id :ftype :fsubtype])
+                                first))}
+         :common {:post {:action :force-insert
+                         :insert-fn (fn [value _ {:keys [ftype fsubtype]}]
+                                      (-> value
+                                          (assoc :ftype ftype
+                                                 :fsubtype fsubtype)
+                                          insert-form))
+                         :get-existing-children-fn
+                         (fn [{:keys [form-template-id]} _]
+                           (select-form-template-prompts-by-parent-id form-template-id))
+                         :existing-children-group-fn :prompt-id
+                         :given-children-group-fn (constantly nil)}
+                  :missing {:post {:action :force-insert
+                                   :insert-fn (fn [{:keys [prompt-id] sort' :sort} {:keys [id]} _]
+                                                (insert-form-prompt id prompt-id sort'))}}}})
+       :result))
 
+
+#_
 (clojure.pprint/pprint 
  (apply-tree
-  {:pre {}
-   :new {:post {:action :insert
-                :insert-fn insert-form
-                :get-existing-children-fn (constantly
-                                           (select-form-template-prompts-by-parent-id 370382503635))
-                :existing-children-group-fn :prompt-id
-                :given-children-group-fn (constantly nil)}
-         :missing {:post {:action :force-insert
-                          :insert-fn (fn [{:keys [prompt-id] sort' :sort} {:keys [id]}]
-                                       (insert-form-prompt id prompt-id sort'))}}}} 
+  {:pre {:select-fn (fn [{:keys [form-template-id]} _]
+                      (-> form-template-id
+                          (select-form-templates [:id :ftype :fsubtype])
+                          first))}
+   :common {:post {:action :force-insert
+                   :insert-fn (fn [value _ {:keys [ftype fsubtype]}]
+                                (-> value
+                                    (assoc :ftype ftype
+                                           :fsubtype fsubtype)
+                                    insert-form))
+                   :get-existing-children-fn
+                   (fn [{:keys [form-template-id]} _]
+                     (select-form-template-prompts-by-parent-id form-template-id))
+                   :existing-children-group-fn :prompt-id
+                   :given-children-group-fn (constantly nil)}
+            :missing {:post {:action :force-insert
+                             :insert-fn (fn [{:keys [prompt-id] sort' :sort} {:keys [id]} _]
+                                          (insert-form-prompt id prompt-id sort'))}}}} 
   {:value {:from-org-id 852106324668,
            :from-user-id 852106304667,
            :prod-id 272814695158,
