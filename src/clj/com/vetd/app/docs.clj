@@ -665,7 +665,7 @@
   [{:keys [form-template-id from-org-id from-user-id
            title descr status notes to-org-id
            to-user-id] :as m}]
-  (->> m
+  (->> {:value m}
        (apply-tree
         {:pre {:select-fn (fn [{:keys [form-template-id]} _]
                             (-> form-template-id
