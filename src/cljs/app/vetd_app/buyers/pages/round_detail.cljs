@@ -389,7 +389,8 @@
        (if disqualified? "Undo Disqualify" "Disqualify")
        [:> ui/Icon {:name (if disqualified? "undo" "ban")}]]])])
 
-(defn c-add-requirement-button []
+(defn c-add-requirement-button
+  [{:keys [id] :as round}]
   [:> ui/Popup
    {:position "top left"
     :on "click"
@@ -404,8 +405,8 @@
                                :action (r/as-element
                                         [:> ui/Button
                                          {:color "teal"
-                                          :on-click #(rf/dispatch [:b/round.add-requirement
-                                                                   @new-requirement])}
+                                          :on-click #(rf/dispatch
+                                                      [:b/round.add-requirement id @new-requirement])}
                                          "Add"])}]]))
     :trigger (r/as-element
               [:> ui/Button {:color "teal"
@@ -447,6 +448,6 @@
                         (seq products))
                [:<>
                 [:div {:style {:padding "0 15px"}}
-                 [c-add-requirement-button]]
+                 [c-add-requirement-button round]]
                 [c-products round products]])]
             [:div.inner-container [c-round round]]]))])))
