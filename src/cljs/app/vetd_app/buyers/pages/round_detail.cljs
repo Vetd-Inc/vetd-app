@@ -150,7 +150,7 @@
 (def dummy-reqs
   ["Pricing Estimate" "Free Trial" "Current Customers" "Integration with GMail"
    "Subscription Billing" "One Time Billing" "Parent / Child Heirarchical Billing"])
-(def dummy-products["SendGrid" "Mailchimp" ;; "Mandrill" "iContact"
+(def dummy-products["SendGrid" "Mailchimp" "Mandrill" "iContact"
                     ])
 (def dummy-resps
   {"Pricing Estimate" ["$45 / mo."
@@ -359,6 +359,61 @@
      "in-progress" [c-round-grid round]
      "complete" [c-round-grid round])])
 
+(defn c-products
+  "Component to display product boxes with various buttons."
+  [{:keys [id] :as round} products]
+  [:<>
+   (for [{product-id :id
+          pname :pname
+          vendor :vendor
+          :as product} products
+         :let [disqualified? false]]
+     ^{:key product-id}
+     [:> ui/Segment
+      [:h3 pname]
+      [:> ui/Button {:onClick #(rf/dispatch [:b/round.declare-winner id product-id])
+                     :color "vetd-gradient"
+                     :fluid true
+                     :icon true
+                     :labelPosition "left"
+                     :disabled disqualified?}
+       "Declare Winner"
+       [:> ui/Icon {:name "checkmark"}]]
+      [bc/c-setup-call-button product vendor]
+      [:> ui/Button {:onClick #(rf/dispatch [:b/round.disqualify id product-id])
+                     :color "grey"
+                     :fluid true
+                     :icon true
+                     :labelPosition "left"}
+       (if disqualified? "Undo Disqualify" "Disqualify")
+       [:> ui/Icon {:name (if disqualified? "undo" "ban")}]]])])
+
+(defn c-add-requirement-button []
+  [:> ui/Popup
+   {:position "top left"
+    :on "click"
+    :wide true
+    :content (r/as-element
+              (let [new-requirement (atom "")]
+                [:> ui/Form
+                 [:> ui/Input {:placeholder "Enter requirement..."
+                               :on-change (fn [_ this]
+                                            (reset! new-requirement (.-value this)))
+                               :action (r/as-element
+                                        [:> ui/Button
+                                         {:color "teal"
+                                          :on-click #(rf/dispatch [:b/round.add-requirement
+                                                                   @new-requirement])}
+                                         "Add"])
+                               :style {:width "auto"}}]]))
+    :trigger (r/as-element
+              [:> ui/Button {:color "teal"
+                             :icon true
+                             :fluid true
+                             :labelPosition "left"}
+               "Add Requirement"
+               [:> ui/Icon {:name "plus"}]])}])
+
 (defn c-page []
   (let [round-idstr& (rf/subscribe [:round-idstr])
         org-id& (rf/subscribe [:org-id])
@@ -367,7 +422,7 @@
                                 [[:rounds {:idstr @round-idstr&}
                                   [:id :idstr :created :status :title
                                    [:products
-                                    [:pname
+                                    [:id :pname
                                      [:vendor
                                       [:id :oname]]]]
                                    [:doc
@@ -378,46 +433,20 @@
                                         [:id :prompt-field-fname :idx
                                          :sval :nval :dval]]]]]]]]]}])]
     (fn []
-      [:<>
-       [:div.container-with-sidebar.round-details
-        (if (= :loading @rounds&)
-          [cc/c-loader]
-          (let [{:keys [id status products] :as round} (-> @rounds& :rounds first)]
-            [:<>
-             [:div.sidebar {:style {:margin-right 0}}
-              [:div {:style {:padding "0 15px"}}
-               [bc/c-back-button {:on-click #(rf/dispatch [:b/nav-rounds])}
-                "All VetdRounds"]]
-              [:div {:style {:height 154}}] ; spacer
-              (when (and (#{"in-progress" "complete"} status)
-                         (seq products))
-                [:<>
-                 [:div {:style {:padding "0 15px"}}
-                  [:> ui/Button {:color "teal"
-                                 :icon true
-                                 :fluid true
-                                 :labelPosition "left"}
-                   "Add Requirement"
-                   [:> ui/Icon {:name "plus"}]]]
-                 (for [{:keys [product-id pname vendor] :as product} products
-                       :let [disqualified? false]]
-                   ^{:key product-id}
-                   [:> ui/Segment
-                    [:h3 pname]
-                    [:> ui/Button {:onClick #(rf/dispatch [:b/round.declare-winner product-id])
-                                   :color "vetd-gradient"
-                                   :fluid true
-                                   :icon true
-                                   :labelPosition "left"
-                                   :disabled disqualified?}
-                     "Declare Winner"
-                     [:> ui/Icon {:name "checkmark"}]]
-                    [bc/c-setup-call-button product vendor]
-                    [:> ui/Button {:onClick #(rf/dispatch [:b/round.disqualify product-id])
-                                   :color "grey"
-                                   :fluid true
-                                   :icon true
-                                   :labelPosition "left"}
-                     (if disqualified? "Undo Disqualify" "Disqualify")
-                     [:> ui/Icon {:name (if disqualified? "undo" "ban")}]]])])]
-             [:div.inner-container [c-round round]]]))]])))
+      [:div.container-with-sidebar.round-details
+       (if (= :loading @rounds&)
+         [cc/c-loader]
+         (let [{:keys [status products] :as round} (-> @rounds& :rounds first)]
+           [:<>
+            [:div.sidebar {:style {:margin-right 0}}
+             [:div {:style {:padding "0 15px"}}
+              [bc/c-back-button {:on-click #(rf/dispatch [:b/nav-rounds])}
+               "All VetdRounds"]]
+             [:div {:style {:height 154}}] ; spacer
+             (when (and (#{"in-progress" "complete"} status)
+                        (seq products))
+               [:<>
+                [:div {:style {:padding "0 15px"}}
+                 [c-add-requirement-button]]
+                [c-products round products]])]
+            [:div.inner-container [c-round round]]]))])))
