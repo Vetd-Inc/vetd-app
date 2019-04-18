@@ -216,7 +216,7 @@
       
       :reagent-render
       (fn []
-        (if (or true (seq products))
+        (if (seq products)
           [:<>
            [:div.round-grid
             (for [dummy dummy-reqs]
@@ -276,27 +276,28 @@
               [:> ui/Button {:onClick #(reset! modal-showing? false)
                              :color "blue"}
                "Submit Question"]]]]]
-          [:<>
+          [:> ui/Segment {:class "detail-container"
+                          :style {:margin-left 20}}
            [:p [:em "Your requirements have been submitted."]]
            [:p "We are gathering information for you to review from all relevant vendors. Check back soon for updates."]]))})))
 
 (defn c-round
   "Component to display Round details."
   [{:keys [id status title products] :as round}]
-  (let [status "in-progress"] ; DEV ONLY, REMOVE
-    [:<>
-     [:> ui/Segment {:class "detail-container"
-                     :style {:margin-left 20}}
-      [:h1 {:style {:margin-top 0}}
-       title]]
-     [:> ui/Segment {:class "detail-container"
-                     :style {:margin-left 20}}
-      [bc/c-round-status status]]
-     (case status
-       "initiation" [:> ui/Segment {:class "detail-container"}
-                     [c-round-initiation round]]
-       "in-progress" [c-round-grid round]
-       "complete" [c-round-grid round])]))
+  [:<>
+   [:> ui/Segment {:class "detail-container"
+                   :style {:margin-left 20}}
+    [:h1 {:style {:margin-top 0}}
+     title]]
+   [:> ui/Segment {:class "detail-container"
+                   :style {:margin-left 20}}
+    [bc/c-round-status status]]
+   (case status
+     "initiation" [:> ui/Segment {:class "detail-container"
+                                  :style {:margin-left 20}}
+                   [c-round-initiation round]]
+     "in-progress" [c-round-grid round]
+     "complete" [c-round-grid round])])
 
 (defn c-page []
   (let [round-idstr& (rf/subscribe [:round-idstr])
@@ -315,143 +316,92 @@
     (fn []
       [:<>
        [:div.container-with-sidebar.round-details
-        [:div.sidebar {:style {:margin-right 0}}
-         [:div {:style {:padding "0 15px"}}
-          [bc/c-back-button {:on-click #(rf/dispatch [:b/nav-rounds])}
-           "All VetdRounds"]]
-         [:div {:style {:height 154}}] ; spacer
-         [:div {:style {:padding "0 15px"}}
-          [:> ui/Button {:color "teal"
-                         :icon true
-                         :fluid true
-                         :labelPosition "left"}
-           "Add Requirement"
-           [:> ui/Icon {:name "plus"}]]]
-         (when-not (= :loading @rounds&)
-           [:<>
-            [:> ui/Segment
-             [:h3 "SendGrid"]
-             [:> ui/Button {:onClick #(do (.stopPropagation %)
-                                          #_(rf/dispatch [:b/do-something]))
-                            :color "vetd-gradient"
-                            :fluid true
-                            :icon true
-                            :labelPosition "left"}
-              "Declare Winner"
-              [:> ui/Icon {:name "checkmark"}]]
-             
-             [:> ui/Button {:onClick #(do (.stopPropagation %)
-                                          #_(rf/dispatch [:b/do-something]))
-                            :color "grey"
-                            :fluid true
-                            :icon true
-                            :labelPosition "left"}
-              "Setup a Call"
-              [:> ui/Icon {:name "left call"}]]
-             [:> ui/Button {:onClick #(do (.stopPropagation %)
-                                          #_(rf/dispatch [:b/do-something]))
-                            :color "grey"
-                            :fluid true
-                            :icon true
-                            :labelPosition "left"}
-              "Disqualify"
-              [:> ui/Icon {:name "close"}]]]
-            [:> ui/Segment
-             [:h3 "Mailchimp"]
-             [:> ui/Button {:onClick #(do (.stopPropagation %)
-                                          #_(rf/dispatch [:b/do-something]))
-                            :color "vetd-gradient"
-                            :fluid true
-                            :icon true
-                            :labelPosition "left"}
-              "Declare Winner"
-              [:> ui/Icon {:name "checkmark"}]]
-             [:> ui/Button {:onClick #(do (.stopPropagation %)
-                                          #_(rf/dispatch [:b/do-something]))
-                            :color "grey"
-                            :fluid true
-                            :icon true
-                            :labelPosition "left"}
-              "Setup a Call"
-              [:> ui/Icon {:name "left call"}]]
-             [:> ui/Button {:onClick #(do (.stopPropagation %)
-                                          #_(rf/dispatch [:b/do-something]))
-                            :color "grey"
-                            :fluid true
-                            :icon true
-                            :labelPosition "left"}
-              "Disqualify"
-              [:> ui/Icon {:name "close"}]]]
-            [:> ui/Segment
-             [:h3 "Mandrill"]
-             [:> ui/Button {:onClick #(do (.stopPropagation %)
-                                          #_(rf/dispatch [:b/do-something]))
-                            :color "vetd-gradient"
-                            :fluid true
-                            :icon true
-                            :labelPosition "left"}
-              "Declare Winner"
-              [:> ui/Icon {:name "checkmark"}]]
-             
-             [:> ui/Button {:onClick #(do (.stopPropagation %)
-                                          #_(rf/dispatch [:b/do-something]))
-                            :color "grey"
-                            :fluid true
-                            :icon true
-                            :labelPosition "left"}
-              "Setup a Call"
-              [:> ui/Icon {:name "left call"}]]
-             [:> ui/Button {:onClick #(do (.stopPropagation %)
-                                          #_(rf/dispatch [:b/do-something]))
-                            :color "grey"
-                            :fluid true
-                            :icon true
-                            :labelPosition "left"}
-              "Disqualify"
-              [:> ui/Icon {:name "close"}]]]
-            [:> ui/Segment
-             [:h3 "iContact"]
-             [:> ui/Button {:onClick #(do (.stopPropagation %)
-                                          #_(rf/dispatch [:b/do-something]))
-                            :color "vetd-gradient"
-                            :fluid true
-                            :disabled true
-                            :icon true
-                            :labelPosition "left"}
-              "Declare Winner"
-              [:> ui/Icon {:name "checkmark"}]]
-             [:> ui/Button {:onClick #(do (.stopPropagation %)
-                                          #_(rf/dispatch [:b/do-something]))
-                            :color "grey"
-                            :fluid true
-                            :disabled true
-                            :icon true
-                            :labelPosition "left"}
-              "Setup a Call"
-              [:> ui/Icon {:name "left call"}]]
-             [:> ui/Button {:onClick #(do (.stopPropagation %)
-                                          #_(rf/dispatch [:b/do-something]))
-                            :color "grey"
-                            :fluid true
-                            :icon true
-                            :labelPosition "left"}
-              "Undo Disqualify"
-              [:> ui/Icon {:name "undo"}]]]
-            ]
-           #_(let [{:keys [vendor rounds] :as product} (-> @products& :products first)]
-               (when (empty? (:rounds product))
-                 [:> ui/Segment
-                  [bc/c-start-round-button {:etype :product
-                                            :eid (:id product)
-                                            :ename (:pname product)
-                                            :props {:fluid true}}]
-                  [c-preposal-request-button product]
-                  [bc/c-setup-call-button product vendor]
-                  [bc/c-ask-a-question-button product vendor]])))]
-        [:div.inner-container
-         (if (= :loading @rounds&)
-           [cc/c-loader]
-           (let [round (-> @rounds& :rounds first)]
-             [c-round round]))]]
-
-       ])))
+        (if (= :loading @rounds&)
+          [cc/c-loader]
+          (let [{:keys [id status products] :as round} (-> @rounds& :rounds first)]
+            [:<>
+             [:div.sidebar {:style {:margin-right 0}}
+              [:div {:style {:padding "0 15px"}}
+               [bc/c-back-button {:on-click #(rf/dispatch [:b/nav-rounds])}
+                "All VetdRounds"]]
+              [:div {:style {:height 154}}] ; spacer
+              (when (and (#{"in-progress" "complete"} status)
+                         (seq products))
+                [:<>
+                 [:div {:style {:padding "0 15px"}}
+                  [:> ui/Button {:color "teal"
+                                 :icon true
+                                 :fluid true
+                                 :labelPosition "left"}
+                   "Add Requirement"
+                   [:> ui/Icon {:name "plus"}]]]
+                 (for [product products]
+                   ^{:key (:id product)}
+                   [:> ui/Segment
+                    [:h3 (:pname product)]
+                    [:> ui/Button {:onClick #(do (.stopPropagation %)
+                                                 #_(rf/dispatch [:b/do-something]))
+                                   :color "vetd-gradient"
+                                   :fluid true
+                                   :icon true
+                                   :labelPosition "left"}
+                     "Declare Winner"
+                     [:> ui/Icon {:name "checkmark"}]]
+                    
+                    [:> ui/Button {:onClick #(do (.stopPropagation %)
+                                                 #_(rf/dispatch [:b/do-something]))
+                                   :color "grey"
+                                   :fluid true
+                                   :icon true
+                                   :labelPosition "left"}
+                     "Setup a Call"
+                     [:> ui/Icon {:name "left call"}]]
+                    [:> ui/Button {:onClick #(do (.stopPropagation %)
+                                                 #_(rf/dispatch [:b/do-something]))
+                                   :color "grey"
+                                   :fluid true
+                                   :icon true
+                                   :labelPosition "left"}
+                     "Disqualify"
+                     [:> ui/Icon {:name "close"}]]]
+                   
+                   #_[:> ui/Segment
+                      [:h3 "iContact"]
+                      [:> ui/Button {:onClick #(do (.stopPropagation %)
+                                                   #_(rf/dispatch [:b/do-something]))
+                                     :color "vetd-gradient"
+                                     :fluid true
+                                     :disabled true
+                                     :icon true
+                                     :labelPosition "left"}
+                       "Declare Winner"
+                       [:> ui/Icon {:name "checkmark"}]]
+                      [:> ui/Button {:onClick #(do (.stopPropagation %)
+                                                   #_(rf/dispatch [:b/do-something]))
+                                     :color "grey"
+                                     :fluid true
+                                     :disabled true
+                                     :icon true
+                                     :labelPosition "left"}
+                       "Setup a Call"
+                       [:> ui/Icon {:name "left call"}]]
+                      [:> ui/Button {:onClick #(do (.stopPropagation %)
+                                                   #_(rf/dispatch [:b/do-something]))
+                                     :color "grey"
+                                     :fluid true
+                                     :icon true
+                                     :labelPosition "left"}
+                       "Undo Disqualify"
+                       [:> ui/Icon {:name "undo"}]]]
+                   )])
+              #_(let [{:keys [vendor rounds] :as product} (-> @products& :products first)]
+                  (when (empty? (:rounds product))
+                    [:> ui/Segment
+                     [bc/c-start-round-button {:etype :product
+                                               :eid (:id product)
+                                               :ename (:pname product)
+                                               :props {:fluid true}}]
+                     [c-preposal-request-button product]
+                     [bc/c-setup-call-button product vendor]
+                     [bc/c-ask-a-question-button product vendor]]))]
+             [:div.inner-container [c-round round]]]))]])))
