@@ -865,11 +865,11 @@
                                                                         first
                                                                         :id)
                                                                     item)))]}]}
-                          (fn [{:keys [item children1 parents] :as x}]
+                          (fn [{:keys [item children parents] :as x}]
                             (assoc x
                                    :item
                                    (insert-doc-response (-> parents first :id)
-                                                        (-> children1 first :id))))]}])))
+                                                        (-> children first :id))))]}])))
 
 (defn update-doc [d]
   #_(->> d
@@ -952,9 +952,9 @@
   (if-let [mk (and m (m k))]
     (assoc agg
            k
-           (mapv #(apply-it
-                   mk
-                   (merge v' %))
+           (mapv #(dissoc (apply-it mk
+                                    (merge v' %))
+                          :parents)
                  vs))
     agg))
 
@@ -990,7 +990,7 @@
     (assoc x
            :item (insert-doc item)
            :children {:doc-responses children}))
-  {:doc-responses [(fn [{:keys [item children] :as x}]
+  {:doc-responses [(fn [{:keys [children] :as x}]
                      (assoc x
                             :children {:responses children}))
                    {:responses
