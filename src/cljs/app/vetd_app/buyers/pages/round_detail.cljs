@@ -363,35 +363,38 @@
      #{"in-progress"
        "complete"} [c-round-grid round])])
 
+(defn c-declare-winner-button
+  [round product product-disqualified?]
+  [bc/c-sidebar-button
+   {:text "Declare Winner"
+    :dispatch [:b/round.declare-winner (:id round) (:id product)]
+    :icon "checkmark"
+    :props {:color "vetd-gradient"
+            :disabled product-disqualified?}}])
+
+(defn c-disqualify-button
+  [round product product-disqualified?]
+  [bc/c-sidebar-button
+   {:text (if product-disqualified? "Undo Disqualify" "Disqualify")
+    :dispatch [:b/round.disqualify (:id round) (:id product)]
+    :icon (if product-disqualified? "undo" "ban")
+    :props {:color "grey"}}])
+
 (defn c-products
   "Component to display product boxes with various buttons."
-  [{:keys [id] :as round} products]
+  [round products]
   [:<>
    (for [{product-id :id
           pname :pname
           vendor :vendor
-          :as product} products
-         ;; TODO disqualified? needs to be dynamic
-         :let [disqualified? false]]
+          :as product} products     ; TODO actual disqualified value
+         :let [product-disqualified? false]]
      ^{:key product-id}
      [:> ui/Segment
       [:h3 pname]
-      [:> ui/Button {:onClick #(rf/dispatch [:b/round.declare-winner id product-id])
-                     :color "vetd-gradient"
-                     :fluid true
-                     :icon true
-                     :labelPosition "left"
-                     :disabled disqualified?}
-       "Declare Winner"
-       [:> ui/Icon {:name "checkmark"}]]
+      [c-declare-winner-button round product product-disqualified?]
       [bc/c-setup-call-button product vendor]
-      [:> ui/Button {:onClick #(rf/dispatch [:b/round.disqualify id product-id])
-                     :color "grey"
-                     :fluid true
-                     :icon true
-                     :labelPosition "left"}
-       (if disqualified? "Undo Disqualify" "Disqualify")
-       [:> ui/Icon {:name (if disqualified? "undo" "ban")}]]])])
+      [c-disqualify-button round product product-disqualified?]])])
 
 (defn c-add-requirement-button
   [{:keys [id] :as round}]
