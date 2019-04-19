@@ -137,12 +137,13 @@
             [:save-doc
              {:ftype "round-initiation"
               :round-id round-id}
-             {:rounds/goal {:value @goal}
-              :rounds/start-using {:value @start-using}
-              :rounds/num-users {:value @num-users}
-              :rounds/budget {:value @budget}
-              :rounds/requirements {:value @requirements}
-              :rounds/add-products-by-name {:value @add-products-by-name}}])}
+             {:terms
+              {:rounds/goal {:value @goal}
+               :rounds/start-using {:value @start-using}
+               :rounds/num-users {:value @num-users}
+               :rounds/budget {:value @budget}
+               :rounds/requirements {:value @requirements}
+               :rounds/add-products-by-name {:value @add-products-by-name}}}])}
          "Submit"]]])))
 
 (defn c-round-initiation
