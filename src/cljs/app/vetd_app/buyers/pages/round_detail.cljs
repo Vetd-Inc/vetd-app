@@ -37,15 +37,18 @@
  (fn [{:keys [round-idstr]}] round-idstr))
 
 ;; Components
+(defn get-requirements-options []
+  [;; {:key "Subscription Billing"
+   ;;  :text "Subscription Billing"
+   ;;  :value "Subscription Billing"}
+   ;; {:key "Free Trial"
+   ;;  :text "Free Trial"
+   ;;  :value "Free Trial"}
+   ])
+
 (defn c-round-initiation-form
   [round-id]
-  (let [requirements-options (r/atom [;; {:key "Subscription Billing"
-                                      ;;  :text "Subscription Billing"
-                                      ;;  :value "Subscription Billing"}
-                                      ;; {:key "Free Trial"
-                                      ;;  :text "Free Trial"
-                                      ;;  :value "Free Trial"}
-                                      ])
+  (let [requirements-options (r/atom (get-requirements-options))
         ;; form data
         goal (r/atom "")
         start-using (r/atom "")
@@ -391,30 +394,40 @@
 
 (defn c-add-requirement-button
   [{:keys [id] :as round}]
-  [:> ui/Popup
-   {:position "top left"
-    :on "click"
-    :wide true
-    :content (r/as-element
-              (let [new-requirement (atom "")]
-                [:> ui/Form
-                 [:> ui/Input {:class "auto-width-input"
-                               :placeholder "Enter requirement..."
-                               :on-change (fn [_ this]
-                                            (reset! new-requirement (.-value this)))
-                               :action (r/as-element
-                                        [:> ui/Button
-                                         {:color "teal"
-                                          :on-click #(rf/dispatch
-                                                      [:b/round.add-requirement id @new-requirement])}
-                                         "Add"])}]]))
-    :trigger (r/as-element
-              [:> ui/Button {:color "teal"
-                             :icon true
-                             :fluid true
-                             :labelPosition "left"}
-               "Add Requirement"
-               [:> ui/Icon {:name "plus"}]])}])
+  (let [popup-open? (r/atom false)]
+    (fn []
+      [:> ui/Popup
+       {:position "top left"
+        :on "click"
+        :open @popup-open?
+        :onOpen #(reset! popup-open? true)
+        :onClose #(reset! popup-open? false)
+        :content (r/as-element
+                  (let [new-requirement (atom "")
+                        requirements-options (r/atom (get-requirements-options))]
+                    [:> ui/Form {:style {:width 350}}
+                     [:> ui/Dropdown {:style {:width "100%"}
+                                      :options @requirements-options
+                                      :placeholder "Enter requirement..."
+                                      :search true
+                                      :selection true
+                                      :multiple false
+                                      :selectOnBlur false
+                                      :allowAdditions true
+                                      :additionLabel "Hit 'Enter' to Add "
+                                      :noResultsMessage "Type to add a new requirement..."
+                                      :onChange (fn [_ this]
+                                                  (.log js/console (.-value this))
+                                                  (reset! popup-open? false)
+                                                  (rf/dispatch
+                                                   [:b/round.add-requirement id (.-value this)]))}]]))
+        :trigger (r/as-element
+                  [:> ui/Button {:color "teal"
+                                 :icon true
+                                 :fluid true
+                                 :labelPosition "left"}
+                   "Add Requirement"
+                   [:> ui/Icon {:name "plus"}]])}])))
 
 (defn c-page []
   (let [round-idstr& (rf/subscribe [:round-idstr])
