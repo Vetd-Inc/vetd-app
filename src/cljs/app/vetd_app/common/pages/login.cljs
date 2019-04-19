@@ -103,7 +103,7 @@
                         :placeholder "Email Address"
                         :autoFocus true
                         :spellCheck false
-                        :onChange #(reset! email (-> % .-target .-value))}]]
+                        :on-change #(reset! email (-> % .-target .-value))}]]
             [:> ui/FormField
              [:> ui/Input {:class "borderless"
                            :type "password"
