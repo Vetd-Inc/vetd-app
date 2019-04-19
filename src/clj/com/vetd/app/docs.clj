@@ -12,6 +12,15 @@
 
 (defmethod handle-doc-creation :default [_])
 
+(defmacro tree-assoc-fn
+  [key-bindings & body]
+  `(fn [x#]
+     (let [{:keys ~key-bindings :as x#} (assoc x#
+                                               :parent
+                                               (-> x# :parents last))
+           r# (do ~@body)]
+       (apply assoc x# r#))))
+
 (defn convert-field-val
   [v ftype fsubtype]
   (case ftype
@@ -886,7 +895,7 @@
       v')))
 
 
-(defn create-doc [d]
+#_(defn create-doc [d]
   (->> d
        doc->appliable-tree
        (apply-it
@@ -915,6 +924,28 @@
                                    (insert-doc-response (-> parents last :id)
                                                         (-> children :responses first :item :id))))]}])))
 
+
+(defn create-doc [d]
+  (->> d
+       doc->appliable-tree
+       (apply-it
+        [(tree-assoc-fn [item]
+                        [:item (insert-doc item)])
+         {:doc-responses [{:responses
+                           [(tree-assoc-fn [item]
+                                           [:item (insert-response item)])
+                            {:fields
+                             [(tree-assoc-fn [parent item]
+                                             [:item (insert-response-field (:id parent)
+                                                                           item)])]}]}
+                          (tree-assoc-fn [item children parent]
+                                         [:item
+                                          (->> children
+                                               :responses
+                                               first
+                                               :item
+                                               :id
+                                               (insert-doc-response (:id parent)))])]}])))
 
 #_
 (defn update-doc [d]
@@ -1016,8 +1047,11 @@
                               {:item (dissoc d :fields)
                                :children fields})))))
 
+
+
+
 ;; TODO support reusing existing responses
-(defn update-doc [d]
+#_(defn update-doc [d]
   (->> d
        doc->appliable-tree
        (apply-it
@@ -1045,6 +1079,37 @@
                                    :item
                                    (insert-doc-response (-> parents last :id)
                                                         (-> children :response first :item :id))))]}])))
+
+(defn update-doc [d]
+  (->> d
+       doc->appliable-tree
+       (apply-it
+        [(tree-assoc-fn [item children]
+                        (-> item
+                            ha/walk-clj-kw->sql-field
+                            (select-keys [:doc_id :user_id :id :user_id :resp_id])
+                            (db/update-any! :docs))
+                        [:children (-> item
+                                       :id
+                                       get-child-responses
+                                       (group-doc-responses children))])
+         {:delete [(tree-assoc-fn [item]
+                                  (->> item :ref-id (update-deleted :doc_resp))
+                                  [])]
+          :new-responses [{:response [(tree-assoc-fn [item]
+                                                     [:item (insert-response item)])
+                                      {:fields [(tree-assoc-fn [item parent]
+                                                               [:item (insert-response-field
+                                                                       (:id parent)
+                                                                       item)])]}]}
+                          (tree-assoc-fn [item children parent]
+                                         [:item
+                                          (->> children
+                                               :response
+                                               first
+                                               :item
+                                               :id
+                                               (insert-doc-response (:id parent)))])]}])))
 
 #_
 (clojure.pprint/pprint 
