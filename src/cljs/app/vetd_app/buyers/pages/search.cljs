@@ -84,7 +84,6 @@
 (rf/reg-event-fx
  :b/start-round-return
  (fn [_ [_ {:keys [idstr] :as results}]]
-   (.log js/console idstr)
    {:dispatch [:b/nav-round-detail idstr]
     :toast {:type "success"
             :title "Your VetdRound has begun!"
