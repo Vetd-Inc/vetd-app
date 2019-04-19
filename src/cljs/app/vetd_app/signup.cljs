@@ -15,6 +15,9 @@
  (fn [{:keys [db]} [_ results {{:keys [org-type]} :return}]]
    (if-not (:email-used? results)
      {:dispatch [:nav-login]
+      :toast {:type "success"
+              :title "Thanks for Signing Up!"
+              :message "You can now login."}
       :analytics/track {:event "Signup Complete"
                         :props {:category "Accounts"
                                 :label org-type}}}
