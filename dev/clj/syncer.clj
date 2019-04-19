@@ -26,7 +26,7 @@
       nil)))
 
 ;; this sucks. ws and alb not friends because no cookies -- Bill
-(def prod-ip "34.229.137.116")
+(def prod-ip "52.91.178.190")
 
 (defn mk-ws [ch]
   (let [ws @(ah/websocket-client #_"ws://localhost:5080/ws"
@@ -90,14 +90,15 @@
                        ws))
 
 
-(defn req-profile-form-templates&dependents [ws]
+(defn req-some-form-templates&dependents [ws]
   (svr/respond-transit {:cmd :graphql
                         :sub-id (keyword (gensym))
                         :return :yes
                         :subscription? false
                         :query {:queries
                                 [[:form-templates
-                                  {:ftype ["vendor-profile" "product-profile"]
+                                  {:ftype ["vendor-profile" "product-profile"
+                                           "round-initiation"]
                                    :deleted nil}
                                   [:id
                                    :idstr
@@ -155,10 +156,10 @@
     (.close ws)
     true))
 
-(defn sync-profile-form-templates-from-prod []
+(defn sync-some-form-templates-from-prod []
   (let [ch (a/chan 1)
         ws (mk-ws ch)]
-    (req-profile-form-templates&dependents ws)
+    (req-some-form-templates&dependents ws)
     (let [form-templates (a/alt!!
                            (a/timeout 5000) :timeout
                            ch ([v] v))]
@@ -169,5 +170,5 @@
 
 #_ (sync-profile-forms-from-prod)
 
-#_ (sync-profile-form-templates-from-prod)
+#_ (sync-some-form-templates-from-prod)
 

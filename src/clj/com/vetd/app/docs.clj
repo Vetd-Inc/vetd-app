@@ -5,7 +5,8 @@
             [com.vetd.app.hasura :as ha]
             [taoensso.timbre :as log]
             [honeysql.core :as hs]
-            clojure.data))
+            clojure.data
+            clojure.set))
 
 (defmulti handle-doc-creation (fn [{:keys [dtype]}] (keyword dtype)))
 
@@ -841,6 +842,50 @@
                              :fsubtype dsubtype
                              :doc-id update-doc-id})))))
 
+
+(declare apply-it)
+
+(defn apply-it-child-reducer
+  [m v' agg [k vs]]
+  (if-let [mk (and m (m k))]
+    (assoc agg
+           k
+           (mapv #(dissoc (apply-it mk
+                                    (merge v' %))
+                          :parents)
+                 vs))
+    agg))
+
+(defn apply-it-map
+  [m {:keys [item children parents] :as v}]
+  (let [parents' (conj (or parents [])
+                       item)
+        v' (-> v
+               (dissoc :item
+                       :children)
+               (assoc :parents parents'))]
+    (assoc v
+           :children
+           (reduce (partial apply-it-child-reducer
+                            m
+                            v')
+                   {}
+                   (if (map? children)
+                     children
+                     {(ffirst m) children})))))
+
+(defn apply-it
+  [[& ops] v]
+  (loop [[head & tail] (flatten ops)
+         v' v]
+    (if head
+      (recur (flatten tail)
+             (if (map? head)
+               (apply-it-map head v')
+               (head v')))
+      v')))
+
+
 (defn create-doc [d]
   (->> d
        doc->appliable-tree
@@ -909,169 +954,132 @@
                                                                (insert-response-field resp-id v))}}}}}})))
 
 
-(defn group-doc-responses*1
+(defn group-doc-responses--existing
   [{:keys [prompt-id fields]}]
   [prompt-id
-   (mapv (fn [{:keys [sval nval dval jval prompt-field]}]
-           [(:fname prompt-field)
-            (or sval nval dval jval)])
-         fields)])
+   (->> fields
+        (mapv (fn [{:keys [sval nval dval jval prompt-field]}]
+                [(:fname prompt-field)
+                 (or sval nval dval jval)]))
+        (sort-by first))])
 
-(defn group-doc-responses*2
+(defn group-doc-responses--given
   [{:keys [children]}]
   (let [[{item :item kids :children :as kid1}] children
         prompt-id (-> kid1 :item :prompt-id)]
     [prompt-id
-     (mapv (fn [{:keys [item]}]
-             (let [{:keys [sval nval dval jval fname]} item]
-               [fname
-                (or sval nval dval jval)]))
-           kids)]))
+     (->> kids
+          (mapv (fn [{:keys [item]}]
+                  (let [{:keys [sval nval dval jval fname]} item]
+                    [fname
+                     (or sval nval dval jval)])))
+          (sort-by first))]))
+
+(defn group-match-reducer
+  [grouped-a grouped-b agg k]
+  (let [a (grouped-a k)
+        b (grouped-b k)]
+    (cond (nil? a) (update agg :b conj b)
+          (nil? b) (update agg :a conj a)
+          :else (update agg :common conj [a b]))))
+
+(defn group-match
+  [a group-by-a-fn b group-by-b-fn]
+  (let [grouped-a (->> a
+                       (group-by group-by-a-fn)
+                       (ut/fmap first))
+        grouped-b (->> b
+                       (group-by group-by-b-fn)
+                       (ut/fmap first))
+        all-keys (-> (merge grouped-a grouped-b)
+                     keys)]
+    (reduce (partial group-match-reducer
+                     grouped-a
+                     grouped-b)
+            {:a #{}
+             :b #{}
+             :both #{}}
+            all-keys)))
 
 (defn group-doc-responses
   [existing-responses given-doc-resps]
-  (let [er-group (->> existing-responses
-                      (group-by group-doc-responses*1)
-                      (ut/fmap first))
-        gdr-group (->> given-doc-resps
-                       (group-by group-doc-responses*2)
-                       (ut/fmap first))
-        all-keys (-> (merge er-group gdr-group)
-                     keys)]
-    
-    ))
+  (-> (group-match existing-responses
+                   group-doc-responses--existing
+                   given-doc-resps
+                   group-doc-responses--given)
+      (clojure.set/rename-keys
+       {:a :delete
+        :b :new-responses
+        :both :no-change})
+      (update :delete
+              (partial mapv (fn [{:keys [fields] :as d}]
+                              {:item (dissoc d :fields)
+                               :children fields})))))
 
-(clojure.pprint/pprint  er1)
-
-(clojure.pprint/pprint  gdr1)
-
-(mapv (fn [{:keys [prompt-id fields]}]
-        [prompt-id
-         (mapv (fn [{:keys [sval nval dval jval prompt-field]}]
-                 [(:fname prompt-field)
-                  (or sval nval dval jval)])
-               fields)])
-      er1)
-
-(mapv (fn [{:keys [children]}]
-        (let [[{item :item kids :children :as kid1}] children
-              prompt-id (-> kid1 :item :prompt-id)]
-          [prompt-id
-           (mapv (fn [{:keys [item]}]
-                   (let [{:keys [sval nval dval jval fname]} item]
-                     [fname
-                      (or sval nval dval jval)]))
-                 kids)]))
-      gdr1)
-
+;; TODO support reusing existing responses
 (defn update-doc [d]
   (->> d
        doc->appliable-tree
        (apply-it
         [(fn [{:keys [item children] :as v}]
+           (-> item
+               ha/walk-clj-kw->sql-field
+               (select-keys [:doc_id :user_id :id :user_id :resp_id])
+               (db/update-any! :docs))
            (assoc v
-                  :item (-> item
-                            ha/walk-clj-kw->sql-field
-                            (select-keys [:doc_id :user_id :id :user_id :resp_id])
-                            (db/update-any! :doc_resp))
                   :children (group-doc-responses
                              (-> item :id get-child-responses)
                              children)))
-         {:delete [#(->> % :item :id (update-deleted :doc_resp))]
-          :responses-exist [#(:insert-doc-resp)]
-          :new-responses [#(:group-children)
-                          {:responses [#(:insert-responses)
-                                       {:fields [#(:insert-response-fields)]}]}
-                          #{:save-doc-resp}]}])))
+         {:delete [#(do (->> % :item :ref-id (update-deleted :doc_resp))
+                        %)]
+          :new-responses [{:response [(fn [{:keys [item] :as v}]
+                                        (assoc v
+                                               :item (insert-response item)))
+                                      {:fields [(fn [{:keys [item parents] :as v}]
+                                                  (assoc v
+                                                         :item (insert-response-field
+                                                                (-> parents last :id)
+                                                                item)))]}]}
+                          (fn [{:keys [item children parents] :as x}]
+                            (assoc x
+                                   :item
+                                   (insert-doc-response (-> parents last :id)
+                                                        (-> children :response first :item :id))))]}])))
 
-
+#_
 (clojure.pprint/pprint 
  (update-doc {:data {:terms {:round/requirements {:value "We need everything."}
                              :round/annual-budget {:value 2400}}
-                     :prompt-ids {861404785216 {:value "Justanother Value"}}}
+                     :prompt-ids {935075187292 {:value "Justanother Value"
+                                                :value2 "moar values 3333"}}}
               :dtype "round-initiation"
-              :update-doc-id 931297091690
+              :update-doc-id 935133777300
               :round-id 456
               :from-org-id 567}))
 
+
+#_
+
 (clojure.pprint/pprint 
- (doc->appliable-tree {:data {:terms {:round/requirements {:value "We need everything."}
+ (create-doc {:data {:terms {:round/requirements {:value "We need everything."}
                                       :round/annual-budget {:value 2400}}
-                              :prompt-ids {861404785216 {:value "Justanother Value"}}}
+                              :prompt-ids {935075187292 {:value "Justanother Value"
+                                                         :value2 "moar values"}}}
                        :dtype "round-initiation"
-                       :update-doc-id 930816461660
+                       ;; :update-doc-id 930816461660
                        :round-id 456
                        :from-org-id 567}))
 
-(defn or-identity
-  [f & xs]
-  (if f
-    (apply f xs)
-    (first xs)))
-
-(declare apply-it*)
-
-
-
-(defn apply-it*
-  [{:keys [up-fn down-fn handlers]} children-kw {:keys [parents] :as x}]
-  (let [{:keys [item children ctx] :as x1} (or-identity down-fn x)
-        parents' (conj (or parents [])
-                       item)
-        x2 (-> x1
-               (dissoc :item
-                       :children)
-               (assoc :parents parents'))]
-    (as-> x1 $
-      (assoc $ children-kw
-             (when handlers
-               (reduce (partial apply-it-child-reducer
-                                handlers
-                                children-kw
-                                x2)
-                       {}
-                       children)))
-      (or-identity up-fn $ x))))
-
-(declare apply-it)
-
-(defn apply-it-child-reducer
-  [m v' agg [k vs]]
-  (if-let [mk (and m (m k))]
-    (assoc agg
-           k
-           (mapv #(dissoc (apply-it mk
-                                    (merge v' %))
-                          :parents)
-                 vs))
-    agg))
-
-(defn apply-it-map
-  [m {:keys [item children parents] :as v}]
-  (let [parents' (conj (or parents [])
-                       item)
-        v' (-> v
-               (dissoc :item
-                       :children)
-               (assoc :parents parents'))]
-    (assoc v
-           :children
-           (reduce (partial apply-it-child-reducer
-                            m
-                            v')
-                   {}
-                   children))))
-
-(defn apply-it
-  [[& ops] v]
-  (loop [[head & tail] (flatten ops)
-         v' v]
-    (if head
-      (recur (flatten tail)
-             (if (map? head)
-               (apply-it-map head v')
-               (head v')))
-      v')))
+#_
+(clojure.pprint/pprint 
+ (doc->appliable-tree {:data {:terms {:round/requirements {:value "We need everything."}
+                                      :round/annual-budget {:value 2400}}
+                              :prompt-ids {935075187292 {:value "Justanother Value"
+                                                         :value2 "moar values"}}}
+                       :dtype "round-initiation"
+                       ;; :update-doc-id 930816461660
+                       :round-id 456
+                       :from-org-id 567}))
 
 #_
 (apply-it
@@ -1216,11 +1224,6 @@
           :title "Preposal Request 70722",
           :status "init",
           :subject 272814695158}})
-
-{:value {:id 0}
- :children [{:value {:id 2}
-             :children [{:value {:id 3}}]}]}
-
 
 ;; update-doc-from-form-doc
 
