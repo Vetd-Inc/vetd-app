@@ -58,7 +58,7 @@
         add-products-by-name (r/atom "")]
     (fn []
       [:<>
-       [:h3 "Round Initiation Form"]
+       [:h3 "VetdRound Initiation Form"]
        [:p "Let us now a little more about who will be using this product and what features you are looking for. Then, we'll gather quotes for you to compare right away."]
        [:> ui/Form {:class "round-initiation-form"}
         [:> ui/FormTextArea
@@ -417,7 +417,6 @@
                                       :additionLabel "Hit 'Enter' to Add "
                                       :noResultsMessage "Type to add a new requirement..."
                                       :onChange (fn [_ this]
-                                                  (.log js/console (.-value this))
                                                   (reset! popup-open? false)
                                                   (rf/dispatch
                                                    [:b/round.add-requirement id (.-value this)]))}]]))

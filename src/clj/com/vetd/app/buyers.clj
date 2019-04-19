@@ -225,7 +225,7 @@ Product: '%s'
 
 ;; TODO there could be multiple preposals/rounds per buyer-vendor pair
 
-;; TODO use session-id to verify permissions!!!!!!!!!!!!
+;; TODO use session-id to verify permissions!!!!!!!!!!!!!
 (defmethod com/handle-ws-inbound :b/search
   [{:keys [buyer-id query]} ws-id sub-fn]
   (-> query

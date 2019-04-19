@@ -133,7 +133,7 @@
 
 ;; Toastr
 ;; setup Toastr config:
-(aset js/toastr "options"         ; TODO add to init event? maybe not.
+(aset js/toastr "options" ; TODO add to init event? maybe not.
       (clj->js {:closeButton false,
                 :debug false,
                 :newestOnTop false,
@@ -141,7 +141,7 @@
                 :preventDuplicates false,
                 :showDuration "300",
                 :hideDuration "1000",
-                :timeOut "5000",
+                :timeOut "7000",
                 :extendedTimeOut "1000",
                 :showEasing "swing",
                 :hideEasing "linear",
@@ -149,6 +149,6 @@
                 :hideMethod "fadeOut"}))
 
 (rf/reg-fx
- :toast      ; todo: assumes "success"
+ :toast ; todo: assumes "success"
  (fn [{:keys [type title message]}]
    (js/toastr.success message title)))

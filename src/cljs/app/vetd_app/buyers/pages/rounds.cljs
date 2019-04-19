@@ -101,6 +101,7 @@
             rounds& (rf/subscribe [:gql/sub
                                    {:queries
                                     [[:rounds {:buyer-id @org-id&
+                                               :_order_by {:created :desc}
                                                :deleted nil}
                                       [:id :idstr :created :status :title
                                        [:products [:pname]]]]]}])]

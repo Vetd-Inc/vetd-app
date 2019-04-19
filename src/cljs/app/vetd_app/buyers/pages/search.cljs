@@ -83,10 +83,12 @@
 
 (rf/reg-event-fx
  :b/start-round-return
- (constantly
-  {:toast {:type "success"
-           :title "Your VetdRound has begun!"
-           :message "We'll be in touch with next steps."}}))
+ (fn [_ [_ {:keys [idstr] :as results}]]
+   (.log js/console idstr)
+   {:dispatch [:b/nav-round-detail idstr]
+    :toast {:type "success"
+            :title "Your VetdRound has begun!"
+            :message "Please define your requirements."}}))
 
 (rf/reg-event-fx
  :b/create-preposal-req
