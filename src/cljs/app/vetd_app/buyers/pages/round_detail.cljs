@@ -64,39 +64,40 @@
         [:> ui/FormTextArea
          {:label "What are you hoping to accomplish with the product?"
           :on-change (fn [_ this] (reset! goal (.-value this)))}]
-        [:> ui/FormField
-         [:label "When would you like to start using the product?"]
-         [:> ui/Dropdown {:selection true
-                          :options [{:key "Within 2 Weeks"
-                                     :text "Within 2 Weeks"
-                                     :value "Within 2 Weeks"}
-                                    {:key "Within 3 Weeks"
-                                     :text "Within 3 Weeks"
-                                     :value "Within 3 Weeks"}
-                                    {:key "Within 1 Month"
-                                     :text "Within 1 Month"
-                                     :value "Within 1 Month"}
-                                    {:key "Within 2 Months"
-                                     :text "Within 2 Months"
-                                     :value "Within 2 Months"}
-                                    {:key "Within 6 Months"
-                                     :text "Within 6 Months"
-                                     :value "Within 6 Months"}
-                                    {:key "Within 12 Months"
-                                     :text "Within 12 Months"
-                                     :value "Within 12 Months"}]
-                          :on-change (fn [_ this]
-                                       (reset! start-using (.-value this)))}]]
         [:> ui/FormGroup {:widths "equal"}
+         [:> ui/FormField
+          [:label "When do you need to decide by?"]
+          [:> ui/Dropdown {:selection true
+                           :options [{:key "Within 2 Weeks"
+                                      :text "Within 2 Weeks"
+                                      :value "Within 2 Weeks"}
+                                     {:key "Within 3 Weeks"
+                                      :text "Within 3 Weeks"
+                                      :value "Within 3 Weeks"}
+                                     {:key "Within 1 Month"
+                                      :text "Within 1 Month"
+                                      :value "Within 1 Month"}
+                                     {:key "Within 2 Months"
+                                      :text "Within 2 Months"
+                                      :value "Within 2 Months"}
+                                     {:key "Within 6 Months"
+                                      :text "Within 6 Months"
+                                      :value "Within 6 Months"}
+                                     {:key "Within 12 Months"
+                                      :text "Within 12 Months"
+                                      :value "Within 12 Months"}]
+                           :on-change (fn [_ this]
+                                        (reset! start-using (.-value this)))}]]
          [:> ui/FormField
           [:label "What is your annual budget?"]
           [:> ui/Input {:labelPosition "right"}
            [:> ui/Label {:basic true} "$"]
            [:input {:type "number"
+                    :style {:width 0} ; idk why 0 width works, but it does
                     :on-change #(reset! budget (-> % .-target .-value))}]
            [:> ui/Label {:basic true} " per year"]]]
          [:> ui/FormField
-          [:label "How many people will be using the product?"]
+          [:label "How many users?"]
           [:> ui/Input {:labelPosition "right"}
            [:input {:type "number"
                     :on-change #(reset! num-users (-> % .-target .-value))}]
