@@ -187,10 +187,12 @@
             [:a.teal {:onClick #(do (.stopPropagation %)
                                     (rf/dispatch [:b/create-preposal-req product vendor]))}
              "Request a Preposal"]]))]
-      [:> ui/ItemDescription (or (docs/get-field-value-from-response-prompt product-profile-responses
-                                                                            "Describe your product or service"
-                                                                            "value"
-                                                                            :sval)
+      [:> ui/ItemDescription (or (util/truncate-text (docs/get-field-value-from-response-prompt
+                                                      product-profile-responses
+                                                      "Describe your product or service"
+                                                      "value"
+                                                      :sval)
+                                                     175)
                                  "No description available.")]
       [:> ui/ItemExtra
        [bc/c-categories product]
