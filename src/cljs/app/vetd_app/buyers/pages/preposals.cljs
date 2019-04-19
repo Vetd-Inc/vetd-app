@@ -88,7 +88,8 @@
                        product-profile-responses "Do you offer a free trial?" "value" :sval))
          [bc/c-free-trial-tag])]]
      (when (not-empty (:rounds product))
-       [bc/c-round-in-progress {:props {:ribbon "right"
+       [bc/c-round-in-progress {:round-idstr (-> product :rounds first :idstr)
+                                :props {:ribbon "right"
                                         :style {:position "absolute"
                                                 :marginLeft -14}}}])]))
 
@@ -123,7 +124,7 @@
                                                      [:response-prompt-fields
                                                       [:id :prompt-field-fname :idx :sval :nval :dval]]]]]]
                                                  [:rounds {:buyer-id @org-id&}
-                                                  [:id :created :status]]
+                                                  [:id :idstr :created :status]]
                                                  [:categories [:id :idstr :cname]]]]
                                       [:from-org [:id :oname]]
                                       [:from-user [:id :uname]]

@@ -87,7 +87,7 @@ a.teal:hover {
   border: none !important;
 }
 .sidebar .segment > .button:not(:first-of-type),
-.sidebar .segment > .label:not(:first-of-type) {
+.sidebar .segment > .label {
   margin-top: $segment-padding;
 }
 
@@ -272,6 +272,9 @@ a.category-tag:hover {
 textarea {
   font-family: inherit;
 }
+.auto-width-input input {
+  width: auto !important;
+}
 
 /* Toast Messages (toastr library) */
 #toast-container .toast-success {
@@ -323,6 +326,10 @@ $cell-height: 201px;
   box-sizing: border-box;
   position: relative;
   cursor: ew-resize;
+  padding-top: 14px;
+  // since the requirements are fixed position
+  // this keeps them from overflowing
+  clip-path: inset(-100px 0px 0px 0px);
 
   .column {
     width: $cell-width;
@@ -339,7 +346,23 @@ $cell-height: 201px;
       justify-content: center;
       align-items: center;
       text-align: center;
+      background: white;
+      box-shadow: 0 2px 14px 0 rgba(50,50,50,0.1) !important;
+      border-radius: 4px;
     }
+  }
+
+  &.fixed {
+    margin-top: 38px;
+  }
+  &.fixed .requirement {
+    position: fixed;
+    top: 0;
+    z-index: 999;
+    background: white;
+    box-shadow: 0 2px 14px 0 rgba(50,50,50,0.1) !important;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
   }
 
   // &:hover .column:not(:hover) {
