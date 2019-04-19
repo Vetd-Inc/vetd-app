@@ -109,7 +109,9 @@
             preps& (rf/subscribe [:gql/sub
                                   {:queries
                                    [[:docs {:dtype "preposal"
-                                            :to-org-id @org-id&}
+                                            :to-org-id @org-id&
+                                            :_order_by {:created :desc}
+                                            :deleted nil}
                                      [:id :idstr :title
                                       [:product [:id :pname :logo
                                                  [:form-docs {:doc-deleted nil
