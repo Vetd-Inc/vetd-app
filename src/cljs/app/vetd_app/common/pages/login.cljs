@@ -98,12 +98,12 @@
                               :header "Incorrect email / password"
                               :content "Contact us at help@vetd.com"}])
             [:> ui/FormField
-             [:> ui/Input {:class "borderless"
-                           :placeholder "Email Address"
-                           :autoFocus true
-                           :spellCheck false
-                           :onChange (fn [_ this]
-                                       (reset! email (.-value this)))}]]
+             [ui/input {:class "borderless"
+                        :value @email
+                        :placeholder "Email Address"
+                        :autoFocus true
+                        :spellCheck false
+                        :onChange #(reset! email (-> % .-target .-value))}]]
             [:> ui/FormField
              [:> ui/Input {:class "borderless"
                            :type "password"
