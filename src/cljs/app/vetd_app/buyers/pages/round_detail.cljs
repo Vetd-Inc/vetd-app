@@ -374,11 +374,43 @@
 
 (defn c-disqualify-button
   [round product product-disqualified?]
-  [bc/c-sidebar-button
-   {:text (if product-disqualified? "Undo Disqualify" "Disqualify")
-    :dispatch [:b/round.disqualify (:id round) (:id product)]
-    :icon (if product-disqualified? "undo" "ban")
-    :props {:color "grey"}}])
+  (let [popup-open? (r/atom false)]
+    (fn []
+      (if-not product-disqualified?
+        [:> ui/Popup
+         {:position "top left"
+          :on "click"
+          :open @popup-open?
+          :onOpen #(reset! popup-open? true)
+          :onClose #(reset! popup-open? false)
+          :content (r/as-element
+                    (let [reason (atom "")]
+                      [:> ui/Form {:style {:width 450}}
+                       [:> ui/FormField
+                        [:> ui/Input
+                         {:placeholder "Enter reason..."
+                          :on-change (fn [_ this]
+                                       (reset! reason (.-value this)))
+                          :action (r/as-element
+                                   [:> ui/Button
+                                    {:color "teal"
+                                     :on-click #(do (reset! popup-open? false)
+                                                    (rf/dispatch [:b/round.disqualify
+                                                                  (:id round)
+                                                                  (:id product)
+                                                                  @reason]))}
+                                    "Disqualify"])}]]]))
+          :trigger (r/as-element
+                    [:> ui/Button {:color "grey"
+                                   :icon true
+                                   :fluid true
+                                   :labelPosition "left"}
+                     "Disqualify Product"
+                     [:> ui/Icon {:name "ban"}]])}]
+        [bc/c-sidebar-button
+         {:text "Undo Disqualify"
+          :dispatch [:b/round.undo-disqualify (:id round) (:id product)]
+          :icon "undo"}]))))
 
 (defn c-products
   "Component to display product boxes with various buttons."
