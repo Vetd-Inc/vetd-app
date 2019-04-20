@@ -8,9 +8,21 @@
             clojure.data
             clojure.set))
 
-(defmulti handle-doc-creation (fn [{:keys [dtype]}] (keyword dtype)))
+(defmulti handle-doc-creation (fn [{:keys [dtype]} handler-args] (keyword dtype)))
 
-(defmethod handle-doc-creation :default [_])
+(defmethod handle-doc-creation :default [_ _])
+
+(def ^:dynamic *docs-created* nil)
+
+(defmacro with-doc-handling
+  [handler-args & body]
+  `(let [dc&# (atom #{})
+         r# (binding [*docs-created* dc&#]
+              (do ~@body))
+         dc# @dc&#]
+     (future (doseq [d# dc#]
+               (handle-doc-creation d# ~handler-args)))
+     r#))
 
 (defmacro tree-assoc-fn
   [key-bindings & body]
@@ -569,10 +581,6 @@
                                   new-prompts
                                   use-id?))
 
-(defmacro with-doc-handling
-  [handler-args & body]
-  `(do ~@body))
-
 (defn doc->appliable--find-form
   [{:keys [dtype dsubtype update-doc-id] :as d}]
   (when (or dtype dsubtype update-doc-id)
@@ -682,15 +690,16 @@
                      {(ffirst m) children})))))
 
 (defn apply-it
-  [[& ops] v]
-  (loop [[head & tail] (flatten ops)
-         v' v]
-    (if head
-      (recur (flatten tail)
-             (if (map? head)
-               (apply-it-map head v')
-               (head v')))
-      v')))
+  [[& ops] {:keys [handler-args] :as v}]
+  (with-doc-handling handler-args
+    (loop [[head & tail] (flatten ops)
+           v' v]
+      (if head
+        (recur (flatten tail)
+               (if (map? head)
+                 (apply-it-map head v')
+                 (head v')))
+        v'))))
 
 (defn create-doc [d]
   (->> d
@@ -778,7 +787,6 @@
                                :children fields})))))
 
 ;; TODO support reusing existing responses
-
 (defn update-doc [d]
   (->> d
        doc->appliable-tree
