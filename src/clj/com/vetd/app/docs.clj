@@ -353,7 +353,6 @@
            first
            :responses))
 
-
 (defn response-fields-eq?
   [old-field {:keys [response ftype]}]
   (let [{:keys [state]} (first response)]
@@ -570,150 +569,9 @@
                                   new-prompts
                                   use-id?))
 
-(defn determine-tree-existence
-  [{:keys [exists?-fn select-fn use-id? ignore-id?] :as opts}
-   {:keys [value existing exists? parent] :as tr}]
-  (let [existing'  (or existing
-                       (when (and (not ignore-id?)
-                                  (-> exists? false? not)
-                                  select-fn)
-                         (select-fn value parent)))
-        exists?' (cond (or existing' select-fn) (boolean existing')
-                       (boolean? exists?) exists?
-                       (and (not ignore-id?) exists?-fn) (exists?-fn value parent))]
-    {:existing existing'
-     :exists? exists?'}))
-
-(defn apply-tree-top-value
-  [{:keys [action action-fn insert-fn update-fn delete-fn use-id? ignore-id?] :as opts}
-   {:keys [value children parent existing'] :as tr}
-   children-diff]
-  (let [action' (or action
-                    (when action-fn
-                      (action-fn tr children-diff)))]
-    (when action'
-      (let [{existing' :existing exists?' :exists?} (determine-tree-existence opts tr)
-            u-fn #(ha/walk-sql-field->clj-kw (update-fn value parent existing'))
-            i-fn #(ha/walk-sql-field->clj-kw (insert-fn value parent existing'))
-            d-fn #(delete-fn existing')]
-        (case action'
-          :upsert (if exists?'
-                    (or (u-fn) value)
-                    (i-fn))
-          :insert (when-not exists?'
-                    (i-fn))
-          :force-insert (i-fn)
-          :update (or (u-fn) value)
-          :replace (do (when existing'
-                         (d-fn))
-                       (i-fn))
-          :delete (d-fn))))))
-
-(declare apply-tree)
-
-(defn apply-tree-children
-  [cfg children parent-value parent-result]
-  (mapv #(apply-tree cfg
-                     (assoc %
-                            :parent parent-result))
-        children))
-
-(defn diff-tree-children-with-existing-reducer
-  [existing-groups given-groups agg k]
-  (let [existing (existing-groups k)
-        given (given-groups k)]
-    (cond (nil? existing) (update agg :new conj (assoc given
-                                                       :exists? false))
-          (nil? given) (update agg :missing conj {:value existing
-                                                  :mode :missing
-                                                  :exists? true})
-          :else (update agg :common conj (assoc given
-                                                :existing existing
-                                                :exists? true)))))
-
-(defn diff-tree-children-with-existing
-  [post-opts {:keys [children] parent-value :value} parent-result]
-  (let [{:keys [get-existing-children-fn existing-children-group-fn given-children-group-fn]} post-opts
-        existing-children (if get-existing-children-fn
-                            (get-existing-children-fn parent-value parent-result)
-                            [])
-        existing-groups (->> existing-children
-                             (group-by (or existing-children-group-fn
-                                           (fn [_] (gensym))))
-                             (ut/fmap first))
-        given-groups (->> children
-                          (group-by (comp (or given-children-group-fn
-                                           (fn [_] (gensym)))
-                                          :value))
-                          (ut/fmap first))
-        all-keys (keys (merge existing-groups given-groups))]
-    (reduce (partial diff-tree-children-with-existing-reducer
-                     existing-groups given-groups)
-            {:missing #{}
-             :common #{}
-             :new #{}}
-            all-keys)))
-
 (defmacro with-doc-handling
   [handler-args & body]
   `(do ~@body))
-
-(defn apply-tree
-  [{:keys [pre] :as cfg} {:keys [value children mode handler-args] :as tr}]
-  (with-doc-handling handler-args
-    (let [{:keys [exists? existing] :as tr'} (merge tr
-                                                    (determine-tree-existence pre tr))
-          mode' (or mode
-                    (if (or exists? existing)
-                      :common
-                      :new))
-          {:keys [post] :as cfg'} (mode' cfg)
-          diff (diff-tree-children-with-existing post tr')          
-          result (apply-tree-top-value (merge pre post) tr' diff)
-          m1 {:result result
-              :missing (apply-tree-children cfg'
-                                            (:missing diff)
-                                            value
-                                            result)
-              :common (apply-tree-children cfg'
-                                           (:common diff)
-                                           value
-                                           result)
-              :new (apply-tree-children cfg'
-                                        (:new diff)
-                                        value
-                                        result)}]
-      (assoc m1
-             :result
-             (if-let [finalize-fn (post :finalize-fn)]
-               (finalize-fn m1 tr)
-               result)))))
-
-(defn create-form-from-template
-  [{:keys [form-template-id from-org-id from-user-id
-           title descr status notes to-org-id
-           to-user-id] :as m}]
-  (->> {:value m}
-       (apply-tree
-        {:pre {:select-fn (fn [{:keys [form-template-id]} _]
-                            (-> form-template-id
-                                (select-form-templates [:id :ftype :fsubtype])
-                                first))}
-         :common {:post {:action :force-insert
-                         :insert-fn (fn [value _ {:keys [ftype fsubtype]}]
-                                      (-> value
-                                          (assoc :ftype ftype
-                                                 :fsubtype fsubtype)
-                                          insert-form))
-                         :get-existing-children-fn
-                         (fn [{:keys [form-template-id]} _]
-                           (select-form-template-prompts-by-parent-id form-template-id))
-                         :existing-children-group-fn :prompt-id
-                         :given-children-group-fn (constantly nil)}
-                  :missing {:post {:action :force-insert
-                                   :insert-fn (fn [{:keys [prompt-id] sort' :sort} {:keys [id]} _]
-                                                (insert-form-prompt id prompt-id sort'))}}}})
-       :result))
 
 (defn doc->appliable--find-form
   [{:keys [dtype dsubtype update-doc-id] :as d}]
@@ -918,9 +776,6 @@
               (partial mapv (fn [{:keys [fields] :as d}]
                               {:item (dissoc d :fields)
                                :children fields})))))
-
-
-
 
 ;; TODO support reusing existing responses
 
