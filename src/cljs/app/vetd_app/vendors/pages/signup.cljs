@@ -1,7 +1,8 @@
 (ns vetd-app.vendors.pages.signup
   (:require [vetd-app.ui :as ui]
             [reagent.core :as r]
-            [re-frame.core :as rf]))
+            [re-frame.core :as rf]
+            [clojure.string :as s]))
 
 ;; Events
 (rf/reg-event-fx
@@ -43,7 +44,10 @@
                        :type "email"
                        :placeholder "Email Address"
                        :spellCheck false
-                       :onChange (fn [_ this] (reset! email (.-value this)))}]]
+                       :on-blur #(when (empty? @org-url)
+                                   (reset! org-url (second (s/split @email #"@"))))
+                       :on-change (fn [_ this]
+                                    (reset! email (.-value this)))}]]
         [:> ui/FormField
          [:> ui/Input {:class "borderless"
                        :placeholder "Organization Name"
@@ -51,11 +55,13 @@
                        :onChange (fn [_ this] (reset! org-name (.-value this)))}]]
         [:> ui/FormField
          [:> ui/Input {:class "borderless"
-                       :type "url"
-                       :label "http://"
-                       :placeholder "Organization Website"
-                       :spellCheck false
-                       :onChange (fn [_ this] (reset! org-url (.-value this)))}]]
+                       :label true}
+          [:> ui/Label "http://"]
+          [:input {:value @org-url
+                   :style {:width 0} ; idk why 0 width works, but it does
+                   :placeholder "Organization Website"
+                   :spellCheck false
+                   :on-change #(reset! org-url (-> % .-target .-value))}]]]
         [:> ui/FormField
          [:> ui/Input {:class "borderless"
                        :type "password"

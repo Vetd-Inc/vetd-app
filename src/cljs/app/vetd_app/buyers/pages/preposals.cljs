@@ -71,10 +71,12 @@
           " "
           [:small "(estimate) " pricing-estimate-details]]
          pricing-estimate-details)]
-      [:> ui/ItemDescription (or (docs/get-field-value-from-response-prompt product-profile-responses
-                                                                            "Describe your product or service"
-                                                                            "value"
-                                                                            :sval)
+      [:> ui/ItemDescription (or (util/truncate-text (docs/get-field-value-from-response-prompt
+                                                      product-profile-responses
+                                                      "Describe your product or service"
+                                                      "value"
+                                                      :sval)
+                                                     175)
                                  "No description available.")]
       
       [:> ui/ItemExtra
@@ -109,7 +111,9 @@
             preps& (rf/subscribe [:gql/sub
                                   {:queries
                                    [[:docs {:dtype "preposal"
-                                            :to-org-id @org-id&}
+                                            :to-org-id @org-id&
+                                            :_order_by {:created :desc}
+                                            :deleted nil}
                                      [:id :idstr :title
                                       [:product [:id :pname :logo
                                                  [:form-docs {:doc-deleted nil

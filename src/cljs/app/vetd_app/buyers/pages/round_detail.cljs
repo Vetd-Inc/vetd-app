@@ -37,15 +37,18 @@
  (fn [{:keys [round-idstr]}] round-idstr))
 
 ;; Components
+(defn get-requirements-options []
+  [;; {:key "Subscription Billing"
+   ;;  :text "Subscription Billing"
+   ;;  :value "Subscription Billing"}
+   ;; {:key "Free Trial"
+   ;;  :text "Free Trial"
+   ;;  :value "Free Trial"}
+   ])
+
 (defn c-round-initiation-form
   [round-id]
-  (let [requirements-options (r/atom [;; {:key "Subscription Billing"
-                                      ;;  :text "Subscription Billing"
-                                      ;;  :value "Subscription Billing"}
-                                      ;; {:key "Free Trial"
-                                      ;;  :text "Free Trial"
-                                      ;;  :value "Free Trial"}
-                                      ])
+  (let [requirements-options (r/atom (get-requirements-options))
         ;; form data
         goal (r/atom "")
         start-using (r/atom "")
@@ -55,45 +58,46 @@
         add-products-by-name (r/atom "")]
     (fn []
       [:<>
-       [:h3 "Round Initiation Form"]
+       [:h3 "VetdRound Initiation Form"]
        [:p "Let us now a little more about who will be using this product and what features you are looking for. Then, we'll gather quotes for you to compare right away."]
        [:> ui/Form {:class "round-initiation-form"}
         [:> ui/FormTextArea
          {:label "What are you hoping to accomplish with the product?"
           :on-change (fn [_ this] (reset! goal (.-value this)))}]
-        [:> ui/FormField
-         [:label "When would you like to start using the product?"]
-         [:> ui/Dropdown {:selection true
-                          :options [{:key "Within 2 Weeks"
-                                     :text "Within 2 Weeks"
-                                     :value "Within 2 Weeks"}
-                                    {:key "Within 3 Weeks"
-                                     :text "Within 3 Weeks"
-                                     :value "Within 3 Weeks"}
-                                    {:key "Within 1 Month"
-                                     :text "Within 1 Month"
-                                     :value "Within 1 Month"}
-                                    {:key "Within 2 Months"
-                                     :text "Within 2 Months"
-                                     :value "Within 2 Months"}
-                                    {:key "Within 6 Months"
-                                     :text "Within 6 Months"
-                                     :value "Within 6 Months"}
-                                    {:key "Within 12 Months"
-                                     :text "Within 12 Months"
-                                     :value "Within 12 Months"}]
-                          :on-change (fn [_ this]
-                                       (reset! start-using (.-value this)))}]]
         [:> ui/FormGroup {:widths "equal"}
+         [:> ui/FormField
+          [:label "When do you need to decide by?"]
+          [:> ui/Dropdown {:selection true
+                           :options [{:key "Within 2 Weeks"
+                                      :text "Within 2 Weeks"
+                                      :value "Within 2 Weeks"}
+                                     {:key "Within 3 Weeks"
+                                      :text "Within 3 Weeks"
+                                      :value "Within 3 Weeks"}
+                                     {:key "Within 1 Month"
+                                      :text "Within 1 Month"
+                                      :value "Within 1 Month"}
+                                     {:key "Within 2 Months"
+                                      :text "Within 2 Months"
+                                      :value "Within 2 Months"}
+                                     {:key "Within 6 Months"
+                                      :text "Within 6 Months"
+                                      :value "Within 6 Months"}
+                                     {:key "Within 12 Months"
+                                      :text "Within 12 Months"
+                                      :value "Within 12 Months"}]
+                           :on-change (fn [_ this]
+                                        (reset! start-using (.-value this)))}]]
          [:> ui/FormField
           [:label "What is your annual budget?"]
           [:> ui/Input {:labelPosition "right"}
            [:> ui/Label {:basic true} "$"]
            [:input {:type "number"
+                    :style {:width 0} ; idk why 0 width works, but it does
                     :on-change #(reset! budget (-> % .-target .-value))}]
            [:> ui/Label {:basic true} " per year"]]]
          [:> ui/FormField
-          [:label "How many people will be using the product?"]
+          [:label "How many users?"]
           [:> ui/Input {:labelPosition "right"}
            [:input {:type "number"
                     :on-change #(reset! num-users (-> % .-target .-value))}]
@@ -360,62 +364,106 @@
      #{"in-progress"
        "complete"} [c-round-grid round])])
 
+(defn c-declare-winner-button
+  [round product product-disqualified?]
+  [bc/c-sidebar-button
+   {:text "Declare Winner"
+    :dispatch [:b/round.declare-winner (:id round) (:id product)]
+    :icon "checkmark"
+    :props {:color "vetd-gradient"
+            :disabled product-disqualified?}}])
+
+(defn c-disqualify-button
+  [round product product-disqualified?]
+  (let [popup-open? (r/atom false)]
+    (fn []
+      (if-not product-disqualified?
+        [:> ui/Popup
+         {:position "top left"
+          :on "click"
+          :open @popup-open?
+          :onOpen #(reset! popup-open? true)
+          :onClose #(reset! popup-open? false)
+          :content (r/as-element
+                    (let [reason (atom "")]
+                      [:> ui/Form {:style {:width 450}}
+                       [:> ui/FormField
+                        [:> ui/Input
+                         {:placeholder "Enter reason..."
+                          :on-change (fn [_ this]
+                                       (reset! reason (.-value this)))
+                          :action (r/as-element
+                                   [:> ui/Button
+                                    {:color "teal"
+                                     :on-click #(do (reset! popup-open? false)
+                                                    (rf/dispatch [:b/round.disqualify
+                                                                  (:id round)
+                                                                  (:id product)
+                                                                  @reason]))}
+                                    "Disqualify"])}]]]))
+          :trigger (r/as-element
+                    [:> ui/Button {:color "grey"
+                                   :icon true
+                                   :fluid true
+                                   :labelPosition "left"}
+                     "Disqualify Product"
+                     [:> ui/Icon {:name "ban"}]])}]
+        [bc/c-sidebar-button
+         {:text "Undo Disqualify"
+          :dispatch [:b/round.undo-disqualify (:id round) (:id product)]
+          :icon "undo"}]))))
+
 (defn c-products
   "Component to display product boxes with various buttons."
-  [{:keys [id] :as round} products]
+  [round products]
   [:<>
    (for [{product-id :id
           pname :pname
           vendor :vendor
-          :as product} products
-         ;; TODO disqualified? needs to be dynamic
-         :let [disqualified? false]]
+          :as product} products     ; TODO actual disqualified value
+         :let [product-disqualified? false]]
      ^{:key product-id}
      [:> ui/Segment
       [:h3 pname]
-      [:> ui/Button {:onClick #(rf/dispatch [:b/round.declare-winner id product-id])
-                     :color "vetd-gradient"
-                     :fluid true
-                     :icon true
-                     :labelPosition "left"
-                     :disabled disqualified?}
-       "Declare Winner"
-       [:> ui/Icon {:name "checkmark"}]]
+      [c-declare-winner-button round product product-disqualified?]
       [bc/c-setup-call-button product vendor]
-      [:> ui/Button {:onClick #(rf/dispatch [:b/round.disqualify id product-id])
-                     :color "grey"
-                     :fluid true
-                     :icon true
-                     :labelPosition "left"}
-       (if disqualified? "Undo Disqualify" "Disqualify")
-       [:> ui/Icon {:name (if disqualified? "undo" "ban")}]]])])
+      [c-disqualify-button round product product-disqualified?]])])
 
 (defn c-add-requirement-button
   [{:keys [id] :as round}]
-  [:> ui/Popup
-   {:position "top left"
-    :on "click"
-    :wide true
-    :content (r/as-element
-              (let [new-requirement (atom "")]
-                [:> ui/Form
-                 [:> ui/Input {:class "auto-width-input"
-                               :placeholder "Enter requirement..."
-                               :on-change (fn [_ this]
-                                            (reset! new-requirement (.-value this)))
-                               :action (r/as-element
-                                        [:> ui/Button
-                                         {:color "teal"
-                                          :on-click #(rf/dispatch
-                                                      [:b/round.add-requirement id @new-requirement])}
-                                         "Add"])}]]))
-    :trigger (r/as-element
-              [:> ui/Button {:color "teal"
-                             :icon true
-                             :fluid true
-                             :labelPosition "left"}
-               "Add Requirement"
-               [:> ui/Icon {:name "plus"}]])}])
+  (let [popup-open? (r/atom false)]
+    (fn []
+      [:> ui/Popup
+       {:position "top left"
+        :on "click"
+        :open @popup-open?
+        :onOpen #(reset! popup-open? true)
+        :onClose #(reset! popup-open? false)
+        :content (r/as-element
+                  (let [new-requirement (atom "")
+                        requirements-options (r/atom (get-requirements-options))]
+                    [:> ui/Form {:style {:width 350}}
+                     [:> ui/Dropdown {:style {:width "100%"}
+                                      :options @requirements-options
+                                      :placeholder "Enter requirement..."
+                                      :search true
+                                      :selection true
+                                      :multiple false
+                                      :selectOnBlur false
+                                      :allowAdditions true
+                                      :additionLabel "Hit 'Enter' to Add "
+                                      :noResultsMessage "Type to add a new requirement..."
+                                      :onChange (fn [_ this]
+                                                  (reset! popup-open? false)
+                                                  (rf/dispatch
+                                                   [:b/round.add-requirement id (.-value this)]))}]]))
+        :trigger (r/as-element
+                  [:> ui/Button {:color "teal"
+                                 :icon true
+                                 :fluid true
+                                 :labelPosition "left"}
+                   "Add Requirement"
+                   [:> ui/Icon {:name "plus"}]])}])))
 
 (defn c-page []
   (let [round-idstr& (rf/subscribe [:round-idstr])

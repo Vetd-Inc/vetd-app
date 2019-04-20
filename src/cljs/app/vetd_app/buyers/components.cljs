@@ -22,8 +22,20 @@
                  text
                  [:> ui/Icon {:name "left arrow"}]]))
 
+(defn c-sidebar-button
+  [{:keys [text dispatch icon props]}]
+  [:> ui/Button (merge {:onClick #(rf/dispatch dispatch)
+                        :color "grey"
+                        :fluid true
+                        :icon true
+                        :labelPosition "left"}
+                       props)
+   text
+   [:> ui/Icon {:name icon}]])
+
 ;; note: there is another type of start-round button in category search results
-(defn c-start-round-button [{:keys [etype eid ename props]}]
+(defn c-start-round-button
+  [{:keys [etype eid ename props]}]
   [:> ui/Popup
    {:content (str "Find and compare similar products to \""
                   ename "\" that meet your needs.")

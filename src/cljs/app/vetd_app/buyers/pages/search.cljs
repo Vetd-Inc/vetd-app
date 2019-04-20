@@ -83,10 +83,11 @@
 
 (rf/reg-event-fx
  :b/start-round-return
- (constantly
-  {:toast {:type "success"
-           :title "Your VetdRound has begun!"
-           :message "We'll be in touch with next steps."}}))
+ (fn [_ [_ {:keys [idstr] :as results}]]
+   {:dispatch [:b/nav-round-detail idstr]
+    :toast {:type "success"
+            :title "Your VetdRound has begun!"
+            :message "Please define your requirements."}}))
 
 (rf/reg-event-fx
  :b/create-preposal-req
@@ -185,10 +186,12 @@
             [:a.teal {:onClick #(do (.stopPropagation %)
                                     (rf/dispatch [:b/create-preposal-req product vendor]))}
              "Request a Preposal"]]))]
-      [:> ui/ItemDescription (or (docs/get-field-value-from-response-prompt product-profile-responses
-                                                                            "Describe your product or service"
-                                                                            "value"
-                                                                            :sval)
+      [:> ui/ItemDescription (or (util/truncate-text (docs/get-field-value-from-response-prompt
+                                                      product-profile-responses
+                                                      "Describe your product or service"
+                                                      "value"
+                                                      :sval)
+                                                     175)
                                  "No description available.")]
       [:> ui/ItemExtra
        [bc/c-categories product]
