@@ -135,7 +135,7 @@
           :on-click
           #(rf/dispatch
             [:save-doc
-             {:ftype "round-initiation"
+             {:dtype "round-initiation"
               :round-id round-id}
              {:terms
               {:rounds/goal {:value @goal}

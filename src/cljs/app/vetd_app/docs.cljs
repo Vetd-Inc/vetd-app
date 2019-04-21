@@ -239,16 +239,16 @@
 ;;  :prompt-ids {126786722 {:value "Justanother Value"}}}
 (rf/reg-event-fx
  :save-doc ; one of ftype or update-doc-id are required
- (fn [{:keys [db]} [_ {:keys [ftype update-doc-id round-id]} data]]
+ (fn [{:keys [db]} [_ {:keys [dtype update-doc-id round-id]} data]]
    {:ws-send
     {:payload
      {:cmd :save-doc
       :return {:handler :save-doc-return}
       :data data
-      :ftype ftype
+      :dtype dtype
       :update-doc-id update-doc-id
       :round-id round-id
-      :from-user-id (util/db->current-org-id db)}}}))
+      :from-org-id (util/db->current-org-id db)}}}))
 
 (rf/reg-event-fx
  :save-doc-return
