@@ -222,6 +222,31 @@
          (db/insert! :resp_fields)
          first)))
 
+(defn infer-field-type-kw
+  [{:keys [sval nval dval jval]}]
+  (cond
+    sval :sval
+    nval :nval
+    dval :dval
+    jval :jval))
+
+(defn expand-response-fields
+  [{:keys [sval nval dval jval] :as response-fields}]
+  (let [vals (or sval nval dval jval)
+        val-kw (infer-field-type-kw response-fields)]
+    (if (sequential? vals)
+      (map-indexed (fn [idx v]
+                     (assoc response-fields
+                            :idx idx
+                            val-kw v))
+                   vals)
+      [response-fields])))
+
+(defn insert-response-fields
+  [resp-id response-fields]
+  (doseq [rf (expand-response-fields response-fields)]
+    (insert-response-field resp-id rf)))
+
 (defn insert-default-prompt-field
   [prompt-id {sort' :sort}]
   (let [[id idstr] (ut/mk-id&str)]
@@ -263,7 +288,7 @@
   (let [{resp-id :id} (insert-response resp)]
     (insert-doc-response doc-id resp-id)
     (doseq [{:keys [id] :as f} fields]
-      (insert-response-field resp-id
+      (insert-response-fields resp-id
                              (assoc f
                                     :prompt-field-id
                                     id)))))
@@ -712,7 +737,7 @@
                                            [:item (insert-response item)])
                             {:fields
                              [(tree-assoc-fn [parent item]
-                                             [:item (insert-response-field (:id parent)
+                                             [:item (insert-response-fields (:id parent)
                                                                            item)])]}]}
                           (tree-assoc-fn [item children parent]
                                          [:item
@@ -806,7 +831,7 @@
           :new-responses [{:response [(tree-assoc-fn [item]
                                                      [:item (insert-response item)])
                                       {:fields [(tree-assoc-fn [item parent]
-                                                               [:item (insert-response-field
+                                                               [:item (insert-response-fields
                                                                        (:id parent)
                                                                        item)])]}]}
                           (tree-assoc-fn [item children parent]
