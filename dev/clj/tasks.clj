@@ -1,7 +1,8 @@
 (ns tasks
   (:require [com.vetd.app.db :as db]
             [com.vetd.app.hasura :as ha]
-            [com.vetd.app.docs :as docs] ))
+            [com.vetd.app.docs :as docs]
+            [com.vetd.app.util :as ut]))
 
 ;; - count vendors/products without profiles
 ;; - limited select vendors/products without profiles
@@ -202,3 +203,49 @@
 #_
 (clojure.pprint/pprint 
  (get-latest-vendor-profile-form))
+
+(def last-id--convert-ids->base31& (atom 0))
+(def tables--convert-ids->base31& (atom []))
+(def last-table--convert-ids->base31& (atom nil))
+
+
+(defn convert-ids->base31
+  []
+  (when (empty? @tables--convert-ids->base31&)
+    (do (reset! tables--convert-ids->base31&
+                (->> (db/select-all-table-names-MZ "vetd")
+                     (mapv keyword)
+                     sort))
+        (reset! last-table--convert-ids->base31& nil)
+        (reset! last-id--convert-ids->base31& 0)))
+  (loop [[table-kw & tail] @tables--convert-ids->base31&
+         last-id @last-id--convert-ids->base31&]
+    (if table-kw
+      (let [ids (->> (db/hs-query {:select [:id]
+                                   :from [table-kw]
+                                   :where [:> :id last-id]
+                                   ;:limit 1000
+                                   })
+                     (map :id))]
+        (println (java.util.Date.))
+        (println table-kw)
+        (println (first ids))
+        (try
+          (let [c (volatile! 0)]
+            (doseq [id ids]
+              (db/hs-exe! {:update table-kw
+                           :set {:idstr (ut/base31->str id)}
+                           :where [:= :id id]})
+              (reset! last-id--convert-ids->base31& id)
+              (when (zero? (mod (vswap! c inc) 100))
+                (println (java.util.Date.))
+                (println id))))
+          (reset! last-table--convert-ids->base31& table-kw)
+          (catch Throwable t
+            (clojure.pprint/pprint t)))
+        (recur tail 0))
+      (do
+        (println (java.util.Date.))      
+        (println "DONE")))))
+
+#_ (convert-ids->base31)
