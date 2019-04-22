@@ -86,7 +86,7 @@
  (fn [_ [_ {:keys [idstr] :as results}]]
    {:dispatch [:b/nav-round-detail idstr]
     :toast {:type "success"
-            :title "Your VetdRound has begun!"
+            :title "New VetdRound created!"
             :message "Please define your requirements."}}))
 
 (rf/reg-event-fx

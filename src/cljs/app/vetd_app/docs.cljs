@@ -252,7 +252,7 @@
             (when return
               {:return return}))}}))
 
-;; used as a generalized return handler for :save-doc if
+;; used as a default return handler for :save-doc if
 ;; caller of :save-doc doesn't define a return handler
 (rf/reg-event-fx
  :save-doc-return
