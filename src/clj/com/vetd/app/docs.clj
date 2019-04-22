@@ -8,6 +8,7 @@
             clojure.data
             clojure.set))
 
+#_ (def handle-doc-creation nil)
 (defmulti handle-doc-creation (fn [{:keys [dtype]} handler-args] (keyword dtype)))
 
 (defmethod handle-doc-creation :default [_ _])
@@ -127,7 +128,8 @@
                            :to_user_id to-user-id})
               first)]
     ;; TODO doing this here isn't great because responses likely won't be inserted yet
-    (future (handle-doc-creation d))
+    (when *docs-created*
+      (swap! *docs-created* conj d))
     d))
 
 (defn insert-prompt
