@@ -685,20 +685,20 @@
                              :doc-id update-doc-id})))))
 
 
-(declare apply-it)
+(declare apply-tree)
 
-(defn apply-it-child-reducer
+(defn apply-tree-child-reducer
   [m v' agg [k vs]]
   (if-let [mk (and m (m k))]
     (assoc agg
            k
-           (mapv #(dissoc (apply-it mk
+           (mapv #(dissoc (apply-tree mk
                                     (merge v' %))
                           :parents)
                  vs))
     agg))
 
-(defn apply-it-map
+(defn apply-tree-map
   [m {:keys [item children parents] :as v}]
   (let [parents' (conj (or parents [])
                        item)
@@ -708,7 +708,7 @@
                (assoc :parents parents'))]
     (assoc v
            :children
-           (reduce (partial apply-it-child-reducer
+           (reduce (partial apply-tree-child-reducer
                             m
                             v')
                    {}
@@ -716,7 +716,7 @@
                      children
                      {(ffirst m) children})))))
 
-(defn apply-it
+(defn apply-tree
   [[& ops] {:keys [handler-args] :as v}]
   (with-doc-handling handler-args
     (loop [[head & tail] (flatten ops)
@@ -724,14 +724,14 @@
       (if head
         (recur (flatten tail)
                (if (map? head)
-                 (apply-it-map head v')
+                 (apply-tree-map head v')
                  (head v')))
         v'))))
 
 (defn create-doc [d]
   (->> d
        doc->appliable-tree
-       (apply-it
+       (apply-tree
         [(tree-assoc-fn [item]
                         [:item (insert-doc item)])
          {:doc-responses [{:response
@@ -817,7 +817,7 @@
 (defn update-doc [d]
   (->> d
        doc->appliable-tree
-       (apply-it
+       (apply-tree
         [(tree-assoc-fn [item children]
                         (-> item
                             ha/walk-clj-kw->sql-field
