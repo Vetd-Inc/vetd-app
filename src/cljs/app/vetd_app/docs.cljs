@@ -199,7 +199,8 @@
     (when return-save-fn&
       (reset! return-save-fn& save-fn))
     (conj (or c-wrapper
-              [:> ui/Form {:style {:width 400
+              [:> ui/Form {:as "div"
+                           :style {:width 400
                                    :margin-bottom 50}}])
           [:div
 	         (or doc-title title)

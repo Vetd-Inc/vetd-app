@@ -60,8 +60,8 @@
       [:<>
        [:h3 "VetdRound Initiation Form"]
        [:p "Let us now a little more about who will be using this product and what features you are looking for. Then, we'll gather quotes for you to compare right away."]
-       [:> ui/Form {:class "round-initiation-form"
-                    :as "div"}
+       [:> ui/Form {:as "div"
+                    :class "round-initiation-form"}
         [:> ui/FormTextArea
          {:label "What are you hoping to accomplish with the product?"
           :on-change (fn [e this]
