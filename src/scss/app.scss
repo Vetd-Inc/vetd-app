@@ -413,6 +413,42 @@ $cell-height: 201px;
   }
 }
 
+#round-title-container {
+  margin-left: 20px;
+  
+  .title {
+    margin-top: 0;
+    font-size: 28px;
+    line-height: 36px;
+  }
+
+  &.long {
+    .title {
+      font-size: 16px;
+      line-height: 36px;
+    }
+  }
+}
+#round-status-container {
+  margin-left: 20px;
+  margin-bottom: 0;
+}
+.round-product {
+
+  .title {
+    font-size: 18px;
+  }
+
+  &.long {
+    padding-top: 8px;
+    
+    .name {
+      font-size: 14px;
+      margin-bottom: 7px;
+    }
+  }
+}
+
 /* Loading Spinner */
 div.spinner {
   animation: rotate 5s infinite ease;

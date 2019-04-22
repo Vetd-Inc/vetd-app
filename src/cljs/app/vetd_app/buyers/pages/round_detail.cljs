@@ -363,13 +363,11 @@
   "Component to display Round details."
   [{:keys [id status title products] :as round}]
   [:<>
-   [:> ui/Segment {:class "detail-container"
-                   :style {:margin-left 20}}
-    [:h1 {:style {:margin-top 0}}
-     title]]
-   [:> ui/Segment {:class "detail-container"
-                   :style {:margin-left 20
-                           :margin-bottom 0}}
+   [:> ui/Segment {:id "round-title-container"
+                   :class (str "detail-container " (when (> (count title) 50) "long"))}
+    [:h1.title title]]
+   [:> ui/Segment {:id "round-status-container"
+                   :class "detail-container"}
     [bc/c-round-status status]]
    (condp contains? status
      #{"initiation"} [:> ui/Segment {:class "detail-container"
@@ -377,6 +375,42 @@
                       [c-round-initiation round]]
      #{"in-progress"
        "complete"} [c-round-grid round])])
+
+(defn c-add-requirement-button
+  [{:keys [id] :as round}]
+  (let [popup-open? (r/atom false)]
+    (fn []
+      [:> ui/Popup
+       {:position "top left"
+        :on "click"
+        :open @popup-open?
+        :onOpen #(reset! popup-open? true)
+        :onClose #(reset! popup-open? false)
+        :content (r/as-element
+                  (let [new-requirement (atom "")
+                        requirements-options (r/atom (get-requirements-options))]
+                    [:> ui/Form {:style {:width 350}}
+                     [:> ui/Dropdown {:style {:width "100%"}
+                                      :options @requirements-options
+                                      :placeholder "Enter requirement..."
+                                      :search true
+                                      :selection true
+                                      :multiple false
+                                      :selectOnBlur false
+                                      :allowAdditions true
+                                      :additionLabel "Hit 'Enter' to Add "
+                                      :noResultsMessage "Type to add a new requirement..."
+                                      :onChange (fn [_ this]
+                                                  (reset! popup-open? false)
+                                                  (rf/dispatch
+                                                   [:b/round.add-requirement id (.-value this)]))}]]))
+        :trigger (r/as-element
+                  [:> ui/Button {:color "teal"
+                                 :icon true
+                                 :fluid true
+                                 :labelPosition "left"}
+                   "Add Requirement"
+                   [:> ui/Icon {:name "plus"}]])}])))
 
 (defn c-declare-winner-button
   [round product product-disqualified?]
@@ -434,50 +468,14 @@
    (for [{product-id :id
           pname :pname
           vendor :vendor
-          :as product} products     ; TODO actual disqualified value
+          :as product} products       ; TODO actual disqualified value
          :let [product-disqualified? false]]
      ^{:key product-id}
-     [:> ui/Segment
-      [:h3 pname]
+     [:> ui/Segment {:class (str "round-product " (when (> (count pname) 17) "long"))}
+      [:h3.name pname]
       [c-declare-winner-button round product product-disqualified?]
       [bc/c-setup-call-button product vendor]
       [c-disqualify-button round product product-disqualified?]])])
-
-(defn c-add-requirement-button
-  [{:keys [id] :as round}]
-  (let [popup-open? (r/atom false)]
-    (fn []
-      [:> ui/Popup
-       {:position "top left"
-        :on "click"
-        :open @popup-open?
-        :onOpen #(reset! popup-open? true)
-        :onClose #(reset! popup-open? false)
-        :content (r/as-element
-                  (let [new-requirement (atom "")
-                        requirements-options (r/atom (get-requirements-options))]
-                    [:> ui/Form {:style {:width 350}}
-                     [:> ui/Dropdown {:style {:width "100%"}
-                                      :options @requirements-options
-                                      :placeholder "Enter requirement..."
-                                      :search true
-                                      :selection true
-                                      :multiple false
-                                      :selectOnBlur false
-                                      :allowAdditions true
-                                      :additionLabel "Hit 'Enter' to Add "
-                                      :noResultsMessage "Type to add a new requirement..."
-                                      :onChange (fn [_ this]
-                                                  (reset! popup-open? false)
-                                                  (rf/dispatch
-                                                   [:b/round.add-requirement id (.-value this)]))}]]))
-        :trigger (r/as-element
-                  [:> ui/Button {:color "teal"
-                                 :icon true
-                                 :fluid true
-                                 :labelPosition "left"}
-                   "Add Requirement"
-                   [:> ui/Icon {:name "plus"}]])}])))
 
 (defn c-page []
   (let [round-idstr& (rf/subscribe [:round-idstr])
