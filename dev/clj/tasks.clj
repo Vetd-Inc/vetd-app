@@ -223,9 +223,7 @@
     (if table-kw
       (let [ids (->> (db/hs-query {:select [:id]
                                    :from [table-kw]
-                                   :where [:> :id last-id]
-                                   ;:limit 1000
-                                   })
+                                   :where [:> :id last-id]})
                      (map :id))]
         (println (java.util.Date.))
         (println table-kw)
