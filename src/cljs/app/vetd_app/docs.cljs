@@ -239,17 +239,19 @@
 ;;  :prompt-ids {126786722 {:value "Justanother Value"}}}
 (rf/reg-event-fx
  :save-doc ; one of ftype or update-doc-id are required
- (fn [{:keys [db]} [_ {:keys [dtype update-doc-id round-id]} data]]
+ (fn [{:keys [db]} [_ {:keys [dtype update-doc-id round-id return-handler]} data]]
    {:ws-send
     {:payload
      {:cmd :save-doc
-      :return {:handler :save-doc-return}
+      :return {:handler (or return-handler :save-doc-return)}
       :data data
       :dtype dtype
       :update-doc-id update-doc-id
       :round-id round-id
       :from-org-id (util/db->current-org-id db)}}}))
 
+;; used as a generalized return handler for :save-doc if
+;; caller of :save-doc doesn't define a return handler
 (rf/reg-event-fx
  :save-doc-return
  (constantly

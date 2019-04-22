@@ -136,7 +136,8 @@
           #(rf/dispatch
             [:save-doc
              {:dtype "round-initiation"
-              :round-id round-id}
+              :round-id round-id
+              :return-handler :b/round.initiation-form-saved}
              {:terms
               {:rounds/goal {:value @goal}
                :rounds/start-using {:value @start-using}
@@ -145,6 +146,13 @@
                :rounds/requirements {:value @requirements}
                :rounds/add-products-by-name {:value @add-products-by-name}}}])}
          "Submit"]]])))
+
+(rf/reg-event-fx
+ :b/round.initiation-form-saved
+ (constantly
+  {:toast {:type "success"
+           :title "Initiation Form Submitted"
+           :message "Status updated to \"In Progress\""}}))
 
 (defn c-round-initiation
   [{:keys [id status title products doc] :as round}]
