@@ -9,11 +9,11 @@
    [cf/c-top-nav [{:text "Products & Categories"
                    :pages #{:b/search :b/product-detail}
                    :event [:b/nav-search]}
-                  {:text "VetdRounds"
-                   :pages #{:b/rounds :b/round-detail}
-                   :event [:b/nav-rounds]}
                   {:text "Preposals"
                    :pages #{:b/preposals :b/preposal-detail}
-                   :event [:b/nav-preposals]}]]
+                   :event [:b/nav-preposals]}
+                  {:text "VetdRounds"
+                   :pages #{:b/rounds :b/round-detail}
+                   :event [:b/nav-rounds]}]]
    body
    [:div {:style {:height 100}}]])

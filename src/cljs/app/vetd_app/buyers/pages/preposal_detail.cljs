@@ -61,8 +61,9 @@
        pname " " [:small " by " (:oname vendor)]]
       [:> ui/Image {:class "product-logo"
                     :src (str "https://s3.amazonaws.com/vetd-logos/" logo)}]
-      (if (not-empty (:rounds product))
-        [bc/c-round-in-progress {:props {:ribbon "left"}}])
+      (if (not-empty rounds)
+        [bc/c-round-in-progress {:round-idstr (-> rounds first :idstr)
+                                 :props {:ribbon "left"}}])
       [bc/c-categories product]
       (when (= "Yes" (v "Do you offer a free trial?"))
         [bc/c-free-trial-tag])
@@ -125,7 +126,7 @@
                                                  [:response-prompt-fields
                                                   [:id :prompt-field-fname :idx :sval :nval :dval]]]]]]
                                              [:rounds {:buyer-id @org-id&}
-                                              [:id :created :status]]
+                                              [:id :idstr :created :status]]
                                              [:categories [:id :idstr :cname]]
                                              [:vendor
                                               [:id :oname :url

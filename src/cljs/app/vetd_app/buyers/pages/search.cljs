@@ -83,10 +83,11 @@
 
 (rf/reg-event-fx
  :b/start-round-return
- (constantly
-  {:toast {:type "success"
-           :title "Your VetdRound has begun!"
-           :message "We'll be in touch with next steps."}}))
+ (fn [_ [_ {:keys [idstr] :as results}]]
+   {:dispatch [:b/nav-round-detail idstr]
+    :toast {:type "success"
+            :title "New VetdRound created!"
+            :message "Please define your requirements."}}))
 
 (rf/reg-event-fx
  :b/create-preposal-req
@@ -185,18 +186,22 @@
             [:a.teal {:onClick #(do (.stopPropagation %)
                                     (rf/dispatch [:b/create-preposal-req product vendor]))}
              "Request a Preposal"]]))]
-      [:> ui/ItemDescription (or (docs/get-field-value-from-response-prompt product-profile-responses
-                                                                            "Describe your product or service"
-                                                                            "value"
-                                                                            :sval)
-                                 "No description available.")]
+      [:> ui/ItemDescription
+       (util/truncate-text (or  (docs/get-field-value-from-response-prompt
+                                 product-profile-responses
+                                 "Describe your product or service"
+                                 "value"
+                                 :sval)
+                                "No description available.")
+                           175)]
       [:> ui/ItemExtra
        [bc/c-categories product]
        (when (= "Yes" (docs/get-field-value-from-response-prompt
                        product-profile-responses "Do you offer a free trial?" "value" :sval))
          [bc/c-free-trial-tag])]]
      (when (not-empty rounds)
-       [bc/c-round-in-progress {:props {:ribbon "right"
+       [bc/c-round-in-progress {:round-idstr (-> rounds first :idstr)
+                                :props {:ribbon "right"
                                         :style {:position "absolute"
                                                 :marginLeft -14}}}])]))
 
@@ -270,7 +275,7 @@
                                            [:id :pf-id :idx :sval :nval :dval :jval
                                             [:prompt-field [:id :fname]]]]]]]]
                                       [:rounds {:buyer-id org-id}
-                                       [:id :created :status]]
+                                       [:id :idstr :created :status]]
                                       [:categories [:id :idstr :cname]]]]]]]}])
                 [])
         categories (if (not-empty category-ids)

@@ -1733,7 +1733,7 @@
 }
 .ui.vetd-gradient.buttons .button:hover,
 .ui.vetd-gradient.button:hover {
-  background-color: #53b8e3;
+  filter: brightness(1.1);
   color: #FFFFFF;
   text-shadow: none;
 }

@@ -71,11 +71,14 @@
           " "
           [:small "(estimate) " pricing-estimate-details]]
          pricing-estimate-details)]
-      [:> ui/ItemDescription (or (docs/get-field-value-from-response-prompt product-profile-responses
-                                                                            "Describe your product or service"
-                                                                            "value"
-                                                                            :sval)
-                                 "No description available.")]
+      [:> ui/ItemDescription
+       (util/truncate-text (or  (docs/get-field-value-from-response-prompt
+                                 product-profile-responses
+                                 "Describe your product or service"
+                                 "value"
+                                 :sval)
+                                "No description available.")
+                           175)]
       
       [:> ui/ItemExtra
        (when (empty? (:rounds product))
@@ -88,7 +91,8 @@
                        product-profile-responses "Do you offer a free trial?" "value" :sval))
          [bc/c-free-trial-tag])]]
      (when (not-empty (:rounds product))
-       [bc/c-round-in-progress {:props {:ribbon "right"
+       [bc/c-round-in-progress {:round-idstr (-> product :rounds first :idstr)
+                                :props {:ribbon "right"
                                         :style {:position "absolute"
                                                 :marginLeft -14}}}])]))
 
@@ -108,7 +112,9 @@
             preps& (rf/subscribe [:gql/sub
                                   {:queries
                                    [[:docs {:dtype "preposal"
-                                            :to-org-id @org-id&}
+                                            :to-org-id @org-id&
+                                            :_order_by {:created :desc}
+                                            :deleted nil}
                                      [:id :idstr :title
                                       [:product [:id :pname :logo
                                                  [:form-docs {:doc-deleted nil
@@ -123,7 +129,7 @@
                                                      [:response-prompt-fields
                                                       [:id :prompt-field-fname :idx :sval :nval :dval]]]]]]
                                                  [:rounds {:buyer-id @org-id&}
-                                                  [:id :created :status]]
+                                                  [:id :idstr :created :status]]
                                                  [:categories [:id :idstr :cname]]]]
                                       [:from-org [:id :oname]]
                                       [:from-user [:id :uname]]

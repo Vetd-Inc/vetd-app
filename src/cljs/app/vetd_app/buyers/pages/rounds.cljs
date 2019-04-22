@@ -100,7 +100,9 @@
       (let [selected-statuses& (rf/subscribe [:rounds-filter/selected-statuses])
             rounds& (rf/subscribe [:gql/sub
                                    {:queries
-                                    [[:rounds {:buyer-id @org-id&}
+                                    [[:rounds {:buyer-id @org-id&
+                                               :_order_by {:created :desc}
+                                               :deleted nil}
                                       [:id :idstr :created :status :title
                                        [:products [:pname]]]]]}])]
         (fn []

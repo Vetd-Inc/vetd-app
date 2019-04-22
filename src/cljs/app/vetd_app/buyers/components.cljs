@@ -22,8 +22,20 @@
                  text
                  [:> ui/Icon {:name "left arrow"}]]))
 
+(defn c-sidebar-button
+  [{:keys [text dispatch icon props]}]
+  [:> ui/Button (merge {:onClick #(rf/dispatch dispatch)
+                        :color "grey"
+                        :fluid true
+                        :icon true
+                        :labelPosition "left"}
+                       props)
+   text
+   [:> ui/Icon {:name icon}]])
+
 ;; note: there is another type of start-round button in category search results
-(defn c-start-round-button [{:keys [etype eid ename props]}]
+(defn c-start-round-button
+  [{:keys [etype eid ename props]}]
   [:> ui/Popup
    {:content (str "Find and compare similar products to \""
                   ename "\" that meet your needs.")
@@ -46,12 +58,12 @@
       "Start VetdRound"
       [:> ui/Icon {:name "vetd-icon"}]])}])
 
-(defn c-round-in-progress [{:keys [props]}]
+(defn c-round-in-progress [{:keys [round-idstr props]}]
   [:> ui/Label (merge {:color "teal"
                        :size "medium"
                        :as "a"
                        :onClick #(do (.stopPropagation %)
-                                     (rf/dispatch [:b/nav-rounds]))}
+                                     (rf/dispatch [:b/nav-round-detail round-idstr]))}
                       props)
    "Product In VetdRound"])
 
@@ -71,29 +83,20 @@
                     :size "small"
                     :widths 3
                     :style {:user-select "none"}}
-   [:> ui/Step (merge {:style {:cursor "inherit"}}
-                      (case status
-                        "initiation" {:active true}
-                        {}))
+   [:> ui/Step {:style {:cursor "inherit"}
+                :disabled (not= status "initiation")}
     [:> ui/Icon {:name "clipboard outline"}]
     [:> ui/StepContent
      [:> ui/StepTitle "Initiation"]
      [:> ui/StepDescription "Define your requirements"]]]
-   [:> ui/Step (merge {:style {:cursor "inherit"}}
-                      (case status
-                        "initiation" {:disabled true}
-                        "in-progress" {:active true}
-                        {}))
+   [:> ui/Step {:style {:cursor "inherit"}
+                :disabled (not= status "in-progress")}
     [:> ui/Icon {:name "chart bar"}]
     [:> ui/StepContent
      [:> ui/StepTitle "In Progress"]
      [:> ui/StepDescription "Comparison and dialogue"]]]
-   [:> ui/Step (merge {:style {:cursor "inherit"}}
-                      (case status
-                        "initiation" {:disabled true}
-                        "in-progress" {:disabled true}
-                        "complete" {:active true}
-                        {}))
+   [:> ui/Step {:style {:cursor "inherit"}
+                :disabled (not= status "complete")}
     [:> ui/Icon {:name "check"}]
     [:> ui/StepContent
      [:> ui/StepTitle "Complete"]
@@ -112,8 +115,7 @@
                                :color "grey"
                                :fluid true
                                :icon true
-                               :labelPosition "left"
-                               :style {:margin-right 15}}
+                               :labelPosition "left"}
                  "Setup a Call"
                  [:> ui/Icon {:name "left call"}]])}]))
 
