@@ -137,7 +137,8 @@
             [:save-doc
              {:dtype "round-initiation"
               :round-id round-id
-              :return-handler :b/round.initiation-form-saved}
+              :return {:handler :b/round.initiation-form-saved
+                       :round-id round-id}}
              {:terms
               {:rounds/goal {:value @goal}
                :rounds/start-using {:value @start-using}
@@ -149,10 +150,13 @@
 
 (rf/reg-event-fx
  :b/round.initiation-form-saved
- (constantly
-  {:toast {:type "success"
-           :title "Initiation Form Submitted"
-           :message "Status updated to \"In Progress\""}}))
+ (fn [_ [_ _ {{:keys [round-id]} :return}]]
+   {:toast {:type "success"
+            :title "Initiation Form Submitted"
+            :message "Status updated to \"In Progress\""}
+    :analytics/track {:event "Initiation Form Saved"
+                      :props {:category "Round"
+                              :label round-id}}}))
 
 (defn c-round-initiation
   [{:keys [id status title products doc] :as round}]
