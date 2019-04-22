@@ -46,16 +46,27 @@
    ;;  :value "Free Trial"}
    ])
 
+(defn prods->choices [prods]
+  (for [{:keys [id pname]} prods]
+    {:key id
+     :text pname
+     :value id}))
+
 (defn c-round-initiation-form
   [round-id]
   (let [requirements-options (r/atom (get-requirements-options))
+        prods& (rf/subscribe [:gql/q
+                              {:queries
+                               [[:products {:_limit 100}
+                                 [:id :pname]]]}])
         ;; form data
         goal (r/atom "")
         start-using (r/atom "")
         num-users (r/atom "")
         budget (r/atom "")
         requirements (r/atom [])
-        add-products-by-name (r/atom "")]
+        ;; that should be a vetor probably...
+        add-products-by-name (r/atom nil)]
     (fn []
       [:<>
        [:h3 "VetdRound Initiation Form"]
@@ -122,6 +133,14 @@
                                                  :value value})))
                           :onChange (fn [_ this]
                                       (reset! requirements (.-value this)))}]]
+        (when (not= :loading @prods&)
+          [:> ui/Dropdown {:value @add-products-by-name
+                           :onChange #(reset! add-products-by-name (.-value %2))
+                           :placeholder "Select Product"
+                           :style {:flex 1
+                                   :margin-right 5}
+                           :selection true
+                           :options (-> @prods& :products prods->choices)}])
         #_[:> ui/FormField
            [:label "Are there specific products you want to include?"]
            [:> ui/Dropdown {:multiple true
