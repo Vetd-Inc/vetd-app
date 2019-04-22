@@ -71,13 +71,14 @@
           " "
           [:small "(estimate) " pricing-estimate-details]]
          pricing-estimate-details)]
-      [:> ui/ItemDescription (or (util/truncate-text (docs/get-field-value-from-response-prompt
-                                                      product-profile-responses
-                                                      "Describe your product or service"
-                                                      "value"
-                                                      :sval)
-                                                     175)
-                                 "No description available.")]
+      [:> ui/ItemDescription
+       (util/truncate-text (or  (docs/get-field-value-from-response-prompt
+                                 product-profile-responses
+                                 "Describe your product or service"
+                                 "value"
+                                 :sval)
+                                "No description available.")
+                           175)]
       
       [:> ui/ItemExtra
        (when (empty? (:rounds product))
