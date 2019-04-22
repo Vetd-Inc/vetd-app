@@ -142,6 +142,12 @@
 (defn ms-since-vetd-epoch []
   (- (System/currentTimeMillis) ts2019-01-01))
 
+(defn long-floor-div
+  [a b]
+  (-> a
+      (/ b)
+      long))
+
 (def base36
   (into {}
         (map-indexed vector
@@ -151,11 +157,15 @@
 
 (def base36-inv (clojure.set/map-invert base36))
 
-(defn long-floor-div
-  [a b]
-  (-> a
-      (/ b)
-      long))
+(def base31
+  (into {}
+        (map-indexed vector
+                     (concat
+                      (remove #{101 105 111 117} ;; vowels
+                              (range 98 123))
+                      (range 48 58)))))
+
+(def base31-inv (clojure.set/map-invert base31))
 
 (defn base36->str
   [v]
@@ -179,8 +189,36 @@
          idx 0
          r 0]
     (if (nil? head)
-      (int r)
-      (let [d (* (base36-inv (int head)) (Math/pow 36 idx))]
+      (long r)
+      (let [d (* (base36-inv (long head)) (Math/pow 36 idx))]
+        (recur tail
+               (inc idx)
+               (+ r d))))))
+
+(defn base31->str
+  [v]
+  (let [x (loop [v' v
+                 r []]
+            (if (zero? v')
+              r
+              (let [idx (mod v' 31)
+                    v'' (long-floor-div v' 31)]
+                (recur v''
+                       (conj r (mod v' 31))))))]
+    (->> x
+         reverse
+         (map base31)
+         (map char)
+         clojure.string/join)))
+
+(defn base31->num
+  [s]
+  (loop [[head & tail] (reverse s)
+         idx 0
+         r 0]
+    (if (nil? head)
+      (long r)
+      (let [d (* (base31-inv (long head)) (Math/pow 31 idx))]
         (recur tail
                (inc idx)
                (+ r d))))))
@@ -195,6 +233,6 @@
 
 (defn mk-id&str []
   (let [id (mk-id)]
-    [id (base36->str id)]))
+    [id (base31->str id)]))
 
 ;; --------------------
