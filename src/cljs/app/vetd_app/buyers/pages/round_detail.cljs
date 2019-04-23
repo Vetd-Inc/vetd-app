@@ -483,9 +483,11 @@
   (let [round-idstr& (rf/subscribe [:round-idstr])
         rounds& (rf/subscribe [:gql/sub
                                {:queries
-                                [[:rounds {:idstr @round-idstr&}
+                                [[:rounds {:idstr @round-idstr&
+                                           :deleted nil}
                                   [:id :idstr :created :status :title
-                                   [:products
+                                   [:products {:deleted nil
+                                               :ref-deleted nil}
                                     [:id :pname
                                      [:vendor
                                       [:id :oname]]]]

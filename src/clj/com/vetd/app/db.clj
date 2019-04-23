@@ -146,3 +146,13 @@ WHERE table_schema = 'vetd' AND table_catalog = 'vetd1';")
                        (dissoc :id :idstr :created))
               :where [:= :id id]})
     (throw (Exception. (format "Could not find entity with id %s." id)))))
+
+(defn update-deleted [tbl-kw id]
+  (hs-exe! {:update tbl-kw
+            :set {:deleted (ut/now-ts)}
+            :where [:= :id id]}))
+
+(defn update-many0deleted [tbl-kw ids]
+  (hs-exe! {:update tbl-kw
+            :set {:deleted (ut/now-ts)}
+            :where [:= :id id]}))
