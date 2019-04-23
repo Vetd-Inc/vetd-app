@@ -5,16 +5,7 @@
             [com.vetd.app.common :as com]
             [com.vetd.app.util :as ut]
             [com.vetd.app.docs :as docs]
-            [cognitect.aws.client.api :as aws]
-            [cognitect.aws.credentials :as aws-creds]
             [taoensso.timbre :as log]))
-
-(def sns (aws/client {:api :sns
-                      :region "us-east-1"
-                      :credentials-provider (aws-creds/basic-credentials-provider
-                                             ;; TODO cycle creds and keep in env
-                                             {:access-key-id "AKIAIJN3D74NBHJIAARQ"
-                                              :secret-access-key "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"})}))
 
 (defn search-prods-vendors->ids
   [q]
@@ -130,98 +121,94 @@
                         ffirst
                         clojure.pprint/pprint)))]
         ;; TODO make msg human friendly
-        (aws/invoke sns {:op :Publish
-                         :request {:TopicArn "arn:aws:sns:us-east-1:744151627940:ui-req-new-prod-cat"
-                                   :Subject "Vetd Round Started"
-                                   :Message msg}}))
+        (com/sns-publish :ui-start-round "Vetd Round Started" msg))
       (catch Throwable t))
     r))
 
 (defn send-new-prod-cat-req [uid oid req]
   (let [user-name (-> uid auth/select-user-by-id :uname)
         org-name (-> oid auth/select-org-by-id :oname)]
-    (aws/invoke sns {:op :Publish
-                     :request {:TopicArn "arn:aws:sns:us-east-1:744151627940:ui-req-new-prod-cat"
-                               :Subject "New Product/Category Request"
-                               :Message (format
-                                         "New Product/Category Request
+    (com/sns-publish :ui-req-new-prod-cat
+                     "New Product/Category Request"
+                     (format
+                      "New Product/Category Request
 Request Text '%s'
 Org '%s'
 User '%s'
 "
-                                         req org-name user-name)}})))
+                      req org-name user-name))))
 
-(defn send-vendor-profile-req [vendor-id buyer-id]
-  (let [vendor-name (-> vendor-id auth/select-org-by-id :oname)
+(defn send-complete-profile-req [etype eid buyer-id]
+  (let [ename (if (= :vendor etype)
+                (-> eid auth/select-org-by-id :oname)
+                (-> [[:products {:id eid}
+                      [:pname]]]
+                    ha/sync-query
+                    vals
+                    ffirst
+                    :pname))
         buyer-name (-> buyer-id auth/select-org-by-id :oname)]
-    (aws/invoke sns {:op :Publish
-                     :request {:TopicArn "arn:aws:sns:us-east-1:744151627940:ui-misc"
-                               :Subject "Vendor Profile Request"
-                               :Message (format
-                                         "Vendor Profile Request
-Buyer: '%s'
-Vendor: '%s'
-"
-                                         buyer-name vendor-name)}})))
+    (com/sns-publish :ui-misc
+                     (str "Complete " (name etype) " Profile Request")
+                     (str "Complete " (name etype) " Profile Request\n"
+                          "buyer: " buyer-name "\n"
+                          (name etype) ": " ename" (ID: " eid ")"))))
 
 
 (defn send-setup-call-req [buyer-id product-id]
-  (let [product-name (-> [[:products {:id product-id} [:pname]]]
+  (let [product-name (-> [[:products {:id product-id}
+                           [:pname]]]
                          ha/sync-query
                          vals
                          ffirst
                          :pname)
         buyer-name (-> buyer-id auth/select-org-by-id :oname)]
-    (aws/invoke sns {:op :Publish
-                     :request {:TopicArn "arn:aws:sns:us-east-1:744151627940:ui-misc"
-                               :Subject "Setup Call Request"
-                               :Message (format
-                                         "Setup Call Request
+    (com/sns-publish :ui-misc
+                     "Setup Call Request"
+                     (format
+                      "Setup Call Request
 Buyer: '%s'
-Product: '%s'
-"
-                                         buyer-name product-name)}})))
+Product: '%s'"
+                      buyer-name product-name))))
 
 (defn send-ask-question-req [product-id message buyer-id]
-  (let [product-name (-> [[:products {:id product-id} [:pname]]]
+  (let [product-name (-> [[:products {:id product-id}
+                           [:pname]]]
                          ha/sync-query
                          vals
                          ffirst
                          :pname)
         buyer-name (-> buyer-id auth/select-org-by-id :oname)]
-    (aws/invoke sns {:op :Publish
-                     :request {:TopicArn "arn:aws:sns:us-east-1:744151627940:ui-misc"
-                               :Subject "Ask a Question Request"
-                               :Message (format
-                                         "Ask a Question Request
+    (com/sns-publish :ui-misc
+                     "Ask a Question Request"
+                     (format
+                      "Ask a Question Request
 Buyer: '%s'
 Product: '%s'
 Message:
-%s
-"
-                                         buyer-name product-name message)}})))
+%s"
+                      buyer-name product-name message))))
 
 (defn send-prep-req
   [{:keys [to-org-id to-user-id from-org-id from-user-id prod-id] :as prep-req}]
-  (let [product-name (-> [[:products {:id prod-id} [:pname]]]
+  (let [product-name (-> [[:products {:id prod-id}
+                           [:pname]]]
                          ha/sync-query
                          vals
                          ffirst
                          :pname)
         buyer-name (-> from-org-id auth/select-org-by-id :oname)
         from-user-name (-> from-user-id auth/select-user-by-id :uname)]
-    (aws/invoke sns {:op :Publish
-                     :request {:TopicArn "arn:aws:sns:us-east-1:744151627940:ui-misc"
-                               :Subject "Preposal Request"
-                               :Message (format
-                                         "Preposal Request
+    (com/sns-publish :ui-misc
+                     "Preposal Request"
+                     (format
+                      "Preposal Request
 Buyer: '%s'
 Buyer User: '%s'
 
-Product: '%s'
-"
-                                         buyer-name from-user-name
-                                         product-name)}})))
+Product: '%s'"
+                      buyer-name from-user-name
+                      product-name))))
 
 ;; TODO there could be multiple preposals/rounds per buyer-vendor pair
 
@@ -251,9 +238,9 @@ Product: '%s'
   (send-new-prod-cat-req user-id org-id req))
 
 ;; Request that a vendor complete their Company/Product Profile
-(defmethod com/handle-ws-inbound :b/request-vendor-profile
-  [{:keys [vendor-id buyer-id]} ws-id sub-fn]
-  (send-vendor-profile-req vendor-id buyer-id))
+(defmethod com/handle-ws-inbound :b/request-complete-profile
+  [{:keys [etype eid buyer-id]} ws-id sub-fn]
+  (send-complete-profile-req etype eid buyer-id))
 
 ;; Have Vetd set up a phone call for the buyer with the vendor
 (defmethod com/handle-ws-inbound :b/setup-call
@@ -295,8 +282,9 @@ Product: '%s'
                       ffirst
                       clojure.pprint/pprint)))]
       ;; TODO make msg human friendly
-      (aws/invoke sns {:TopicArn "arn:aws:sns:us-east-1:744151627940:ui-misc"
-                       :Subject "Vendor Round Requirements Form Completed"
-                       :Message (str "Vendor Round Requirements Form Completed\n\n"
-                                     msg)}))
-    (catch Throwable t)))
+      (com/sns-publish :ui-misc
+                       "Vendor Round Requirements Form Completed"
+                       (str "Vendor Round Requirements Form Completed\n\n"
+                            msg)))
+    (catch Throwable t
+      (println t))))
