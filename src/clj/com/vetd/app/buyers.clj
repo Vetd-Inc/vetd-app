@@ -250,11 +250,11 @@ Product: '%s'"
     (let [msg (with-out-str
                 (clojure.pprint/with-pprint-dispatch clojure.pprint/code-dispatch
                   (-> [[:docs {:id id}
-                        [:rounds
-                         [:id :created
-                          [:buyer [:oname]]
-                          [:products [:pname]]
-                          [:categories [:cname]]]]]]
+                        [[:rounds
+                          [:id :created
+                           [:buyer [:oname]]
+                           [:products [:pname]]
+                           [:categories [:cname]]]]]]]
                       ha/sync-query
                       vals
                       ffirst
@@ -264,5 +264,4 @@ Product: '%s'"
                        "Vendor Round Requirements Form Completed"
                        (str "Vendor Round Requirements Form Completed\n\n"
                             msg)))
-    (catch Throwable t
-      (println t))))
+    (catch Throwable t)))
