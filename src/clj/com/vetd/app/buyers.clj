@@ -7,6 +7,15 @@
             [com.vetd.app.docs :as docs]
             [taoensso.timbre :as log]))
 
+(defn product-id->name
+  [product-id]
+  (-> [[:products {:id product-id}
+        [:pname]]]
+      ha/sync-query
+      vals
+      ffirst
+      :pname))
+
 (defn search-prods-vendors->ids
   [q]
   (if (not-empty q)
@@ -141,7 +150,7 @@ User '%s'
 (defn send-complete-profile-req [etype eid buyer-id]
   (let [ename (if (= :vendor etype)
                 (-> eid auth/select-org-by-id :oname)
-                (com/product-id->name eid))
+                (product-id->name eid))
         buyer-name (-> buyer-id auth/select-org-by-id :oname)]
     (com/sns-publish :ui-misc
                      (str "Complete " (name etype) " Profile Request")
@@ -158,7 +167,7 @@ User '%s'
 Buyer (Org): '%s'
 Product: '%s'"
                     (-> buyer-id auth/select-org-by-id :oname) ; buyer name
-                    (com/product-id->name product-id)))) ; product name
+                    (product-id->name product-id)))) ; product name
 
 
 (defn send-ask-question-req [product-id message buyer-id]
@@ -171,7 +180,7 @@ Product: '%s'
 Message:
 %s"
                     (-> buyer-id auth/select-org-by-id :oname) ; buyer name
-                    (com/product-id->name product-id) ; product name
+                    (product-id->name product-id) ; product name
                     message)))
 
 (defn send-prep-req
@@ -186,7 +195,7 @@ Buyer User: '%s'
 Product: '%s'"
                     (-> from-org-id auth/select-org-by-id :oname) ; buyer org name
                     (-> from-user-id auth/select-user-by-id :uname) ; buyer user name
-                    (com/product-id->name prod-id)))) ; product name
+                    (product-id->name prod-id)))) ; product name
 
 ;; TODO there could be multiple preposals/rounds per buyer-vendor pair
 
