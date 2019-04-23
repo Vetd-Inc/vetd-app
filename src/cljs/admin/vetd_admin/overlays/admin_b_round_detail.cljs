@@ -58,12 +58,10 @@
                                                              :value)
                                                        product-options)))
                           :onSearchChange (fn [_ data]
-                                            (let [sq (.-searchQuery data)]
-                                              (when (> (count sq) 3)
-                                                (reset! search-term& sq))
-                                              #_(util/call-debounce-by-id :a/product-dropdown-search-term-change
-                                                                          500
-                                                                          #(reset! search-term& sq))))
+                                            (let [sq (aget data "searchQuery")]
+                                              (util/call-debounce-by-id :a/product-dropdown-search-term-change
+                                                                        500
+                                                                        #(reset! search-term& sq))))
                           :placeholder "Type Product/Vendor Name..."
                           :selection true
                           :multiple true
