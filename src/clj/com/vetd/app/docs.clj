@@ -5,64 +5,35 @@
             [com.vetd.app.hasura :as ha]
             [taoensso.timbre :as log]
             [honeysql.core :as hs]
-            clojure.data))
+            clojure.data
+            clojure.set))
 
-(defmulti handle-doc-creation (fn [{:keys [dtype]}] (keyword dtype)))
+#_ (def handle-doc-creation nil)
+(defmulti handle-doc-creation (fn [{:keys [dtype]} handler-args] (keyword dtype)))
 
-(defmethod handle-doc-creation :default [_])
+(defmethod handle-doc-creation :default [_ _])
 
+(def ^:dynamic *docs-created* nil)
 
-#_(defn get-latest-form-doc-by-ftype&from-org
-  [ftype doc-from-org-id]
-  (-> [[:form-docs {:ftype ftype
-                    :doc-from-org-id doc-from-org-id
-                    :_order_by {:created :desc}
-                    :_limit 1}
-        [:id :title :doc-id :doc-title :doc-from-org-id
-         :ftype :fsubtype
-         [:from-org [:id :oname]]
-         [:from-user [:id :uname]]
-         [:to-org [:id :oname]]
-         [:to-user [:id :uname]]
-         [:prompts {:deleted nil
-                    :_order_by {:sort :asc}}
-          [:id :idstr :prompt :descr
-           [:fields
-            [:id :idstr :fname :ftype
-             :fsubtype :list?]]]]
-         [:responses
-          [:id :prompt-id :notes
-           [:fields [:id :pf-id :idx :sval :nval :dval]]]]]]]
-      ha/sync-query
-      :form-docs
-      first))
+(defmacro with-doc-handling
+  [handler-args & body]
+  `(let [dc&# (atom #{})
+         r# (binding [*docs-created* dc&#]
+              (do ~@body))
+         dc# @dc&#]
+     (future (doseq [d# dc#]
+               (handle-doc-creation d# ~handler-args)))
+     r#))
 
-#_ (defn get-latest-form-doc-by-ftype&subject
-  [ftype subject]
-  (-> [[:form-docs {:ftype ftype
-                    :doc-subject subject
-                    :_order_by {:created :desc}
-                    :_limit 1}
-        [:id :title :doc-id :doc-title :doc-from-org-id
-         :ftype :fsubtype
-         [:from-org [:id :oname]]
-         [:from-user [:id :uname]]
-         [:to-org [:id :oname]]
-         [:to-user [:id :uname]]
-         [:prompts {:deleted nil
-                    :_order_by {:sort :asc}}
-          [:id :idstr :prompt :descr
-           [:fields
-            [:id :idstr :fname :ftype
-             :fsubtype :list?]]]]
-         [:responses
-          [:id :prompt-id :notes
-           [:fields [:id :pf-id :idx :sval :nval :dval]]]]]]]
-      ha/sync-query
-      :form-docs
-      first))
+(defmacro tree-assoc-fn
+  [key-bindings & body]
+  `(fn [x#]
+     (let [{:keys ~key-bindings :as x#} (assoc x#
+                                               :parent
+                                               (-> x# :parents last))
+           r# (do ~@body)]
+       (apply assoc x# r#))))
 
-;; TODO use prompt-field data type
 (defn convert-field-val
   [v ftype fsubtype]
   (case ftype
@@ -82,11 +53,10 @@
          :nval nil
          :dval nil
          :jval v}
-
     "d" (throw (Exception. "TODO convert-field-val does not support dates"))))
 
 (defn insert-form
-  [{:keys [form-temp-id title descr notes from-org-id
+  [{:keys [form-template-id title descr notes from-org-id
            from-user-id to-org-id to-user-id status
            ftype fsubtype subject
            id idstr]}
@@ -100,7 +70,7 @@
                      :created (ut/now-ts)
                      :updated (ut/now-ts)
                      :deleted nil
-                     :form_template_id form-temp-id
+                     :form_template_id form-template-id
                      :ftype ftype
                      :fsubtype fsubtype
                      :title title
@@ -158,7 +128,8 @@
                            :to_user_id to-user-id})
               first)]
     ;; TODO doing this here isn't great because responses likely won't be inserted yet
-    (future (handle-doc-creation d))
+    (when *docs-created*
+      (swap! *docs-created* conj d))
     d))
 
 (defn insert-prompt
@@ -218,6 +189,7 @@
                      :user_id user-id})
         first)))
 
+;; TODO add sort field??
 (defn insert-doc-response
   [doc-id resp-id]
   (let [[id idstr] (ut/mk-id&str)]
@@ -251,6 +223,31 @@
                   (convert-field-val v ftype fsubtype)))
          (db/insert! :resp_fields)
          first)))
+
+(defn infer-field-type-kw
+  [{:keys [sval nval dval jval]}]
+  (cond
+    sval :sval
+    nval :nval
+    dval :dval
+    jval :jval))
+
+(defn expand-response-fields
+  [{:keys [sval nval dval jval] :as response-fields}]
+  (let [vals (or sval nval dval jval)
+        val-kw (infer-field-type-kw response-fields)]
+    (if (sequential? vals)
+      (map-indexed (fn [idx v]
+                     (assoc response-fields
+                            :idx idx
+                            val-kw v))
+                   vals)
+      [response-fields])))
+
+(defn insert-response-fields
+  [resp-id response-fields]
+  (doseq [rf (expand-response-fields response-fields)]
+    (insert-response-field resp-id rf)))
 
 (defn insert-default-prompt-field
   [prompt-id {sort' :sort}]
@@ -293,10 +290,19 @@
   (let [{resp-id :id} (insert-response resp)]
     (insert-doc-response doc-id resp-id)
     (doseq [{:keys [id] :as f} fields]
-      (insert-response-field resp-id
+      (insert-response-fields resp-id
                              (assoc f
                                     :prompt-field-id
                                     id)))))
+
+(defn select-form-template-prompts-by-parent-id
+  [form-template-id]
+  (->> (db/hs-query {:select [:prompt_id :sort]
+                     :from [:form_template_prompt]
+                     :where [:and
+                             [:= :form_template_id form-template-id]
+                             [:= :deleted nil]]})
+       (map ha/walk-sql-field->clj-kw)))
 
 (defn create-form-from-template
   [{:keys [form-template-id from-org-id from-user-id
@@ -487,11 +493,23 @@
            form
            use-id?))
 
-(defn prompt-exists? [{:keys [id] :as prompt} & [use-id?]]
+(defn prompt-exists? [{:keys [id] :as prompt}]
   (-> [[:prompts {:id id} [:id]]]
       ha/sync-query
       :prompts
       empty?
+      not))
+
+(defn form-prompt-exists? [{:keys [form-id prompt-id] :as form-prompt}]
+  (-> {:select [[:%count.* :c]]
+       :from [:form_prompt]
+       :where [:and
+               [:= :form_id form-id]
+               [:= :prompt_id prompt-id]]}
+      db/hs-query
+      first
+      :c
+      zero?
       not))
 
 (defn upsert-prompt [{:keys [id] :as prompt} & [use-id?]]
@@ -501,10 +519,15 @@
            prompt
            use-id?))
 
-(defn form-template-exists? [{:keys [id] :as form-template}]
-  (-> [[:form-templates {:id id} [:id]]]
+(defn select-form-templates [form-template-id & [fields]]
+  (-> [[:form-templates {:id form-template-id}
+        (or fields [:id])]]
       ha/sync-query
-      :form-templates
+      :form-templates))
+
+(defn form-template-exists? [{:keys [id] :as form-template}]
+  (-> id
+      select-form-templates
       empty?
       not))
 
@@ -585,3 +608,239 @@
                                   new-prompts
                                   use-id?))
 
+(defn doc->appliable--find-form
+  [{:keys [dtype dsubtype update-doc-id] :as d}]
+  (when (or dtype dsubtype update-doc-id)
+    (let [form-fields [:id :ftype :fsubtype
+                       [:prompts
+                        [:id :term
+                         [:fields
+                          [:id :fname :ftype :fsubtype]]]]]
+          form-args (merge {:_order_by {:created :desc}
+                            :_limit 1
+                            :deleted nil}
+                           (when dtype
+                             {:ftype dtype})
+                           (when dsubtype
+                             {:fsubtype dsubtype}))]
+      (if update-doc-id
+        (-> [[:docs {:id update-doc-id}
+              [[:form form-fields]]]]
+            ha/sync-query
+            :docs
+            first
+            :form)
+        (-> [[:forms form-args
+              form-fields]]
+            ha/sync-query
+            :forms
+            first)))))
+
+(defn fields->appliable-tree
+  [resp-fields fields]
+  (let [fields-by-fname (group-by :fname fields)]
+    (vec (for [[k value] resp-fields]
+           (let [{:keys [fname ftype fsubtype id]} (-> k name fields-by-fname first)]
+             {:item (merge {:fname fname
+                             :ftype ftype
+                             :fsubtype fsubtype
+                             :prompt-field-id id}
+                            (convert-field-val value
+                                               ftype
+                                               fsubtype))})))))
+
+(defn response-prompts->appliable-tree
+  [{:keys [terms prompt-ids]} prompts]
+  (let [responses (merge terms prompt-ids)
+        grouped-prompts (-> (merge (group-by (comp keyword :term) prompts)
+                                   (group-by :id prompts))
+                            (dissoc nil))]
+    (vec (for [[k r] responses]
+           (let [{prompt-id :id :keys [fields]} (-> k grouped-prompts first)]
+             (if prompt-id
+               {:item {}
+                :children [{:item {:prompt-id prompt-id}
+                             :children (fields->appliable-tree r fields)}]}
+               (throw (Exception. (str "Could not find prompt with term or id: " k)))))))))
+
+;; TODO set responses.subject
+(defn doc->appliable-tree
+  [{:keys [data dtype dsubtype update-doc-id] :as d}]
+  (if-let [{:keys [id ftype fsubtype prompts]} (doc->appliable--find-form d)]
+    {:handler-args d
+     :item (merge (select-keys d ;; TODO hard-coded fields sucks -- Bill
+                                [:title :dtype :descr :notes :from-org-id
+                                 :from-user-id :to-org-id :to-user-id
+                                 :dtype :dsubtype :form-id :subject])
+                  {:form-id id
+                   :dtype ftype
+                    :dsubtype fsubtype}
+                   (when update-doc-id
+                     {:id update-doc-id}))
+     :children (response-prompts->appliable-tree data
+                                                 prompts)}
+    (throw (Exception. (str "Couldn't find form by querying with: "
+                            {:ftype dtype
+                             :fsubtype dsubtype
+                             :doc-id update-doc-id})))))
+
+
+(declare apply-tree)
+
+(defn apply-tree-child-reducer
+  [m v' agg [k vs]]
+  (if-let [mk (and m (m k))]
+    (assoc agg
+           k
+           (mapv #(dissoc (apply-tree mk
+                                    (merge v' %))
+                          :parents)
+                 vs))
+    agg))
+
+(defn apply-tree-map
+  [m {:keys [item children parents] :as v}]
+  (let [parents' (conj (or parents [])
+                       item)
+        v' (-> v
+               (dissoc :item
+                       :children)
+               (assoc :parents parents'))]
+    (assoc v
+           :children
+           (reduce (partial apply-tree-child-reducer
+                            m
+                            v')
+                   {}
+                   (if (map? children)
+                     children
+                     {(ffirst m) children})))))
+
+(defn apply-tree
+  [[& ops] {:keys [handler-args] :as v}]
+  (with-doc-handling handler-args
+    (loop [[head & tail] (flatten ops)
+           v' v]
+      (if head
+        (recur (flatten tail)
+               (if (map? head)
+                 (apply-tree-map head v')
+                 (head v')))
+        v'))))
+
+(defn create-doc [d]
+  (->> d
+       doc->appliable-tree
+       (apply-tree
+        [(tree-assoc-fn [item]
+                        [:item (insert-doc item)])
+         {:doc-responses [{:response
+                           [(tree-assoc-fn [item]
+                                           [:item (insert-response item)])
+                            {:fields
+                             [(tree-assoc-fn [parent item]
+                                             [:item (insert-response-fields (:id parent)
+                                                                           item)])]}]}
+                          (tree-assoc-fn [item children parent]
+                                         [:item
+                                          (->> children
+                                               :response
+                                               first
+                                               :item
+                                               :id
+                                               (insert-doc-response (:id parent)))])]}])))
+
+
+(defn group-doc-responses--existing
+  [{:keys [prompt-id fields]}]
+  [prompt-id
+   (->> fields
+        (mapv (fn [{:keys [sval nval dval jval prompt-field]}]
+                [(:fname prompt-field)
+                 (or sval nval dval jval)]))
+        (sort-by first))])
+
+(defn group-doc-responses--given
+  [{:keys [children]}]
+  (let [[{item :item kids :children :as kid1}] children
+        prompt-id (-> kid1 :item :prompt-id)]
+    [prompt-id
+     (->> kids
+          (mapv (fn [{:keys [item]}]
+                  (let [{:keys [sval nval dval jval fname]} item]
+                    [fname
+                     (or sval nval dval jval)])))
+          (sort-by first))]))
+
+(defn group-match-reducer
+  [grouped-a grouped-b agg k]
+  (let [a (grouped-a k)
+        b (grouped-b k)]
+    (cond (nil? a) (update agg :b conj b)
+          (nil? b) (update agg :a conj a)
+          :else (update agg :common conj [a b]))))
+
+(defn group-match
+  [a group-by-a-fn b group-by-b-fn]
+  (let [grouped-a (->> a
+                       (group-by group-by-a-fn)
+                       (ut/fmap first))
+        grouped-b (->> b
+                       (group-by group-by-b-fn)
+                       (ut/fmap first))
+        all-keys (-> (merge grouped-a grouped-b)
+                     keys)]
+    (reduce (partial group-match-reducer
+                     grouped-a
+                     grouped-b)
+            {:a #{}
+             :b #{}
+             :both #{}}
+            all-keys)))
+
+(defn group-doc-responses
+  [existing-responses given-doc-resps]
+  (-> (group-match existing-responses
+                   group-doc-responses--existing
+                   given-doc-resps
+                   group-doc-responses--given)
+      (clojure.set/rename-keys
+       {:a :delete
+        :b :new-responses
+        :both :no-change})
+      (update :delete
+              (partial mapv (fn [{:keys [fields] :as d}]
+                              {:item (dissoc d :fields)
+                               :children fields})))))
+
+;; TODO support reusing existing responses
+(defn update-doc [d]
+  (->> d
+       doc->appliable-tree
+       (apply-tree
+        [(tree-assoc-fn [item children]
+                        (-> item
+                            ha/walk-clj-kw->sql-field
+                            (select-keys [:doc_id :user_id :id :user_id :resp_id])
+                            (db/update-any! :docs))
+                        [:children (-> item
+                                       :id
+                                       get-child-responses
+                                       (group-doc-responses children))])
+         {:delete [(tree-assoc-fn [item]
+                                  (->> item :ref-id (update-deleted :doc_resp))
+                                  [])]
+          :new-responses [{:response [(tree-assoc-fn [item]
+                                                     [:item (insert-response item)])
+                                      {:fields [(tree-assoc-fn [item parent]
+                                                               [:item (insert-response-fields
+                                                                       (:id parent)
+                                                                       item)])]}]}
+                          (tree-assoc-fn [item children parent]
+                                         [:item
+                                          (->> children
+                                               :response
+                                               first
+                                               :item
+                                               :id
+                                               (insert-doc-response (:id parent)))])]}])))

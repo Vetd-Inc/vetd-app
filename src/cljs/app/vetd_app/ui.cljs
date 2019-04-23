@@ -48,7 +48,7 @@
 (def MenuMenu (component "Menu" "Menu"))
 
 ;; Form
-(def Form (component "Form"))
+(def Form (component "Form")) ; use {:as "div"} prop to avoid <form> behaviors
 (def FormField (component "Form" "Field"))
 (def FormGroup (component "Form" "Group"))
 (def FormInput (component "Form" "Input"))

@@ -237,7 +237,8 @@
        
        ^{:key (str "template-prompt-form" id)}
        [:div
-        [:> ui/Form {:style {:margin "10px"
+        [:> ui/Form {:as "div"
+                     :style {:margin "10px"
                              :padding "10px"
                              :border "solid 1px #666666"}}
          

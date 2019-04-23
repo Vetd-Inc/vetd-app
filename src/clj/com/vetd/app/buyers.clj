@@ -260,9 +260,14 @@ Product: '%s'
   (send-ask-question-req product-id message buyer-id))
 
 (defmethod docs/handle-doc-creation :round-initiation
-  [{:keys [id]}]
-  (Thread/sleep 7000) ;;HACK wait til related inserts are probably done
-  ;; TODO update round rec status
+  [{:keys [id]} {:keys [round-id]}]
+  (try
+    (db/update-any! {:id round-id
+                     :doc_id id
+                     :status "in-progress"}
+                    :rounds)
+    (catch Throwable t
+      (log/error t)))
   (try
     (let [msg (with-out-str
                 (clojure.pprint/with-pprint-dispatch clojure.pprint/code-dispatch
@@ -282,3 +287,9 @@ Product: '%s'
                        :Message (str "Vendor Round Requirements Form Completed\n\n"
                                      msg)}))
     (catch Throwable t)))
+
+(defmethod com/handle-ws-inbound :save-doc
+  [{:keys [data ftype update-doc-id from-org-id] :as req} ws-id sub-fn]
+  (if (nil? update-doc-id)
+    (docs/create-doc req)
+    (docs/update-doc req)))

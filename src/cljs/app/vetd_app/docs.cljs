@@ -199,7 +199,8 @@
     (when return-save-fn&
       (reset! return-save-fn& save-fn))
     (conj (or c-wrapper
-              [:> ui/Form {:style {:width 400
+              [:> ui/Form {:as "div"
+                           :style {:width 400
                                    :margin-bottom 50}}])
           [:div
 	         (or doc-title title)
@@ -239,17 +240,21 @@
 ;;  :prompt-ids {126786722 {:value "Justanother Value"}}}
 (rf/reg-event-fx
  :save-doc ; one of ftype or update-doc-id are required
- (fn [{:keys [db]} [_ {:keys [ftype update-doc-id round-id]} data]]
+ (fn [{:keys [db]} [_ {:keys [dtype update-doc-id round-id return]} data]]
    {:ws-send
     {:payload
-     {:cmd :save-doc
-      :return {:handler :save-doc-return}
-      :data data
-      :ftype ftype
-      :update-doc-id update-doc-id
-      :round-id round-id
-      :from-user-id (util/db->current-org-id db)}}}))
+     (merge {:cmd :save-doc
+             :return {:handler :save-doc-return}
+             :data data
+             :dtype dtype
+             :update-doc-id update-doc-id
+             :round-id round-id
+             :from-org-id (util/db->current-org-id db)}
+            (when return
+              {:return return}))}}))
 
+;; used as a default return handler for :save-doc if
+;; caller of :save-doc doesn't define a return handler
 (rf/reg-event-fx
  :save-doc-return
  (constantly

@@ -43,7 +43,8 @@
         save-doc-fn& (atom nil)]
     (fn [{:keys [id pname form-doc created updated]}]
       [:div {:style {:width "800px"}}
-       [:> ui/Form {:style {:margin "10px"
+       [:> ui/Form {:as "div"
+                    :style {:margin "10px"
                             :padding "10px"
                             :border "solid 1px #666666"}}
         [:div "created: " created]

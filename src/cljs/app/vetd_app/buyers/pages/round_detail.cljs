@@ -71,10 +71,12 @@
       [:<>
        [:h3 "VetdRound Initiation Form"]
        [:p "Let us now a little more about who will be using this product and what features you are looking for. Then, we'll gather quotes for you to compare right away."]
-       [:> ui/Form {:class "round-initiation-form"}
+       [:> ui/Form {:as "div"
+                    :class "round-initiation-form"}
         [:> ui/FormTextArea
          {:label "What are you hoping to accomplish with the product?"
-          :on-change (fn [_ this] (reset! goal (.-value this)))}]
+          :on-change (fn [e this]
+                       (reset! goal (.-value this)))}]
         [:> ui/FormGroup {:widths "equal"}
          [:> ui/FormField
           [:label "When do you need to decide by?"]
@@ -154,8 +156,10 @@
           :on-click
           #(rf/dispatch
             [:save-doc
-             {:ftype "round-initiation"
-              :round-id round-id}
+             {:dtype "round-initiation"
+              :round-id round-id
+              :return {:handler :b/round.initiation-form-saved
+                       :round-id round-id}}
              {:terms
               {:rounds/goal {:value @goal}
                :rounds/start-using {:value @start-using}
@@ -164,6 +168,16 @@
                :rounds/requirements {:value @requirements}
                :rounds/add-products-by-name {:value @add-products-by-name}}}])}
          "Submit"]]])))
+
+(rf/reg-event-fx
+ :b/round.initiation-form-saved
+ (fn [_ [_ _ {{:keys [round-id]} :return}]]
+   {:toast {:type "success"
+            :title "Initiation Form Submitted"
+            :message "Status updated to \"In Progress\""}
+    :analytics/track {:event "Initiation Form Saved"
+                      :props {:category "Round"
+                              :label round-id}}}))
 
 (defn c-round-initiation
   [{:keys [id status title products doc] :as round}]
