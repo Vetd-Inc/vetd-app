@@ -34,7 +34,7 @@
     (fn [round-id round-with-products&]
       (let [round-with-products @round-with-products&
             search-term @search-term&
-            product-options& (when (> (count search-term) 2)
+            product-options& (when (> (count search-term) 3)
                                (rf/subscribe [:gql/q
                                               {:queries
                                                [[:products {:_where {:pname {:_ilike (str search-term "%")}}}
@@ -59,9 +59,11 @@
                                                        product-options)))
                           :onSearchChange (fn [_ data]
                                             (let [sq (.-searchQuery data)]
-                                              (util/call-debounce-by-id :a/product-dropdown-search-term-change
-                                                                        500
-                                                                        #(reset! search-term& sq))))
+                                              (when (> (count sq) 3)
+                                                (reset! search-term& sq))
+                                              #_(util/call-debounce-by-id :a/product-dropdown-search-term-change
+                                                                          500
+                                                                          #(reset! search-term& sq))))
                           :placeholder "Type Product/Vendor Name..."
                           :selection true
                           :multiple true
