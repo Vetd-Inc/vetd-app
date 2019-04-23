@@ -1,5 +1,6 @@
 (ns com.vetd.app.common
-  (:require [expound.alpha :as expound]
+  (:require [com.vetd.app.hasura :as ha]
+            [expound.alpha :as expound]
             [clojure.spec.alpha :as spec]
             [clojure.core.async :as a]
             [cognitect.aws.client.api :as aws]
@@ -22,10 +23,15 @@
                             :output-fn (partial log/default-output-fn {:stacktrace-fonts {}})}))
     (do (alter-var-root #'spec/*explain-out* (constantly expound/printer)))))
 
+(defn product-id->name
+  [product-id]
+  (-> [[:products {:id product-id}
+        [:pname]]]
+      ha/sync-query
+      vals
+      ffirst
+      :pname))
 
-
-
-;; TODO see if sns is being used anywhere other than buyers.clj
 (def aws-creds-provider
   (aws-creds/basic-credentials-provider
    ;; TODO cycle creds and keep in env

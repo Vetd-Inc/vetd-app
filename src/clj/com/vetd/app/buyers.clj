@@ -141,74 +141,52 @@ User '%s'
 (defn send-complete-profile-req [etype eid buyer-id]
   (let [ename (if (= :vendor etype)
                 (-> eid auth/select-org-by-id :oname)
-                (-> [[:products {:id eid}
-                      [:pname]]]
-                    ha/sync-query
-                    vals
-                    ffirst
-                    :pname))
+                (com/product-id->name eid))
         buyer-name (-> buyer-id auth/select-org-by-id :oname)]
     (com/sns-publish :ui-misc
                      (str "Complete " (name etype) " Profile Request")
                      (str "Complete " (name etype) " Profile Request\n"
                           "buyer: " buyer-name "\n"
-                          (name etype) ": " ename" (ID: " eid ")"))))
+                          (name etype) ": " ename " (ID: " eid ")"))))
 
 
 (defn send-setup-call-req [buyer-id product-id]
-  (let [product-name (-> [[:products {:id product-id}
-                           [:pname]]]
-                         ha/sync-query
-                         vals
-                         ffirst
-                         :pname)
-        buyer-name (-> buyer-id auth/select-org-by-id :oname)]
-    (com/sns-publish :ui-misc
-                     "Setup Call Request"
-                     (format
-                      "Setup Call Request
-Buyer: '%s'
+  (com/sns-publish :ui-misc
+                   "Setup Call Request"
+                   (format
+                    "Setup Call Request
+Buyer (Org): '%s'
 Product: '%s'"
-                      buyer-name product-name))))
+                    (-> buyer-id auth/select-org-by-id :oname) ; buyer name
+                    (com/product-id->name product-id)))) ; product name
+
 
 (defn send-ask-question-req [product-id message buyer-id]
-  (let [product-name (-> [[:products {:id product-id}
-                           [:pname]]]
-                         ha/sync-query
-                         vals
-                         ffirst
-                         :pname)
-        buyer-name (-> buyer-id auth/select-org-by-id :oname)]
-    (com/sns-publish :ui-misc
-                     "Ask a Question Request"
-                     (format
-                      "Ask a Question Request
-Buyer: '%s'
+  (com/sns-publish :ui-misc
+                   "Ask a Question Request"
+                   (format
+                    "Ask a Question Request
+Buyer (Org): '%s'
 Product: '%s'
 Message:
 %s"
-                      buyer-name product-name message))))
+                    (-> buyer-id auth/select-org-by-id :oname) ; buyer name
+                    (com/product-id->name product-id) ; product name
+                    message)))
 
 (defn send-prep-req
   [{:keys [to-org-id to-user-id from-org-id from-user-id prod-id] :as prep-req}]
-  (let [product-name (-> [[:products {:id prod-id}
-                           [:pname]]]
-                         ha/sync-query
-                         vals
-                         ffirst
-                         :pname)
-        buyer-name (-> from-org-id auth/select-org-by-id :oname)
-        from-user-name (-> from-user-id auth/select-user-by-id :uname)]
-    (com/sns-publish :ui-misc
-                     "Preposal Request"
-                     (format
-                      "Preposal Request
-Buyer: '%s'
+  (com/sns-publish :ui-misc
+                   "Preposal Request"
+                   (format
+                    "Preposal Request
+Buyer (Org): '%s'
 Buyer User: '%s'
 
 Product: '%s'"
-                      buyer-name from-user-name
-                      product-name))))
+                    (-> from-org-id auth/select-org-by-id :oname) ; buyer org name
+                    (-> from-user-id auth/select-user-by-id :uname) ; buyer user name
+                    (com/product-id->name prod-id)))) ; product name
 
 ;; TODO there could be multiple preposals/rounds per buyer-vendor pair
 
