@@ -4,7 +4,8 @@
             [com.vetd.app.common :as com]
             [com.vetd.app.util :as ut]
             [com.vetd.app.docs :as docs]
-            [taoensso.timbre :as log]))
+            [taoensso.timbre :as log]
+            clojure.data))
 
 (defn search-orgs->ids
   [q]
@@ -31,6 +32,14 @@
                      :created (ut/now-ts)
                      :updated (ut/now-ts)})
         first)))
+
+(defn delete-product-id-from-round
+  [product-id round-id]
+  (db/hs-exe! {:update :round_product
+               :set {:deleted (ut/now-ts)}
+               :where [:and
+                       [:= :round_id round-id]
+                       [:= :product_id product-id]]}))
 
 (defn create-round-product-form-from-round-init-doc
   [product-id round-id]
@@ -85,6 +94,20 @@
   [{:keys [entity]} ws-id sub-fn]
   (db/update-any! entity))
 
-(defmethod com/handle-ws-inbound :a/invite-product-to-round
-  [{:keys [product-id round-id]} ws-id sub-fn]
-  (invite-product-to-round product-id round-id))
+(defmethod com/handle-ws-inbound :a/set-round-products
+  [{:keys [product-ids round-id]} ws-id sub-fn]
+  (let [existing-prod-ids (->> [[:rounds {:id round-id}
+                                 [[:products {:deleted nil
+                                              :ref-deleted nil}
+                                   [:id]]]]]
+                               ha/sync-query
+                               :rounds
+                               first
+                               :products
+                               (map :id))
+        [remove-ids add-ids] (clojure.data/diff (set existing-prod-ids)
+                                                (set product-ids))]
+    (doseq [product-id remove-ids]
+      (delete-product-id-from-round product-id round-id))
+    (doseq [product-id add-ids]
+      (invite-product-to-round product-id round-id))))

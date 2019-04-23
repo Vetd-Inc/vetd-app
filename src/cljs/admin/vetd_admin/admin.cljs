@@ -4,6 +4,7 @@
             [vetd-admin.pages.form-templates :as p-aform-templates]
             [vetd-admin.admin-fixtures :as a-fix]
             [vetd-admin.overlays.admin-v-preposals :as ovr-v-preposals]
+            [vetd-admin.overlays.admin-b-round-detail :as ovr-b-round-detail]
             [reagent.core :as r]
             [re-frame.core :as rf]
             [re-com.core :as rc]
@@ -11,7 +12,7 @@
 
 (println "START ADMIN")
 
-(def show-admin?& (r/atom true #_false))
+(def show-admin?& (r/atom false))
 
 (sec/defroute admin-search-path "/a/search" []
   (rf/dispatch [:a/route-search]))
@@ -54,6 +55,8 @@
 (hooks/reg-hook! hooks/init! :admin init!)
 
 (hooks/reg-hook! hooks/c-admin :v/preposals ovr-v-preposals/c-overlay)
+(hooks/reg-hook! hooks/c-admin :b/round-detail ovr-b-round-detail/c-overlay)
+
 
 
 (println "END ADMIN")

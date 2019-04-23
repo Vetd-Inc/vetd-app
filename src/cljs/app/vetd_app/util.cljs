@@ -8,24 +8,47 @@
             [re-frame.registrar :as rf-reg])
   (:import [goog.functions]))
 
-(defonce dispatch-debounce-cache& (atom {}))
+(defonce dispatch-debounce-store& (atom {}))
+(defonce debounce-by-id-caller-store& (atom {}))
+(defonce debounce-by-id-callee-store& (atom {}))
 
 (defn mk-dispatch-debounce
   [dispatch-vec ms]
   (goog.functions.debounce
    (fn []
-     (swap! dispatch-debounce-cache&
+     (swap! dispatch-debounce-store&
             dissoc dispatch-vec)
      (rf/dispatch dispatch-vec))
    ms))
 
 (defn dispatch-debounce [dispatch-vec ms]
-  (if-let [f (@dispatch-debounce-cache& dispatch-vec)]
+  (if-let [f (@dispatch-debounce-store& dispatch-vec)]
     (f)
     (let [f (mk-dispatch-debounce dispatch-vec ms)]
-      (swap! dispatch-debounce-cache&
+      (swap! dispatch-debounce-store&
              assoc dispatch-vec f)
       (f))))
+
+(defn mk-call-debounce-by-id-fn [id ms]
+  (goog.functions.debounce
+   (fn []
+     (let [callee-fn (@debounce-by-id-callee-store& id)]
+       (swap! debounce-by-id-caller-store&
+              dissoc id)
+       (swap! debounce-by-id-callee-store&
+              dissoc id)
+       (callee-fn)))
+   ms))
+
+(defn call-debounce-by-id
+  [id ms f]
+  (swap! debounce-by-id-callee-store& assoc id f)
+  (if-let [caller-f (@debounce-by-id-caller-store& id)]
+    (caller-f)
+    (let [caller-f (mk-call-debounce-by-id-fn id ms)]
+      (swap! debounce-by-id-caller-store&
+             assoc id caller-f)
+      (caller-f))))
 
 (defn now [] (.getTime (js/Date.)))
 
@@ -212,3 +235,61 @@
   (str (subs string 0 length)
        (when (> (count string) length)
          "...")))
+
+
+(defn long-floor-div
+  [a b]
+  (-> a
+      (/ b)
+      long))
+
+(def base36
+  (into {}
+        (map-indexed vector
+                     (concat
+                      (range 97 123)
+                      (range 48 58)))))
+
+(def base36-inv (clojure.set/map-invert base36))
+
+(def base31
+  (into {}
+        (map-indexed vector
+                     (concat
+                      (remove #{101 105 111 117} ;; vowels
+                              (range 98 123))
+                      (range 48 58)))))
+
+(def base31-inv (clojure.set/map-invert base31))
+
+(defn base31->str
+  [v]
+  (let [x (loop [v' v
+                 r []]
+            (if (zero? v')
+              r
+              (let [idx (mod v' 31)
+                    v'' (long-floor-div v' 31)]
+                (recur v''
+                       (conj r (mod v' 31))))))]
+    (->> x
+         reverse
+         (map base31)
+         (map char)
+         clojure.string/join)))
+
+
+
+(defn base31->num
+  [s]
+  (loop [[head & tail] (reverse s)
+         idx 0
+         r 0]
+    (if (nil? head)
+      (long r)
+      (let [d (* (base31-inv (.charCodeAt head 0)) (Math/pow 31 idx))]
+        (recur tail
+               (inc idx)
+               (+ r d))))))
+
+;; --------------------
