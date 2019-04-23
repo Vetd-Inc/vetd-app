@@ -262,34 +262,6 @@
 
 (def base31-inv (clojure.set/map-invert base31))
 
-(defn base36->str
-  [v]
-  (let [x (loop [v' v
-                 r []]
-            (if (zero? v')
-              r
-              (let [idx (mod v' 36)
-                    v'' (long-floor-div v' 36)]
-                (recur v''
-                       (conj r (mod v' 36))))))]
-    (->> x
-         reverse
-         (map base36)
-         (map char)
-         clojure.string/join)))
-
-(defn base36->num
-  [s]
-  (loop [[head & tail] (reverse s)
-         idx 0
-         r 0]
-    (if (nil? head)
-      (long r)
-      (let [d (* (base36-inv (long head)) (Math/pow 36 idx))]
-        (recur tail
-               (inc idx)
-               (+ r d))))))
-
 (defn base31->str
   [v]
   (let [x (loop [v' v
