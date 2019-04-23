@@ -151,8 +151,3 @@ WHERE table_schema = 'vetd' AND table_catalog = 'vetd1';")
   (hs-exe! {:update tbl-kw
             :set {:deleted (ut/now-ts)}
             :where [:= :id id]}))
-
-(defn update-many0deleted [tbl-kw ids]
-  (hs-exe! {:update tbl-kw
-            :set {:deleted (ut/now-ts)}
-            :where [:= :id id]}))
