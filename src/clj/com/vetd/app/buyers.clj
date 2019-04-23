@@ -32,17 +32,17 @@
                     distinct)]
       {:product-ids pids
        :vendor-ids vids})
-      {:product-ids []
-       :vendor-ids []}))
+    {:product-ids []
+     :vendor-ids []}))
 
 (defn search-category-ids
   [q]
   (if (not-empty q)
     (mapv :id
-     (db/hs-query {:select [:id]
-                   :from [:categories]
-                   :where [(keyword "~*") :cname (str ".*?" q ".*")]
-                   :limit 5}))))
+          (db/hs-query {:select [:id]
+                        :from [:categories]
+                        :where [(keyword "~*") :cname (str ".*?" q ".*")]
+                        :limit 5}))))
 
 (defn select-rounds-by-ids
   [b-id v-ids]
@@ -167,10 +167,10 @@ Vendor: '%s'
 
 (defn send-setup-call-req [buyer-id product-id]
   (let [product-name (-> [[:products {:id product-id} [:pname]]]
-                        ha/sync-query
-                        vals
-                        ffirst
-                        :pname)
+                         ha/sync-query
+                         vals
+                         ffirst
+                         :pname)
         buyer-name (-> buyer-id auth/select-org-by-id :oname)]
     (aws/invoke sns {:op :Publish
                      :request {:TopicArn "arn:aws:sns:us-east-1:744151627940:ui-misc"
@@ -184,10 +184,10 @@ Product: '%s'
 
 (defn send-ask-question-req [product-id message buyer-id]
   (let [product-name (-> [[:products {:id product-id} [:pname]]]
-                        ha/sync-query
-                        vals
-                        ffirst
-                        :pname)
+                         ha/sync-query
+                         vals
+                         ffirst
+                         :pname)
         buyer-name (-> buyer-id auth/select-org-by-id :oname)]
     (aws/invoke sns {:op :Publish
                      :request {:TopicArn "arn:aws:sns:us-east-1:744151627940:ui-misc"
@@ -233,32 +233,45 @@ Product: '%s'
       (assoc :category-ids
              (search-category-ids query))))
 
-(defmethod com/handle-ws-inbound :b/create-preposal-req
-  [{:keys [prep-req]} ws-id sub-fn]
-  (send-prep-req prep-req)
-  (docs/create-preposal-req-form prep-req))
-
+;; Start a round for either a Product or a Category
 ;; TODO record which user started round
 (defmethod com/handle-ws-inbound :b/start-round
   [{:keys [buyer-id title etype eid]} ws-id sub-fn]
   (create-round buyer-id title eid etype))
 
+;; Request Preposal
+(defmethod com/handle-ws-inbound :b/create-preposal-req
+  [{:keys [prep-req]} ws-id sub-fn]
+  (send-prep-req prep-req)
+  (docs/create-preposal-req-form prep-req))
+
+;; Request an addition to our Products / Categories
 (defmethod com/handle-ws-inbound :b/req-new-prod-cat
   [{:keys [user-id org-id req]} ws-id sub-fn]
   (send-new-prod-cat-req user-id org-id req))
 
+;; Request that a vendor complete their Company/Product Profile
 (defmethod com/handle-ws-inbound :b/request-vendor-profile
   [{:keys [vendor-id buyer-id]} ws-id sub-fn]
   (send-vendor-profile-req vendor-id buyer-id))
 
+;; Have Vetd set up a phone call for the buyer with the vendor
 (defmethod com/handle-ws-inbound :b/setup-call
   [{:keys [buyer-id product-id]} ws-id sub-fn]
   (send-setup-call-req buyer-id product-id))
 
+;; Ask a question about a specific product
 (defmethod com/handle-ws-inbound :b/ask-a-question
   [{:keys [product-id message buyer-id]} ws-id sub-fn]
   (send-ask-question-req product-id message buyer-id))
 
+(defmethod com/handle-ws-inbound :save-doc
+  [{:keys [data ftype update-doc-id from-org-id] :as req} ws-id sub-fn]
+  (if (nil? update-doc-id)
+    (docs/create-doc req)
+    (docs/update-doc req)))
+
+;; additional side effects upon creating a round-initiation doc
 (defmethod docs/handle-doc-creation :round-initiation
   [{:keys [id]} {:keys [round-id]}]
   (try
@@ -287,9 +300,3 @@ Product: '%s'
                        :Message (str "Vendor Round Requirements Form Completed\n\n"
                                      msg)}))
     (catch Throwable t)))
-
-(defmethod com/handle-ws-inbound :save-doc
-  [{:keys [data ftype update-doc-id from-org-id] :as req} ws-id sub-fn]
-  (if (nil? update-doc-id)
-    (docs/create-doc req)
-    (docs/update-doc req)))
