@@ -298,7 +298,7 @@
            [:div.round-grid
             (for [dummy dummy-reqs]
               ^{:key dummy}
-              [:div.column 
+              [:div.column
                [:h4.requirement dummy]
                (for [dummy-product dummy-products
                      :let [resps (get dummy-resps dummy)
