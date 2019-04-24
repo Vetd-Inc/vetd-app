@@ -336,7 +336,7 @@ $cell-height: 201px;
       margin-left: 6px;
     }
     .requirement {
-      width: $cell-width - 14px;
+      width: $cell-width - 7px;
       height: 38px;
       display: flex;
       flex-direction: column;
@@ -346,6 +346,8 @@ $cell-height: 201px;
       background: white;
       box-shadow: 0 2px 14px 0 rgba(50,50,50,0.1) !important;
       border-radius: 4px;
+      font-size: 14px;
+      padding: 0 7px;
     }
   }
 
@@ -373,11 +375,12 @@ $cell-height: 201px;
     justify-content: center;
     height: $cell-height;
     padding: 14px;
-    margin: 14px 14px 14px 0;
+    margin: 14px 7px 14px 0;
     box-shadow: 0 2px 14px 0 rgba(50,50,50,0.1) !important;
     border: none !important;
     border-radius: 4px;
     background: #fff;
+    font-size: 13px;
     font-weight: 400;
     transition: transform .05s ease-out !important;
     transform: scale(0.98);
