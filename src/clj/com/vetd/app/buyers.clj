@@ -256,21 +256,35 @@ Product: '%s'"
     (catch Throwable t
       (log/error t)))
   (try
-    (let [msg (with-out-str
-                (clojure.pprint/with-pprint-dispatch clojure.pprint/code-dispatch
-                  (-> [[:docs {:id id}
-                        [[:rounds
-                          [:id :created
-                           [:buyer [:oname]]
-                           [:products [:pname]]
-                           [:categories [:cname]]]]]]]
-                      ha/sync-query
-                      vals
-                      ffirst
-                      clojure.pprint/pprint)))]
-      ;; TODO make msg human friendly
-      (com/sns-publish :ui-misc
-                       "Vendor Round Requirements Form Completed"
-                       (str "Vendor Round Requirements Form Completed\n\n"
-                            msg)))
+    (let [round (-> [[:docs {:id id}
+                      [[:rounds
+                        [:id :created
+                         [:buyer [:oname]]
+                         [:products [:pname]]
+                         [:categories [:cname]]
+                         [:doc
+                          [:id
+                           [:response-prompts {:ref-deleted nil}
+                            [:id :prompt-id :prompt-prompt :prompt-term
+                             [:response-prompt-fields
+                              [:id :prompt-field-fname :idx
+                               :sval :nval :dval]]]]]]]]]]]
+                    ha/sync-query
+                    vals
+                    ffirst
+                    :rounds)]
+      (com/sns-publish
+       :ui-misc
+       "Vendor Round Initiation Form Completed"
+       (str "Vendor Round Initiation Form Completed\n\n"
+            (str "Buyer (Org): " (-> round :buyer :oname)
+                 "\nProducts: " (->> round :products (map :pname) (interpose ", ") (apply str))
+                 "\nCategories: " (->> round :categories (map :cname) (interpose ", ") (apply str))
+                 "\n-- Form Data --"
+                 (apply str
+                        (for [rp (-> round :doc :response-prompts)]
+                          (str "\n" (:prompt-prompt rp) ": "
+                               (->> rp :response-prompt-fields (map :sval) (interpose ", ") (apply str)))))))))
     (catch Throwable t)))
+
+
