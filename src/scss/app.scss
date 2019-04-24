@@ -313,7 +313,7 @@ textarea {
 }
 
 /* Round Grid */
-$cell-width: 190px;
+$cell-width: 210px;
 $cell-height: 201px;
 
 .round-grid {
@@ -380,7 +380,7 @@ $cell-height: 201px;
     border: none !important;
     border-radius: 4px;
     background: #fff;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 400;
     transition: transform .05s ease-out !important;
     transform: scale(0.98);
