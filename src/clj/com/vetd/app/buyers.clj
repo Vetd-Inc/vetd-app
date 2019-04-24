@@ -170,18 +170,15 @@ Product: '%s'"
                     (product-id->name product-id)))) ; product name
 
 
-(defn send-ask-question-req [product-id message buyer-id]
+(defn send-ask-question-req [product-id message round-id requirement-text buyer-id]
   (com/sns-publish :ui-misc
                    "Ask a Question Request"
-                   (format
-                    "Ask a Question Request
-Buyer (Org): '%s'
-Product: '%s'
-Message:
-%s"
-                    (-> buyer-id auth/select-org-by-id :oname) ; buyer name
-                    (product-id->name product-id) ; product name
-                    message)))
+                   (str "Ask a Question Request"
+                        "\nBuyer (Org): " (-> buyer-id auth/select-org-by-id :oname) ; buyer name
+                        "\nProduct: " (product-id->name product-id) ; product name
+                        (when round-id (str  "\nRound ID: " round-id))
+                        (when requirement-text (str  "\nRequirement: " requirement-text))
+                        "\nMessage:\n" message)))
 
 (defn send-prep-req
   [{:keys [to-org-id to-user-id from-org-id from-user-id prod-id] :as prep-req}]
@@ -236,8 +233,8 @@ Product: '%s'"
 
 ;; Ask a question about a specific product
 (defmethod com/handle-ws-inbound :b/ask-a-question
-  [{:keys [product-id message buyer-id]} ws-id sub-fn]
-  (send-ask-question-req product-id message buyer-id))
+  [{:keys [product-id message round-id requirement-text buyer-id]} ws-id sub-fn]
+  (send-ask-question-req product-id message round-id requirement-text buyer-id))
 
 (defmethod com/handle-ws-inbound :save-doc
   [{:keys [data ftype update-doc-id from-org-id] :as req} ws-id sub-fn]

@@ -160,6 +160,22 @@
                       :props {:category "Round"
                               :label round-id}}}))
 
+(rf/reg-event-fx
+ :b/round.ask-a-question
+ (fn [{:keys [db]} [_ product-id product-name message
+                    round-id requirement-text]]
+   (let [qid (get-next-query-id)]
+     {:ws-send {:payload {:cmd :b/ask-a-question
+                          :return {:handler :b/ask-a-question-return}
+                          :product-id product-id
+                          :message message
+                          :round-id round-id
+                          :requirement-text requirement-text
+                          :buyer-id (util/db->current-org-id db)}}
+      :analytics/track {:event "Ask A Question"
+                        :props {:category "Round"
+                                :label product-name}}})))
+
 (defn c-round-initiation
   [{:keys [id status title products doc] :as round}]
   (if doc
@@ -205,7 +221,8 @@
         cell-click-disabled? (r/atom false)
         ;; the response currently in the modal
         modal-response (r/atom {:requirement {:title nil}
-                                :product {:pname nil}
+                                :product {:id nil
+                                          :pname nil}
                                 :response nil})
         show-modal (fn [requirement product response]
                      (swap! modal-response assoc
@@ -306,7 +323,7 @@
                  ^{:key dummy-product}
                  [:div.cell {:on-mouse-down #(reset! cell-click-disabled? false)
                              :on-mouse-up #(when-not @cell-click-disabled?
-                                             (show-modal {:title dummy} {:pname dummy-product} response))}
+                                             (show-modal {:title dummy} {:id "272814695158" :pname dummy-product} response))}
                   [:div.text (util/truncate-text response 150)]
                   [:div.actions
                    [c-action-button {:on-click #()
@@ -351,7 +368,13 @@
               [:> ui/Button {:onClick #(reset! modal-showing? false)
                              :color "grey"}
                "Cancel"]
-              [:> ui/Button {:onClick #(reset! modal-showing? false)
+              [:> ui/Button {:onClick #(do (rf/dispatch [:b/round.ask-a-question
+                                                         (-> @modal-response :product :id)
+                                                         (-> @modal-response :product :pname)
+                                                         @modal-message
+                                                         id
+                                                         (-> @modal-response :requirement :title)])
+                                           (reset! modal-showing? false))
                              :color "blue"}
                "Submit Question"]]]]]
           [:> ui/Segment {:class "detail-container"
