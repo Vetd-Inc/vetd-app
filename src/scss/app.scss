@@ -23,7 +23,7 @@ a.teal:hover {
 
 
 .main-container {
-  margin-top: 35px;
+  padding-top: 35px;
 }
 
 /* Top Navigation Menu */
@@ -289,12 +289,13 @@ textarea {
 .centerpiece {
   width: 265px;
   margin: 0 auto;
+  padding-top: 30px;
   text-align: center;
 }
 .centerpiece .logo {
   display: block;
   width: 210px;
-  margin: 30px auto 40px auto;
+  margin: 0 auto 40px auto;
   /* logo design is weighted a little right */
   position: relative;
   left: -5px;
