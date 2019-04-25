@@ -560,7 +560,8 @@
   [field id]
   (some->> [[field {:id id}
              [:id
-              [:prompts [:id :rpid :sort]]]]]
+              [:prompts {:ref-deleted nil}
+               [:id :rpid :sort]]]]]
            ha/sync-query
            field
            first
@@ -587,9 +588,10 @@
         (upsert-form-prompts* old-prompts new-prompts)]
     (doseq [form-prompt-id kill-rpids]
       (delete-form-prompt form-prompt-id))
-    (doseq [{:keys [fields] prompt-id :id sort' :sort :as prompt} new-form-prompts]
+    (doseq [{:keys [fields] prompt-id :id sort' :sort :as prompt} new-prompts]
       (mapv #(upsert-prompt-field % true) fields)
-      (upsert-prompt prompt use-id?)
+      (upsert-prompt prompt use-id?))    
+    (doseq [{:keys [fields] prompt-id :id sort' :sort :as prompt} new-form-prompts]
       (prompt-ins-fn id prompt-id sort'))))
 
 (defn upsert-form-prompts
