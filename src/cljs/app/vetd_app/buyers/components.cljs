@@ -199,11 +199,13 @@
                                              " " [:> ui/Icon {:name "info circle"}]])
                      :wide true}
         info])]
-    (if has-markdown?
-      (-> field-value
-          md/md->hiccup
-          md/component)
-      [:p field-value])]])
+    (if field-value
+      (if has-markdown?
+        (-> field-value
+            md/md->hiccup
+            md/component)
+        field-value)
+      "Unavailable")]])
 
 (defn has-data?
   [value]
@@ -223,36 +225,31 @@
   [product v & {:keys [:preposal-estimate]}] ; v - value function, retrieves value by prompt name
   [:> ui/Segment {:class "detail-container profile"}
    [:h1.title "Pricing"]
-   (if (or preposal-estimate
-           (has-data? (v "Price Range")))
-     [:> ui/Grid {:columns "equal" :style {:margin-top 0}}
-      [:> ui/GridRow
-       ;; show Preposal Estimate if exists, otherwise Price Range
-       (if preposal-estimate
-         [c-display-field {:width 5} "Estimate" preposal-estimate]
-         (when (has-data? (v "Price Range"))
-           [c-display-field {:width 5} "Range"
-            [:<>
-             (v "Price Range")
-             [:br]
-             "Request a Preposal to get a personalized estimate."]]))
-       (when (has-data? (v "Pricing Model"))
-         [c-display-field {:width 6} "Model" (v "Pricing Model") :has-markdown? true])
-       (when (has-data? (v "Do you offer a free trial?"))
-         (if (= "Yes" (v "Do you offer a free trial?"))
-           [c-display-field {:width 5} "Free Trial" (v "Please describe the terms of your trial")]
-           [c-display-field {:width 5} "Free Trial" "No"]))]
-      [:> ui/GridRow
-       (when (has-data? (v "Payment Options"))
-         [c-display-field {:width 5} "Payment Options" (v "Payment Options")])
-       (when (has-data? (v "Minimum Contract Length"))
-         [c-display-field {:width 6} "Minimum Contract Length" (v "Minimum Contract Length")])
-       (when (has-data? (v "Cancellation Process"))
-         [c-display-field {:width 5} "Cancellation Process" (v "Cancellation Process")])]]
-     [c-request-profile "Pricing" :product (:id product) (:pname product)])])
+   [:> ui/Grid {:columns "equal" :style {:margin-top 0}}
+    [:> ui/GridRow
+     ;; show Preposal Estimate if exists, otherwise Price Range
+     (if preposal-estimate
+       [c-display-field {:width 5} "Estimate" preposal-estimate]
+       [c-display-field {:width 5} "Range"
+        [:<>
+         (v "Price Range")
+         [:br]
+         "Request a Preposal to get a personalized estimate."]])
+     [c-display-field {:width 6} "Model" (v "Pricing Model") :has-markdown? true]
+     [c-display-field {:width 5} "Free Trial"
+      (when (v "Do you offer a free trial?")
+        (if (= "Yes" (v "Do you offer a free trial?"))
+          (v "Please describe the terms of your trial")
+          "No"))]]
+    [:> ui/GridRow
+     [c-display-field {:width 5} "Payment Options" (v "Payment Options")]
+     [c-display-field {:width 6} "Minimum Contract Length" (v "Minimum Contract Length")]
+     [c-display-field {:width 5} "Cancellation Process" (v "Cancellation Process")]]]
+   ])
+;; [c-request-profile "Pricing" :product (:id product) (:pname product)]
 
 (defn c-onboarding
-  [product v] ; v - value function, retrieves value by prompt name
+  [product v]     ; v - value function, retrieves value by prompt name
   [:> ui/Segment {:class "detail-container profile"}
    [:h1.title "Onboarding"]
    (if (has-data? (v "Onboarding Process" "Estimated Time To Onboard"))
@@ -339,9 +336,46 @@
          [c-display-field {:width 16} "Product Roadmap" (v "Product Roadmap") :has-markdown? true])]]
      [c-request-profile "Industry Niche" :product (:id product) (:pname product)])])
 
+;; Product Profile terms
+;; product/description
+;; product/free-trial?
+;; product/free-trial-terms
+;; product/pricing-model
+;; product/categories
+;; product/price-range
+;; product/payment-options
+;; product/minimum-contract
+;; product/cancellation-process
+;; product/kpis
+;; product/reporting
+;; product/data-security
+;; product/point-of-contact
+;; product/meeting-frequency
+;; product/ideal-client
+;; product/competitors
+;; product/competitive-differentiator
+;; product/tagline
+;; product/onboarding-process
+;; product/num-clients
+;; product/clients
+;; product/demo
+;; product/website
+;; product/logo
+;; product/integrations
+;; product/roadmap
+;; product/onboarding-team-involvement
+;; product/case-studies
+;; product/onboarding-estimated-time
+
 (defn c-vendor-profile
   [{:keys [responses] :as vendor-profile-doc} vendor-id vendor-name]
   (if vendor-profile-doc
+    ;; vendor/website
+    ;; vendor/employee-count
+    ;; vendor/logo
+    ;; vendor/year-founded
+    ;; vendor/funding
+    ;; vendor/headquarters
     (let [website-url (docs/get-field-value responses "Website" "value" :sval)
           funding-status (docs/get-field-value responses "Funding Status" "value" :sval)
           year-founded (docs/get-field-value responses "Year Founded" "value" :sval)
