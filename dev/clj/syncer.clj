@@ -120,7 +120,11 @@
                                      :updated
                                      :deleted
                                      :prompt
+<<<<<<< HEAD
                                      :term
+=======
+                                     :term                                     
+>>>>>>> master
                                      :descr
                                      :form-template-id
                                      :sort

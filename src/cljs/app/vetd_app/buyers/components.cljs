@@ -140,9 +140,9 @@
                      :closeOnEscape false}
         [:> ui/ModalHeader "Ask a Question About \"" pname "\""]
         [:> ui/ModalContent
-         [:> ui/Form
+         [:> ui/Form {:as "div"}
           [:> ui/FormField
-           [:> ui/TextArea {:placeholder ""
+           [:> ui/TextArea {:placeholder "Enter your question here..."
                             :autoFocus true
                             :spellCheck true
                             :onChange (fn [_ this]

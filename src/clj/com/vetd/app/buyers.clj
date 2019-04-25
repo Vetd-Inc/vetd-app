@@ -170,18 +170,15 @@ Product: '%s'"
                     (product-id->name product-id)))) ; product name
 
 
-(defn send-ask-question-req [product-id message buyer-id]
+(defn send-ask-question-req [product-id message round-id requirement-text buyer-id]
   (com/sns-publish :ui-misc
                    "Ask a Question Request"
-                   (format
-                    "Ask a Question Request
-Buyer (Org): '%s'
-Product: '%s'
-Message:
-%s"
-                    (-> buyer-id auth/select-org-by-id :oname) ; buyer name
-                    (product-id->name product-id) ; product name
-                    message)))
+                   (str "Ask a Question Request"
+                        "\nBuyer (Org): " (-> buyer-id auth/select-org-by-id :oname) ; buyer name
+                        "\nProduct: " (product-id->name product-id) ; product name
+                        (when round-id (str  "\nRound ID: " round-id))
+                        (when requirement-text (str  "\nRequirement: " requirement-text))
+                        "\nMessage:\n" message)))
 
 (defn send-prep-req
   [{:keys [to-org-id to-user-id from-org-id from-user-id prod-id] :as prep-req}]
@@ -236,8 +233,8 @@ Product: '%s'"
 
 ;; Ask a question about a specific product
 (defmethod com/handle-ws-inbound :b/ask-a-question
-  [{:keys [product-id message buyer-id]} ws-id sub-fn]
-  (send-ask-question-req product-id message buyer-id))
+  [{:keys [product-id message round-id requirement-text buyer-id]} ws-id sub-fn]
+  (send-ask-question-req product-id message round-id requirement-text buyer-id))
 
 (defmethod com/handle-ws-inbound :save-doc
   [{:keys [data ftype update-doc-id from-org-id] :as req} ws-id sub-fn]
@@ -256,21 +253,35 @@ Product: '%s'"
     (catch Throwable t
       (log/error t)))
   (try
-    (let [msg (with-out-str
-                (clojure.pprint/with-pprint-dispatch clojure.pprint/code-dispatch
-                  (-> [[:docs {:id id}
-                        [[:rounds
-                          [:id :created
-                           [:buyer [:oname]]
-                           [:products [:pname]]
-                           [:categories [:cname]]]]]]]
-                      ha/sync-query
-                      vals
-                      ffirst
-                      clojure.pprint/pprint)))]
-      ;; TODO make msg human friendly
-      (com/sns-publish :ui-misc
-                       "Vendor Round Requirements Form Completed"
-                       (str "Vendor Round Requirements Form Completed\n\n"
-                            msg)))
+    (let [round (-> [[:docs {:id id}
+                      [[:rounds
+                        [:id :created
+                         [:buyer [:oname]]
+                         [:products [:pname]]
+                         [:categories [:cname]]
+                         [:doc
+                          [:id
+                           [:response-prompts {:ref-deleted nil}
+                            [:id :prompt-id :prompt-prompt :prompt-term
+                             [:response-prompt-fields
+                              [:id :prompt-field-fname :idx
+                               :sval :nval :dval]]]]]]]]]]]
+                    ha/sync-query
+                    vals
+                    ffirst
+                    :rounds)]
+      (com/sns-publish
+       :ui-misc
+       "Vendor Round Initiation Form Completed"
+       (str "Vendor Round Initiation Form Completed\n\n"
+            (str "Buyer (Org): " (-> round :buyer :oname)
+                 "\nProducts: " (->> round :products (map :pname) (interpose ", ") (apply str))
+                 "\nCategories: " (->> round :categories (map :cname) (interpose ", ") (apply str))
+                 "\n-- Form Data --"
+                 (apply str
+                        (for [rp (-> round :doc :response-prompts)]
+                          (str "\n" (:prompt-prompt rp) ": "
+                               (->> rp :response-prompt-fields (map :sval) (interpose ", ") (apply str)))))))))
     (catch Throwable t)))
+
+
