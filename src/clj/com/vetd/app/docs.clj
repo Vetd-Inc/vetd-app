@@ -259,7 +259,7 @@
                       :updated (ut/now-ts)
                       :deleted nil
                       :prompt_id prompt-id
-                      :fname "New Field"
+                      :fname "value"
                       :list_qm false
                       :descr ""
                       :ftype "s"
@@ -695,7 +695,7 @@
     (assoc agg
            k
            (mapv #(dissoc (apply-tree mk
-                                    (merge v' %))
+                                      (merge v' %))
                           :parents)
                  vs))
     agg))
@@ -846,3 +846,89 @@
                                                :item
                                                :id
                                                (insert-doc-response (:id parent)))])]}])))
+
+(defn round-init-doc-id->create-form-appliable-tree
+  [round-init-doc-id]
+  (let [{:keys [fields] :as doc} (-> [[:docs {:id round-init-doc-id}
+                                       [:title
+                                        [:response-prompt-by-doc
+                                         {:prompt-term "rounds/requirements"}
+                                         [[:fields [:id :sval]]]]]]]
+                                     ha/sync-query
+                                     :docs
+                                     first)]
+    {:item doc
+     :children fields}))
+
+
+;; TODO the prompt-id for existing prompts should be present in field jval
+(defn group-by-prompt-exists
+  [prompts]
+  (->> prompts
+       (group-by (fn [{:keys [sval]}]
+                   (-> [[:prompts
+                         {:prompt sval} 
+                         [:id]]]
+                       ha/sync-query
+                       :prompts
+                       empty?)))))
+
+
+(defn create-form-template-from-round-doc
+  [round-init-doc-id]
+  (-> round-init-doc-id
+      round-init-doc-id->create-form-appliable-tree
+      [(tree-assoc-fn [item children]
+                      [:item (insert-form-template item)
+                       :children (group-by-prompt-exists children)])
+       {:prompt-exists [] ;; acts like `identity`
+        :prompt-new [(tree-assoc-fn [item]
+                                    (let [{prompt-id :id :as item'} (insert-prompt item)]
+                                      (insert-prompt-field {:prompt-id prompt-id
+                                                            :fname "value"
+                                                            :ftype "s"
+                                                            :fsubtype "single"
+                                                            :list? false})
+                                      [:item item']))]}
+       (tree-assoc-fn [children]
+                      [:children (->> children vals (apply concat))])
+       {:prompt-all [(tree-assoc-fn [item children parent]
+                                    [:item (insert-form-template-prompt (:id parent)
+                                                                        (:id item)
+                                                                        (:sort item))])]}]))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
