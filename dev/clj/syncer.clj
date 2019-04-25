@@ -117,6 +117,7 @@
                                      :updated
                                      :deleted
                                      :prompt
+                                     :term
                                      :descr
                                      :form-template-id
                                      :sort
