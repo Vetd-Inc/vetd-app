@@ -5,7 +5,8 @@
             [vetd-app.util :as util]
             [vetd-app.docs :as docs]
             [reagent.core :as r]
-            [re-frame.core :as rf]))
+            [re-frame.core :as rf]
+            [markdown-to-hiccup.core :as md]))
 
 ;; Events
 (rf/reg-event-fx
@@ -75,7 +76,9 @@
           [:br]     ; TODO this is hacky, and causes a console warning
           [:br]
           [:h3.display-field-key "Pitch"]
-          [:p preposal-pitch]]]
+          (-> preposal-pitch
+              md/md->hiccup
+              md/component)]]
         [:> ui/GridColumn {:width 5}
          [:> ui/Grid {:columns "equal"
                       :style {:margin-top 0}}
