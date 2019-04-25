@@ -160,23 +160,35 @@
                       :props {:category "Round"
                               :label round-id}}}))
 
+(rf/reg-event-fx
+ :b/round.ask-a-question
+ (fn [{:keys [db]} [_ product-id product-name message
+                    round-id requirement-text]]
+   (let [qid (get-next-query-id)]
+     {:ws-send {:payload {:cmd :b/ask-a-question
+                          :return {:handler :b/ask-a-question-return}
+                          :product-id product-id
+                          :message message
+                          :round-id round-id
+                          :requirement-text requirement-text
+                          :buyer-id (util/db->current-org-id db)}}
+      :analytics/track {:event "Ask A Question"
+                        :props {:category "Round"
+                                :label product-name}}})))
+
 (defn c-round-initiation
   [{:keys [id status title products doc] :as round}]
   (if doc
-    (println doc)
+    "You have already submitted your requirements." ; this should never show
     [c-round-initiation-form id]))
 
-(def dummy-reqs
-  ["Pricing Estimate" "Free Trial" "Current Customers" "Integration with GMail"
-   "Subscription Billing" "One Time Billing" "Parent / Child Heirarchical Billing"])
-(def dummy-products["SendGrid" "Mailchimp" "Mandrill" "iContact"
-                    ])
+(def dummy-products ["SendGrid" "Mailchimp" "Mandrill" "iContact"])
 (def dummy-resps
   {"Pricing Estimate" ["$45 / mo."
                        "$200 / mo."
                        "If you are in the $0-2M pricing tier, the base fee is $4,000."
                        "Unavailable"]
-   "Free Trial" ["First 30 days." "Yes, with limited features." "Yes" "Yes"]
+   "Free Trial" ["First 30 days." "" "Yes" "Yes"]
    "Current Customers" ["Google, Patreon, YouTube, Vetd, Make Offices"
                         "Apple, Cisco Enterprise, Symantec, Tommy's Coffee"
                         "Heinz, Philadelphia Business Group, Wizards of the Coast"
@@ -199,13 +211,14 @@
                                    props)])}])
 
 (defn c-round-grid
-  [{:keys [id status title products] :as round}]
+  [{:keys [id status title products doc] :as round}]
   (let [modal-showing? (r/atom false)
         modal-message (r/atom "")
         cell-click-disabled? (r/atom false)
         ;; the response currently in the modal
         modal-response (r/atom {:requirement {:title nil}
-                                :product {:pname nil}
+                                :product {:id nil
+                                          :pname nil}
                                 :response nil})
         show-modal (fn [requirement product response]
                      (swap! modal-response assoc
@@ -296,18 +309,31 @@
         (if (seq products)
           [:<>
            [:div.round-grid
-            (for [dummy dummy-reqs]
-              ^{:key dummy}
-              [:div.column 
-               [:h4.requirement dummy]
+            (for [req (->> doc
+                           :response-prompts
+                           (filter (comp (partial = "rounds/requirements") :prompt-term))
+                           first
+                           :response-prompt-fields
+                           (map :sval))]
+              ^{:key req}
+              [:div.column
+               [:h4.requirement req]
                (for [dummy-product dummy-products
-                     :let [resps (get dummy-resps dummy)
+                     :let [resps (get dummy-resps "Free Trial")
                            response (get resps (.indexOf dummy-products dummy-product))]]
                  ^{:key dummy-product}
                  [:div.cell {:on-mouse-down #(reset! cell-click-disabled? false)
                              :on-mouse-up #(when-not @cell-click-disabled?
-                                             (show-modal {:title dummy} {:pname dummy-product} response))}
-                  [:div.text (util/truncate-text response 150)]
+                                             (show-modal {:title req} {:id "272814695158" :pname dummy-product} response))}
+                  [:div.text (if (not-empty response)
+                               (util/truncate-text response 150)
+                               [:> ui/Popup
+                                {:content "Waiting for Vendor Response"
+                                 :position "bottom center"
+                                 :trigger (r/as-element
+                                           [:> ui/Icon {:name "clock outline"
+                                            :size "large"
+                                            :style {:color "#aaa"}}])}])]
                   [:div.actions
                    [c-action-button {:on-click #()
                                      :icon "chat outline"
@@ -351,7 +377,13 @@
               [:> ui/Button {:onClick #(reset! modal-showing? false)
                              :color "grey"}
                "Cancel"]
-              [:> ui/Button {:onClick #(reset! modal-showing? false)
+              [:> ui/Button {:onClick #(do (rf/dispatch [:b/round.ask-a-question
+                                                         (-> @modal-response :product :id)
+                                                         (-> @modal-response :product :pname)
+                                                         @modal-message
+                                                         id
+                                                         (-> @modal-response :requirement :title)])
+                                           (reset! modal-showing? false))
                              :color "blue"}
                "Submit Question"]]]]]
           [:> ui/Segment {:class "detail-container"
