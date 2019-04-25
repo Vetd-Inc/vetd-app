@@ -71,6 +71,7 @@
                                      :updated
                                      :deleted
                                      :prompt
+                                     :term
                                      :descr
                                      :form-id
                                      :sort
