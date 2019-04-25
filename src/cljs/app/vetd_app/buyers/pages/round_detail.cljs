@@ -182,7 +182,7 @@
     "You have already submitted your requirements." ; this should never show
     [c-round-initiation-form id]))
 
-(def dummy-products["SendGrid" "Mailchimp" "Mandrill" "iContact"])
+(def dummy-products ["SendGrid" "Mailchimp" "Mandrill" "iContact"])
 (def dummy-resps
   {"Pricing Estimate" ["$45 / mo."
                        "$200 / mo."
