@@ -149,6 +149,39 @@ a.teal:hover {
   }
 }
 
+.missing-data {
+  .display-field-key, .display-field-value {
+    opacity: 0.2;
+    transition: opacity 0.5s 0.3s linear, filter 0.5s 0s linear, color 0.5s 0.3s linear;
+    cursor: default;
+  }
+  .button {
+    position: absolute;
+    top: 0;
+    display: none;
+  }
+}
+// a class that gets added via js when one of the missing data
+// elements is hovered.
+.missing-data-hovering {
+  .display-field.missing-data {
+    .display-field-key, .display-field-value {
+      // filter: blur(4px);
+      // filter: brightness(2);
+      opacity: 0.6;
+      color: rgb(66, 177, 179);
+    }
+    &:hover {
+      .display-field-key, .display-field-value {
+        filter: blur(7px);
+      }
+      .button {
+        display: block;
+      }
+    }
+  }
+}
+
 /* Product Profile and Vendor Profile (under Product detail and Preposal detail) */
 .profile .title {
   padding: 0 11px 13px 0 !important;
