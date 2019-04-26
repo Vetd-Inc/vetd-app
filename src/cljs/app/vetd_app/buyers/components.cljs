@@ -25,7 +25,7 @@
 (defn c-sidebar-button
   [{:keys [text dispatch icon props]}]
   [:> ui/Button (merge {:onClick #(rf/dispatch dispatch)
-                        :color "grey"
+                        :color "white"
                         :fluid true
                         :icon true
                         :labelPosition "left"}

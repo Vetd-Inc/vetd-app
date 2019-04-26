@@ -482,7 +482,7 @@
                                                                   @reason]))}
                                     "Disqualify"])}]]]))
           :trigger (r/as-element
-                    [:> ui/Button {:color "grey"
+                    [:> ui/Button {:color "white"
                                    :icon true
                                    :fluid true
                                    :labelPosition "left"}
