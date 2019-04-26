@@ -244,19 +244,17 @@
     "Request Complete Profile"]])
 
 (defn c-pricing
-  [product v & {:keys [:preposal-estimate]}] ; v - value function, retrieves value by prompt name
+  [product v] ; v - value function, retrieves value by prompt name
   [:> ui/Segment {:class "detail-container profile"}
    [:h1.title "Pricing"]
    [:> ui/Grid {:columns "equal" :style {:margin-top 0}}
     [:> ui/GridRow
-     ;; show Preposal Estimate if exists, otherwise Price Range
-     (if preposal-estimate
-       [c-display-field {:width 5} "Estimate" preposal-estimate]
-       [c-display-field {:width 5} "Range"
+     [c-display-field {:width 5} "Range"
+      (when (v "Price Range")
         [:<>
          (v "Price Range")
          [:br]
-         "Request a Preposal to get a personalized estimate."]])
+         "Request a Preposal to get a personalized estimate."])]
      [c-display-field {:width 6} "Model" (v "Pricing Model") :has-markdown? true]
      [c-display-field {:width 5} "Free Trial"
       (when (v "Do you offer a free trial?")

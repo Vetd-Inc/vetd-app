@@ -144,40 +144,35 @@
       (when (= "Yes" (v "Do you offer a free trial?"))
         [bc/c-free-trial-tag])
       [:> ui/Grid {:columns "equal"
-                   :style {:margin-top 0}}
+                   :style {:margin-top 4}}
        [:> ui/GridRow
-        [:> ui/GridColumn {:width 11}
-         [:> ui/Segment {:class "display-field"
-                         :vertical true}
-          [:h3.display-field-key "Description"]
-          (or (some-> (v "Describe your product or service")
-                      md/md->hiccup
-                      md/component)
-              "No description available.")]
+        [:> ui/GridColumn {:width 12}
+         (or (some-> (v "Describe your product or service")
+                     md/md->hiccup
+                     md/component)
+             [:p "No description available."])
          [:br]
-         [:> ui/Segment {:class "display-field"
-                         :vertical true}
-          [:h3.display-field-key "Pitch"]
-          [:p "Request a Preposal to get a personalized pitch."]]]
-        [:> ui/GridColumn {:width 5}
-         [:> ui/Grid {:columns "equal"
-                      :style {:margin-top 0}}
-          [:> ui/GridRow
-           (when (bc/has-data? (v "Product Website"))
-             [bc/c-display-field {:width 16} "Website"
-              [:a {:href (str (when-not (.startsWith (v "Product Website") "http") "http://") (v "Product Website"))
-                   :target "_blank"}
-               [:> ui/Icon {:name "external square"
-                            :color "blue"}]
-               "Visit Product Website"]])]
-          [:> ui/GridRow
-           (when (bc/has-data? (v "Product Demo"))
-             [bc/c-display-field {:width 16} "Demo"
-              [:a {:href (v "Product Demo")
-                   :target "_blank"}
-               [:> ui/Icon {:name "external square"
-                            :color "blue"}]
-               "Watch Video"]])]]]]]]
+         [:h3.display-field-key "Pitch"]
+         [:p "Request a Preposal to get a personalized pitch."]
+         [:br]
+         [:h3.display-field-key "Pricing Estimate"]
+         "Request a Preposal to get a personalized estimate."]
+        [:> ui/GridColumn {:width 4}
+         (when (bc/has-data? (v "Product Website"))
+           [:<>
+            [:a {:href (str (when-not (.startsWith (v "Product Website") "http") "http://") (v "Product Website"))
+                 :target "_blank"}
+             [:> ui/Icon {:name "external square"
+                          :color "blue"}]
+             "Product Website"]
+            [:br]
+            [:br]])
+         (when (bc/has-data? (v "Product Demo"))
+           [:a {:href (v "Product Demo")
+                :target "_blank"}
+            [:> ui/Icon {:name "external square"
+                         :color "blue"}]
+            "Watch Demo Video"])]]]]
      [bc/c-pricing product v]
      [bc/c-onboarding product v]
      [bc/c-client-service product v]
