@@ -237,3 +237,18 @@
     [id (base31->str id)]))
 
 ;; --------------------
+
+
+
+(defn replace$
+  [form]
+  (let [$sym `$#
+        form' (walk/prewalk-replace {'$ $sym}
+                                    form)]
+    (if (= form form')
+      form
+      `((fn [~$sym] ~form')))))
+
+(defmacro $-
+  [m & body]
+  `(~m ~@(map replace$ body)))

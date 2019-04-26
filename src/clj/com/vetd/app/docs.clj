@@ -849,86 +849,58 @@
 
 (defn round-init-doc-id->create-form-appliable-tree
   [round-init-doc-id]
-  (let [{:keys [fields] :as doc} (-> [[:docs {:id round-init-doc-id}
+  (let [{:keys [response-prompts] :as doc} (-> [[:docs {:id round-init-doc-id}
                                        [:title
-                                        [:response-prompt-by-doc
+                                        [:response-prompts
                                          {:prompt-term "rounds/requirements"}
-                                         [[:fields [:id :sval]]]]]]]
+                                         [[:fields [:id :sval :idx]]]]]]]
                                      ha/sync-query
                                      :docs
                                      first)]
     {:item doc
-     :children fields}))
-
+     :children (->> response-prompts first :fields
+                    (map (fn [field] {:item field})))}))
 
 ;; TODO the prompt-id for existing prompts should be present in field jval
 (defn group-by-prompt-exists
   [prompts]
-  (->> prompts
-       (group-by (fn [{:keys [sval]}]
-                   (-> [[:prompts
-                         {:prompt sval} 
-                         [:id]]]
-                       ha/sync-query
-                       :prompts
-                       empty?)))))
-
+  (ut/$- ->> prompts
+         (group-by (fn [{:keys [item]}]
+                     (let [{:keys [sval]} item]
+                       (-> [[:prompts
+                             {:prompt sval} 
+                             [:id]]]
+                           ha/sync-query
+                           :prompts
+                           empty?))))
+         (clojure.set/rename-keys $
+                                  {false :prompt-exists
+                                   true :prompt-new})))
 
 (defn create-form-template-from-round-doc
   [round-init-doc-id]
-  (-> round-init-doc-id
-      round-init-doc-id->create-form-appliable-tree
-      [(tree-assoc-fn [item children]
-                      [:item (insert-form-template item)
-                       :children (group-by-prompt-exists children)])
-       {:prompt-exists [] ;; acts like `identity`
-        :prompt-new [(tree-assoc-fn [item]
-                                    (let [{prompt-id :id :as item'} (insert-prompt item)]
-                                      (insert-prompt-field {:prompt-id prompt-id
-                                                            :fname "value"
-                                                            :ftype "s"
-                                                            :fsubtype "single"
-                                                            :list? false})
-                                      [:item item']))]}
-       (tree-assoc-fn [children]
-                      [:children (->> children vals (apply concat))])
-       {:prompt-all [(tree-assoc-fn [item children parent]
-                                    [:item (insert-form-template-prompt (:id parent)
-                                                                        (:id item)
-                                                                        (:sort item))])]}]))
+  (->> round-init-doc-id
+       round-init-doc-id->create-form-appliable-tree
+       (apply-tree
+        [(tree-assoc-fn [item children]
+                        [:item (insert-form-template item)
+                         :children (group-by-prompt-exists children)])
+         {:prompt-exists [] ;; [] acts like `identity`
+          :prompt-new [(tree-assoc-fn [item]
+                                      (let [{:keys [sval idx]} item
+                                            {prompt-id :id :as item'} (insert-prompt {:prompt sval})]
+                                        (insert-prompt-field {:prompt-id prompt-id
+                                                              :fname "value"
+                                                              :ftype "s"
+                                                              :fsubtype "single"
+                                                              :list? false})
+                                        [:item (assoc item'
+                                                      :idx idx)]))]}
+         (tree-assoc-fn [children]
+                        [:children (->> children vals (apply concat))])
+         {:prompt-all [(tree-assoc-fn [item children parent]
+                                      [:item (insert-form-template-prompt (:id parent)
+                                                                          (:id item)
+                                                                          (:idx item))])]}])))
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#_ (create-form-template-from-round-doc 993713367508)
