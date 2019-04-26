@@ -188,11 +188,10 @@
    "Free Trial"])
 
 (defn c-display-field*
-  [props field-key field-value & {:keys [has-markdown? info
-                                         etype eid ename]}]
   [{:keys [field-key field-value etype eid ename
            ;; optional:
-           has-markdown? info column-props]}]
+           has-markdown? info column-props]
+    :as props}]
   [:> ui/GridColumn column-props
    [:> ui/Segment {:class (str "display-field " (when-not field-value "missing-data"))
                    :vertical true}
@@ -221,8 +220,7 @@
   (with-meta c-display-field*
     {:component-did-mount
      (fn [this]
-       (.log js/console (r/props this))
-       (when-not true ;field-value
+       (when-not (:field-value (r/props this))
          (let [node (r/dom-node this)
                body (first (array-seq (.getElementsByTagName js/document "body")))
                mouseenter #(.add (.-classList body) "missing-data-hovering")
@@ -398,8 +396,9 @@
           :etype :vendor :eid vendor-id :ename vendor-name]]
       [:> ui/GridRow
        ;; TODO use keyword for term
-       (v "vendor/funding")
-       [c-display-field {:width 6} "Funding Status" (v "vendor/funding")]
+       [c-display-field {:width 6
+                         :field-key "Funding Status"
+                         :field-value (v "vendor/funding")}]
        ;; [c-display-field {:width 5} "Year Founded" year-founded]
        ;; [c-display-field {:width 5} "Number of Employees" (when num-employees (util/decimal-format num-employees))]
        ]]]))
