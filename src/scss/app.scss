@@ -71,6 +71,17 @@ a.teal:hover {
   margin-right: $sidebar-margin-right;
   font-weight: 400 !important;
 }
+@media only screen and (min-width: 768px) {
+  .container-with-sidebar:not(.round-details) .sidebar {  
+    position: sticky;
+    top: 14px;
+    // To effect the "sticky" position the way we want,
+    // we need to set the height, which we could do with
+    // height: min-content. However, display: table has the
+    // same side effect, and it has better browser support.
+    display: table;
+  }
+}
 .sidebar > .checkbox {
   display: block;
   margin-bottom: 7px;
