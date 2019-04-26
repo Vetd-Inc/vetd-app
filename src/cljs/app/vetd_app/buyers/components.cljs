@@ -187,46 +187,48 @@
                 :tag true}
    "Free Trial"])
 
-(defn c-display-field
+(defn c-display-field*
   [props field-key field-value & {:keys [has-markdown? info
                                          etype eid ename]}]
-  (let []
-    (r/create-class
-     {:component-did-mount
-      (fn [this]
-        (when-not field-value
-          (let [node (r/dom-node this)
-                body (first (array-seq (.getElementsByTagName js/document "body")))]
-            (.addEventListener node "mouseenter"
-                               #(.add (.-classList body) "missing-data-hovering"))
-            (.addEventListener node "mouseleave"
-                               #(.remove (.-classList body) "missing-data-hovering")))))
-      
-      :reagent-render
-      (fn []
-        [:> ui/GridColumn props
-         [:> ui/Segment {:class (str "display-field " (when-not field-value "missing-data"))
-                         :vertical true}
-          [:h3.display-field-key
-           field-key
-           (when info
-             [:> ui/Popup {:trigger (r/as-element [:span {:style {:font-size 16}}
-                                                   " " [:> ui/Icon {:name "info circle"}]])
-                           :wide true}
-              info])]
-          (if field-value
-            [:div.display-field-value
-             (if has-markdown?
-               (-> field-value
-                   md/md->hiccup
-                   md/component)
-               field-value)]
-            [:<>
-             [:div.display-field-value "Unavailable"]
-             [:> ui/Button {:color "lightteal"
-                            :onClick #(do (.stopPropagation %)
-                                          (rf/dispatch [:b/request-complete-profile etype eid ename]))}
-              "Request Complete Profile"]])]])})))
+  [{:keys [field-key field-value etype eid ename
+           ;; optional:
+           has-markdown? info column-props]}]
+  [:> ui/GridColumn column-props
+   [:> ui/Segment {:class (str "display-field " (when-not field-value "missing-data"))
+                   :vertical true}
+    [:h3.display-field-key
+     field-key
+     (when info
+       [:> ui/Popup {:trigger (r/as-element [:span {:style {:font-size 16}}
+                                             " " [:> ui/Icon {:name "info circle"}]])
+                     :wide true}
+        info])]
+    (if field-value
+      [:div.display-field-value
+       (if has-markdown?
+         (-> field-value
+             md/md->hiccup
+             md/component)
+         field-value)]
+      [:<>
+       [:div.display-field-value "Unavailable"]
+       [:> ui/Button {:color "lightteal"
+                      :onClick #(do (.stopPropagation %)
+                                    (rf/dispatch [:b/request-complete-profile etype eid ename]))}
+        "Request Complete Profile"]])]])
+
+(def c-display-field
+  (with-meta c-display-field*
+    {:component-did-mount
+     (fn [this]
+       (.log js/console (r/props this))
+       (when-not true ;field-value
+         (let [node (r/dom-node this)
+               body (first (array-seq (.getElementsByTagName js/document "body")))
+               mouseenter #(.add (.-classList body) "missing-data-hovering")
+               mouseleave #(.remove (.-classList body) "missing-data-hovering")]
+           (.addEventListener node "mouseenter" mouseenter)
+           (.addEventListener node "mouseleave" mouseleave))))}))
 
 (defn has-data?
   [value]
@@ -264,9 +266,7 @@
     [:> ui/GridRow
      [c-display-field {:width 5} "Payment Options" (v "Payment Options")]
      [c-display-field {:width 6} "Minimum Contract Length" (v "Minimum Contract Length")]
-     [c-display-field {:width 5} "Cancellation Process" (v "Cancellation Process")]]]
-   ])
-;; [c-request-profile "Pricing" :product (:id product) (:pname product)]
+     [c-display-field {:width 5} "Cancellation Process" (v "Cancellation Process")]]]])
 
 (defn c-onboarding
   [product v]     ; v - value function, retrieves value by prompt name
@@ -365,33 +365,41 @@
 ;; product/onboarding-estimated-time
 
 (defn c-vendor-profile
-  [{:keys [responses] :as vendor-profile-doc} vendor-id vendor-name]
+  [{:keys [response-prompts] :as vendor-profile-doc} vendor-id vendor-name]
   ;; vendor/website
   ;; vendor/employee-count
   ;; vendor/logo
   ;; vendor/year-founded
   ;; vendor/funding
   ;; vendor/headquarters
-  (let [website-url (docs/get-field-value responses "Website" "value" :sval)
-        funding-status (docs/get-field-value responses "Funding Status" "value" :sval)
-        year-founded (docs/get-field-value responses "Year Founded" "value" :sval)
-        headquarters (docs/get-field-value responses "Headquarters Location" "value" :sval)
-        num-employees (docs/get-field-value responses "Employee Count" "value" :nval)]
+
+  ;; OLD
+  ;; website-url (docs/get-field-value responses "Website" "value" :sval)
+  ;; funding-status (docs/get-field-value responses "Funding Status" "value" :sval)
+  ;; year-founded (docs/get-field-value responses "Year Founded" "value" :sval)
+  ;; headquarters (docs/get-field-value responses "Headquarters Location" "value" :sval)
+  ;; num-employees (docs/get-field-value responses "Employee Count" "value" :nval)
+  (let [v (partial docs/get-value-by-term response-prompts)
+        _ (println "re-rendered")
+        ]
     [:> ui/Segment {:class "detail-container profile"}
      [:h1.title "Company Profile"]
      [:> ui/Grid {:columns "equal"
                   :style {:margin-top 0}}
+      #_[:> ui/GridRow
+         [c-display-field {:width 6} "Website"
+          (when (has-data? website-url)
+            [:a {:href (str (when-not (.startsWith website-url "http") "http://") website-url)
+                 :target "_blank"}
+             [:> ui/Icon {:name "external square"
+                          :color "blue"}]
+             website-url])]
+         [c-display-field {:width 5} "Headquarters" headquarters
+          :etype :vendor :eid vendor-id :ename vendor-name]]
       [:> ui/GridRow
-       [c-display-field {:width 6} "Website"
-        (when (has-data? website-url)
-          [:a {:href (str (when-not (.startsWith website-url "http") "http://") website-url)
-               :target "_blank"}
-           [:> ui/Icon {:name "external square"
-                        :color "blue"}]
-           website-url])]
-       [c-display-field {:width 5} "Headquarters" headquarters
-        :etype :vendor :eid vendor-id :ename vendor-name]]
-      [:> ui/GridRow
-       [c-display-field {:width 6} "Funding Status" funding-status]
-       [c-display-field {:width 5} "Year Founded" year-founded]
-       [c-display-field {:width 5} "Number of Employees" (when num-employees (util/decimal-format num-employees))]]]]))
+       ;; TODO use keyword for term
+       (v "vendor/funding")
+       [c-display-field {:width 6} "Funding Status" (v "vendor/funding")]
+       ;; [c-display-field {:width 5} "Year Founded" year-founded]
+       ;; [c-display-field {:width 5} "Number of Employees" (when num-employees (util/decimal-format num-employees))]
+       ]]]))

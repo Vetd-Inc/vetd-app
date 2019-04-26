@@ -22,6 +22,18 @@
                  :value value
                  :text label})))))
 
+(defn get-value-by-term
+  [response-prompts term & [field val-type]]
+  (get (->> response-prompts
+            (filter #(-> % :prompt-term (= term)))
+            first
+            :response-prompt-fields
+            (filter #(-> %
+                         :prompt-field-fname
+                         (= (or field "value"))))
+            first)
+       (or val-type :sval)))
+
 (defn get-field-value
   "Given a reponses map, get value for prompt->field->key"
   [responses prompt field k]

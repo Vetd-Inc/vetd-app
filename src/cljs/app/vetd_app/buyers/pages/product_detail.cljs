@@ -190,26 +190,22 @@
                                                   :_order_by {:created :desc}
                                                   :_limit 1}
                                       [:id 
-                                       [:responses
-                                        [:id :prompt-id :notes
-                                         [:prompt
-                                          [:id :prompt]]
-                                         [:fields
-                                          [:id :pf-id :idx :sval :nval :dval
-                                           [:prompt-field [:id :fname]]]]]]]]
+                                       [:response-prompts {:ref-deleted nil}
+                                        [:id :prompt-id :prompt-prompt :prompt-term
+                                         [:response-prompt-fields
+                                          [:id :prompt-field-fname :idx
+                                           :sval :nval :dval]]]]]]
                                      [:vendor
                                       [:id :oname :url
                                        [:docs-out {:dtype "vendor-profile"
                                                    :_order_by {:created :desc}
                                                    :_limit 1}
-                                        [:id 
-                                         [:responses
-                                          [:id :prompt-id :notes
-                                           [:prompt
-                                            [:id :prompt]]
-                                           [:fields
-                                            [:id :pf-id :idx :sval :nval :dval :jval
-                                             [:prompt-field [:id :fname]]]]]]]]]]
+                                        [:id
+                                         [:response-prompts {:ref-deleted nil}
+                                          [:id :prompt-id :prompt-prompt :prompt-term
+                                           [:response-prompt-fields
+                                            [:id :prompt-field-fname :idx
+                                             :sval :nval :dval]]]]]]]]
                                      [:forms {:ftype "preposal" ; preposal requests
                                               :from-org-id @org-id&}
                                       [:id]]
