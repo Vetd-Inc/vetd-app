@@ -177,8 +177,8 @@
                                 :label product-name}}})))
 
 (defn c-round-initiation
-  [{:keys [id status title products doc] :as round}]
-  (if doc
+  [{:keys [id status title products init-doc] :as round}]
+  (if init-doc
     "You have already submitted your requirements." ; this should never show
     [c-round-initiation-form id]))
 
@@ -211,7 +211,7 @@
                                    props)])}])
 
 (defn c-round-grid
-  [{:keys [id status title products doc] :as round}]
+  [{:keys [id status title products init-doc] :as round}]
   (let [modal-showing? (r/atom false)
         modal-message (r/atom "")
         cell-click-disabled? (r/atom false)
@@ -309,7 +309,7 @@
         (if (seq products)
           [:<>
            [:div.round-grid
-            (for [req (->> doc
+            (for [req (->> init-doc
                            :response-prompts
                            (filter (comp (partial = "rounds/requirements") :prompt-term))
                            first
@@ -521,7 +521,7 @@
                                     [:id :pname
                                      [:vendor
                                       [:id :oname]]]]
-                                   [:doc
+                                   [:init-doc
                                     [:id
                                      [:response-prompts {:ref-deleted nil}
                                       [:id :prompt-id :prompt-prompt :prompt-term

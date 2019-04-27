@@ -42,8 +42,14 @@
 
           {:tables [:vetd :rounds
                     :vetd :docs]
-           :fields [:doc :rounds]
+           :fields [:init-doc :rounds]
            :cols [:doc_id :id]
+           :rel :one-one}
+
+          {:tables [:vetd :rounds
+                    :vetd :form_templates]
+           :fields [:req-form-template :round]
+           :cols [:req_form_template_id :id]
            :rel :one-one}
           
           {:tables [:vetd :orgs

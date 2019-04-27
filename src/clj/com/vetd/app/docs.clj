@@ -1,6 +1,6 @@
 (ns com.vetd.app.docs
   (:require [com.vetd.app.db :as db]
-            [com.vetd.app.common :as com]
+            [com.vetd.app.proc-tree :as ptree]
             [com.vetd.app.util :as ut]
             [com.vetd.app.hasura :as ha]
             [taoensso.timbre :as log]
@@ -15,6 +15,7 @@
 
 (def ^:dynamic *docs-created* nil)
 
+;; TODO  -- USE THIS!
 (defmacro with-doc-handling
   [handler-args & body]
   `(let [dc&# (atom #{})
@@ -25,14 +26,10 @@
                (handle-doc-creation d# ~handler-args)))
      r#))
 
-(defmacro tree-assoc-fn
-  [key-bindings & body]
-  `(fn [x#]
-     (let [{:keys ~key-bindings :as x#} (assoc x#
-                                               :parent
-                                               (-> x# :parents last))
-           r# (do ~@body)]
-       (apply assoc x# r#))))
+(defn proc-tree
+  [ops {:keys [handler-args] :as v}]
+  (with-doc-handling handler-args
+    (ptree/proc-tree ops v)))
 
 (defn convert-field-val
   [v ftype fsubtype]
@@ -638,7 +635,7 @@
             :forms
             first)))))
 
-(defn fields->appliable-tree
+(defn fields->proc-tree
   [resp-fields fields]
   (let [fields-by-fname (group-by :fname fields)]
     (vec (for [[k value] resp-fields]
@@ -651,7 +648,7 @@
                                                ftype
                                                fsubtype))})))))
 
-(defn response-prompts->appliable-tree
+(defn response-prompts->proc-tree
   [{:keys [terms prompt-ids]} prompts]
   (let [responses (merge terms prompt-ids)
         grouped-prompts (-> (merge (group-by (comp keyword :term) prompts)
@@ -662,11 +659,11 @@
              (if prompt-id
                {:item {}
                 :children [{:item {:prompt-id prompt-id}
-                             :children (fields->appliable-tree r fields)}]}
+                             :children (fields->proc-tree r fields)}]}
                (throw (Exception. (str "Could not find prompt with term or id: " k)))))))))
 
 ;; TODO set responses.subject
-(defn doc->appliable-tree
+(defn doc->proc-tree
   [{:keys [data dtype dsubtype update-doc-id] :as d}]
   (if-let [{:keys [id ftype fsubtype prompts]} (doc->appliable--find-form d)]
     {:handler-args d
@@ -679,7 +676,7 @@
                     :dsubtype fsubtype}
                    (when update-doc-id
                      {:id update-doc-id}))
-     :children (response-prompts->appliable-tree data
+     :children (response-prompts->proc-tree data
                                                  prompts)}
     (throw (Exception. (str "Couldn't find form by querying with: "
                             {:ftype dtype
@@ -687,53 +684,12 @@
                              :doc-id update-doc-id})))))
 
 
-(declare apply-tree)
 
-(defn apply-tree-child-reducer
-  [m v' agg [k vs]]
-  (if-let [mk (and m (m k))]
-    (assoc agg
-           k
-           (mapv #(dissoc (apply-tree mk
-                                      (merge v' %))
-                          :parents)
-                 vs))
-    agg))
-
-(defn apply-tree-map
-  [m {:keys [item children parents] :as v}]
-  (let [parents' (conj (or parents [])
-                       item)
-        v' (-> v
-               (dissoc :item
-                       :children)
-               (assoc :parents parents'))]
-    (assoc v
-           :children
-           (reduce (partial apply-tree-child-reducer
-                            m
-                            v')
-                   {}
-                   (if (map? children)
-                     children
-                     {(ffirst m) children})))))
-
-(defn apply-tree
-  [[& ops] {:keys [handler-args] :as v}]
-  (with-doc-handling handler-args
-    (loop [[head & tail] (flatten ops)
-           v' v]
-      (if head
-        (recur (flatten tail)
-               (if (map? head)
-                 (apply-tree-map head v')
-                 (head v')))
-        v'))))
 
 (defn create-doc [d]
   (->> d
-       doc->appliable-tree
-       (apply-tree
+       doc->proc-tree
+       (proc-tree
         [(tree-assoc-fn [item]
                         [:item (insert-doc item)])
          {:doc-responses [{:response
@@ -818,8 +774,8 @@
 ;; TODO support reusing existing responses
 (defn update-doc [d]
   (->> d
-       doc->appliable-tree
-       (apply-tree
+       doc->proc-tree
+       (proc-tree
         [(tree-assoc-fn [item children]
                         (-> item
                             ha/walk-clj-kw->sql-field
@@ -847,7 +803,7 @@
                                                :id
                                                (insert-doc-response (:id parent)))])]}])))
 
-(defn round-init-doc-id->create-form-appliable-tree
+(defn round-init-doc-id->create-form-proc-tree
   [round-init-doc-id]
   (let [{:keys [response-prompts] :as doc} (-> [[:docs {:id round-init-doc-id}
                                        [:title
@@ -878,12 +834,15 @@
                                    true :prompt-new})))
 
 (defn create-form-template-from-round-doc
-  [round-init-doc-id]
+  [round-id round-init-doc-id]
   (->> round-init-doc-id
-       round-init-doc-id->create-form-appliable-tree
-       (apply-tree
+       round-init-doc-id->create-form-proc-tree
+       (proc-tree
         [(tree-assoc-fn [item children]
-                        [:item (insert-form-template item)
+                        [:item (-> item
+                                   (assoc :ftype "round-product-requirements"
+                                          :fsubtype (str "round-product-requirements-" round-id))
+                                   insert-form-template)
                          :children (group-by-prompt-exists children)])
          {:prompt-exists [] ;; [] acts like `identity`
           :prompt-new [(tree-assoc-fn [item]
@@ -901,8 +860,5 @@
          {:prompt-all [(tree-assoc-fn [item children parent]
                                       [:item (insert-form-template-prompt (:id parent)
                                                                           (:id item)
-                                                                          (:idx item))])]}])))
-
-#_ (create-form-template-from-round-doc 993713367508)
-
-;; how to store form-template-id with round??????????????????????
+                                                                          (:idx item))])]}])
+       :item))

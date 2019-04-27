@@ -1,4 +1,7 @@
 (ns com.vetd.app.util
+  "DO NOT REQUIRE ANY ADDITIONAL DEPENDENCIES TO THIS NS.
+  If you want to add a function with broad usability, add it to
+  common. "
   (:require [clojure.walk :as walk]
             clojure.set))
 

@@ -1,6 +1,5 @@
 (ns com.vetd.app.db
-  (:require [com.vetd.app.common :as com]
-            [com.vetd.app.util :as ut]
+  (:require [com.vetd.app.util :as ut]
             [com.vetd.app.env :as env]
             [migratus.core :as mig]
             [clojure.java.jdbc :as j]

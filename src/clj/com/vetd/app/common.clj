@@ -1,5 +1,9 @@
 (ns com.vetd.app.common
-  (:require [expound.alpha :as expound]
+  "This is a grab bag until we come up with a reason that it shouldn't be.
+  Before adding a function here, consider whether it would be more
+  appropriate in util. "
+  (:require [com.vetd.app.util :as ut]
+            [expound.alpha :as expound]
             [clojure.spec.alpha :as spec]
             [clojure.core.async :as a]
             [cognitect.aws.client.api :as aws]

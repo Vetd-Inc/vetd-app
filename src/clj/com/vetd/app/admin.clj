@@ -21,17 +21,6 @@
     {:org-ids []}))
 
 
-(defn insert-round-product
-  [round-id prod-id]
-  (let [[id idstr] (ut/mk-id&str)]
-    (-> (db/insert! :round_product
-                    {:id id
-                     :idstr idstr
-                     :round_id round-id
-                     :product_id prod-id
-                     :created (ut/now-ts)
-                     :updated (ut/now-ts)})
-        first)))
 
 (defn delete-product-id-from-round
   [product-id round-id]
@@ -42,19 +31,9 @@
                        [:= :product_id product-id]]}))
 
 (defn create-round-product-form-from-round-init-doc
-  [product-id round-id]
-  (-> [[:rounds {:id round-id}
-         [:doc
-         [:id
-          ]]]]
-      ha/sync-query
-      :docs))
+  [product-id round-id])
 
-(defn invite-product-to-round
-  [product-id round-id]
-  (insert-round-product round-id product-id)
-  ;; TODO create form
-#_  (create-round-product-form-from-round-init-doc product-id round-id))
+
 
 (defmethod com/handle-ws-inbound :a/search
   [{:keys [query]} ws-id sub-fn]
@@ -110,4 +89,4 @@
     (doseq [product-id remove-ids]
       (delete-product-id-from-round product-id round-id))
     (doseq [product-id add-ids]
-      (invite-product-to-round product-id round-id))))
+      (com/invite-product-to-round product-id round-id))))
