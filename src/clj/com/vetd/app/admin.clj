@@ -12,7 +12,7 @@
   (if (not-empty q)
     (let [ids (db/hs-query {:select [[:o.id :oid]]
                             :from [[:orgs :o]]
-                            :where [(keyword "~*") :o.oname (str ".*?" q ".*")]
+                            :where [(keyword "~*") :o.oname (str ".*?\\m" q ".*")]
                             :limit 30})
           vids (->> ids
                     (map :oid)
