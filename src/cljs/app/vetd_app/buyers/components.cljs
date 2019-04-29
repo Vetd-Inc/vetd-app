@@ -195,13 +195,18 @@
                 :tag true}
    "Free Trial"])
 
-(defn c-display-field**
-  [{:keys [profile has-markdown? info]}
+(defn has-data?
+  [value]
+  (not-empty (str value)))
+
+(defn c-display-field*
+  [profile
    width
    field-key
-   field-value]
+   field-value
+   {:keys [has-markdown? info]}]
   [:> ui/GridColumn {:width width}
-   [:> ui/Segment {:class (str "display-field " (when-not field-value "missing-data"))
+   [:> ui/Segment {:class (str "display-field " (when-not (has-data? field-value) "missing-data"))
                    :vertical true}
     [:h3.display-field-key
      field-key
@@ -210,7 +215,7 @@
                                              " " [:> ui/Icon {:name "info circle"}]])
                      :wide true}
         info])]
-    (if field-value
+    (if (has-data? field-value)
       [:div.display-field-value
        (if has-markdown?
          (-> field-value
@@ -224,11 +229,12 @@
                                     (rf/dispatch [:b/request-complete-profile (:type profile) (:id profile) (:name profile)]))}
         "Request Complete Profile"]])]])
 
-(def c-display-field*
-  (with-meta c-display-field**
+(defn requestable
+  [component]
+  (with-meta component
     {:component-did-mount
      (fn [this]
-       (when-not (:field-value (r/props this))
+       (when-not (has-data? (:field-value (r/props this)))
          (let [node (r/dom-node this)
                body (first (array-seq (.getElementsByTagName js/document "body")))
                mouseenter #(.add (.-classList body) "missing-data-hovering")
@@ -236,17 +242,13 @@
            (.addEventListener node "mouseenter" mouseenter)
            (.addEventListener node "mouseleave" mouseleave))))}))
 
-(defn has-data?
-  [value]
-  (not-empty (str value)))
-
 (defn c-profile-segment
   [{:keys [title]} & children]
   [:> ui/Segment {:class "detail-container profile"}
    [:h1.title title]
    [:> ui/Grid {:columns "equal"
                 :style {:margin-top 0}}
-    children]])
+    (util/add-keys children)]])
 
 (defn c-pricing
   "Component to display pricing information of a product profile.
@@ -256,38 +258,34 @@
   [c-profile-segment {:title "Pricing"}
    [:> ui/GridRow
     [c-display-field 5 "Range"
-     (when-let [website-url (v-fn :vendor/website)]
-       [c-external-link website-url])]
-    [c-display-field {:width 5} "Range"
-
-     (when (v "Price Range")
+     (when (has-data? (v-fn :product/price-range))
        [:<>
-        (v "Price Range")
+        (v-fn :product/price-range)
         [:br]
-        "Request a Preposal to get a personalized estimate."])
-     ]
-    [c-display-field {:width 6} "Model" (v "Pricing Model") :has-markdown? true]
-    [c-display-field {:width 5} "Free Trial"
-     (when (v "Do you offer a free trial?")
-       (if (= "Yes" (v "Do you offer a free trial?"))
-         (v "Please describe the terms of your trial")
+        "Request a Preposal to get a personalized estimate."])]
+    [c-display-field 6 "Model" (v-fn :product/pricing-model) :has-markdown? true]
+    [c-display-field 5 "Free Trial"
+     (when (has-data? (v-fn :product/free-trial?))
+       (if (= "Yes" (v-fn :product/free-trial?))
+         (v-fn :product/free-trial-terms)
          "No"))]]
    [:> ui/GridRow
-    [c-display-field {:width 5} "Payment Options" (v "Payment Options")]
-    [c-display-field {:width 6} "Minimum Contract Length" (v "Minimum Contract Length")]
-    [c-display-field {:width 5} "Cancellation Process" (v "Cancellation Process")]]])
+    [c-display-field 5 "Payment Options" (v-fn :product/payment-options)]
+    [c-display-field 6 "Minimum Contract Length" (v-fn :product/minimum-contract)]
+    [c-display-field 5 "Cancellation Process" (v-fn :product/cancellation-process)]]])
 
-;; (defn c-onboarding
-;;   [product v]     ; v - value function, retrieves value by prompt name
-;;   [:> ui/Segment {:class "detail-container profile"}
-;;    [:h1.title "Onboarding"]
-;;    [:> ui/Grid {:columns "equal" :style {:margin-top 0}}
-;;     [:> ui/GridRow
-;;      [c-display-field {:width 16} "Estimated Time to Onboard" (v "Onboarding Process" "Estimated Time To Onboard")]]
-;;     [:> ui/GridRow
-;;      [c-display-field {:width 16} "Onboarding Process" (v "Onboarding Process") :has-markdown? true]]
-;;     [:> ui/GridRow
-;;      [c-display-field {:width 16} "Onboarding Team Involvement" (v "Onboarding Team Involvement") :has-markdown? true]]]])
+(defn c-onboarding
+  "Component to display onboarding information of a product profile.
+  c-display-field - component to display a field (key/value)
+  v-fn - function to get value per some prompt term"
+  [c-display-field v-fn]
+  [c-profile-segment {:title "Onboarding"}
+   [:> ui/GridRow
+    [c-display-field 16 "Estimated Time to Onboard" (v-fn :product/onboarding-estimated-time)]]
+   [:> ui/GridRow
+    [c-display-field 16 "Onboarding Process" (v-fn :product/onboarding-process) :has-markdown? true]]
+   [:> ui/GridRow
+    [c-display-field 16 "Onboarding Team Involvement" (v-fn :product/onboarding-team-involvement) :has-markdown? true]]])
 
 ;; (defn c-client-service
 ;;   [product v] ; v - value function, retrieves value by prompt name
@@ -375,21 +373,26 @@
 
 (defn c-vendor-profile
   [{:keys [response-prompts] :as vendor-profile-doc} vendor-id vendor-name]
-  (let [c-display-field (partial c-display-field* {:profile {:type :vendor
-                                                             :id vendor-id
-                                                             :name vendor-name}})
+  (let [c-display-field (requestable (partial c-display-field* {:type :vendor
+                                                                :id vendor-id
+                                                                :name vendor-name}))
         v-fn (partial docs/get-value-by-term response-prompts)]
     [c-profile-segment {:title "Company Profile"}
-     ^{:key "row-1"}
      [:> ui/GridRow 
       [c-display-field 6 "Website"
        (when-let [website-url (v-fn :vendor/website)]
          [c-external-link website-url])]
       [c-display-field 6 "Headquarters" (v-fn :vendor/headquarters)]]
-     ^{:key "row-2"}
      [:> ui/GridRow
       [c-display-field 6 "Funding Status" (v-fn :vendor/funding)]
-      [c-display-field 5 "Year Founded" (v-fn :vendor/year-founded)]
+
+      [c-display-field* {:type :vendor
+                         :id vendor-id
+                         :name vendor-name}
+       5 "Year Founded" 
+       (v-fn :vendor/year-founded)]
+      ;; [c-display-field 5 "Year Founded" (v-fn :vendor/year-founded)]
+      
       [c-display-field 5 "Number of Employees"
        (when-let [employee-count (v-fn :vendor/employee-count nil :nval)]
          (util/decimal-format employee-count))]]]))

@@ -38,10 +38,10 @@
                                                          :form-docs
                                                          first
                                                          :response-prompts))
-        c-display-field (partial bc/c-display-field* {:profile
-                                                      {:type :product
+        c-display-field (bc/requestable
+                         (partial bc/c-display-field* {:type :product
                                                        :id (:id product)
-                                                       :name (:pname product)}})
+                                                       :name (:pname product)}))
         pricing-estimate-value (preposal-v-fn :preposal/pricing-estimate "value" :nval)
         pricing-estimate-unit (preposal-v-fn :preposal/pricing-estimate "unit")
         pricing-estimate-details (preposal-v-fn :preposal/pricing-estimate "details")
@@ -94,8 +94,8 @@
             [bc/c-external-link demo-url "Watch Demo Video"]
             [:br]
             [:br]])]]]]
-     ;; [bc/c-pricing product v]
-     ;; [bc/c-onboarding product v]
+     [bc/c-pricing c-display-field product-v-fn]
+     [bc/c-onboarding c-display-field product-v-fn]
      ;; [bc/c-client-service product v]
      ;; [bc/c-reporting product v]
      ;; [bc/c-market-niche product v]

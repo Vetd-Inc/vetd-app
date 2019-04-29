@@ -129,9 +129,10 @@
   "Component to display Product details."
   [{:keys [id pname logo form-docs vendor forms rounds categories] :as product}]
   (let [v-fn (partial docs/get-value-by-term (-> form-docs first :response-prompts))
-        c-display-field (partial bc/c-display-field* {:profile {:type :product
-                                                                :id id
-                                                                :name pname}})]
+        c-display-field (bc/requestable
+                         (partial bc/c-display-field* {:type :product
+                                                       :id id
+                                                       :name pname}))]
     [:<>
      [:> ui/Segment {:class "detail-container"}
       [:h1.product-title
@@ -169,8 +170,8 @@
             [bc/c-external-link demo-url "Watch Demo Video"]
             [:br]
             [:br]])]]]]
-     #_[bc/c-pricing c-display-field v-fn]
-     ;; [bc/c-onboarding product v]
+     [bc/c-pricing c-display-field v-fn]
+     [bc/c-onboarding c-display-field v-fn]
      ;; [bc/c-client-service product v]
      ;; [bc/c-reporting product v]
      ;; [bc/c-market-niche product v]

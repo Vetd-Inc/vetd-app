@@ -236,6 +236,18 @@
        (when (> (count string) length)
          "...")))
 
+(defn add-keys
+  "Add the index as a key to the metadata of each element.
+  Note: This is useful for dumping children components into 
+  a parent component and avoiding React warnings. However, React
+  recommends setting the 'key' to a unique consistent value, such
+  as an ID, rather than using simply an iterative index."
+  [xs]
+  (map-indexed
+   (fn [i x] (with-meta x {:key i}))
+   xs))
+
+
 
 (defn long-floor-div
   [a b]
@@ -291,5 +303,3 @@
         (recur tail
                (inc idx)
                (+ r d))))))
-
-;; --------------------
