@@ -128,9 +128,10 @@
 (defn c-product
   "Component to display Product details."
   [{:keys [id pname logo form-docs vendor forms rounds categories] :as product}]
-  (let [product-profile-responses (-> form-docs first :responses)
-        v (fn [prompt & [field value]]
-            (docs/get-field-value product-profile-responses prompt (or field "value") (or value :sval)))]
+  (let [v-fn (partial docs/get-value-by-term (-> form-docs first :response-prompts))
+        c-display-field (partial bc/c-display-field* {:profile {:type :product
+                                                                :id id
+                                                                :name pname}})]
     [:<>
      [:> ui/Segment {:class "detail-container"}
       [:h1.product-title
@@ -141,13 +142,13 @@
         [bc/c-round-in-progress {:round-idstr (-> rounds first :idstr)
                                  :props {:ribbon "left"}}])
       [bc/c-categories product]
-      (when (= "Yes" (v "Do you offer a free trial?"))
+      (when (= "Yes" (v-fn :product/free-trial?))
         [bc/c-free-trial-tag])
       [:> ui/Grid {:columns "equal"
                    :style {:margin-top 4}}
        [:> ui/GridRow
         [:> ui/GridColumn {:width 12}
-         (or (some-> (v "Describe your product or service")
+         (or (some-> (v-fn :product/description)
                      md/md->hiccup
                      md/component)
              [:p "No description available."])
@@ -158,22 +159,17 @@
          [:h3.display-field-key "Pricing Estimate"]
          "Request a Preposal to get a personalized estimate."]
         [:> ui/GridColumn {:width 4}
-         (when (bc/has-data? (v "Product Website"))
+         (when-let [website-url (v-fn :product/website)]
            [:<>
-            [:a {:href (str (when-not (.startsWith (v "Product Website") "http") "http://") (v "Product Website"))
-                 :target "_blank"}
-             [:> ui/Icon {:name "external square"
-                          :color "blue"}]
-             "Product Website"]
+            [bc/c-external-link website-url "Product Website"]
             [:br]
             [:br]])
-         (when (bc/has-data? (v "Product Demo"))
-           [:a {:href (v "Product Demo")
-                :target "_blank"}
-            [:> ui/Icon {:name "external square"
-                         :color "blue"}]
-            "Watch Demo Video"])]]]]
-     ;; [bc/c-pricing product v]
+         (when-let [demo-url (v-fn :product/demo)]
+           [:<>
+            [bc/c-external-link demo-url "Watch Demo Video"]
+            [:br]
+            [:br]])]]]]
+     #_[bc/c-pricing c-display-field v-fn]
      ;; [bc/c-onboarding product v]
      ;; [bc/c-client-service product v]
      ;; [bc/c-reporting product v]
@@ -189,7 +185,8 @@
                                     [:id :pname :logo
                                      [:form-docs {:ftype "product-profile"
                                                   :_order_by {:created :desc}
-                                                  :_limit 1}
+                                                  :_limit 1
+                                                  :doc-deleted nil}
                                       [:id 
                                        [:response-prompts {:ref-deleted nil}
                                         [:id :prompt-id :prompt-prompt :prompt-term

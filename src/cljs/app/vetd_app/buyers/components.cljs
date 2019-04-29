@@ -14,7 +14,7 @@
        :target "_blank"}
    [:> ui/Icon {:name "external square"
                 :color "blue"}]
-   (or url text)])
+   (or text url)])
 
 (defn c-back-button
   ([] (c-back-button {} "Back"))
@@ -240,39 +240,42 @@
   [value]
   (not-empty (str value)))
 
-;; deprecated?
-(defn c-request-profile
-  [section-name etype eid ename]
-  [:<>
-   "This company has not completed their " section-name " section."
-   [:br]
-   [:br]
-   [:a.blue {:onClick #(do (.stopPropagation %)
-                           (rf/dispatch [:b/request-complete-profile etype eid ename]))}
-    "Request Complete Profile"]])
+(defn c-profile-segment
+  [{:keys [title]} & children]
+  [:> ui/Segment {:class "detail-container profile"}
+   [:h1.title title]
+   [:> ui/Grid {:columns "equal"
+                :style {:margin-top 0}}
+    children]])
 
-#_(defn c-pricing
-    [product v] ; v - value function, retrieves value by prompt name
-    [:> ui/Segment {:class "detail-container profile"}
-     [:h1.title "Pricing"]
-     [:> ui/Grid {:columns "equal" :style {:margin-top 0}}
-      [:> ui/GridRow
-       [c-display-field {:width 5} "Range"
-        (when (v "Price Range")
-          [:<>
-           (v "Price Range")
-           [:br]
-           "Request a Preposal to get a personalized estimate."])]
-       [c-display-field {:width 6} "Model" (v "Pricing Model") :has-markdown? true]
-       [c-display-field {:width 5} "Free Trial"
-        (when (v "Do you offer a free trial?")
-          (if (= "Yes" (v "Do you offer a free trial?"))
-            (v "Please describe the terms of your trial")
-            "No"))]]
-      [:> ui/GridRow
-       [c-display-field {:width 5} "Payment Options" (v "Payment Options")]
-       [c-display-field {:width 6} "Minimum Contract Length" (v "Minimum Contract Length")]
-       [c-display-field {:width 5} "Cancellation Process" (v "Cancellation Process")]]]])
+(defn c-pricing
+  "Component to display pricing information of a product profile.
+  c-display-field - component to display a field (key/value)
+  v-fn - function to get value per some prompt term"
+  [c-display-field v-fn]
+  [c-profile-segment {:title "Pricing"}
+   [:> ui/GridRow
+    [c-display-field 5 "Range"
+     (when-let [website-url (v-fn :vendor/website)]
+       [c-external-link website-url])]
+    [c-display-field {:width 5} "Range"
+
+     (when (v "Price Range")
+       [:<>
+        (v "Price Range")
+        [:br]
+        "Request a Preposal to get a personalized estimate."])
+     ]
+    [c-display-field {:width 6} "Model" (v "Pricing Model") :has-markdown? true]
+    [c-display-field {:width 5} "Free Trial"
+     (when (v "Do you offer a free trial?")
+       (if (= "Yes" (v "Do you offer a free trial?"))
+         (v "Please describe the terms of your trial")
+         "No"))]]
+   [:> ui/GridRow
+    [c-display-field {:width 5} "Payment Options" (v "Payment Options")]
+    [c-display-field {:width 6} "Minimum Contract Length" (v "Minimum Contract Length")]
+    [c-display-field {:width 5} "Cancellation Process" (v "Cancellation Process")]]])
 
 ;; (defn c-onboarding
 ;;   [product v]     ; v - value function, retrieves value by prompt name
@@ -370,21 +373,13 @@
 ;; product/case-studies
 ;; product/onboarding-estimated-time
 
-(defn c-profile
-  [{:keys [title]} & children]
-  [:> ui/Segment {:class "detail-container profile"}
-   [:h1.title title]
-   [:> ui/Grid {:columns "equal"
-                :style {:margin-top 0}}
-    children]])
-
 (defn c-vendor-profile
   [{:keys [response-prompts] :as vendor-profile-doc} vendor-id vendor-name]
   (let [c-display-field (partial c-display-field* {:profile {:type :vendor
                                                              :id vendor-id
                                                              :name vendor-name}})
         v-fn (partial docs/get-value-by-term response-prompts)]
-    [c-profile {:title "Company Profile"}
+    [c-profile-segment {:title "Company Profile"}
      ^{:key "row-1"}
      [:> ui/GridRow 
       [c-display-field 6 "Website"
