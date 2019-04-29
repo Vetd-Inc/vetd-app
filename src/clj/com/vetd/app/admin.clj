@@ -1,6 +1,7 @@
 (ns com.vetd.app.admin
   (:require [com.vetd.app.db :as db]
             [com.vetd.app.hasura :as ha]
+            [com.vetd.app.rounds :as rounds]
             [com.vetd.app.common :as com]
             [com.vetd.app.util :as ut]
             [com.vetd.app.docs :as docs]
@@ -89,4 +90,4 @@
     (doseq [product-id remove-ids]
       (delete-product-id-from-round product-id round-id))
     (doseq [product-id add-ids]
-      (com/invite-product-to-round product-id round-id))))
+      (rounds/invite-product-to-round product-id round-id))))

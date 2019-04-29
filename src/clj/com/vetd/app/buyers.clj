@@ -2,6 +2,7 @@
   (:require [com.vetd.app.db :as db]
             [com.vetd.app.hasura :as ha]
             [com.vetd.app.auth :as auth]
+            [com.vetd.app.rounds :as rounds]
             [com.vetd.app.common :as com]
             [com.vetd.app.util :as ut]
             [com.vetd.app.docs :as docs]
@@ -103,7 +104,7 @@
   [buyer-id title eid etype]
   (let [{:keys [id] :as r} (insert-round buyer-id title)]
     (case etype
-      :product (com/invite-product-to-round eid id)
+      :product (rounds/invite-product-to-round eid id)
       :category (insert-round-category id eid))
     (try
       (let [msg (with-out-str

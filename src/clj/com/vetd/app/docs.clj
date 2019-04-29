@@ -1,6 +1,6 @@
 (ns com.vetd.app.docs
   (:require [com.vetd.app.db :as db]
-            [com.vetd.app.proc-tree :as ptree]
+            [com.vetd.app.proc-tree :as ptree :refer [tree-assoc-fn]]
             [com.vetd.app.util :as ut]
             [com.vetd.app.hasura :as ha]
             [taoensso.timbre :as log]
@@ -322,7 +322,7 @@
       (insert-form-prompt form-id prompt-id sort'))
     form))
 
-(defn- update-deleted [tbl-kw id]
+(defn update-deleted [tbl-kw id]
   (db/hs-exe! {:update tbl-kw
                :set {:deleted (ut/now-ts)}
                :where [:= :id id]}))
