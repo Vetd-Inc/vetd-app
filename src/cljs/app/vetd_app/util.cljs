@@ -248,7 +248,7 @@
    xs))
 
 
-
+;;;; Base 31/36 idstr calculation
 (defn long-floor-div
   [a b]
   (-> a

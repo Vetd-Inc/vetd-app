@@ -204,7 +204,7 @@
    width
    field-key
    field-value
-   {:keys [has-markdown? info]}]
+   & {:keys [has-markdown? info]}]
   [:> ui/GridColumn {:width width}
    [:> ui/Segment {:class (str "display-field " (when-not (has-data? field-value) "missing-data"))
                    :vertical true}
@@ -281,11 +281,15 @@
   [c-display-field v-fn]
   [c-profile-segment {:title "Onboarding"}
    [:> ui/GridRow
-    [c-display-field 16 "Estimated Time to Onboard" (v-fn :product/onboarding-estimated-time)]]
+    [c-display-field 16
+     "Estimated Time to Onboard" (v-fn :product/onboarding-estimated-time)]]
    [:> ui/GridRow
-    [c-display-field 16 "Onboarding Process" (v-fn :product/onboarding-process) :has-markdown? true]]
+    [c-display-field 16
+     "Onboarding Process" (v-fn :product/onboarding-process) :has-markdown? true]]
    [:> ui/GridRow
-    [c-display-field 16 "Onboarding Team Involvement" (v-fn :product/onboarding-team-involvement) :has-markdown? true]]])
+    [c-display-field 16
+     "Onboarding Team Involvement" (v-fn :product/onboarding-team-involvement)
+     :has-markdown? true]]])
 
 ;; (defn c-client-service
 ;;   [product v] ; v - value function, retrieves value by prompt name
