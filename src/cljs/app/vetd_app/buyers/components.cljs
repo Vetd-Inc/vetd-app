@@ -161,24 +161,14 @@
 (defn c-categories
   "Given a product map, display the categories as tags."
   [product]
-  (let [categories (->> (:categories product) ; combine with categories defined in profile
-                        (map :cname)
-                        (concat (some-> product
-                                        :form-docs
-                                        first
-                                        :responses
-                                        (docs/get-field-value "Categories" "value" :sval)
-                                        (s/split #",")
-                                        (#(map (comp s/lower-case s/trim) %))))
-                        distinct)]
-    [:<>
-     (for [c categories]
-       ^{:key c}
-       [:> ui/Label {:class "category-tag"
-                     :as "a"
-                     :onClick #(do (.stopPropagation %)
-                                   (rf/dispatch [:b/nav-search c]))}
-        c])]))
+  [:<>
+   (for [c (map :cname (:categories product))]
+     ^{:key c}
+     [:> ui/Label {:class "category-tag"
+                   :as "a"
+                   :onClick #(do (.stopPropagation %)
+                                 (rf/dispatch [:b/nav-search c]))}
+      c])])
 
 (defn c-free-trial-tag []
   [:> ui/Label {:class "free-trial-tag"
