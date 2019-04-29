@@ -167,7 +167,7 @@
      [:> ui/Label {:class "category-tag"
                    :as "a"
                    :onClick #(do (.stopPropagation %)
-                               (rf/dispatch [:b/nav-search c]))}
+                                 (rf/dispatch [:b/nav-search c]))}
       c])])
 
 (defn c-free-trial-tag []
