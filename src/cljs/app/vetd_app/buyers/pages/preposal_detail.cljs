@@ -106,11 +106,12 @@
             [:> ui/Icon {:name "external square"
                          :color "blue"}]
             "Watch Demo Video"])]]]]
-     [bc/c-pricing product v]
-     [bc/c-onboarding product v]
-     [bc/c-client-service product v]
-     [bc/c-reporting product v]
-     [bc/c-market-niche product v]]))
+     ;; [bc/c-pricing product v]
+     ;; [bc/c-onboarding product v]
+     ;; [bc/c-client-service product v]
+     ;; [bc/c-reporting product v]
+     ;; [bc/c-market-niche product v]
+     ]))
 
 (defn c-page []
   (let [preposal-idstr& (rf/subscribe [:preposal-idstr])
