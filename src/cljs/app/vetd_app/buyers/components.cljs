@@ -188,10 +188,9 @@
    "Free Trial"])
 
 (defn c-display-field*
-  [{:keys [field-key field-value etype eid ename
-           ;; optional:
-           has-markdown? info column-props]
-    :as props}]
+  [{:keys [column-props profile has-markdown? info]}
+   field-key
+   field-value]
   [:> ui/GridColumn column-props
    [:> ui/Segment {:class (str "display-field " (when-not field-value "missing-data"))
                    :vertical true}
@@ -213,7 +212,7 @@
        [:div.display-field-value "Unavailable"]
        [:> ui/Button {:color "lightteal"
                       :onClick #(do (.stopPropagation %)
-                                    (rf/dispatch [:b/request-complete-profile etype eid ename]))}
+                                    (rf/dispatch [:b/request-complete-profile (:type profile) (:id profile) (:name profile)]))}
         "Request Complete Profile"]])]])
 
 (def c-display-field
@@ -377,9 +376,10 @@
   ;; year-founded (docs/get-field-value responses "Year Founded" "value" :sval)
   ;; headquarters (docs/get-field-value responses "Headquarters Location" "value" :sval)
   ;; num-employees (docs/get-field-value responses "Employee Count" "value" :nval)
-  (let [v (partial docs/get-value-by-term response-prompts)
-        _ (println "re-rendered")
-        ]
+  (let [profile {:type :vendor
+                 :id vendor-id
+                 :name vendor-name}
+        v (partial docs/get-value-by-term response-prompts)]
     [:> ui/Segment {:class "detail-container profile"}
      [:h1.title "Company Profile"]
      [:> ui/Grid {:columns "equal"
@@ -395,10 +395,16 @@
          [c-display-field {:width 5} "Headquarters" headquarters
           :etype :vendor :eid vendor-id :ename vendor-name]]
       [:> ui/GridRow
-       ;; TODO use keyword for term
-       [c-display-field {:width 6
-                         :field-key "Funding Status"
-                         :field-value (v "vendor/funding")}]
-       ;; [c-display-field {:width 5} "Year Founded" year-founded]
-       ;; [c-display-field {:width 5} "Number of Employees" (when num-employees (util/decimal-format num-employees))]
-       ]]]))
+       [c-display-field {:column-props {:width 6}
+                         :profile profile}
+        "Funding Status"
+        (v :vendor/funding)]
+       [c-display-field {:column-props {:width 5}
+                         :profile profile}
+        "Year Founded"
+        (v :vendor/year-founded)]
+       [c-display-field {:column-props {:width 5}
+                         :profile profile}
+        "Number of Employees"
+        (when-let [employee-count (v :vendor/employee-count)]
+          (util/decimal-format employee-count))]]]]))
