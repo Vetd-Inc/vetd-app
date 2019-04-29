@@ -96,10 +96,9 @@
             [:br]])]]]]
      [bc/c-pricing c-display-field product-v-fn]
      [bc/c-onboarding c-display-field product-v-fn]
-     ;; [bc/c-client-service product v]
-     ;; [bc/c-reporting product v]
-     ;; [bc/c-market-niche product v]
-     ]))
+     [bc/c-client-service c-display-field product-v-fn]
+     [bc/c-reporting c-display-field product-v-fn]
+     [bc/c-market-niche c-display-field product-v-fn]]))
 
 (defn c-page []
   (let [preposal-idstr& (rf/subscribe [:preposal-idstr])

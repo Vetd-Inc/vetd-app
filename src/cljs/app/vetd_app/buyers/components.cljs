@@ -226,7 +226,10 @@
        [:div.display-field-value "Unavailable"]
        [:> ui/Button {:color "lightteal"
                       :onClick #(do (.stopPropagation %)
-                                    (rf/dispatch [:b/request-complete-profile (:type profile) (:id profile) (:name profile)]))}
+                                    (rf/dispatch [:b/request-complete-profile
+                                                  (:type profile)
+                                                  (:id profile)
+                                                  (:name profile)]))}
         "Request Complete Profile"]])]])
 
 (defn requestable
@@ -291,58 +294,90 @@
      "Onboarding Team Involvement" (v-fn :product/onboarding-team-involvement)
      :has-markdown? true]]])
 
-;; (defn c-client-service
-;;   [product v] ; v - value function, retrieves value by prompt name
-;;   [:> ui/Segment {:class "detail-container profile"}
-;;    [:h1.title "Client Service"]
-;;    [:> ui/Grid {:columns "equal" :style {:margin-top 0}}
-;;     [:> ui/GridRow
-;;      [c-display-field {:width 16} "Point of Contact" (v "Point of Contact") :etype :product :eid (:id product) :ename (:pname product)]]
-;;     [:> ui/GridRow
-;;      [c-display-field {:width 16} "Meeting Frequency" (v "Meeting Frequency") :has-markdown? true]]]])
+(defn c-client-service
+  "Component to display onboarding information of a product profile.
+  c-display-field - component to display a field (key/value)
+  v-fn - function to get value per some prompt term"
+  [c-display-field v-fn]
+  [c-profile-segment {:title "Client Service"}
+   [:> ui/GridRow
+    [c-display-field 16 "Point of Contact" (v-fn :product/point-of-contact)]]
+   [:> ui/GridRow
+    [c-display-field 16 "Meeting Frequency" (v-fn :product/meeting-frequency)
+     :has-markdown? true]]])
 
-;; (defn c-reporting
-;;   [product v] ; v - value function, retrieves value by prompt name
-;;   [:> ui/Segment {:class "detail-container profile"}
-;;    [:h1.title "Reporting & Measurements"]
-;;    [:> ui/Grid {:columns "equal" :style {:margin-top 0}}
-;;     [:> ui/GridRow
-;;      [c-display-field {:width 16} "Reporting" (v "Reporting") :has-markdown? true]]
-;;     [:> ui/GridRow
-;;      [c-display-field {:width 16} "KPIs" (v "KPIs")
-;;       :has-markdown? true
-;;       :info "Key Performance Indicators"]]
-;;     [:> ui/GridRow
-;;      [c-display-field {:width 16} "Integrations" (v "Integrations") :has-markdown? true]]
-;;     [:> ui/GridRow
-;;      [c-display-field {:width 16} "Data Security" (v "Data Security") :has-markdown? true]]]])
+(defn c-reporting
+  "Component to display onboarding information of a product profile.
+  c-display-field - component to display a field (key/value)
+  v-fn - function to get value per some prompt term"
+  [c-display-field v-fn]
+  [c-profile-segment {:title "Reporting & Measurements"}
+   [:> ui/Grid {:columns "equal" :style {:margin-top 0}}
+    [:> ui/GridRow
+     [c-display-field 16 "Reporting" (v-fn :product/reporting)
+      :has-markdown? true]]
+    [:> ui/GridRow
+     [c-display-field 16 "KPIs" (v-fn :product/kpis)
+      :has-markdown? true
+      :info "Key Performance Indicators"]]
+    [:> ui/GridRow
+     [c-display-field 16 "Integrations" (v-fn :product/integrations)
+      :has-markdown? true]]
+    [:> ui/GridRow
+     [c-display-field 16 "Data Security" (v-fn :product/data-security)
+      :has-markdown? true]]]])
 
-;; (defn c-market-niche
-;;   [product v] ; v - value function, retrieves value by prompt name
-;;   [:> ui/Segment {:class "detail-container profile"}
-;;    [:h1.title "Industry Niche"]
-;;    [:> ui/Grid {:columns "equal" :style {:margin-top 0}}
-;;     [:> ui/GridRow
-;;      [c-display-field {:width 16} "Ideal Client Profile" (v "Ideal Client Profile")
-;;       :has-markdown? true
-;;       :info "A typical user of this product, in terms of company size, revenue, verticals, etc."]]
-;;     [:> ui/GridRow
-;;      [c-display-field {:width 16} "Case Studies"
-;;       (when (v "Case Studies" "Links to Case Studies")
-;;         [:a {:href (v "Case Studies" "Links to Case Studies")
-;;              :target "_blank"}
-;;          [:> ui/Icon {:name "external square"
-;;                       :color "blue"}]
-;;          (v "Case Studies" "Links to Case Studies")])]]
-;;     [:> ui/GridRow
-;;      [c-display-field {:width 6} "Number of Current Clients" (when (v "Number of Current Clients") (util/decimal-format (v "Number of Current Clients")))]
-;;      [c-display-field {:width 10} "Example Current Clients" (v "Example Current Clients") :has-markdown? true]]
-;;     [:> ui/GridRow
-;;      [c-display-field {:width 16} "Competitors" (v "Competitors") :has-markdown? true]]
-;;     [:> ui/GridRow
-;;      [c-display-field {:width 16} "Competitive Differentiator" (v "Competitive Differentiator") :has-markdown? true]]
-;;     [:> ui/GridRow
-;;      [c-display-field {:width 16} "Product Roadmap" (v "Product Roadmap") :has-markdown? true]]]])
+(defn c-market-niche
+  "Component to display onboarding information of a product profile.
+  c-display-field - component to display a field (key/value)
+  v-fn - function to get value per some prompt term"
+  [c-display-field v-fn]
+  [c-profile-segment {:title "Reporting & Measurements"}
+   [:> ui/Grid {:columns "equal" :style {:margin-top 0}}
+    [:> ui/GridRow
+     [c-display-field 16 "Ideal Client Profile" (v-fn :product/ideal-client)
+      :has-markdown? true
+      :info "A typical user of this product, in terms of company size, revenue, verticals, etc."]]
+    [:> ui/GridRow
+     [c-display-field 16 "Case Studies"
+      (when (has-data? (v-fn :product/case-studies))
+        [c-external-link (v-fn :product/case-studies)])
+      :has-markdown? true]]
+    [:> ui/GridRow
+     [c-display-field 6 "Number of Current Clients"
+      (when (has-data? (v-fn :product/num-clients nil :nval))
+        (util/decimal-format (v-fn :product/num-clients nil :nval)))]
+     [c-display-field 10 "Example Current Clients" (v-fn :product/clients)
+      :has-markdown? true]]
+    [:> ui/GridRow
+     [c-display-field 16 "Competitors" (v-fn :product/competitors)
+      :has-markdown? true]]
+    [:> ui/GridRow
+     [c-display-field 16 "Competitive Differentiator" (v-fn :product/competitive-differentiator)
+      :has-markdown? true]]
+    [:> ui/GridRow
+     [c-display-field 16 "Product Roadmap" (v-fn :product/roadmap)
+      :has-markdown? true]]]])
+
+(defn c-vendor-profile
+  [{:keys [response-prompts] :as vendor-profile-doc} vendor-id vendor-name]
+  (let [c-display-field (requestable (partial c-display-field* {:type :vendor
+                                                                :id vendor-id
+                                                                :name vendor-name}))
+        v-fn (partial docs/get-value-by-term response-prompts)]
+    [c-profile-segment {:title "Company Profile"}
+     [:> ui/GridRow 
+      [c-display-field 6 "Website"
+       (when (has-data? (v-fn :vendor/website))
+         [c-external-link (v-fn :vendor/website)])]
+      [c-display-field 6 "Headquarters" (v-fn :vendor/headquarters)]]
+     [:> ui/GridRow
+      [c-display-field 6 "Funding Status" (v-fn :vendor/funding)]
+      [c-display-field 5 "Year Founded" (v-fn :vendor/year-founded)]
+      [c-display-field 5 "Number of Employees"
+       (when (has-data? (v-fn :vendor/employee-count nil :nval))
+         (util/decimal-format (v-fn :vendor/employee-count nil :nval)))]]]))
+
 
 ;; Product Profile terms
 ;; product/description
@@ -374,29 +409,3 @@
 ;; product/onboarding-team-involvement
 ;; product/case-studies
 ;; product/onboarding-estimated-time
-
-(defn c-vendor-profile
-  [{:keys [response-prompts] :as vendor-profile-doc} vendor-id vendor-name]
-  (let [c-display-field (requestable (partial c-display-field* {:type :vendor
-                                                                :id vendor-id
-                                                                :name vendor-name}))
-        v-fn (partial docs/get-value-by-term response-prompts)]
-    [c-profile-segment {:title "Company Profile"}
-     [:> ui/GridRow 
-      [c-display-field 6 "Website"
-       (when-let [website-url (v-fn :vendor/website)]
-         [c-external-link website-url])]
-      [c-display-field 6 "Headquarters" (v-fn :vendor/headquarters)]]
-     [:> ui/GridRow
-      [c-display-field 6 "Funding Status" (v-fn :vendor/funding)]
-
-      [c-display-field* {:type :vendor
-                         :id vendor-id
-                         :name vendor-name}
-       5 "Year Founded" 
-       (v-fn :vendor/year-founded)]
-      ;; [c-display-field 5 "Year Founded" (v-fn :vendor/year-founded)]
-      
-      [c-display-field 5 "Number of Employees"
-       (when-let [employee-count (v-fn :vendor/employee-count nil :nval)]
-         (util/decimal-format employee-count))]]]))

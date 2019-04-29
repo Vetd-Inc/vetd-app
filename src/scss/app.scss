@@ -152,7 +152,7 @@ a.teal:hover {
 .missing-data {
   .display-field-key, .display-field-value {
     opacity: 0.2;
-    transition: opacity 0.5s 0.3s linear, filter 0.5s 0s linear, color 0.5s 0.3s linear;
+    transition: opacity 0.3s 0.3s linear, filter 0.3s 0s linear, color 0.3s 0.3s linear;
     cursor: default;
   }
   .button {
@@ -168,7 +168,7 @@ a.teal:hover {
     .display-field-key, .display-field-value {
       // filter: blur(4px);
       // filter: brightness(2);
-      opacity: 0.6;
+      opacity: 0.8;
       color: rgb(66, 177, 179);
     }
     &:hover {
