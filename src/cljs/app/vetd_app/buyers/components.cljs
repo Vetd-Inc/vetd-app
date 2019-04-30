@@ -372,35 +372,3 @@
       [c-display-field 5 "Number of Employees"
        (when (has-data? (v-fn :vendor/employee-count nil :nval))
          (util/decimal-format (v-fn :vendor/employee-count nil :nval)))]]]))
-
-
-;; Product Profile terms
-;; product/description
-;; product/free-trial?
-;; product/free-trial-terms
-;; product/pricing-model
-;; product/categories
-;; product/price-range
-;; product/payment-options
-;; product/minimum-contract
-;; product/cancellation-process
-;; product/kpis
-;; product/reporting
-;; product/data-security
-;; product/point-of-contact
-;; product/meeting-frequency
-;; product/ideal-client
-;; product/competitors
-;; product/competitive-differentiator
-;; product/tagline
-;; product/onboarding-process
-;; product/num-clients
-;; product/clients
-;; product/demo
-;; product/website
-;; product/logo
-;; product/integrations
-;; product/roadmap
-;; product/onboarding-team-involvement
-;; product/case-studies
-;; product/onboarding-estimated-time
