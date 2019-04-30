@@ -53,10 +53,10 @@
         (or (util/parse-md (product-v-fn :product/description))
             [:p "No description available."])
         [:br]
-        [:h3.display-field-key "Pitch"]
+        [:h3.display-field-key "Preposal Pitch"]
         (util/parse-md pitch)
         [:br]
-        [:h3.display-field-key "Pricing Estimate"]
+        [:h3.display-field-key "Preposal Pricing Estimate"]
         (if pricing-estimate-value
           [:<>
            (util/currency-format pricing-estimate-value) " / " pricing-estimate-unit
