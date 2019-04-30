@@ -30,9 +30,8 @@
 
 ;; Components
 (defn c-preposal-header-segment
-  [product preposal-v-fn product-v-fn ]
-  (let [{:keys [vendor rounds pname logo]} product
-        pricing-estimate-value (preposal-v-fn :preposal/pricing-estimate "value" :nval)
+  [{:keys [vendor rounds pname logo] :as product} preposal-v-fn product-v-fn]
+  (let [pricing-estimate-value (preposal-v-fn :preposal/pricing-estimate "value" :nval)
         pricing-estimate-unit (preposal-v-fn :preposal/pricing-estimate "unit")
         pricing-estimate-details (preposal-v-fn :preposal/pricing-estimate "details")
         pitch (preposal-v-fn :preposal/pitch)]
@@ -84,10 +83,10 @@
                                                          :form-docs
                                                          first
                                                          :response-prompts))
-        c-display-field (-> (partial bc/c-display-field* {:type :product
-                                                          :id (:id product)
-                                                          :name (:pname product)})
-                            bc/requestable)]
+        c-display-field (bc/requestable
+                         (partial bc/c-display-field* {:type :product
+                                                       :id (:id product)
+                                                       :name (:pname product)}))]
     [:<>
      [c-preposal-header-segment product preposal-v-fn product-v-fn]
      [bc/c-pricing c-display-field product-v-fn]

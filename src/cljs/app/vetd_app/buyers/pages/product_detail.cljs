@@ -124,49 +124,53 @@
                  "Request Preposal"
                  [:> ui/Icon {:name "wpforms"}]])}]))
 
+(defn c-product-header-segment
+  [{:keys [vendor rounds pname logo] :as product} v-fn]
+  [:> ui/Segment {:class "detail-container"}
+   [:h1.product-title
+    pname " " [:small " by " (:oname vendor)]]
+   [:> ui/Image {:class "product-logo"
+                 :src (str "https://s3.amazonaws.com/vetd-logos/" logo)}]
+   (if (not-empty (:rounds product))
+     [bc/c-round-in-progress {:round-idstr (-> rounds first :idstr)
+                              :props {:ribbon "left"}}])
+   [bc/c-categories product]
+   (when (= "Yes" (v-fn :product/free-trial?))
+     [bc/c-free-trial-tag])
+   [:> ui/Grid {:columns "equal"
+                :style {:margin-top 4}}
+    [:> ui/GridRow
+     [:> ui/GridColumn {:width 12}
+      (or (util/parse-md (v-fn :product/description))
+          [:p "No description available."])
+      [:br]
+      [:h3.display-field-key "Pitch"]
+      [:p "Request a Preposal to get a personalized pitch."]
+      [:br]
+      [:h3.display-field-key "Pricing Estimate"]
+      "Request a Preposal to get a personalized estimate."]
+     [:> ui/GridColumn {:width 4}
+      (when-let [website-url (v-fn :product/website)]
+        [:<>
+         [bc/c-external-link website-url "Product Website"]
+         [:br]
+         [:br]])
+      (when-let [demo-url (v-fn :product/demo)]
+        [:<>
+         [bc/c-external-link demo-url "Watch Demo Video"]
+         [:br]
+         [:br]])]]]])
+
 (defn c-product
   "Component to display Product details."
-  [{:keys [id pname logo form-docs vendor forms rounds categories] :as product}]
+  [{:keys [id pname form-docs] :as product}]
   (let [v-fn (partial docs/get-value-by-term (-> form-docs first :response-prompts))
         c-display-field (bc/requestable
                          (partial bc/c-display-field* {:type :product
                                                        :id id
                                                        :name pname}))]
     [:<>
-     [:> ui/Segment {:class "detail-container"}
-      [:h1.product-title
-       pname " " [:small " by " (:oname vendor)]]
-      [:> ui/Image {:class "product-logo"
-                    :src (str "https://s3.amazonaws.com/vetd-logos/" logo)}]
-      (if (not-empty (:rounds product))
-        [bc/c-round-in-progress {:round-idstr (-> rounds first :idstr)
-                                 :props {:ribbon "left"}}])
-      [bc/c-categories product]
-      (when (= "Yes" (v-fn :product/free-trial?))
-        [bc/c-free-trial-tag])
-      [:> ui/Grid {:columns "equal"
-                   :style {:margin-top 4}}
-       [:> ui/GridRow
-        [:> ui/GridColumn {:width 12}
-         (or (util/parse-md (v-fn :product/description))
-             [:p "No description available."])
-         [:br]
-         [:h3.display-field-key "Pitch"]
-         [:p "Request a Preposal to get a personalized pitch."]
-         [:br]
-         [:h3.display-field-key "Pricing Estimate"]
-         "Request a Preposal to get a personalized estimate."]
-        [:> ui/GridColumn {:width 4}
-         (when-let [website-url (v-fn :product/website)]
-           [:<>
-            [bc/c-external-link website-url "Product Website"]
-            [:br]
-            [:br]])
-         (when-let [demo-url (v-fn :product/demo)]
-           [:<>
-            [bc/c-external-link demo-url "Watch Demo Video"]
-            [:br]
-            [:br]])]]]]
+     [c-product-header-segment product v-fn]
      [bc/c-pricing c-display-field v-fn]
      [bc/c-onboarding c-display-field v-fn]
      [bc/c-client-service c-display-field v-fn]
