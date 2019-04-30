@@ -226,7 +226,8 @@
                                     (rf/dispatch [:b/request-complete-profile
                                                   (:type profile)
                                                   (:id profile)
-                                                  (:name profile)]))}
+                                                  (:name profile)
+                                                  field-key]))}
         "Request Complete Profile"]])]])
 
 (defn requestable

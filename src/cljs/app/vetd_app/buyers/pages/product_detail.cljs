@@ -31,16 +31,17 @@
 
 (rf/reg-event-fx
  :b/request-complete-profile
- (fn [{:keys [db]} [_ etype eid ename]]
+ (fn [{:keys [db]} [_ etype eid ename field-key]]
    (let [qid (get-next-query-id)]
      {:ws-send {:payload {:cmd :b/request-complete-profile
                           :return {:handler :b/request-complete-profile-return}
                           :etype etype
                           :eid eid
+                          :field-key field-key
                           :buyer-id (util/db->current-org-id db)}}
       :analytics/track {:event "Request"
                         :props {:category (str (s/capitalize (name etype)) " Profile")
-                                :label ename}}})))
+                                :label (str ename " - " field-key)}}})))
 
 (rf/reg-event-fx
  :b/request-complete-profile-return
