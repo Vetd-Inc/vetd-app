@@ -86,10 +86,12 @@
         c-display-field (bc/requestable
                          (partial bc/c-display-field* {:type :product
                                                        :id (:id product)
-                                                       :name (:pname product)}))]
+                                                       :name (:pname product)}))
+        {:keys [vendor]} product]
     [:<>
      [c-preposal-header-segment product preposal-v-fn product-v-fn]
      [bc/c-pricing c-display-field product-v-fn]
+     [bc/c-vendor-profile (-> vendor :docs-out first) (:id vendor) (:oname vendor)]
      [bc/c-onboarding c-display-field product-v-fn]
      [bc/c-client-service c-display-field product-v-fn]
      [bc/c-reporting c-display-field product-v-fn]
@@ -158,8 +160,5 @@
         (if (= :loading @preps&)
           [cc/c-loader]
           (if-let [preposal (-> @preps& :docs first)]
-            (let [{:keys [docs-out id oname]} (-> preposal :product :vendor)]
-              [:<>
-               [c-preposal preposal]
-               [bc/c-vendor-profile (first docs-out) id oname]])
+            [c-preposal preposal]
             "Sorry, that preposal cannot be found."))]])))

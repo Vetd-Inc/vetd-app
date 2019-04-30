@@ -202,7 +202,8 @@
   [profile width field-key field-value
    & {:keys [has-markdown? info]}]
   [:> ui/GridColumn {:width width}
-   [:> ui/Segment {:class (str "display-field " (when-not (has-data? field-value) "missing-data"))
+   [:> ui/Segment {:class (str "display-field "
+                               (when-not (has-data? field-value) "missing-data"))
                    :vertical true}
     [:h3.display-field-key
      field-key
@@ -231,8 +232,8 @@
   [component]
   (with-meta component
     {:component-did-mount
-     (fn [this]
-       (when-not (has-data? (:field-value (r/props this)))
+     (fn [this]             ; the args index for "field-value"
+       (when-not (has-data? ((r/argv this) 3))
          (let [node (r/dom-node this)
                body (first (array-seq (.getElementsByTagName js/document "body")))
                mouseenter #(.add (.-classList body) "missing-data-hovering")

@@ -164,7 +164,7 @@
 
 (defn c-product
   "Component to display Product details."
-  [{:keys [id pname form-docs] :as product}]
+  [{:keys [id pname form-docs vendor] :as product}]
   (let [v-fn (partial docs/get-value-by-term (-> form-docs first :response-prompts))
         c-display-field (bc/requestable
                          (partial bc/c-display-field* {:type :product
@@ -173,6 +173,7 @@
     [:<>
      [c-product-header-segment product v-fn]
      [bc/c-pricing c-display-field v-fn]
+     [bc/c-vendor-profile (-> vendor :docs-out first) (:id vendor) (:oname vendor)]
      [bc/c-onboarding c-display-field v-fn]
      [bc/c-client-service c-display-field v-fn]
      [bc/c-reporting c-display-field v-fn]
@@ -232,8 +233,4 @@
        [:div.inner-container
         (if (= :loading @products&)
           [cc/c-loader]
-          (let [product (-> @products& :products first)
-                {:keys [docs-out id oname]} (:vendor product)]
-            [:<>
-             [c-product product]
-             [bc/c-vendor-profile (first docs-out) id oname]]))]])))
+          [c-product (-> @products& :products first)])]])))
