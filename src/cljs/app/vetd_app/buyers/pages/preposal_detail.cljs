@@ -29,71 +29,72 @@
  :<- [:page-params] 
  (fn [{:keys [preposal-idstr]}] preposal-idstr))
 
+(defn c-preposal-header-segment
+  [product preposal-v-fn product-v-fn ]
+  (let [{:keys [vendor rounds pname logo]} product
+        pricing-estimate-value (preposal-v-fn :preposal/pricing-estimate "value" :nval)
+        pricing-estimate-unit (preposal-v-fn :preposal/pricing-estimate "unit")
+        pricing-estimate-details (preposal-v-fn :preposal/pricing-estimate "details")
+        pitch (preposal-v-fn :preposal/pitch)]
+    [:> ui/Segment {:class "detail-container"}
+     [:h1.product-title
+      pname " " [:small " by " (:oname vendor)]]
+     [:> ui/Image {:class "product-logo"
+                   :src (str "https://s3.amazonaws.com/vetd-logos/" logo)}]
+     (if (not-empty rounds)
+       [bc/c-round-in-progress {:round-idstr (-> rounds first :idstr)
+                                :props {:ribbon "left"}}])
+     [bc/c-categories product]
+     (when (= "Yes" (product-v-fn :product/free-trial?))
+       [bc/c-free-trial-tag])
+     [:> ui/Grid {:columns "equal"
+                  :style {:margin-top 4}}
+      [:> ui/GridRow
+       [:> ui/GridColumn {:width 12}
+        (or (some-> (product-v-fn :product/description)
+                    md/md->hiccup
+                    md/component)
+            [:p "No description available."])
+        [:br]
+        [:h3.display-field-key "Pitch"]
+        (-> pitch
+            md/md->hiccup
+            md/component)
+        [:br]
+        [:h3.display-field-key "Pricing Estimate"]
+        (if pricing-estimate-value
+          [:<>
+           (util/currency-format pricing-estimate-value) " / " pricing-estimate-unit
+           (when (not-empty pricing-estimate-details)
+             (str " - " pricing-estimate-details))]
+          pricing-estimate-details)]
+       [:> ui/GridColumn {:width 4}
+        (when-let [website-url (product-v-fn :product/website)]
+          [:<>
+           [bc/c-external-link website-url "Product Website"]
+           [:br]
+           [:br]])
+        (when-let [demo-url (product-v-fn :product/demo)]
+          [:<>
+           [bc/c-external-link demo-url "Watch Demo Video"]
+           [:br]
+           [:br]])]]]]))
+
 ;; Components
 (defn c-preposal
   "Component to display Preposal details."
-  [{:keys [id product from-org response-prompts] :as preposal}]
+  [{:keys [product response-prompts] :as preposal}]
   (let [preposal-v-fn (partial docs/get-value-by-term response-prompts)
         product-v-fn (partial docs/get-value-by-term (-> product
                                                          :form-docs
                                                          first
                                                          :response-prompts))
-        c-display-field (bc/requestable
-                         (partial bc/c-display-field* {:type :product
-                                                       :id (:id product)
-                                                       :name (:pname product)}))
-        pricing-estimate-value (preposal-v-fn :preposal/pricing-estimate "value" :nval)
-        pricing-estimate-unit (preposal-v-fn :preposal/pricing-estimate "unit")
-        pricing-estimate-details (preposal-v-fn :preposal/pricing-estimate "details")
-        pitch (preposal-v-fn :preposal/pitch)
-        vendor (:vendor product)
-        rounds (:rounds product)
-        pname (:pname product)
-        logo (:logo product)]
+        c-display-field (-> (partial bc/c-display-field* {:type :product
+                                                          :id (:id product)
+                                                          :name (:pname product)})
+                            bc/requestable)]
     [:<>
-     [:> ui/Segment {:class "detail-container"}
-      [:h1.product-title
-       pname " " [:small " by " (:oname vendor)]]
-      [:> ui/Image {:class "product-logo"
-                    :src (str "https://s3.amazonaws.com/vetd-logos/" logo)}]
-      (if (not-empty rounds)
-        [bc/c-round-in-progress {:round-idstr (-> rounds first :idstr)
-                                 :props {:ribbon "left"}}])
-      [bc/c-categories product]
-      (when (= "Yes" (product-v-fn :product/free-trial?))
-        [bc/c-free-trial-tag])
-      [:> ui/Grid {:columns "equal"
-                   :style {:margin-top 4}}
-       [:> ui/GridRow
-        [:> ui/GridColumn {:width 12}
-         (or (some-> (product-v-fn :product/description)
-                     md/md->hiccup
-                     md/component)
-             [:p "No description available."])
-         [:br]
-         [:h3.display-field-key "Pitch"]
-         (-> pitch
-             md/md->hiccup
-             md/component)
-         [:br]
-         [:h3.display-field-key "Pricing Estimate"]
-         (if pricing-estimate-value
-           [:<>
-            (util/currency-format pricing-estimate-value) " / " pricing-estimate-unit
-            (when (not-empty pricing-estimate-details)
-              (str " - " pricing-estimate-details))]
-           pricing-estimate-details)]
-        [:> ui/GridColumn {:width 4}
-         (when-let [website-url (product-v-fn :product/website)]
-           [:<>
-            [bc/c-external-link website-url "Product Website"]
-            [:br]
-            [:br]])
-         (when-let [demo-url (product-v-fn :product/demo)]
-           [:<>
-            [bc/c-external-link demo-url "Watch Demo Video"]
-            [:br]
-            [:br]])]]]]
+     [c-preposal-header-segment product preposal-v-fn product-v-fn]
      [bc/c-pricing c-display-field product-v-fn]
      [bc/c-onboarding c-display-field product-v-fn]
      [bc/c-client-service c-display-field product-v-fn]
