@@ -199,10 +199,7 @@
   (not-empty (str value)))
 
 (defn c-display-field*
-  [profile
-   width
-   field-key
-   field-value
+  [profile width field-key field-value
    & {:keys [has-markdown? info]}]
   [:> ui/GridColumn {:width width}
    [:> ui/Segment {:class (str "display-field " (when-not (has-data? field-value) "missing-data"))
