@@ -5,8 +5,7 @@
             [vetd-app.util :as util]
             [vetd-app.docs :as docs]
             [reagent.core :as r]
-            [re-frame.core :as rf]
-            [markdown-to-hiccup.core :as md]))
+            [re-frame.core :as rf]))
 
 ;; Events
 (rf/reg-event-fx
@@ -29,6 +28,7 @@
  :<- [:page-params] 
  (fn [{:keys [preposal-idstr]}] preposal-idstr))
 
+;; Components
 (defn c-preposal-header-segment
   [product preposal-v-fn product-v-fn ]
   (let [{:keys [vendor rounds pname logo]} product
@@ -51,15 +51,11 @@
                   :style {:margin-top 4}}
       [:> ui/GridRow
        [:> ui/GridColumn {:width 12}
-        (or (some-> (product-v-fn :product/description)
-                    md/md->hiccup
-                    md/component)
+        (or (util/parse-md (product-v-fn :product/description))
             [:p "No description available."])
         [:br]
         [:h3.display-field-key "Pitch"]
-        (-> pitch
-            md/md->hiccup
-            md/component)
+        (util/parse-md pitch)
         [:br]
         [:h3.display-field-key "Pricing Estimate"]
         (if pricing-estimate-value
@@ -80,7 +76,6 @@
            [:br]
            [:br]])]]]]))
 
-;; Components
 (defn c-preposal
   "Component to display Preposal details."
   [{:keys [product response-prompts] :as preposal}]

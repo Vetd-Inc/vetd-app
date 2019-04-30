@@ -5,7 +5,6 @@
             [reagent.core :as r]
             [reagent.format :as format]
             [re-frame.core :as rf]
-            [markdown-to-hiccup.core :as md]
             [clojure.string :as s]))
 
 (defn c-external-link
@@ -218,9 +217,7 @@
     (if (has-data? field-value)
       [:div.display-field-value
        (if has-markdown?
-         (-> field-value
-             md/md->hiccup
-             md/component)
+         (util/parse-md field-value)
          field-value)]
       [:<>
        [:div.display-field-value "Unavailable"]

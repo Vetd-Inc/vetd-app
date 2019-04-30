@@ -7,7 +7,6 @@
             [reagent.core :as r]
             [reagent.format :as format]
             [re-frame.core :as rf]
-            [markdown-to-hiccup.core :as md]
             [clojure.string :as s]))
 
 (def last-query-id (atom 0))
@@ -149,9 +148,7 @@
                    :style {:margin-top 4}}
        [:> ui/GridRow
         [:> ui/GridColumn {:width 12}
-         (or (some-> (v-fn :product/description)
-                     md/md->hiccup
-                     md/component)
+         (or (util/parse-md (v-fn :product/description))
              [:p "No description available."])
          [:br]
          [:h3.display-field-key "Pitch"]

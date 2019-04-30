@@ -7,7 +7,6 @@
             [reagent.core :as r]
             [reagent.format :as format]
             [re-frame.core :as rf]
-            [markdown-to-hiccup.core :as md]
             [clojure.string :as s]))
 
 (def last-query-id (atom 0))

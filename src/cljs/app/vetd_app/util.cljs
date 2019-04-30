@@ -5,7 +5,8 @@
             [re-frame.interop :refer [deref? reagent-id]]
             [reagent.ratom :as rr]
             [reagent.format :as format]
-            [re-frame.registrar :as rf-reg])
+            [re-frame.registrar :as rf-reg]
+            [markdown-to-hiccup.core :as md])
   (:import [goog.functions]))
 
 (defonce dispatch-debounce-store& (atom {}))
@@ -235,6 +236,13 @@
   (str (subs string 0 length)
        (when (> (count string) length)
          "...")))
+
+(defn parse-md
+  "Takes string and parses any Markdown into hiccup components."
+  [string]
+  (some-> string
+          md/md->hiccup
+          md/component))
 
 (defn augment-with-keys
   "Add the index as a key to the metadata of each element.
