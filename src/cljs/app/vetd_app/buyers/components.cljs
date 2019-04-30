@@ -251,7 +251,7 @@
    [:h1.title title]
    [:> ui/Grid {:columns "equal"
                 :style {:margin-top 0}}
-    (util/add-keys children)]])
+    (util/augment-with-keys children)]])
 
 (defn c-pricing
   "Component to display pricing information of a product profile.
