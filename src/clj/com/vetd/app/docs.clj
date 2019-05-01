@@ -806,13 +806,13 @@
 (defn round-init-doc-id->create-form-proc-tree
   [round-init-doc-id]
   (let [{:keys [response-prompts] :as doc} (-> [[:docs {:id round-init-doc-id}
-                                       [:title
-                                        [:response-prompts
-                                         {:prompt-term "rounds/requirements"}
-                                         [[:fields [:id :sval :idx]]]]]]]
-                                     ha/sync-query
-                                     :docs
-                                     first)]
+                                                 [:title
+                                                  [:response-prompts
+                                                   {:prompt-term "rounds/requirements"}
+                                                   [[:fields [:id :sval :idx]]]]]]]
+                                               ha/sync-query
+                                               :docs
+                                               first)]
     {:item doc
      :children (->> response-prompts first :fields
                     (map (fn [field] {:item field})))}))
@@ -821,14 +821,17 @@
 (defn group-by-prompt-exists
   [prompts]
   (ut/$- ->> prompts
-         (group-by (fn [{:keys [item]}]
-                     (let [{:keys [sval]} item]
-                       (-> [[:prompts
-                             {:prompt sval} 
-                             [:id]]]
-                           ha/sync-query
-                           :prompts
-                           empty?))))
+         (map (fn [{:keys [item]}]
+                {:item
+                 (merge (let [{:keys [sval]} item]
+                          (-> [[:prompts
+                                {:prompt sval} 
+                                [:id]]]
+                              ha/sync-query
+                              :prompts
+                              first))
+                        (dissoc item :id))}))
+         (group-by (comp nil? :id :item))
          (clojure.set/rename-keys $
                                   {false :prompt-exists
                                    true :prompt-new})))
