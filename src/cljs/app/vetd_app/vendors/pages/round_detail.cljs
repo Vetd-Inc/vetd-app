@@ -1,4 +1,4 @@
-(ns vetd-app.vendors.pages.round-response
+(ns vetd-app.vendors.pages.round-detail
   (:require [vetd-app.ui :as ui]
             [vetd-app.common.components :as cc]
             [vetd-app.docs :as docs]
@@ -8,18 +8,16 @@
 
 
 (rf/reg-event-fx
- :v/nav-round-response
- (constantly
-  {:nav {:path "/v/round-response"}
-   :analytics/track {:event "Navigate"
-                     :props {:category "Navigation"
-                             :label "Vendor Round-Response"}}}))
+ :v/nav-round-detail
+ (fn [_ [_ round-idstr]]
+   {:nav {:path (str "/v/rounds/" round-idstr)}}))
 
 (rf/reg-event-fx
- :v/route-round-response
- (fn [{:keys [db]}]
-   {:db (assoc db :page :v/round-response)
-    :analytics/page {:name "Vendor Round-Response"}}))
+ :v/route-round-detail
+ (fn [{:keys [db]} [_ round-idstr]]
+   {:db (assoc db
+               :page :v/round-detail
+               :page-params {:round-idstr round-idstr})}))
 
 
 (defn c-page []
@@ -55,3 +53,6 @@
          [docs/c-form-maybe-doc
           (docs/mk-form-doc-state preq)
           {:show-submit true}])])))
+
+
+

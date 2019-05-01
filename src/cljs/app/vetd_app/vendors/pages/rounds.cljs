@@ -41,21 +41,30 @@
                          reverse
                          (group-by :status))]
     (fn []
-      [:div
-       (for [[k-status rounds] prod-rounds]
-         [:div
-          [:div {:style {:background-color "#333"
-                         :color "#FFF"
-                         :margin "10px"
-                         :padding "10px"
-                         :font-size "x-large"}}
-           k-status]
-          
-          (for [{:keys [idstr pname status created buyer]} rounds]
-            [:a {:href (str "/v/rounds/" idstr)
-                 :style {:padding "30px"
-                         :width "100%"
-                         :font-size "large"}}
-             [:span {:style {:padding "30px"}} (:oname buyer)]
-             [:span {:style {:padding "30px"}} pname]
-             (.toString (js/Date. created))])])])))
+      (let [prod-rounds (->> (for [{:keys [rounds] :as p} (:products @prod-rounds&)
+                               r rounds]
+                           (-> p
+                               (dissoc :rounds)
+                               (merge r)))
+                         (sort-by :created)
+                         reverse
+                         (group-by :status))]
+        [:div
+         (for [[k-status rounds] prod-rounds]
+           [:div
+            [:div {:style {:background-color "#333"
+                           :color "#FFF"
+                           :margin "10px"
+                           :padding "10px"
+                           :font-size "x-large"}}
+             k-status]
+            (for [{:keys [idstr pname status created buyer]} rounds]
+              [:div {:on-click #(rf/dispatch [:v/nav-round-detail idstr])
+                     :style {:background-color "#DDD"
+                             :cursor "pointer"
+                             :margin-left "30px"
+                             :padding "10px"
+                             :font-size "large"}}
+               [:span {:style {:padding "30px"}} (:oname buyer)]
+               [:span {:style {:padding "30px"}} pname]
+               (.toString (js/Date. created))])])]))))
