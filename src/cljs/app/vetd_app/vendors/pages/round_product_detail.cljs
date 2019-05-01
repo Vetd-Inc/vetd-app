@@ -32,28 +32,27 @@
         round-idstr& (rf/subscribe [:round-idstr])
         product-idstr& (rf/subscribe [:product-idstr])        
         round-product& (rf/subscribe [:gql/sub
-                                  {:queries
-                                   [[:round-product {:round-id (util/base31->num @round-idstr&)
-                                                     :product-id (util/base31->num @product-idstr&)}
-                                     [[:vendor-response-form-docs
-                                        [:id :title :doc-id :doc-title
-                                         :ftype :fsubtype
-                                         [:doc-from-org [:id :oname]]
-                                         [:doc-to-org [:id :oname]]
-                                         [:prompts {:ref-deleted nil
-                                                    :_order_by {:sort :asc}}
-                                          [:id :idstr :prompt :descr #_:sort ;; TODO sort
-                                           [:fields {:deleted nil
-                                                     :_order_by {:sort :asc}}
-                                            [:id :idstr :fname :ftype
-                                             :fsubtype :list? #_:sort]]]]
-                                         [:responses
-                                          {:ref-deleted nil}
-                                          [:id :prompt-id :notes
-                                           [:fields {:deleted nil}
-                                            [:id :pf-id :idx :sval :nval :dval :jval]]]]]]]]]}])]
+                                      {:queries
+                                       [[:round-product {:round-id (util/base31->num @round-idstr&)
+                                                         :product-id (util/base31->num @product-idstr&)}
+                                         [[:vendor-response-form-docs
+                                           [:id :title :doc-id :doc-title
+                                            :ftype :fsubtype
+                                            [:doc-from-org [:id :oname]]
+                                            [:doc-to-org [:id :oname]]
+                                            [:prompts {:ref-deleted nil
+                                                       :_order_by {:sort :asc}}
+                                             [:id :idstr :prompt :descr #_:sort ;; TODO sort
+                                              [:fields {:deleted nil
+                                                        :_order_by {:sort :asc}}
+                                               [:id :idstr :fname :ftype
+                                                :fsubtype :list? #_:sort]]]]
+                                            [:responses
+                                             {:ref-deleted nil}
+                                             [:id :prompt-id :notes
+                                              [:fields {:deleted nil}
+                                               [:id :pf-id :idx :sval :nval :dval :jval]]]]]]]]]}])]
     (fn []
-      (def rp1 @round-product&)
       (if (= :loading @round-product&)
         [cc/c-loader]
         [:div
