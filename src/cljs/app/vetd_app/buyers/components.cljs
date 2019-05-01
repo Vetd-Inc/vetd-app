@@ -297,7 +297,7 @@
   c-display-field - component to display a field (key/value)
   v-fn - function to get value per some prompt term"
   [c-display-field v-fn]
-  [c-profile-segment {:title "Reporting & Measurements"}
+  [c-profile-segment {:title "Reporting & Measurement"}
    [:> ui/Grid {:columns "equal" :style {:margin-top 0}}
     [:> ui/GridRow
      [c-display-field 16 "Reporting" (v-fn :product/reporting)
@@ -318,7 +318,7 @@
   c-display-field - component to display a field (key/value)
   v-fn - function to get value per some prompt term"
   [c-display-field v-fn]
-  [c-profile-segment {:title "Reporting & Measurements"}
+  [c-profile-segment {:title "Industry Niche"}
    [:> ui/Grid {:columns "equal" :style {:margin-top 0}}
     [:> ui/GridRow
      [c-display-field 16 "Ideal Client Profile" (v-fn :product/ideal-client)
