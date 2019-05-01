@@ -132,7 +132,7 @@
     pname " " [:small " by " (:oname vendor)]]
    [:> ui/Image {:class "product-logo"
                  :src (str "https://s3.amazonaws.com/vetd-logos/" logo)}]
-   (if (not-empty (:rounds product))
+   (when (not-empty (:rounds product))
      [bc/c-round-in-progress {:round-idstr (-> rounds first :idstr)
                               :props {:ribbon "left"}}])
    [bc/c-categories product]

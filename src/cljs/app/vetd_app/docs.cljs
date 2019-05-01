@@ -22,14 +22,9 @@
                  :value value
                  :text label})))))
 
-(defn fq-name
-  "Get the fully-qualified name of a keyword."
-  [key]
-  (str (namespace key) "/" (name key)))
-
 (defn get-value-by-term
   [response-prompts term & [field val-type]]
-  (let [term-str (fq-name term)]
+  (let [term-str (util/kw->str term)]
     (get (->> response-prompts
               (filter #(-> % :prompt-term (= term-str)))
               first
