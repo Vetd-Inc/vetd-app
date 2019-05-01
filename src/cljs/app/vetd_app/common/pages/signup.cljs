@@ -7,19 +7,19 @@
 ;; Events
 (rf/reg-event-fx
  :nav-signup
- (fn [_ [_ type]]
-   {:nav {:path (str "/signup/" type)}
+ (fn [_ [_ org-type]]
+   {:nav {:path (str "/signup/" (name org-type))}
     :analytics/track {:event "Signup Start"
                       :props {:category "Accounts"
-                              :label (s/capitalize type)}}}))
+                              :label (s/capitalize (name org-type))}}}))
 
 (rf/reg-event-fx
  :route-signup
- (fn [{:keys [db]} [_ type]]
+ (fn [{:keys [db]} [_ org-type]]
    {:db (assoc db
                :page :signup
-               :page-params {:type (keyword type)})
-    :analytics/page {:name (str (s/capitalize type) " Signup")}}))
+               :page-params {:org-type (keyword org-type)})
+    :analytics/page {:name (str (s/capitalize (name org-type)) " Signup")}}))
 
 (rf/reg-event-fx
  :create-acct
@@ -46,13 +46,13 @@
 
 ;; Subscriptions
 (rf/reg-sub
- :signup-type
+ :signup-org-type
  :<- [:page-params] 
- (fn [{:keys [type]}] type))
+ (fn [{:keys [org-type]}] org-type))
 
 ;; Components
 (defn c-page []
-  (let [signup-type& (rf/subscribe [:signup-type])
+  (let [signup-org-type& (rf/subscribe [:signup-org-type])
         uname (r/atom "")
         email (r/atom "")
         org-name (r/atom "")
@@ -65,7 +65,7 @@
        [:img.logo {:src "https://s3.amazonaws.com/vetd-logos/vetd.svg"}]
        [:> ui/Form
         [:> ui/Header {:as "h2"}
-         (case @signup-type&
+         (case @signup-org-type&
            :buyer "Sign Up as a Buyer"
            :vendor "Sign Up as a Vendor")]
         [:> ui/FormField
@@ -118,6 +118,6 @@
                                                                :email @email
                                                                :org-name @org-name
                                                                :org-url @org-url
-                                                               :org-type (name @signup-type&)
+                                                               :org-type (name @signup-org-type&)
                                                                :pwd @pwd}]])}
          "Sign Up"]]])))
