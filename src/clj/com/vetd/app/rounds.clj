@@ -39,7 +39,7 @@
         {:keys [ftype fsubtype prompts] form-template-id :id} (:req-form-template round)
         products (-> [[:rounds {:id round-id}
                        [[:products
-                         [:id :vendor-id :ref-deleted
+                         [:id :vendor-id :ref-deleted :ref-id
                           [:forms {:ftype ftype
                                    :fsubtype fsubtype
                                    :deleted nil}
@@ -57,14 +57,14 @@
                             (not (or (empty? forms)
                                      (nil? ref-deleted))))
                           products)]
-    #_    [round ftype fsubtype prompts form-template-id to-add to-remove]
-    (doseq [{:keys [vendor-id id]} to-add]
-      (clojure.pprint/pprint #_docs/create-form-from-template {:form-template-id form-template-id
-                                                               :from-org-id buyer-id
-                                                               :to-org-id vendor-id
-                                                               :title (format "Round Req Form -- round %d / prod %d "
-                                                                              round-id
-                                                                              vendor-id)}))
+    (doseq [{:keys [vendor-id id ref-id]} to-add]
+      (docs/create-form-from-template {:form-template-id form-template-id
+                                       :from-org-id buyer-id
+                                       :to-org-id vendor-id
+                                       :subject ref-id
+                                       :title (format "Round Req Form -- round %d / prod %d "
+                                                      round-id
+                                                      vendor-id)}))
     (doseq [{:keys [forms id]} to-remove]
       (->> forms first :id
            (docs/update-deleted :round_product)))))

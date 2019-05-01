@@ -90,4 +90,5 @@
     (doseq [product-id remove-ids]
       (delete-product-id-from-round product-id round-id))
     (doseq [product-id add-ids]
-      (rounds/invite-product-to-round product-id round-id))))
+      (rounds/invite-product-to-round product-id round-id))
+    (rounds/sync-round-vendor-req-forms round-id)))

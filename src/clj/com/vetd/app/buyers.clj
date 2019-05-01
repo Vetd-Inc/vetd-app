@@ -104,7 +104,8 @@
   [buyer-id title eid etype]
   (let [{:keys [id] :as r} (insert-round buyer-id title)]
     (case etype
-      :product (rounds/invite-product-to-round eid id)
+      ;; TODO call sync-round-vendor-req-forms too, once we're ready
+      :product (rounds/invite-product-to-round eid id) 
       :category (insert-round-category id eid))
     (try
       (let [msg (with-out-str

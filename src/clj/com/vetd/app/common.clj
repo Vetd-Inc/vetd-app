@@ -8,9 +8,12 @@
             [clojure.core.async :as a]
             [cognitect.aws.client.api :as aws]
             [cognitect.aws.credentials :as aws-creds]
-            [taoensso.timbre :as log]))
+            [taoensso.timbre :as log]
+            clojure.pprint))
 
 (defonce shutdown-ch (a/chan))
+
+(defonce supress-sns? (atom false))
 
 #_ (def handle-ws-inbound nil)
 (defmulti handle-ws-inbound
@@ -24,7 +27,8 @@
   (if prod?
     (do (log/merge-config! {:level :info
                             :output-fn (partial log/default-output-fn {:stacktrace-fonts {}})}))
-    (do (alter-var-root #'spec/*explain-out* (constantly expound/printer)))))
+    (do (alter-var-root #'spec/*explain-out* (constantly expound/printer))
+        (reset! supress-sns? true))))
 
 
 ;;;; AWS API
@@ -48,9 +52,13 @@
   topic - keyword abbrev. for topic's ARN
   subject - notification Subject
   message - notification message body"
-  [topic subject message]
-  (aws/invoke sns-client
-              {:op :Publish
-               :request {:TopicArn (topic->arn topic)
-                         :Subject subject
-                         :Message message}}))
+  [topic subject message & [override-suppress?]]
+  (let [arg {:op :Publish
+                 :request {:TopicArn (topic->arn topic)
+                           :Subject subject
+                           :Message message}}]
+    (if (or (not @supress-sns?) override-suppress?)
+      (aws/invoke sns-client arg)
+      ;; TODO make separate sns for dev
+      (do (println "SNS PUBLISH SUPPRESSED")
+          (clojure.pprint/pprint arg)))))
