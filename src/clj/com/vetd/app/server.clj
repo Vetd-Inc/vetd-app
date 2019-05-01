@@ -148,6 +148,51 @@
       :value
       auth/admin-session?))
 
+(defn app-html
+  [cookies]
+  (page/html5
+   [:head
+    [:title (str "Vetd | "
+                 (if (admin-session? cookies)
+                   "ADMIN"
+                   "B2B Software Buying Platform"))]
+    [:meta {:http-equiv "Content-Type"
+            :content "text/html; charset=UTF-8"}]
+    [:meta {:name "viewport"
+            :content "width=device-width, initial-scale=1"}]
+    ;; favicon etc
+    [:link {:rel "apple-touch-icon" :sizes "180x180"
+            :href "/apple-touch-icon.png"}]
+    [:link {:rel "icon" :type "image/png" :sizes "32x32"
+            :href "/favicon-32x32.png"}]
+    [:link {:rel "icon" :type "image/png" :sizes "16x16"
+            :href "/favicon-16x16.png"}]
+    [:link {:rel "manifest" :href "/site.webmanifest"}]
+    [:link {:rel "mask-icon" :color "#4ec2c4"
+            :href "/safari-pinned-tab.svg"}]
+    [:meta {:name "apple-mobile-web-app-title" :content "Vetd"}]
+    [:meta {:name "application-name" :content "Vetd"}]
+    [:meta {:name "msapplication-TileColor" :content "#00aba9"}]
+    [:meta {:name "theme-color" :content "#ffffff"}]
+    (page/include-css "/assets/css/semantic-ui.css")
+    (page/include-css "/assets/lib/toastr/toastr.min.css")
+    (page/include-css "/assets/css/app.css")
+    (when (admin-session? cookies)
+      (page/include-css "/assets/css/admin.css"))]
+   [:body
+    [:div {:id "app"}
+     ;; loading spinner
+     [:div {:class "spinner"
+            :style "margin: 175px auto;"}
+      [:i] [:i] [:i]]]
+    ;; loads Segment's "Analytics.js"
+    [:script {:type "text/javascript"}
+     "!function(){var analytics=window.analytics=window.analytics||[];if(!analytics.initialize)if(analytics.invoked)window.console&&console.error&&console.error(\"Segment snippet included twice.\");else{analytics.invoked=!0;analytics.methods=[\"trackSubmit\",\"trackClick\",\"trackLink\",\"trackForm\",\"pageview\",\"identify\",\"reset\",\"group\",\"track\",\"ready\",\"alias\",\"debug\",\"page\",\"once\",\"off\",\"on\"];analytics.factory=function(t){return function(){var e=Array.prototype.slice.call(arguments);e.unshift(t);analytics.push(e);return analytics}};for(var t=0;t<analytics.methods.length;t++){var e=analytics.methods[t];analytics[e]=analytics.factory(e)}analytics.load=function(t,e){var n=document.createElement(\"script\");n.type=\"text/javascript\";n.async=!0;n.src=\"https://cdn.segment.com/analytics.js/v1/\"+t+\"/analytics.min.js\";var a=document.getElementsByTagName(\"script\")[0];a.parentNode.insertBefore(n,a);analytics._loadOptions=e};analytics.SNIPPET_VERSION=\"4.1.0\";}}();"]
+    (page/include-js
+     (if (admin-session? cookies)
+       "/js/full.js"
+       "/js/app.js"))]))
+
 (def app
   (-> (c/routes
        (c/GET "/ws" [] #'ws-handler)
@@ -167,50 +212,8 @@
                                    (public-resource-response uri)
                                    "")))
        (serve-public-resource "/js*")
-       (c/GET "*" []
-              (fn [{:keys [cookies]}]
-                (page/html5
-                 [:head
-                  [:title (str "Vetd | "
-                               (if (admin-session? cookies)
-                                 "ADMIN"
-                                 "B2B Software Buying Platform"))]
-                  [:meta {:http-equiv "Content-Type"
-                          :content "text/html; charset=UTF-8"}]
-                  [:meta {:name "viewport"
-                          :content "width=device-width, initial-scale=1"}]
-                  ;; favicon etc
-                  [:link {:rel "apple-touch-icon" :sizes "180x180"
-                          :href "/apple-touch-icon.png"}]
-                  [:link {:rel "icon" :type "image/png" :sizes "32x32"
-                          :href "/favicon-32x32.png"}]
-                  [:link {:rel "icon" :type "image/png" :sizes "16x16"
-                          :href "/favicon-16x16.png"}]
-                  [:link {:rel "manifest" :href "/site.webmanifest"}]
-                  [:link {:rel "mask-icon" :color "#4ec2c4"
-                          :href "/safari-pinned-tab.svg"}]
-                  [:meta {:name "apple-mobile-web-app-title" :content "Vetd"}]
-                  [:meta {:name "application-name" :content "Vetd"}]
-                  [:meta {:name "msapplication-TileColor" :content "#00aba9"}]
-                  [:meta {:name "theme-color" :content "#ffffff"}]
-                  (page/include-css "/assets/css/semantic-ui.css")
-                  (page/include-css "/assets/lib/toastr/toastr.min.css")
-                  (page/include-css "/assets/css/app.css")
-                  (when (admin-session? cookies)
-                    (page/include-css "/assets/css/admin.css"))]
-                 [:body
-                  [:div {:id "app"}
-                   ;; loading spinner
-                   [:div {:class "spinner"
-                          :style "margin: 175px auto;"}
-                    [:i] [:i] [:i]]]
-                  ;; loads Segment's "Analytics.js"
-                  [:script {:type "text/javascript"}
-                   "!function(){var analytics=window.analytics=window.analytics||[];if(!analytics.initialize)if(analytics.invoked)window.console&&console.error&&console.error(\"Segment snippet included twice.\");else{analytics.invoked=!0;analytics.methods=[\"trackSubmit\",\"trackClick\",\"trackLink\",\"trackForm\",\"pageview\",\"identify\",\"reset\",\"group\",\"track\",\"ready\",\"alias\",\"debug\",\"page\",\"once\",\"off\",\"on\"];analytics.factory=function(t){return function(){var e=Array.prototype.slice.call(arguments);e.unshift(t);analytics.push(e);return analytics}};for(var t=0;t<analytics.methods.length;t++){var e=analytics.methods[t];analytics[e]=analytics.factory(e)}analytics.load=function(t,e){var n=document.createElement(\"script\");n.type=\"text/javascript\";n.async=!0;n.src=\"https://cdn.segment.com/analytics.js/v1/\"+t+\"/analytics.min.js\";var a=document.getElementsByTagName(\"script\")[0];a.parentNode.insertBefore(n,a);analytics._loadOptions=e};analytics.SNIPPET_VERSION=\"4.1.0\";}}();"]
-                  (page/include-js
-                   (if (admin-session? cookies)
-                     "/js/full.js"
-                     "/js/app.js"))]))))
+       (c/GET "*" [] (fn [{:keys [cookies]}]
+                       (app-html cookies))))
       rm-cookies/wrap-cookies))
 
 (defn start-server []
