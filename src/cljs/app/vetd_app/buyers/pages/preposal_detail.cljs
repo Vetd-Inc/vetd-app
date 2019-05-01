@@ -29,83 +29,73 @@
  (fn [{:keys [preposal-idstr]}] preposal-idstr))
 
 ;; Components
+(defn c-preposal-header-segment
+  [{:keys [vendor rounds pname logo] :as product} preposal-v-fn product-v-fn]
+  (let [pricing-estimate-value (preposal-v-fn :preposal/pricing-estimate "value" :nval)
+        pricing-estimate-unit (preposal-v-fn :preposal/pricing-estimate "unit")
+        pricing-estimate-details (preposal-v-fn :preposal/pricing-estimate "details")
+        pitch (preposal-v-fn :preposal/pitch)]
+    [:> ui/Segment {:class "detail-container"}
+     [:h1.product-title
+      pname " " [:small " by " (:oname vendor)]]
+     [:> ui/Image {:class "product-logo"
+                   :src (str "https://s3.amazonaws.com/vetd-logos/" logo)}]
+     (when (not-empty rounds)
+       [bc/c-round-in-progress {:round-idstr (-> rounds first :idstr)
+                                :props {:ribbon "left"}}])
+     [bc/c-categories product]
+     (when (= "Yes" (product-v-fn :product/free-trial?))
+       [bc/c-free-trial-tag])
+     [:> ui/Grid {:columns "equal"
+                  :style {:margin-top 4}}
+      [:> ui/GridRow
+       [:> ui/GridColumn {:width 12}
+        (or (util/parse-md (product-v-fn :product/description))
+            [:p "No description available."])
+        [:br]
+        [:h3.display-field-key "Preposal Pitch"]
+        (util/parse-md pitch)
+        [:br]
+        [:h3.display-field-key "Preposal Pricing Estimate"]
+        (if pricing-estimate-value
+          [:<>
+           (util/currency-format pricing-estimate-value) " / " pricing-estimate-unit
+           (when (not-empty pricing-estimate-details)
+             (str " - " pricing-estimate-details))]
+          pricing-estimate-details)]
+       [:> ui/GridColumn {:width 4}
+        (when-let [website-url (product-v-fn :product/website)]
+          [:<>
+           [bc/c-external-link website-url "Product Website"]
+           [:br]
+           [:br]])
+        (when-let [demo-url (product-v-fn :product/demo)]
+          [:<>
+           [bc/c-external-link demo-url "Watch Demo Video"]
+           [:br]
+           [:br]])]]]]))
+
 (defn c-preposal
   "Component to display Preposal details."
-  [{:keys [id product from-org responses] :as preposal}]
-  (let [preposal-pricing-estimate-value (docs/get-field-value responses
-                                                              "Pricing Estimate"
-                                                              "value"
-                                                              :nval)
-        preposal-pricing-estimate-unit (docs/get-field-value responses
-                                                             "Pricing Estimate"
-                                                             "unit"
-                                                             :sval)
-        preposal-pricing-estimate-details (docs/get-field-value responses
-                                                                "Pricing Estimate"
-                                                                "details"
-                                                                :sval)
-        preposal-pitch (docs/get-field-value responses "Pitch" "value" :sval)
-        product-profile-responses (-> product :form-docs first :response-prompts)
-        v (fn [prompt & [field value]]
-            (docs/get-field-value-from-response-prompt product-profile-responses
-                                                       prompt
-                                                       (or field "value")
-                                                       (or value :sval)))
-        vendor (:vendor product)
-        rounds (:rounds product)
-        pname (:pname product)
-        logo (:logo product)]
+  [{:keys [product response-prompts] :as preposal}]
+  (let [preposal-v-fn (partial docs/get-value-by-term response-prompts)
+        product-v-fn (partial docs/get-value-by-term (-> product
+                                                         :form-docs
+                                                         first
+                                                         :response-prompts))
+        c-display-field (bc/requestable
+                         (partial bc/c-display-field* {:type :product
+                                                       :id (:id product)
+                                                       :name (:pname product)}))
+        {:keys [vendor]} product]
     [:<>
-     [:> ui/Segment {:class "detail-container"}
-      [:h1.product-title
-       pname " " [:small " by " (:oname vendor)]]
-      [:> ui/Image {:class "product-logo"
-                    :src (str "https://s3.amazonaws.com/vetd-logos/" logo)}]
-      (if (not-empty rounds)
-        [bc/c-round-in-progress {:round-idstr (-> rounds first :idstr)
-                                 :props {:ribbon "left"}}])
-      [bc/c-categories product]
-      (when (= "Yes" (v "Do you offer a free trial?"))
-        [bc/c-free-trial-tag])
-      [:> ui/Grid {:columns "equal"
-                   :style {:margin-top 0}}
-       [:> ui/GridRow
-        [bc/c-display-field {:width 11} "Description"
-         [:<> (or (v "Describe your product or service") "No description available.")
-          [:br]     ; TODO this is hacky, and causes a console warning
-          [:br]
-          [:h3.display-field-key "Pitch"]
-          [:p preposal-pitch]]]
-        [:> ui/GridColumn {:width 5}
-         [:> ui/Grid {:columns "equal"
-                      :style {:margin-top 0}}
-          [:> ui/GridRow
-           (when (bc/has-data? (v "Product Website"))
-             [bc/c-display-field {:width 16} "Website"
-              [:a {:href (str (when-not (.startsWith (v "Product Website") "http") "http://") (v "Product Website"))
-                   :target "_blank"}
-               [:> ui/Icon {:name "external square"
-                            :color "blue"}]
-               "Visit Product Website"]])]
-          [:> ui/GridRow
-           (when (bc/has-data? (v "Product Demo"))
-             [bc/c-display-field {:width 16} "Demo"
-              [:a {:href (v "Product Demo")
-                   :target "_blank"}
-               [:> ui/Icon {:name "external square"
-                            :color "blue"}]
-               "Watch Video"]])]]]]]]
-     [bc/c-pricing product v
-      :preposal-estimate (if preposal-pricing-estimate-value
-                           [:<> (util/currency-format preposal-pricing-estimate-value) " / " preposal-pricing-estimate-unit
-                            (when (and preposal-pricing-estimate-details
-                                       (not= "" preposal-pricing-estimate-details))
-                              (str " - " preposal-pricing-estimate-details))]
-                           preposal-pricing-estimate-details)]
-     [bc/c-onboarding product v]
-     [bc/c-client-service product v]
-     [bc/c-reporting product v]
-     [bc/c-market-niche product v]]))
+     [c-preposal-header-segment product preposal-v-fn product-v-fn]
+     [bc/c-pricing c-display-field product-v-fn]
+     [bc/c-vendor-profile (-> vendor :docs-out first) (:id vendor) (:oname vendor)]
+     [bc/c-onboarding c-display-field product-v-fn]
+     [bc/c-client-service c-display-field product-v-fn]
+     [bc/c-reporting c-display-field product-v-fn]
+     [bc/c-market-niche c-display-field product-v-fn]]))
 
 (defn c-page []
   (let [preposal-idstr& (rf/subscribe [:preposal-idstr])
@@ -115,43 +105,41 @@
                                [[:docs {:dtype "preposal"
                                         :idstr @preposal-idstr&}
                                  [:id :idstr :title
-                                  [:product [:id :pname :logo
-                                             [:form-docs {:ftype "product-profile"
-                                                          :_order_by {:created :desc}
-                                                          :_limit 1
-                                                          :doc-deleted nil}
-                                              [:id
-                                               [:response-prompts {:ref-deleted nil}
-                                                [:id :prompt-id :notes :prompt-prompt
-                                                 [:response-prompt-fields
-                                                  [:id :prompt-field-fname :idx :sval :nval :dval]]]]]]
-                                             [:rounds {:buyer-id @org-id&}
-                                              [:id :idstr :created :status]]
-                                             [:categories [:id :idstr :cname]]
-                                             [:vendor
-                                              [:id :oname :url
-                                               [:docs-out {:dtype "vendor-profile"
-                                                           :_order_by {:created :desc}
-                                                           :_limit 1}
-                                                [:id 
-                                                 [:responses {:ref-deleted nil}
-                                                  [:id :prompt-id :notes
-                                                   [:prompt
-                                                    [:id :prompt]]
-                                                   [:fields
-                                                    [:id :pf-id :idx :sval :nval :dval
-                                                     [:prompt-field [:id :fname]]]]]]]]]]]]
+                                  [:product
+                                   [:id :pname :logo
+                                    [:form-docs {:ftype "product-profile"
+                                                 :_order_by {:created :desc}
+                                                 :_limit 1
+                                                 :doc-deleted nil}
+                                     [:id
+                                      [:response-prompts {:ref-deleted nil}
+                                       [:id :prompt-id :prompt-prompt :prompt-term
+                                        [:response-prompt-fields
+                                         [:id :prompt-field-fname :idx
+                                          :sval :nval :dval]]]]]]
+                                    [:rounds {:buyer-id @org-id&}
+                                     [:id :idstr :created :status]]
+                                    [:categories [:id :idstr :cname]]
+                                    [:vendor
+                                     [:id :oname :url
+                                      [:docs-out {:dtype "vendor-profile"
+                                                  :_order_by {:created :desc}
+                                                  :_limit 1}
+                                       [:id
+                                        [:response-prompts {:ref-deleted nil}
+                                         [:id :prompt-id :prompt-prompt :prompt-term
+                                          [:response-prompt-fields
+                                           [:id :prompt-field-fname :idx
+                                            :sval :nval :dval]]]]]]]]]]
                                   [:from-org [:id :oname]]
                                   [:from-user [:id :uname]]
                                   [:to-org [:id :oname]]
                                   [:to-user [:id :uname]]
-                                  [:responses {:ref-deleted nil}
-                                   [:id :prompt-id :notes
-                                    [:prompt
-                                     [:id :prompt]]
-                                    [:fields {:deleted nil}
-                                     [:id :pf-id :idx :sval :nval :dval
-                                      [:prompt-field [:id :fname]]]]]]]]]}])]
+                                  [:response-prompts {:ref-deleted nil}
+                                   [:id :prompt-id :prompt-prompt :prompt-term
+                                    [:response-prompt-fields
+                                     [:id :prompt-field-fname :idx
+                                      :sval :nval :dval]]]]]]]}])]
     (fn []
       [:div.container-with-sidebar
        [:div.sidebar
@@ -171,8 +159,6 @@
        [:div.inner-container
         (if (= :loading @preps&)
           [cc/c-loader]
-          (let [preposal (-> @preps& :docs first)
-                {:keys [docs-out id oname]} (-> preposal :product :vendor)]
-            [:<>
-             [c-preposal preposal]
-             [bc/c-vendor-profile (first docs-out) id oname]]))]])))
+          (if-let [preposal (-> @preps& :docs first)]
+            [c-preposal preposal]
+            "Sorry, that preposal cannot be found."))]])))

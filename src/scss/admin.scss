@@ -1,7 +1,7 @@
 #admin-over-cont {
   position: fixed;
-  right: 5px;
-  bottom: 5px;
+  right: 0px;
+  bottom: 0px;
   z-index: 999;
 }
 #admin-over-cont .closed {
@@ -26,17 +26,82 @@
   right: 5px;
   bottom: 5px;
 }
-
 #admin-over-cont #admin-symbol:hover {
   cursor: pointer;
 }
-
 #admin-over-cont.open {
   background-color: #EEE;
-  border: solid 3px #27AAE0;    
+  border: solid 3px #27AAE0;
   height: 350px;
   width: 700px;
   padding: 5px;
+}
+#admin-over-cont.open #admin-symbol {
+  animation: 15s infinite shark cubic-bezier(0.09, 0.6, 0.24, 0.03);
+
+                 // cubic-bezier(0.09, 0.6, 0.24, 0.03);
+  bottom: -27px;
+}
+@keyframes shark {
+  0% {
+    transform: translate3d(0px, 0, 0) rotateY(0deg);
+  }
+  15% {
+    transform: translate3d(-150px, 0px, 0) rotateY(0deg);
+  }
+  30% {
+    transform: translate3d(-300px, 3px, 0) rotateY(0deg);
+  }
+  49% {
+    transform: translate3d(-590px, -8px, -50px) rotateY(0deg);
+  }
+  50% {
+    transform: translate3d(-600px, -10px, -100px) rotateY(180deg);
+  }
+  53% {
+    transform: translate3d(-530px, -7px, -100px) rotateY(180deg);
+  }
+  97% {
+    transform: translate3d(-50px, -3px, -50px) rotateY(180deg);
+  }
+  100% {
+    transform: translate3d(0px, 0, 0) rotateY(0deg);
+  }
+}
+#admin-over-cont.open::before, #admin-over-cont.open::after{
+  border-bottom: 5px solid #27AAE0;
+}
+#admin-over-cont.open::before{
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 10px;
+  background-size: 20px 40px;
+  background-image:
+    radial-gradient(circle at 10px -15px, transparent 20px, #27AAE0 21px);
+  animation: 3s infinite tide linear;
+}
+#admin-over-cont.open::after{
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 15px;
+  background-size: 40px 40px;
+  background-image:
+    radial-gradient(circle at 10px 26px, #27AAE0 20px, transparent 21px);
+  animation: 3s infinite tide linear;
+}
+@keyframes tide {
+  0% {
+    background-position: 0px 0px;
+  }
+  100% {
+    background-position: 40px 0px;
+  }
 }
 
 #admin-over-cont .admin-over-close{

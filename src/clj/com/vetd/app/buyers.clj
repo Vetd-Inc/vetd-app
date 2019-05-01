@@ -137,7 +137,7 @@ User '%s'
 "
                       req org-name user-name))))
 
-(defn send-complete-profile-req [etype eid buyer-id]
+(defn send-complete-profile-req [etype eid field-key buyer-id]
   (let [ename (if (= :vendor etype)
                 (-> eid auth/select-org-by-id :oname)
                 (product-id->name eid))
@@ -146,7 +146,8 @@ User '%s'
                      (str "Complete " (name etype) " Profile Request")
                      (str "Complete " (name etype) " Profile Request\n"
                           "buyer: " buyer-name "\n"
-                          (name etype) ": " ename " (ID: " eid ")"))))
+                          (name etype) ": " ename " (ID: " eid ")\n"
+                          "field name: " field-key))))
 
 
 (defn send-setup-call-req [buyer-id product-id]
@@ -213,8 +214,8 @@ Product: '%s'"
 
 ;; Request that a vendor complete their Company/Product Profile
 (defmethod com/handle-ws-inbound :b/request-complete-profile
-  [{:keys [etype eid buyer-id]} ws-id sub-fn]
-  (send-complete-profile-req etype eid buyer-id))
+  [{:keys [etype eid field-key buyer-id]} ws-id sub-fn]
+  (send-complete-profile-req etype eid field-key buyer-id))
 
 ;; Have Vetd set up a phone call for the buyer with the vendor
 (defmethod com/handle-ws-inbound :b/setup-call
