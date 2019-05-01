@@ -1217,7 +1217,14 @@
     [:alter-table {:schema :vetd
                    :name :rounds
                    :columns
-                   {:add {:title [:text]}}}]]])
+                   {:add {:title [:text]}}}]]
+
+   [[2019 4 26 00 00]
+    
+    [:alter-table {:schema :vetd
+                   :name :rounds
+                   :columns
+                   {:add {:req_form_template_id [:bigint]}}}]]])
 
 #_(mig/mk-migration-files migrations
                           "migrations")

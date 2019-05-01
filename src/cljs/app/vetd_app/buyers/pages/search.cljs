@@ -274,7 +274,8 @@
                                           [:fields
                                            [:id :pf-id :idx :sval :nval :dval :jval
                                             [:prompt-field [:id :fname]]]]]]]]
-                                      [:rounds {:buyer-id org-id}
+                                      [:rounds {:buyer-id org-id
+                                                :deleted nil}
                                        [:id :idstr :created :status]]
                                       [:categories [:id :idstr :cname]]]]]]]}])
                 [])
@@ -283,7 +284,8 @@
                                      {:queries
                                       [[:categories {:id category-ids}
                                         [:id :idstr :cname
-                                         [:rounds {:buyer-id org-id}
+                                         [:rounds {:buyer-id org-id
+                                                   :deleted nil}
                                           [:id :created :status]]]]]}])
                      [])
         loading? (or @(rf/subscribe [:waiting-for-debounce?])

@@ -1,6 +1,7 @@
 (ns com.vetd.app.admin
   (:require [com.vetd.app.db :as db]
             [com.vetd.app.hasura :as ha]
+            [com.vetd.app.rounds :as rounds]
             [com.vetd.app.common :as com]
             [com.vetd.app.util :as ut]
             [com.vetd.app.docs :as docs]
@@ -21,17 +22,6 @@
     {:org-ids []}))
 
 
-(defn insert-round-product
-  [round-id prod-id]
-  (let [[id idstr] (ut/mk-id&str)]
-    (-> (db/insert! :round_product
-                    {:id id
-                     :idstr idstr
-                     :round_id round-id
-                     :product_id prod-id
-                     :created (ut/now-ts)
-                     :updated (ut/now-ts)})
-        first)))
 
 (defn delete-product-id-from-round
   [product-id round-id]
@@ -40,21 +30,6 @@
                :where [:and
                        [:= :round_id round-id]
                        [:= :product_id product-id]]}))
-
-(defn create-round-product-form-from-round-init-doc
-  [product-id round-id]
-  (-> [[:rounds {:id round-id}
-         [:doc
-         [:id
-          ]]]]
-      ha/sync-query
-      :docs))
-
-(defn invite-product-to-round
-  [product-id round-id]
-  (insert-round-product round-id product-id)
-  ;; TODO create form
-#_  (create-round-product-form-from-round-init-doc product-id round-id))
 
 (defmethod com/handle-ws-inbound :a/search
   [{:keys [query]} ws-id sub-fn]
@@ -110,4 +85,5 @@
     (doseq [product-id remove-ids]
       (delete-product-id-from-round product-id round-id))
     (doseq [product-id add-ids]
-      (invite-product-to-round product-id round-id))))
+      (rounds/invite-product-to-round product-id round-id))
+    (rounds/sync-round-vendor-req-forms round-id)))

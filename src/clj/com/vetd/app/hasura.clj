@@ -218,35 +218,6 @@
        walk-gql
        dgql/graphql-query))
 
-#_(clojure.pprint/pprint 
- (walk-gql {:queries
-            [[:orgs {:id #{4 5 6}}
-              [:id :oname :idstr :short-desc
-               [:products {:id #{1 2 3}}
-                [:id :pname :idstr :short-desc :logo
-                 [:rounds {:buyer-id 123
-                           :status "active"}
-                  [:id :created :status]]
-                 [:categories [:id :idstr :cname]]]]]]]}))
-
-#_(println
- (dgql/graphql-query
-  (walk-gql {:queries
-             [[:orgs {:id #{4 5 6}}
-               [:id :oname :idstr :short-desc
-                [:products {:id #{1 2 3}}
-                 [:id :pname :idstr :short-desc :logo :buyer?
-                  [:rounds {:buyer-id 123
-                            :status "active"}
-                   [:id :created :status]]
-                  [:categories [:id :idstr :cname]]]]]]]})))
-
-#_(->gql-str {:queries [[:sessions
-                         {:id 5
-                          :_where {:code {:_eq "session-code"}
-                                   :deleted {:_is_null false}}}
-                         [:user_id]]]})
-
 (defn walk-result-sub-kw [field sub v]
   (sql-field->clj-kw sub))
 

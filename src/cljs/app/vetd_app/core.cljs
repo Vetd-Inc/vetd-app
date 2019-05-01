@@ -21,6 +21,8 @@
             [vetd-app.vendors.pages.preposals :as p-vpreposals]
             [vetd-app.vendors.pages.products :as p-vprods]
             [vetd-app.vendors.pages.profile :as p-vprofile]
+            [vetd-app.vendors.pages.rounds :as p-vrounds]
+            [vetd-app.vendors.pages.round-product-detail :as p-vround-product-detail]
             [vetd-app.common.fixtures :as pub-fix]
             [vetd-app.common.pages.login :as p-login]
             [reagent.core :as r]
@@ -43,7 +45,9 @@
                    :v/signup #'p-vsignup/c-page
                    :v/preposals #'p-vpreposals/c-page
                    :v/products #'p-vprods/c-page
-                   :v/profile #'p-vprofile/c-page})
+                   :v/profile #'p-vprofile/c-page
+                   :v/rounds #'p-vrounds/c-page
+                   :v/round-product-detail #'p-vround-product-detail/c-page})
 
 (hooks/reg-hooks! hooks/c-container
                   {:login #'pub-fix/container
@@ -57,7 +61,9 @@
                    :v/signup #'pub-fix/container
                    :v/preposals #'v-fix/container
                    :v/products #'v-fix/container
-                   :v/profile #'v-fix/container})
+                   :v/profile #'v-fix/container
+                   :v/rounds #'v-fix/container
+                   :v/round-product-detail #'v-fix/container})
 
 
 (rf/reg-event-db
@@ -189,6 +195,13 @@
 
 (sec/defroute vendors-signup-path "/v/signup" [query-params]
   (rf/dispatch [:v/route-signup query-params]))
+
+(sec/defroute vendors-rounds-path "/v/rounds" [query-params]
+  (rf/dispatch [:v/route-rounds query-params]))
+
+(sec/defroute vendors-round-product-detail "/v/rounds/:round-idstr/products/:product-idstr"
+  [round-idstr product-idstr]
+  (rf/dispatch [:v/route-round-product-detail round-idstr product-idstr]))
 
 (sec/defroute catchall-path "*" []
   (do (.log js/console "nav catchall")
