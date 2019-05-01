@@ -5,7 +5,8 @@
             [re-frame.interop :refer [deref? reagent-id]]
             [reagent.ratom :as rr]
             [reagent.format :as format]
-            [re-frame.registrar :as rf-reg])
+            [re-frame.registrar :as rf-reg]
+            [markdown-to-hiccup.core :as md])
   (:import [goog.functions]))
 
 (defonce dispatch-debounce-store& (atom {}))
@@ -236,7 +237,26 @@
        (when (> (count string) length)
          "...")))
 
+(defn parse-md
+  "Takes string and parses any Markdown into hiccup components."
+  [string]
+  (some-> string
+          md/md->hiccup
+          md/component))
 
+(defn augment-with-keys
+  "Add the index as a key to the metadata of each element.
+  Note: This is useful for dumping children components into 
+  a parent component and avoiding React warnings. However, React
+  recommends setting the 'key' to a unique consistent value, such
+  as an ID, rather than using simply an iterative index."
+  [xs]
+  (map-indexed
+   (fn [i x] (with-meta x {:key i}))
+   xs))
+
+
+;;;; Base 31/36 idstr calculation
 (defn long-floor-div
   [a b]
   (-> a
@@ -291,5 +311,3 @@
         (recur tail
                (inc idx)
                (+ r d))))))
-
-;; --------------------

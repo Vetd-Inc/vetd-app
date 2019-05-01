@@ -9,6 +9,11 @@
             [manifold.deferred :as md]
             [cheshire.core :as json]))
 
+;; this sucks. ws and alb not friends because no cookies -- Bill
+;; Note: you can get the latest IP from:
+;; AWS Console -> ECS -> vetd-app -> Tasks -> (choose any) -> Network -> Public IP
+(def prod-ip "54.172.48.5")
+
 (defn ws-on-closed []
   (println "ws-on-closed"))
 
@@ -19,14 +24,11 @@
           mtype (some-> d :response :mtype)
           payload (-> d :response :payload)]
       (when (= mtype :data)
-          (a/>!! ch payload)
-          (a/close! ch)))
+        (a/>!! ch payload)
+        (a/close! ch)))
     (catch Throwable t
       (clojure.pprint/pprint t)
       nil)))
-
-;; this sucks. ws and alb not friends because no cookies -- Bill
-(def prod-ip "54.172.48.5")
 
 (defn mk-ws [ch]
   (let [ws @(ah/websocket-client #_"ws://localhost:5080/ws"
@@ -118,7 +120,7 @@
                                      :updated
                                      :deleted
                                      :prompt
-                                     :term                                     
+                                     :term
                                      :descr
                                      :form-template-id
                                      :sort

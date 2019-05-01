@@ -29,6 +29,7 @@
                  [aleph "0.4.6"]
                  [ring/ring-core "1.5.1"]
                  [javax.servlet/servlet-api "2.5"]
+                 [hiccup "1.0.5"]
                  
                  [re-frame "0.10.5"]
                  [reagent "0.8.1"]
