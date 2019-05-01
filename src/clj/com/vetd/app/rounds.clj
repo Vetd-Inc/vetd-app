@@ -20,10 +20,8 @@
 
 (defn invite-product-to-round
   [product-id round-id]
-  (insert-round-product round-id product-id)
-#_  (docs/create-form-from-template {:form-template-id :###### })
-  ;; TODO create form
-#_  (create-round-product-form-from-round-init-doc product-id round-id))
+      ;; TODO call sync-round-vendor-req-forms too, once we're ready  
+  (insert-round-product round-id product-id))
 
 (defn sync-round-vendor-req-forms
   [round-id]
@@ -68,7 +66,3 @@
     (doseq [{:keys [forms id]} to-remove]
       (->> forms first :id
            (docs/update-deleted :round_product)))))
-
-#_ [:products [:id]]
-
-#_ (clojure.pprint/pprint  (sync-round-vendor-req-forms 1000787839305))

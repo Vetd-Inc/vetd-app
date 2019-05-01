@@ -15,7 +15,6 @@
 
 (def ^:dynamic *docs-created* nil)
 
-;; TODO  -- USE THIS!
 (defmacro with-doc-handling
   [handler-args & body]
   `(let [dc&# (atom #{})

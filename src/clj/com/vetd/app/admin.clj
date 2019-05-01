@@ -31,11 +31,6 @@
                        [:= :round_id round-id]
                        [:= :product_id product-id]]}))
 
-(defn create-round-product-form-from-round-init-doc
-  [product-id round-id])
-
-
-
 (defmethod com/handle-ws-inbound :a/search
   [{:keys [query]} ws-id sub-fn]
   (search-orgs->ids query))
