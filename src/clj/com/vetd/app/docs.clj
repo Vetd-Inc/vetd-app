@@ -851,7 +851,7 @@
                                         (insert-prompt-field {:prompt-id prompt-id
                                                               :fname "value"
                                                               :ftype "s"
-                                                              :fsubtype "single"
+                                                              :fsubtype "multi"
                                                               :list? false})
                                         [:item (assoc item'
                                                       :idx idx)]))]}
