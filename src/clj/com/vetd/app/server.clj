@@ -1,5 +1,6 @@
 (ns com.vetd.app.server
-  (:require [com.vetd.app.common :as com]
+  (:require [com.vetd.app.util :as ut]
+            [com.vetd.app.common :as com]
             [migratus.core :as mig]
             [com.vetd.app.env :as env]
             [com.vetd.app.db :as db]
@@ -25,6 +26,10 @@
 (defonce ws-conns (atom #{})) ;; TODO
 (defonce kill-keep-alive-thread (atom false))
 (defonce keep-alive-thread (atom nil))
+;; cache key set on startup, unique every 5 minutes, appended to some resources
+(defonce cache-key
+  (let [now (ut/now)]
+    (- now (mod now (* 1000 60 5)))))
 
 (defn uri->content-type
   [uri]
@@ -148,6 +153,11 @@
       :value
       auth/admin-session?))
 
+(defn control-cache
+  "Forces cache refresh per deploy"
+  [uri]
+  (str uri "?" cache-key))
+
 (defn app-html
   [cookies]
   (page/html5
@@ -174,11 +184,11 @@
     [:meta {:name "application-name" :content "Vetd"}]
     [:meta {:name "msapplication-TileColor" :content "#00aba9"}]
     [:meta {:name "theme-color" :content "#ffffff"}]
-    (page/include-css "/assets/css/semantic-ui.css")
+    (page/include-css (control-cache "/assets/css/semantic-ui.css"))
     (page/include-css "/assets/lib/toastr/toastr.min.css")
-    (page/include-css "/assets/css/app.css")
+    (page/include-css (control-cache "/assets/css/app.css"))
     (when (admin-session? cookies)
-      (page/include-css "/assets/css/admin.css"))]
+      (page/include-css (control-cache "/assets/css/admin.css")))]
    [:body
     [:div {:id "app"}
      ;; loading spinner
@@ -189,9 +199,10 @@
     [:script {:type "text/javascript"}
      "!function(){var analytics=window.analytics=window.analytics||[];if(!analytics.initialize)if(analytics.invoked)window.console&&console.error&&console.error(\"Segment snippet included twice.\");else{analytics.invoked=!0;analytics.methods=[\"trackSubmit\",\"trackClick\",\"trackLink\",\"trackForm\",\"pageview\",\"identify\",\"reset\",\"group\",\"track\",\"ready\",\"alias\",\"debug\",\"page\",\"once\",\"off\",\"on\"];analytics.factory=function(t){return function(){var e=Array.prototype.slice.call(arguments);e.unshift(t);analytics.push(e);return analytics}};for(var t=0;t<analytics.methods.length;t++){var e=analytics.methods[t];analytics[e]=analytics.factory(e)}analytics.load=function(t,e){var n=document.createElement(\"script\");n.type=\"text/javascript\";n.async=!0;n.src=\"https://cdn.segment.com/analytics.js/v1/\"+t+\"/analytics.min.js\";var a=document.getElementsByTagName(\"script\")[0];a.parentNode.insertBefore(n,a);analytics._loadOptions=e};analytics.SNIPPET_VERSION=\"4.1.0\";}}();"]
     (page/include-js
-     (if (admin-session? cookies)
-       "/js/full.js"
-       "/js/app.js"))]))
+     (control-cache
+      (if (admin-session? cookies)
+        "/js/full.js"
+        "/js/app.js")))]))
 
 (def app
   (-> (c/routes
