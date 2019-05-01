@@ -210,7 +210,9 @@
                                    props)])}])
 
 (defn c-round-grid
-  [{:keys [id status title products init-doc] :as round}]
+  [{:keys [id status title init-doc] :as round}
+   {:keys [prompts] :as req-form-template}
+   round-product]
   (let [modal-showing? (r/atom false)
         modal-message (r/atom "")
         cell-click-disabled? (r/atom false)
@@ -231,7 +233,7 @@
     (r/create-class
      {:component-did-mount
       (fn [this]
-        (let [ ;; draggable grid
+        (let [;; draggable grid
               node (r/dom-node this)
               mousedown? (atom false)
               x-at-mousedown (atom nil)
@@ -305,25 +307,30 @@
       
       :reagent-render
       (fn []
-        (if (seq products)
+        (if (seq round-product)
           [:<>
            [:div.round-grid
-            (for [req (->> init-doc
-                           :response-prompts
-                           (filter (comp (partial = "rounds/requirements") :prompt-term))
-                           first
-                           :response-prompt-fields
-                           (map :sval))]
-              ^{:key req}
+            (for [req prompts
+                  :let [{req-prompt-id :id
+                         req-prompt-text :prompt} req]]
+              ^{:key req-prompt-id}
               [:div.column
-               [:h4.requirement req]
-               (for [dummy-product dummy-products
-                     :let [resps (get dummy-resps "Free Trial")
-                           response (get resps (.indexOf dummy-products dummy-product))]]
-                 ^{:key dummy-product}
+               [:h4.requirement req-prompt-text]
+               (for [rp round-product
+                     :let [{pname :pname
+                            pid :id} (:product rp)
+                           response (docs/get-value-by-prompt-id
+                                     (-> rp
+                                         :vendor-response-form-docs
+                                         :response-prompts)
+                                     req-prompt-id)]]
+                 ^{:key (str req-prompt-id "-" pid)}
                  [:div.cell {:on-mouse-down #(reset! cell-click-disabled? false)
                              :on-mouse-up #(when-not @cell-click-disabled?
-                                             (show-modal {:title req} {:id "272814695158" :pname dummy-product} response))}
+                                             (show-modal {:title req-prompt-text}
+                                                         {:id pid
+                                                          :pname pname}
+                                                         response))}
                   [:div.text (if (not-empty response)
                                (util/truncate-text response 150)
                                [:> ui/Popup
@@ -392,7 +399,9 @@
 
 (defn c-round
   "Component to display Round details."
-  [{:keys [id status title products] :as round}]
+  [{:keys [id status title products] :as round}
+   req-form-template
+   round-product]
   [:<>
    [:> ui/Segment {:id "round-title-container"
                    :class (str "detail-container " (when (> (count title) 50) "long"))}
@@ -405,7 +414,7 @@
                                      :style {:margin-left 20}}
                       [c-round-initiation round]]
      #{"in-progress"
-       "complete"} [c-round-grid round])])
+       "complete"} [c-round-grid round req-form-template round-product])])
 
 (defn c-add-requirement-button
   [{:keys [id] :as round}]
@@ -494,13 +503,15 @@
 
 (defn c-products
   "Component to display product boxes with various buttons."
-  [round products]
+  [round round-product]
   [:<>
-   (for [{product-id :id
-          pname :pname
-          vendor :vendor
-          :as product} products       ; TODO actual disqualified value
-         :let [product-disqualified? false]]
+   (for [rp round-product
+         :let [{product-id :id
+                pname :pname
+                vendor :vendor
+                :as product} (:product rp)
+                                        ; TODO actual disqualified value
+               product-disqualified? false]]
      ^{:key product-id}
      [:> ui/Segment {:class (str "round-product " (when (> (count pname) 17) "long"))}
       [:h3.name pname]
@@ -515,6 +526,12 @@
                                 [[:rounds {:idstr @round-idstr&
                                            :deleted nil}
                                   [:id :idstr :created :status :title
+                                   ;; requirements form template
+                                   [:req-form-template
+                                    [:id
+                                     [:prompts {:ref-deleted nil
+                                                :_order_by {:sort :asc}}
+                                      [:id :idstr :prompt :descr]]]]
                                    ;; round initiation form response
                                    [:init-doc
                                     [:id
@@ -526,6 +543,10 @@
                                    ;; requirements responses from vendors
                                    [:round-product
                                     [:id
+                                     [:product
+                                      [:id :pname  
+                                       [:vendor
+                                        [:id :oname]]]]
                                      [:vendor-response-form-docs
                                       [:id :title :doc-id :doc-title
                                        :ftype :fsubtype
@@ -535,29 +556,23 @@
                                         [:id :prompt-id :prompt-prompt :prompt-term
                                          [:response-prompt-fields
                                           [:id :prompt-field-fname :idx
-                                           :sval :nval :dval]]]]]]]]
-                                   ;; products in round
-                                   [:products {:deleted nil
-                                               :ref-deleted nil}
-                                    [:id :pname  
-                                     [:vendor
-                                      [:id :oname]]]]]]]}])]
+                                           :sval :nval :dval]]]]]]]]]]]}])]
     (fn []
       [:div.container-with-sidebar.round-details
        (cljs.pprint/pprint @rounds&)
-       #_(if (= :loading @rounds&)
-           [cc/c-loader]
-           (let [{:keys [status products] :as round} (-> @rounds& :rounds first)]
-             [:<> ; sidebar margins (and detail container margins) are customized on this page
-              [:div.sidebar {:style {:margin-right 0}}
-               [:div {:style {:padding "0 15px"}}
-                [bc/c-back-button {:on-click #(rf/dispatch [:b/nav-rounds])}
-                 "All VetdRounds"]]
-               [:div {:style {:height 154}}] ; spacer
-               (when (and (#{"in-progress" "complete"} status)
-                          (seq products))
-                 [:<>
-                  [:div {:style {:padding "0 15px"}}
-                   [c-add-requirement-button round]]
-                  [c-products round products]])]
-              [:div.inner-container [c-round round]]]))])))
+       (if (= :loading @rounds&)
+         [cc/c-loader]
+         (let [{:keys [status req-form-template round-product] :as round} (-> @rounds& :rounds first)]
+           [:<> ; sidebar margins (and detail container margins) are customized on this page
+            [:div.sidebar {:style {:margin-right 0}}
+             [:div {:style {:padding "0 15px"}}
+              [bc/c-back-button {:on-click #(rf/dispatch [:b/nav-rounds])}
+               "All VetdRounds"]]
+             [:div {:style {:height 154}}] ; spacer
+             (when (and (#{"in-progress" "complete"} status)
+                        (seq round-product))
+               [:<>
+                [:div {:style {:padding "0 15px"}}
+                 [c-add-requirement-button round]]
+                [c-products round round-product]])]
+            [:div.inner-container [c-round round req-form-template round-product]]]))])))
