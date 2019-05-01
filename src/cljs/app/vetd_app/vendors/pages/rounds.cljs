@@ -27,28 +27,22 @@
                                     {:queries
                                      [[:products {:vendor-id @org-id&
                                                   :deleted nil}
-                                       [:pname
+                                       [:idstr :pname
                                         [:rounds {:deleted nil
                                                   :ref-deleted nil}
                                          [:id :idstr :status :created
-                                          [:buyer [:oname]]]]]]]}])
-        prod-rounds (->> (for [{:keys [rounds] :as p} (:products @prod-rounds&)
-                               r rounds]
-                           (-> p
-                               (dissoc :rounds)
-                               (merge r)))
-                         (sort-by :created)
-                         reverse
-                         (group-by :status))]
+                                          [:buyer [:oname]]]]]]]}])]
     (fn []
-      (let [prod-rounds (->> (for [{:keys [rounds] :as p} (:products @prod-rounds&)
-                               r rounds]
-                           (-> p
-                               (dissoc :rounds)
-                               (merge r)))
-                         (sort-by :created)
-                         reverse
-                         (group-by :status))]
+      (let [prod-rounds (->> (for [{:keys [rounds] p-idstr :idstr :as p} (:products @prod-rounds&)
+                                   {r-idstr :idstr :as r} rounds]
+                               (-> p
+                                   (assoc :product-idstr p-idstr
+                                          :round-idstr r-idstr)
+                                   (dissoc :rounds)
+                                   (merge r)))
+                             (sort-by :created)
+                             reverse
+                             (group-by :status))]
         [:div
          (for [[k-status rounds] prod-rounds]
            [:div
@@ -58,8 +52,8 @@
                            :padding "10px"
                            :font-size "x-large"}}
              k-status]
-            (for [{:keys [idstr pname status created buyer]} rounds]
-              [:div {:on-click #(rf/dispatch [:v/nav-round-detail idstr])
+            (for [{:keys [round-idstr product-idstr pname status created buyer]} rounds]
+              [:div {:on-click #(rf/dispatch [:v/nav-round-product-detail round-idstr product-idstr])
                      :style {:background-color "#DDD"
                              :cursor "pointer"
                              :margin-left "30px"

@@ -33,7 +33,7 @@
            :fields [:products]
            :cols [:id :round_id]
            :rel :one-many}
-
+          
           {:tables [:vetd :rounds
                     :vetd :orgs]
            :fields [:buyer :rounds-out]
@@ -51,6 +51,24 @@
            :fields [:req-form-template :round]
            :cols [:req_form_template_id :id]
            :rel :one-one}
+
+          {:tables [:vetd :round_product
+                    :vetd :rounds]
+           :fields [:rounds :round-product]
+           :cols [:round_id :id]
+           :rel :many-one}
+
+          {:tables [:vetd :round_product
+                    :vetd :products]
+           :fields [:product :round-products]
+           :cols [:product_id :id]
+           :rel :many-one}
+
+          {:tables [:vetd :round_product
+                    :vetd :form_docs]
+           :fields [:vendor-response-form-docs :round-product]
+           :cols [:id :subject]
+           :rel :many-one}
           
           {:tables [:vetd :orgs
                     :vetd :memberships]
