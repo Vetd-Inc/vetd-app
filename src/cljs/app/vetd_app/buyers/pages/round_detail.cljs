@@ -331,8 +331,8 @@
                                  :position "bottom center"
                                  :trigger (r/as-element
                                            [:> ui/Icon {:name "clock outline"
-                                            :size "large"
-                                            :style {:color "#aaa"}}])}])]
+                                                        :size "large"
+                                                        :style {:color "#aaa"}}])}])]
                   [:div.actions
                    [c-action-button {:on-click #()
                                      :icon "chat outline"
@@ -515,34 +515,49 @@
                                 [[:rounds {:idstr @round-idstr&
                                            :deleted nil}
                                   [:id :idstr :created :status :title
-                                   [:products {:deleted nil
-                                               :ref-deleted nil}
-                                    [:id :pname
-                                     [:vendor
-                                      [:id :oname]]]]
+                                   ;; round initiation form response
                                    [:init-doc
                                     [:id
                                      [:response-prompts {:ref-deleted nil}
                                       [:id :prompt-id :prompt-prompt :prompt-term
                                        [:response-prompt-fields
                                         [:id :prompt-field-fname :idx
-                                         :sval :nval :dval]]]]]]]]]}])]
+                                         :sval :nval :dval]]]]]]
+                                   ;; requirements responses from vendors
+                                   [:round-product
+                                    [:id
+                                     [:vendor-response-form-docs
+                                      [:id :title :doc-id :doc-title
+                                       :ftype :fsubtype
+                                       [:doc-from-org [:id :oname]]
+                                       [:doc-to-org [:id :oname]]
+                                       [:response-prompts {:ref-deleted nil}
+                                        [:id :prompt-id :prompt-prompt :prompt-term
+                                         [:response-prompt-fields
+                                          [:id :prompt-field-fname :idx
+                                           :sval :nval :dval]]]]]]]]
+                                   ;; products in round
+                                   [:products {:deleted nil
+                                               :ref-deleted nil}
+                                    [:id :pname  
+                                     [:vendor
+                                      [:id :oname]]]]]]]}])]
     (fn []
       [:div.container-with-sidebar.round-details
-       (if (= :loading @rounds&)
-         [cc/c-loader]
-         (let [{:keys [status products] :as round} (-> @rounds& :rounds first)]
-           [:<> ; sidebar margins (and detail container margins) are customized on this page
-            [:div.sidebar {:style {:margin-right 0}}
-             [:div {:style {:padding "0 15px"}}
-              [bc/c-back-button {:on-click #(rf/dispatch [:b/nav-rounds])}
-               "All VetdRounds"]]
-             [:div {:style {:height 154}}] ; spacer
-             (when (and (#{"in-progress" "complete"} status)
-                        (seq products))
-               [:<>
-                [:div {:style {:padding "0 15px"}}
-                 [c-add-requirement-button round]]
-                [c-products round products]])]
-            [:div.inner-container [c-round round]]]))])))
-
+       (cljs.pprint/pprint @rounds&)
+       #_(if (= :loading @rounds&)
+           [cc/c-loader]
+           (let [{:keys [status products] :as round} (-> @rounds& :rounds first)]
+             [:<> ; sidebar margins (and detail container margins) are customized on this page
+              [:div.sidebar {:style {:margin-right 0}}
+               [:div {:style {:padding "0 15px"}}
+                [bc/c-back-button {:on-click #(rf/dispatch [:b/nav-rounds])}
+                 "All VetdRounds"]]
+               [:div {:style {:height 154}}] ; spacer
+               (when (and (#{"in-progress" "complete"} status)
+                          (seq products))
+                 [:<>
+                  [:div {:style {:padding "0 15px"}}
+                   [c-add-requirement-button round]]
+                  [c-products round products]])]
+              [:div.inner-container [c-round round]]]))])))
