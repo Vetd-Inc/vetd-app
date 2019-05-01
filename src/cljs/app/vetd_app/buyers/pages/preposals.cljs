@@ -128,7 +128,8 @@
                                                     [:id :prompt-id :notes :prompt-prompt
                                                      [:response-prompt-fields
                                                       [:id :prompt-field-fname :idx :sval :nval :dval]]]]]]
-                                                 [:rounds {:buyer-id @org-id&}
+                                                 [:rounds {:buyer-id @org-id&
+                                                           :deleted nil}
                                                   [:id :idstr :created :status]]
                                                  [:categories [:id :idstr :cname]]]]
                                       [:from-org [:id :oname]]

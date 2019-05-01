@@ -210,7 +210,8 @@
                                      [:forms {:ftype "preposal" ; preposal requests
                                               :from-org-id @org-id&}
                                       [:id]]
-                                     [:rounds {:buyer-id @org-id&}
+                                     [:rounds {:buyer-id @org-id&
+                                               :deleted nil}
                                       [:id :idstr :created :status]]
                                      [:categories [:id :idstr :cname]]]]]}])]
     (fn []
