@@ -7,7 +7,6 @@
             [reagent.core :as r]
             [reagent.format :as format]
             [re-frame.core :as rf]
-            [markdown-to-hiccup.core :as md]
             [clojure.string :as s]))
 
 (def last-query-id (atom 0))
@@ -32,16 +31,17 @@
 
 (rf/reg-event-fx
  :b/request-complete-profile
- (fn [{:keys [db]} [_ etype eid ename]]
+ (fn [{:keys [db]} [_ etype eid ename field-key]]
    (let [qid (get-next-query-id)]
      {:ws-send {:payload {:cmd :b/request-complete-profile
                           :return {:handler :b/request-complete-profile-return}
                           :etype etype
                           :eid eid
+                          :field-key field-key
                           :buyer-id (util/db->current-org-id db)}}
       :analytics/track {:event "Request"
                         :props {:category (str (s/capitalize (name etype)) " Profile")
-                                :label ename}}})))
+                                :label (str ename " - " field-key)}}})))
 
 (rf/reg-event-fx
  :b/request-complete-profile-return
@@ -125,64 +125,59 @@
                  "Request Preposal"
                  [:> ui/Icon {:name "wpforms"}]])}]))
 
+(defn c-product-header-segment
+  [{:keys [vendor rounds pname logo] :as product} v-fn]
+  [:> ui/Segment {:class "detail-container"}
+   [:h1.product-title
+    pname " " [:small " by " (:oname vendor)]]
+   [:> ui/Image {:class "product-logo"
+                 :src (str "https://s3.amazonaws.com/vetd-logos/" logo)}]
+   (when (not-empty (:rounds product))
+     [bc/c-round-in-progress {:round-idstr (-> rounds first :idstr)
+                              :props {:ribbon "left"}}])
+   [bc/c-categories product]
+   (when (= "Yes" (v-fn :product/free-trial?))
+     [bc/c-free-trial-tag])
+   [:> ui/Grid {:columns "equal"
+                :style {:margin-top 4}}
+    [:> ui/GridRow
+     [:> ui/GridColumn {:width 12}
+      (or (util/parse-md (v-fn :product/description))
+          [:p "No description available."])
+      [:br]
+      [:h3.display-field-key "Pitch"]
+      [:p "Request a Preposal to get a personalized pitch."]
+      [:br]
+      [:h3.display-field-key "Pricing Estimate"]
+      "Request a Preposal to get a personalized estimate."]
+     [:> ui/GridColumn {:width 4}
+      (when-let [website-url (v-fn :product/website)]
+        [:<>
+         [bc/c-external-link website-url "Product Website"]
+         [:br]
+         [:br]])
+      (when-let [demo-url (v-fn :product/demo)]
+        [:<>
+         [bc/c-external-link demo-url "Watch Demo Video"]
+         [:br]
+         [:br]])]]]])
+
 (defn c-product
   "Component to display Product details."
-  [{:keys [id pname logo form-docs vendor forms rounds categories] :as product}]
-  (let [product-profile-responses (-> form-docs first :responses)
-        v (fn [prompt & [field value]]
-            (docs/get-field-value product-profile-responses prompt (or field "value") (or value :sval)))]
+  [{:keys [id pname form-docs vendor] :as product}]
+  (let [v-fn (partial docs/get-value-by-term (-> form-docs first :response-prompts))
+        c-display-field (bc/requestable
+                         (partial bc/c-display-field* {:type :product
+                                                       :id id
+                                                       :name pname}))]
     [:<>
-     [:> ui/Segment {:class "detail-container"}
-      [:h1.product-title
-       pname " " [:small " by " (:oname vendor)]]
-      [:> ui/Image {:class "product-logo"
-                    :src (str "https://s3.amazonaws.com/vetd-logos/" logo)}]
-      (if (not-empty (:rounds product))
-        [bc/c-round-in-progress {:round-idstr (-> rounds first :idstr)
-                                 :props {:ribbon "left"}}])
-      [bc/c-categories product]
-      (when (= "Yes" (v "Do you offer a free trial?"))
-        [bc/c-free-trial-tag])
-      [:> ui/Grid {:columns "equal"
-                   :style {:margin-top 0}}
-       [:> ui/GridRow
-        [:> ui/GridColumn {:width 11}
-         [:> ui/Segment {:class "display-field"
-                         :vertical true}
-          [:h3.display-field-key "Description"]
-          (or (some-> (v "Describe your product or service")
-                      md/md->hiccup
-                      md/component)
-              "No description available.")]
-         [:br]
-         [:> ui/Segment {:class "display-field"
-                         :vertical true}
-          [:h3.display-field-key "Pitch"]
-          [:p "Request a Preposal to get a personalized pitch."]]]
-        [:> ui/GridColumn {:width 5}
-         [:> ui/Grid {:columns "equal"
-                      :style {:margin-top 0}}
-          [:> ui/GridRow
-           (when (bc/has-data? (v "Product Website"))
-             [bc/c-display-field {:width 16} "Website"
-              [:a {:href (str (when-not (.startsWith (v "Product Website") "http") "http://") (v "Product Website"))
-                   :target "_blank"}
-               [:> ui/Icon {:name "external square"
-                            :color "blue"}]
-               "Visit Product Website"]])]
-          [:> ui/GridRow
-           (when (bc/has-data? (v "Product Demo"))
-             [bc/c-display-field {:width 16} "Demo"
-              [:a {:href (v "Product Demo")
-                   :target "_blank"}
-               [:> ui/Icon {:name "external square"
-                            :color "blue"}]
-               "Watch Video"]])]]]]]]
-     [bc/c-pricing product v]
-     [bc/c-onboarding product v]
-     [bc/c-client-service product v]
-     [bc/c-reporting product v]
-     [bc/c-market-niche product v]]))
+     [c-product-header-segment product v-fn]
+     [bc/c-pricing c-display-field v-fn]
+     [bc/c-vendor-profile (-> vendor :docs-out first) (:id vendor) (:oname vendor)]
+     [bc/c-onboarding c-display-field v-fn]
+     [bc/c-client-service c-display-field v-fn]
+     [bc/c-reporting c-display-field v-fn]
+     [bc/c-market-niche c-display-field v-fn]]))
 
 (defn c-page []
   (let [product-idstr& (rf/subscribe [:product-idstr])
@@ -193,28 +188,25 @@
                                     [:id :pname :logo
                                      [:form-docs {:ftype "product-profile"
                                                   :_order_by {:created :desc}
-                                                  :_limit 1}
+                                                  :_limit 1
+                                                  :doc-deleted nil}
                                       [:id 
-                                       [:responses
-                                        [:id :prompt-id :notes
-                                         [:prompt
-                                          [:id :prompt]]
-                                         [:fields
-                                          [:id :pf-id :idx :sval :nval :dval
-                                           [:prompt-field [:id :fname]]]]]]]]
+                                       [:response-prompts {:ref-deleted nil}
+                                        [:id :prompt-id :prompt-prompt :prompt-term
+                                         [:response-prompt-fields
+                                          [:id :prompt-field-fname :idx
+                                           :sval :nval :dval]]]]]]
                                      [:vendor
                                       [:id :oname :url
                                        [:docs-out {:dtype "vendor-profile"
                                                    :_order_by {:created :desc}
                                                    :_limit 1}
-                                        [:id 
-                                         [:responses
-                                          [:id :prompt-id :notes
-                                           [:prompt
-                                            [:id :prompt]]
-                                           [:fields
-                                            [:id :pf-id :idx :sval :nval :dval :jval
-                                             [:prompt-field [:id :fname]]]]]]]]]]
+                                        [:id
+                                         [:response-prompts {:ref-deleted nil}
+                                          [:id :prompt-id :prompt-prompt :prompt-term
+                                           [:response-prompt-fields
+                                            [:id :prompt-field-fname :idx
+                                             :sval :nval :dval]]]]]]]]
                                      [:forms {:ftype "preposal" ; preposal requests
                                               :from-org-id @org-id&}
                                       [:id]]
@@ -241,8 +233,4 @@
        [:div.inner-container
         (if (= :loading @products&)
           [cc/c-loader]
-          (let [product (-> @products& :products first)
-                {:keys [docs-out id oname]} (:vendor product)]
-            [:<>
-             [c-product product]
-             [bc/c-vendor-profile (first docs-out) id oname]]))]])))
+          [c-product (-> @products& :products first)])]])))
