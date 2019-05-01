@@ -79,7 +79,7 @@
  (fn [db]
    (assoc db :login-failed? false)))
 
-(defn login-page []
+(defn c-page []
   (let [email (r/atom "")
         pwd (r/atom "")
         login-failed? (rf/subscribe [:login-failed?])

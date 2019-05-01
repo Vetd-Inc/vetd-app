@@ -18,12 +18,42 @@
  (fn [{:keys [db]} [_ type]]
    {:db (assoc db
                :page :signup
-               :page-params {:type type})
+               :page-params {:type (keyword type)})
     :analytics/page {:name (str (s/capitalize type) " Signup")}}))
+
+(rf/reg-event-fx
+ :create-acct
+ (fn [{:keys [db]} [_ [account]]]
+   {:ws-send {:ws (:ws db)
+              :payload (merge {:cmd :create-acct
+                               :return {:handler :ws/create-acct
+                                        :org-type (:org-type account)
+                                        :email (:email account)}}
+                              (select-keys account [:uname :org-name :org-url
+                                                    :org-type :email :pwd]))}}))
+(rf/reg-event-fx
+ :ws/create-acct
+ (fn [{:keys [db]} [_ results {{:keys [org-type email]} :return}]]
+   (if-not (:email-used? results)
+     {:dispatch [:nav-login]
+      :toast {:type "success"
+              :title "Thanks for Signing Up!"
+              :message "You can now login."}
+      :analytics/track {:event "Signup Complete"
+                        :props {:category "Accounts"
+                                :label org-type}}}
+     (js/alert "Email already in use by another account."))))
+
+;; Subscriptions
+(rf/reg-sub
+ :signup-type
+ :<- [:page-params] 
+ (fn [{:keys [type]}] type))
 
 ;; Components
 (defn c-page []
-  (let [uname (r/atom "")
+  (let [signup-type& (rf/subscribe [:signup-type])
+        uname (r/atom "")
         email (r/atom "")
         org-name (r/atom "")
         org-url (r/atom "")        
@@ -35,7 +65,9 @@
        [:img.logo {:src "https://s3.amazonaws.com/vetd-logos/vetd.svg"}]
        [:> ui/Form
         [:> ui/Header {:as "h2"}
-         "Sign Up as a Vendor"]
+         (case @signup-type&
+           :buyer "Sign Up as a Buyer"
+           :vendor "Sign Up as a Vendor")]
         [:> ui/FormField
          [:> ui/Input {:class "borderless"
                        :placeholder "Full Name"
@@ -86,6 +118,6 @@
                                                                :email @email
                                                                :org-name @org-name
                                                                :org-url @org-url
-                                                               :org-type "vendor"
+                                                               :org-type (name @signup-type&)
                                                                :pwd @pwd}]])}
          "Sign Up"]]])))

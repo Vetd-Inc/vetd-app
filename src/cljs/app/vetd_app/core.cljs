@@ -6,10 +6,8 @@
             vetd-app.analytics
             vetd-app.url
             vetd-app.debounce
-            vetd-app.signup
             [vetd-app.hooks :as hooks]
             [vetd-app.buyers.fixtures :as b-fix]
-            [vetd-app.buyers.pages.signup :as p-bsignup]
             [vetd-app.buyers.pages.search :as p-bsearch]
             [vetd-app.buyers.pages.preposals :as p-bpreposals]
             [vetd-app.buyers.pages.preposal-detail :as p-bpreposal-detail]
@@ -17,11 +15,11 @@
             [vetd-app.buyers.pages.rounds :as p-brounds]
             [vetd-app.buyers.pages.round-detail :as p-bround-detail]
             [vetd-app.vendors.fixtures :as v-fix]
-            [vetd-app.vendors.pages.signup :as p-vsignup]
             [vetd-app.vendors.pages.preposals :as p-vpreposals]
             [vetd-app.vendors.pages.products :as p-vprods]
             [vetd-app.vendors.pages.profile :as p-vprofile]
             [vetd-app.common.fixtures :as pub-fix]
+            [vetd-app.common.pages.signup :as p-signup]
             [vetd-app.common.pages.login :as p-login]
             [reagent.core :as r]
             [re-frame.core :as rf]
@@ -32,29 +30,27 @@
 (println "START core")
 
 (hooks/reg-hooks! hooks/c-page
-                  {:login #'p-login/login-page
-                   :b/signup #'p-bsignup/c-page
+                  {:login #'p-login/c-page
+                   :signup #'p-signup/c-page
                    :b/search #'p-bsearch/c-page
                    :b/preposals #'p-bpreposals/c-page
                    :b/preposal-detail #'p-bpreposal-detail/c-page
                    :b/product-detail #'p-bproduct-detail/c-page
                    :b/rounds #'p-brounds/c-page
                    :b/round-detail #'p-bround-detail/c-page
-                   :v/signup #'p-vsignup/c-page
                    :v/preposals #'p-vpreposals/c-page
                    :v/products #'p-vprods/c-page
                    :v/profile #'p-vprofile/c-page})
 
 (hooks/reg-hooks! hooks/c-container
                   {:login #'pub-fix/container
-                   :b/signup #'pub-fix/container
+                   :signup #'pub-fix/container
                    :b/search #'b-fix/container
                    :b/preposals #'b-fix/container
                    :b/preposal-detail #'b-fix/container
                    :b/product-detail #'b-fix/container
                    :b/rounds #'b-fix/container
                    :b/round-detail #'b-fix/container
-                   :v/signup #'pub-fix/container
                    :v/preposals #'v-fix/container
                    :v/products #'v-fix/container
                    :v/profile #'v-fix/container})
@@ -67,7 +63,7 @@
    :preposals-filter {:selected-categories #{}}
    :rounds-filter {:selected-statuses #{}}}))
 
-(def public-pages #{:login :b/signup :v/signup})
+(def public-pages #{:login :signup})
 
 (rf/reg-sub
  :page
@@ -184,11 +180,8 @@
 (sec/defroute login-path "/login" [query-params]
   (rf/dispatch [:route-login query-params]))
 
-(sec/defroute buyers-signup-path "/b/signup" [query-params]
-  (rf/dispatch [:b/route-signup query-params]))
-
-(sec/defroute vendors-signup-path "/v/signup" [query-params]
-  (rf/dispatch [:v/route-signup query-params]))
+(sec/defroute signup-path "/signup/:type" [type]
+  (rf/dispatch [:route-signup type]))
 
 (sec/defroute catchall-path "*" []
   (do (.log js/console "nav catchall")
