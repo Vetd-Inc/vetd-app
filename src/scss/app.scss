@@ -371,8 +371,6 @@ $cell-height: 201px;
   // this keeps them from overflowing
   clip-path: inset(-100px 0px 0px 0px);
 
-  
-
   .column {
     width: $cell-width;
     flex: 0 0 auto;
@@ -433,10 +431,6 @@ $cell-height: 201px;
       opacity: 1;
     }
     
-  }
-
-  .column:last-of-type .cell {
-    padding-right: 0;
   }
 
   &.draggable {
