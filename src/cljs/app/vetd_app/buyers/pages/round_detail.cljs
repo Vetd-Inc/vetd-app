@@ -201,16 +201,16 @@
   (let [modal-showing? (r/atom false)
         modal-message (r/atom "")
         cell-click-disabled? (r/atom false)
-        ;; the response currently in the modal
-        modal-response (r/atom {:requirement {:title nil}
-                                :product {:id nil
-                                          :pname nil}
-                                :response nil})
-        show-modal (fn [requirement product response]
-                     (swap! modal-response assoc
-                            :requirement requirement
-                            :product product
-                            :response response)
+        ;; The response currently in the modal.
+        ;; E.g., {:req-prompt-id 123
+        ;;        :req-prompt-text "Something"
+        ;;        :pid 321
+        ;;        :pname "Some Product"
+        ;;        :resp-id 456
+        ;;        :resp-text "Some answer to prompt"}
+        modal-response (r/atom {})
+        show-modal (fn [response]
+                     (reset! modal-response response)
                      (reset! modal-showing? true))
         ;; keep a reference to the window-scroll fn (will be created on mount)
         ;; so we can remove the event listener upon unmount
@@ -315,21 +315,23 @@
                (for [rp round-product
                      :let [{pname :pname
                             pid :id} (:product rp)
-                           {response-id :id
-                            response-text :sval} (docs/get-response-by-prompt-id
-                                                  (-> rp
-                                                      :vendor-response-form-docs
-                                                      :response-prompts)
-                                                  req-prompt-id)]]
+                           {resp-id :id
+                            resp-text :sval} (docs/get-response-by-prompt-id
+                                              (-> rp
+                                                  :vendor-response-form-docs
+                                                  :response-prompts)
+                                              req-prompt-id)]]
                  ^{:key (str req-prompt-id "-" pid)}
                  [:div.cell {:on-mouse-down #(reset! cell-click-disabled? false)
                              :on-mouse-up #(when-not @cell-click-disabled?
-                                             (show-modal {:title req-prompt-text}
-                                                         {:id pid
-                                                          :pname pname}
-                                                         response-text))}
-                  [:div.text (if (not-empty response-text)
-                               (util/truncate-text response-text 150)
+                                             (show-modal {:req-prompt-id req-prompt-id
+                                                          :req-prompt-text req-prompt-text
+                                                          :pid pid
+                                                          :pname pname
+                                                          :resp-id resp-id
+                                                          :resp-text resp-text}))}
+                  [:div.text (if (not-empty resp-text)
+                               (util/truncate-text resp-text 150)
                                [:> ui/Popup
                                 {:content "Waiting for Vendor Response"
                                  :position "bottom center"
@@ -338,59 +340,58 @@
                                                         :size "large"
                                                         :style {:color "#aaa"}}])}])]
                   [:div.actions
-                   [c-action-button {:on-click #()
-                                     :icon "chat outline"
+                   [c-action-button {:icon "chat outline" ; no on-click, just pass through
                                      :popup-text "Ask Question"}]
-                   [c-action-button {:on-click #(rf/dispatch
-                                                 [:b/round.rate-response response-id 1])
+                   [c-action-button {:on-click #(do (.stopPropagation %)
+                                                    (rf/dispatch [:b/round.rate-response resp-id 1]))
                                      :icon "thumbs up outline"
                                      :popup-text "Approve"}]
-                   [c-action-button {:on-click #(rf/dispatch
-                                                 [:b/round.rate-response response-id 0])
+                   [c-action-button {:on-click #(do (.stopPropagation %)
+                                                    (rf/dispatch [:b/round.rate-response resp-id 0]))
                                      :icon "thumbs down outline"
                                      :popup-text "Disapprove"}]]])])]
-           [:> ui/Modal {:open @modal-showing?
-                         :on-close #(reset! modal-showing? false)
-                         :size "tiny"
-                         :dimmer "inverted"
-                         :closeOnDimmerClick true
-                         :closeOnEscape true
-                         :closeIcon true}
-            [:> ui/ModalHeader (-> @modal-response :product :pname)]
-            [:> ui/ModalContent
-             [:h4 {:style {:padding-bottom 10}}
-              [c-action-button {:on-click #()
-                                :icon "thumbs down outline"
-                                :popup-text "Disapprove"
-                                :props {:style {:float "right"
-                                                :margin-right 0}}}]
-              [c-action-button {:on-click #()
-                                :icon "thumbs up outline"
-                                :popup-text "Approve"
-                                :props {:style {:float "right"
-                                                :margin-right 4}}}]
-              (-> @modal-response :requirement :title)]
-             (-> @modal-response :response)]
-            [:> ui/ModalActions
-             [:> ui/Form
-              [:> ui/FormField
-               [:> ui/TextArea {:placeholder "Ask a follow-up question..."
-                                :autoFocus true
-                                :spellCheck true
-                                :onChange (fn [_ this]
-                                            (reset! modal-message (.-value this)))}]]
-              [:> ui/Button {:onClick #(reset! modal-showing? false)
-                             :color "grey"}
-               "Cancel"]
-              [:> ui/Button {:onClick #(do (rf/dispatch [:b/round.ask-a-question
-                                                         (-> @modal-response :product :id)
-                                                         (-> @modal-response :product :pname)
-                                                         @modal-message
-                                                         id
-                                                         (-> @modal-response :requirement :title)])
-                                           (reset! modal-showing? false))
-                             :color "blue"}
-               "Submit Question"]]]]]
+           (let [{:keys [req-prompt-id req-prompt-text pid pname
+                         resp-id resp-text]} @modal-response]
+             [:> ui/Modal {:open @modal-showing?
+                           :on-close #(reset! modal-showing? false)
+                           :size "tiny"
+                           :dimmer "inverted"
+                           :closeOnDimmerClick true
+                           :closeOnEscape true
+                           :closeIcon true} 
+              [:> ui/ModalHeader pname]
+              [:> ui/ModalContent
+               [:h4 {:style {:padding-bottom 10}}
+                [c-action-button {:on-click #()
+                                  :icon "thumbs down outline"
+                                  :popup-text "Disapprove"
+                                  :props {:style {:float "right"
+                                                  :margin-right 0}}}]
+                [c-action-button {:on-click #()
+                                  :icon "thumbs up outline"
+                                  :popup-text "Approve"
+                                  :props {:style {:float "right"
+                                                  :margin-right 4}}}]
+                req-prompt-text]
+               resp-text]
+              [:> ui/ModalActions
+               [:> ui/Form
+                [:> ui/FormField
+                 [:> ui/TextArea {:placeholder "Ask a follow-up question..."
+                                  :autoFocus true
+                                  :spellCheck true
+                                  :onChange (fn [_ this]
+                                              (reset! modal-message (.-value this)))}]]
+                [:> ui/Button {:onClick #(reset! modal-showing? false)
+                               :color "grey"}
+                 "Cancel"]
+                [:> ui/Button
+                 {:onClick #(do (rf/dispatch
+                                 [:b/round.ask-a-question
+                                  pid pname @modal-message id req-prompt-text])
+                                (reset! modal-showing? false))
+                  :color "blue"}
+                 "Submit Question"]]]])]
           [:> ui/Segment {:class "detail-container"
                           :style {:margin-left 20}}
            [:p [:em "Your requirements have been submitted."]]
