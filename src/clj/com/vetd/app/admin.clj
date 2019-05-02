@@ -30,6 +30,7 @@
   (db/hs-exe! {:update :round_product
                :set {:deleted (ut/now-ts)}
                :where [:and
+                       [:= :deleted nil]
                        [:= :round_id round-id]
                        [:= :product_id product-id]]}))
 

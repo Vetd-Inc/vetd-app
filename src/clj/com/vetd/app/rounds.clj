@@ -25,40 +25,32 @@
 
 (defn sync-round-vendor-req-forms
   [round-id]
-  (let [{:keys [buyer-id] :as round} (-> [[:rounds {:id round-id}
-                                           [:buyer-id
-                                            [:req-form-template 
-                                             [:id :ftype :fsubtype
-                                              [:prompts
-                                               [:id]]]]]]]
-                                         ha/sync-query
-                                         :rounds
-                                         first)
-        {:keys [ftype fsubtype prompts] form-template-id :id} (:req-form-template round)
-        products (-> [[:rounds {:id round-id}
-                       [[:products
-                         [:id :vendor-id :ref-deleted :ref-id
-                          [:forms {:ftype ftype
-                                   :fsubtype fsubtype
-                                   :deleted nil}
-                           [:id
-                            [:prompts [:id]]]]]]]]]
-                     ha/sync-query
-                     :rounds
-                     first
-                     :products)
-        prod-id->exists (->> products
-                             (group-by :id)
+  (let [{:keys [buyer-id req-form-template] :as round} (-> [[:rounds {:id round-id}
+                                                             [:buyer-id
+                                                              [:req-form-template
+                                                               [:id]]]]]
+                                                           ha/sync-query
+                                                           :rounds
+                                                           first)
+        form-template-id (:id req-form-template)
+        rps (-> [[[:round-product {:id round-id}
+                   [:id :product-id :deleted
+                    [:vendor-response-form-docs
+                     [:id]]]]]]
+                ha/sync-query
+                :round-product)
+        prod-id->exists (->> rps
+                             (group-by :product-id)
                              (ut/fmap (partial some
-                                               (comp nil? :ref-deleted) )))
-        to-add (filter (fn [{:keys [forms id]}]
+                                               (comp nil? :deleted))))
+        to-add (filter (fn [{:keys [product-id] forms :vendor-response-form-docs}]
                          (and (empty? forms)
-                              (prod-id->exists id)))
-                       products)
-        to-remove (filter (fn [{:keys [forms id]}]
+                              (prod-id->exists product-id)))
+                       rps)
+        to-remove (filter (fn [{:keys [product-id] forms :vendor-response-form-docs}]
                             (not (or (empty? forms)
                                      (prod-id->exists id))))
-                          products)]
+                          rps)]
     (doseq [{:keys [vendor-id id ref-id]} to-add]
       (docs/create-form-from-template {:form-template-id form-template-id
                                        :from-org-id buyer-id
@@ -70,3 +62,4 @@
     (doseq [{:keys [forms id]} to-remove]
       (->> forms first :id
            (docs/update-deleted :round_product)))))
+
