@@ -29,6 +29,69 @@
     :analytics/page {:name "Buyers Round Detail"
                      :props {:round-idstr round-idstr}}}))
 
+(rf/reg-event-fx
+ :b/round.initiation-form-saved
+ (fn [_ [_ _ {{:keys [round-id]} :return}]]
+   {:toast {:type "success"
+            :title "Initiation Form Submitted"
+            :message "Status updated to \"In Progress\""}
+    :analytics/track {:event "Initiation Form Saved"
+                      :props {:category "Round"
+                              :label round-id}}}))
+
+(rf/reg-event-fx
+ :b/round.declare-winner
+ (fn [{:keys [db]} [_ round-id product-id]]
+   (let [qid (get-next-query-id)]
+     {:ws-send {:payload {:cmd :b/round.declare-winner
+                          :round-id round-id
+                          :product-id product-id
+                          :buyer-id (util/db->current-org-id db)}}
+      :analytics/track {:event "Declare Winner"
+                        :props {:category "Round"
+                                :label product-id}}})))
+
+(rf/reg-event-fx
+ :b/round.disqualify
+ (fn [{:keys [db]} [_ round-id product-id reason]]
+   (let [qid (get-next-query-id)]
+     {:ws-send {:payload {:cmd :b/round.disqualify
+                          :round-id round-id
+                          :product-id product-id
+                          :reason reason
+                          :buyer-id (util/db->current-org-id db)}}
+      :analytics/track {:event "Disqualify Product"
+                        :props {:category "Round"
+                                :label product-id}}})))
+
+(rf/reg-event-fx
+ :b/round.ask-a-question
+ (fn [{:keys [db]} [_ product-id product-name message
+                    round-id requirement-text]]
+   (let [qid (get-next-query-id)]
+     {:ws-send {:payload {:cmd :b/ask-a-question
+                          :return {:handler :b/ask-a-question-return}
+                          :product-id product-id
+                          :message message
+                          :round-id round-id
+                          :requirement-text requirement-text
+                          :buyer-id (util/db->current-org-id db)}}
+      :analytics/track {:event "Ask A Question"
+                        :props {:category "Round"
+                                :label product-name}}})))
+
+(rf/reg-event-fx
+ :b/round.rate-response
+ (fn [{:keys [db]} [_ response-id rating]]
+   (let [qid (get-next-query-id)]
+     {:ws-send {:payload {:cmd :b/round.rate-response
+                          :response-id response-id
+                          :rating rating
+                          :buyer-id (util/db->current-org-id db)}}
+      :analytics/track {:event "Rate Response"
+                        :props {:category "Round"
+                                :label rating}}})))
+
 ;; Subscriptions
 (rf/reg-sub
  :round-idstr
@@ -148,32 +211,6 @@
                :rounds/requirements {:value @requirements}
                :rounds/add-products-by-name {:value @add-products-by-name}}}])}
          "Submit"]]])))
-
-(rf/reg-event-fx
- :b/round.initiation-form-saved
- (fn [_ [_ _ {{:keys [round-id]} :return}]]
-   {:toast {:type "success"
-            :title "Initiation Form Submitted"
-            :message "Status updated to \"In Progress\""}
-    :analytics/track {:event "Initiation Form Saved"
-                      :props {:category "Round"
-                              :label round-id}}}))
-
-(rf/reg-event-fx
- :b/round.ask-a-question
- (fn [{:keys [db]} [_ product-id product-name message
-                    round-id requirement-text]]
-   (let [qid (get-next-query-id)]
-     {:ws-send {:payload {:cmd :b/ask-a-question
-                          :return {:handler :b/ask-a-question-return}
-                          :product-id product-id
-                          :message message
-                          :round-id round-id
-                          :requirement-text requirement-text
-                          :buyer-id (util/db->current-org-id db)}}
-      :analytics/track {:event "Ask A Question"
-                        :props {:category "Round"
-                                :label product-name}}})))
 
 (defn c-round-initiation
   [{:keys [id status title products init-doc] :as round}]
