@@ -29,6 +29,69 @@
     :analytics/page {:name "Buyers Round Detail"
                      :props {:round-idstr round-idstr}}}))
 
+(rf/reg-event-fx
+ :b/round.initiation-form-saved
+ (fn [_ [_ _ {{:keys [round-id]} :return}]]
+   {:toast {:type "success"
+            :title "Initiation Form Submitted"
+            :message "Status updated to \"In Progress\""}
+    :analytics/track {:event "Initiation Form Saved"
+                      :props {:category "Round"
+                              :label round-id}}}))
+
+(rf/reg-event-fx
+ :b/round.declare-winner
+ (fn [{:keys [db]} [_ round-id product-id]]
+   (let [qid (get-next-query-id)]
+     {:ws-send {:payload {:cmd :b/round.declare-winner
+                          :round-id round-id
+                          :product-id product-id
+                          :buyer-id (util/db->current-org-id db)}}
+      :analytics/track {:event "Declare Winner"
+                        :props {:category "Round"
+                                :label product-id}}})))
+
+(rf/reg-event-fx
+ :b/round.disqualify
+ (fn [{:keys [db]} [_ round-id product-id reason]]
+   (let [qid (get-next-query-id)]
+     {:ws-send {:payload {:cmd :b/round.disqualify
+                          :round-id round-id
+                          :product-id product-id
+                          :reason reason
+                          :buyer-id (util/db->current-org-id db)}}
+      :analytics/track {:event "Disqualify Product"
+                        :props {:category "Round"
+                                :label product-id}}})))
+
+(rf/reg-event-fx
+ :b/round.ask-a-question
+ (fn [{:keys [db]} [_ product-id product-name message
+                    round-id requirement-text]]
+   (let [qid (get-next-query-id)]
+     {:ws-send {:payload {:cmd :b/ask-a-question
+                          :return {:handler :b/ask-a-question-return}
+                          :product-id product-id
+                          :message message
+                          :round-id round-id
+                          :requirement-text requirement-text
+                          :buyer-id (util/db->current-org-id db)}}
+      :analytics/track {:event "Ask A Question"
+                        :props {:category "Round"
+                                :label product-name}}})))
+
+(rf/reg-event-fx
+ :b/round.rate-response
+ (fn [{:keys [db]} [_ response-id rating]]
+   (let [qid (get-next-query-id)]
+     {:ws-send {:payload {:cmd :b/round.rate-response
+                          :response-id response-id
+                          :rating rating
+                          :buyer-id (util/db->current-org-id db)}}
+      :analytics/track {:event "Rate Response"
+                        :props {:category "Round"
+                                :label rating}}})))
+
 ;; Subscriptions
 (rf/reg-sub
  :round-idstr
@@ -149,55 +212,14 @@
                :rounds/add-products-by-name {:value @add-products-by-name}}}])}
          "Submit"]]])))
 
-(rf/reg-event-fx
- :b/round.initiation-form-saved
- (fn [_ [_ _ {{:keys [round-id]} :return}]]
-   {:toast {:type "success"
-            :title "Initiation Form Submitted"
-            :message "Status updated to \"In Progress\""}
-    :analytics/track {:event "Initiation Form Saved"
-                      :props {:category "Round"
-                              :label round-id}}}))
-
-(rf/reg-event-fx
- :b/round.ask-a-question
- (fn [{:keys [db]} [_ product-id product-name message
-                    round-id requirement-text]]
-   (let [qid (get-next-query-id)]
-     {:ws-send {:payload {:cmd :b/ask-a-question
-                          :return {:handler :b/ask-a-question-return}
-                          :product-id product-id
-                          :message message
-                          :round-id round-id
-                          :requirement-text requirement-text
-                          :buyer-id (util/db->current-org-id db)}}
-      :analytics/track {:event "Ask A Question"
-                        :props {:category "Round"
-                                :label product-name}}})))
-
 (defn c-round-initiation
   [{:keys [id status title products init-doc] :as round}]
   (if init-doc
     "You have already submitted your requirements." ; this should never show
     [c-round-initiation-form id]))
 
-(def dummy-products ["SendGrid" "Mailchimp" "Mandrill" "iContact"])
-(def dummy-resps
-  {"Pricing Estimate" ["$45 / mo."
-                       "$200 / mo."
-                       "If you are in the $0-2M pricing tier, the base fee is $4,000."
-                       "Unavailable"]
-   "Free Trial" ["First 30 days." "" "Yes" "Yes"]
-   "Current Customers" ["Google, Patreon, YouTube, Vetd, Make Offices"
-                        "Apple, Cisco Enterprise, Symantec, Tommy's Coffee"
-                        "Heinz, Philadelphia Business Group, Wizards of the Coast"
-                        "None currently."]
-   "Integration with GMail" ["Yes" "Yes" "Yes, with PRO account." "No"]
-   "Subscription Billing" ["Yes" "Yes" "Yes" "No"]
-   "One Time Billing" ["Yes" "No" "Yes" "Yes"]
-   "Parent / Child Heirarchical Billing" ["Yes" "Yes" "Yes" "No"]})
-
 (defn c-action-button
+  "Component to display small icon button for grid cell actions."
   [{:keys [icon on-click popup-text props]}]
   [:> ui/Popup
    {:content popup-text
@@ -209,190 +231,225 @@
                                     :size "mini"}
                                    props)])}])
 
-(defn c-round-grid
-  [{:keys [id status title products init-doc] :as round}]
-  (let [modal-showing? (r/atom false)
-        modal-message (r/atom "")
-        cell-click-disabled? (r/atom false)
-        ;; the response currently in the modal
-        modal-response (r/atom {:requirement {:title nil}
-                                :product {:id nil
-                                          :pname nil}
-                                :response nil})
-        show-modal (fn [requirement product response]
-                     (swap! modal-response assoc
-                            :requirement requirement
-                            :product product
-                            :response response)
-                     (reset! modal-showing? true))
-        ;; keep a reference to the window-scroll fn (will be created on mount)
-        ;; so we can remove the event listener upon unmount
-        window-scroll-fn-ref (atom nil)]
-    (r/create-class
-     {:component-did-mount
-      (fn [this]
-        (let [ ;; draggable grid
-              node (r/dom-node this)
-              mousedown? (atom false)
-              x-at-mousedown (atom nil)
-              scroll-left-at-mousedown (atom nil)
-              mousedown (fn [e]
-                          (.add (.-classList node) "dragging")
-                          (reset! mousedown? true)
-                          (reset! x-at-mousedown (- (.-pageX e) (.-offsetLeft node)))
-                          (reset! scroll-left-at-mousedown (.-scrollLeft node)))
-              mousemove (fn [e]
-                          (when @mousedown?
-                            (let [x-displacement (- (- (.-pageX e) (.-offsetLeft node))
-                                                    @x-at-mousedown)
-                                  new-scroll-left (- @scroll-left-at-mousedown
-                                                     (* 3 x-displacement))]
-                              (.preventDefault e)
-                              (aset node "scrollLeft" new-scroll-left)
-                              ;; if you drag more than 3px, disable the cell clickability
-                              (when (and (> (Math/abs x-displacement) 3)
-                                         (not @cell-click-disabled?))
-                                (reset! cell-click-disabled? true)))))
-              mouseup (fn [e]
-                        (.remove (.-classList node) "dragging")
-                        (reset! mousedown? false))
-              
-              ;; make requirements row 'sticky' upon window scroll
-              requirements-pickup-y (atom nil) ; nil when not in 'sticky mode'
-              all-requirements-nodes #(array-seq (.getElementsByClassName js/document "requirement"))
-              ;; the horizontal position of the requirement row needs to
-              ;; be manually updated when in 'sticky mode'
-              scroll (fn []
-                       (.requestAnimationFrame
-                        js/window
-                        (fn []
-                          (when @requirements-pickup-y
-                            (doseq [req-node (all-requirements-nodes)]
-                              (aset (.-style req-node) "marginLeft" (str (* -1 (.-scrollLeft node)) "px")))))))
-              ;; zero out the artificial horizontal scrolling of the requirements row
-              ;; this needs to be called when we leave 'sticky mode'
-              zero-out-req-scroll (fn []
-                                    (doseq [req-node (all-requirements-nodes)]
-                                      (aset (.-style req-node) "marginLeft" "0px")))
-              ;; turn on and off requirements row 'sticky mode' as needed
-              window-scroll (fn []
-                              (.requestAnimationFrame
-                               js/window
-                               (fn []
-                                 (if @requirements-pickup-y
-                                   (when (< (.-scrollY js/window) @requirements-pickup-y)
-                                     (reset! requirements-pickup-y nil)
-                                     (.remove (.-classList node) "fixed")
-                                     (zero-out-req-scroll))
-                                   (when (> (.-scrollY js/window) (.-offsetTop node))
-                                     (reset! requirements-pickup-y (.-offsetTop node))
-                                     (.add (.-classList node) "fixed")
-                                     ;; call 'scroll' to update horiz pos of req row
-                                     ;; (only matters if grid was horiz scrolled/dragged)
-                                     (scroll))))))
-              _ (reset! window-scroll-fn-ref window-scroll)]
-          (.addEventListener node "mousedown" mousedown)
-          (.addEventListener node "mousemove" mousemove)
-          (.addEventListener node "mouseup" mouseup)
-          (.addEventListener node "mouseleave" mouseup)
-          (.addEventListener node "scroll" scroll)
-          (.addEventListener js/window "scroll" window-scroll)))
+(defn c-waiting-for-response []
+  [:> ui/Popup
+   {:content "Waiting for Vendor Response"
+    :position "bottom center"
+    :trigger (r/as-element
+              [:> ui/Icon {:name "clock outline"
+                           :size "large"
+                           :style {:color "#aaa"}}])}])
 
-      :component-will-unmount
-      (fn [this]
-        (when @window-scroll-fn-ref
-          (.removeEventListener js/window "scroll" @window-scroll-fn-ref)))
-      
-      :reagent-render
-      (fn []
-        (if (seq products)
-          [:<>
-           [:div.round-grid
-            (for [req (->> init-doc
-                           :response-prompts
-                           (filter (comp (partial = "rounds/requirements") :prompt-term))
-                           first
-                           :response-prompt-fields
-                           (map :sval))]
-              ^{:key req}
-              [:div.column
-               [:h4.requirement req]
-               (for [dummy-product dummy-products
-                     :let [resps (get dummy-resps "Free Trial")
-                           response (get resps (.indexOf dummy-products dummy-product))]]
-                 ^{:key dummy-product}
-                 [:div.cell {:on-mouse-down #(reset! cell-click-disabled? false)
-                             :on-mouse-up #(when-not @cell-click-disabled?
-                                             (show-modal {:title req} {:id "272814695158" :pname dummy-product} response))}
-                  [:div.text (if (not-empty response)
-                               (util/truncate-text response 150)
-                               [:> ui/Popup
-                                {:content "Waiting for Vendor Response"
-                                 :position "bottom center"
-                                 :trigger (r/as-element
-                                           [:> ui/Icon {:name "clock outline"
-                                            :size "large"
-                                            :style {:color "#aaa"}}])}])]
-                  [:div.actions
-                   [c-action-button {:on-click #()
-                                     :icon "chat outline"
-                                     :popup-text "Ask Question"}]
-                   [c-action-button {:on-click #()
-                                     :icon "thumbs up outline"
-                                     :popup-text "Approve"}]
-                   [c-action-button {:on-click #()
-                                     :icon "thumbs down outline"
-                                     :popup-text "Disapprove"}]]])])]
-           [:> ui/Modal {:open @modal-showing?
-                         :on-close #(reset! modal-showing? false)
-                         :size "tiny"
-                         :dimmer "inverted"
-                         :closeOnDimmerClick true
-                         :closeOnEscape true
-                         :closeIcon true}
-            [:> ui/ModalHeader (-> @modal-response :product :pname)]
-            [:> ui/ModalContent
-             [:h4 {:style {:padding-bottom 10}}
-              [c-action-button {:on-click #()
-                                :icon "thumbs down outline"
-                                :popup-text "Disapprove"
-                                :props {:style {:float "right"
-                                                :margin-right 0}}}]
-              [c-action-button {:on-click #()
-                                :icon "thumbs up outline"
-                                :popup-text "Approve"
-                                :props {:style {:float "right"
-                                                :margin-right 4}}}]
-              (-> @modal-response :requirement :title)]
-             (-> @modal-response :response)]
-            [:> ui/ModalActions
-             [:> ui/Form
-              [:> ui/FormField
-               [:> ui/TextArea {:placeholder "Ask a follow-up question..."
-                                :autoFocus true
-                                :spellCheck true
-                                :onChange (fn [_ this]
-                                            (reset! modal-message (.-value this)))}]]
-              [:> ui/Button {:onClick #(reset! modal-showing? false)
-                             :color "grey"}
-               "Cancel"]
-              [:> ui/Button {:onClick #(do (rf/dispatch [:b/round.ask-a-question
-                                                         (-> @modal-response :product :id)
-                                                         (-> @modal-response :product :pname)
-                                                         @modal-message
-                                                         id
-                                                         (-> @modal-response :requirement :title)])
-                                           (reset! modal-showing? false))
-                             :color "blue"}
-               "Submit Question"]]]]]
-          [:> ui/Segment {:class "detail-container"
-                          :style {:margin-left 20}}
-           [:p [:em "Your requirements have been submitted."]]
-           [:p "We are gathering information for you to review from all relevant vendors. Check back soon for updates."]]))})))
+(defn c-cell-modal
+  [round-id
+   modal-showing?&
+   {:keys [req-prompt-id req-prompt-text pid pname
+           resp-id resp-text]
+    :as modal-response}]
+  (let [modal-message& (r/atom "")]
+    [:> ui/Modal {:open @modal-showing?&
+                  :on-close #(reset! modal-showing?& false)
+                  :size "tiny"
+                  :dimmer "inverted"
+                  :closeOnDimmerClick true
+                  :closeOnEscape true
+                  :closeIcon true} 
+     [:> ui/ModalHeader pname]
+     [:> ui/ModalContent
+      [:h4 {:style {:padding-bottom 10}}
+       [c-action-button {:on-click #(rf/dispatch [:b/round.rate-response resp-id 0])
+                         :icon "thumbs down outline"
+                         :popup-text "Disapprove"
+                         :props {:style {:float "right"
+                                         :margin-right 0}}}]
+       [c-action-button {:on-click #(rf/dispatch [:b/round.rate-response resp-id 1])
+                         :icon "thumbs up outline"
+                         :popup-text "Approve"
+                         :props {:style {:float "right"
+                                         :margin-right 4}}}]
+       req-prompt-text]
+      resp-text]
+     [:> ui/ModalActions
+      [:> ui/Form
+       [:> ui/FormField
+        [:> ui/TextArea {:placeholder "Ask a follow-up question..."
+                         :autoFocus true
+                         :spellCheck true
+                         :onChange (fn [_ this]
+                                     (reset! modal-message& (.-value this)))}]]
+       [:> ui/Button {:onClick #(reset! modal-showing?& false)
+                      :color "grey"}
+        "Cancel"]
+       [:> ui/Button
+        {:onClick #(do (rf/dispatch
+                        [:b/round.ask-a-question
+                         pid pname @modal-message& round-id req-prompt-text])
+                       (reset! modal-showing?& false))
+         :color "blue"}
+        "Submit Question"]]]]))
+
+(def cell-click-disabled? (r/atom false))
+
+(defn c-round-grid*
+  [round req-form-template round-product]
+  (let [;; The response currently in the modal.
+        ;; E.g., {:req-prompt-id 123
+        ;;        :req-prompt-text "Something"
+        ;;        :pid 321
+        ;;        :pname "Some Product"
+        ;;        :resp-id 456
+        ;;        :resp-text "Some answer to prompt"}
+        modal-response& (r/atom {})
+        modal-showing?& (r/atom false)
+        show-modal (fn [response]
+                     (reset! modal-response& response)
+                     (reset! modal-showing?& true))]
+    (fn [{:keys [id status title init-doc] :as round}
+         {:keys [prompts] :as req-form-template}
+         round-product]
+      (if (seq round-product)
+        [:<>
+         [:div.round-grid
+          (for [req prompts
+                :let [{req-prompt-id :id
+                       req-prompt-text :prompt} req]]
+            ^{:key req-prompt-id}
+            [:div.column
+             [:h4.requirement req-prompt-text]
+             (for [rp round-product
+                   :let [{pname :pname
+                          pid :id} (:product rp)
+                         resp (docs/get-response-by-prompt-id
+                               (-> rp :vendor-response-form-docs :response-prompts)
+                               req-prompt-id)
+                         {resp-id :id
+                          resp-text :sval} resp]]
+               ^{:key (str req-prompt-id "-" pid)}
+               [:div.cell {:on-mouse-down #(reset! cell-click-disabled? false)
+                           :on-click #(when-not @cell-click-disabled?
+                                        (show-modal {:req-prompt-id req-prompt-id
+                                                     :req-prompt-text req-prompt-text
+                                                     :pid pid
+                                                     :pname pname
+                                                     :resp-id resp-id
+                                                     :resp-text resp-text}))}
+                [:div.text (if (not-empty resp-text)
+                             (util/truncate-text resp-text 150)
+                             [c-waiting-for-response])]
+                [:div.actions
+                 [c-action-button {:icon "chat outline" ; on-click just pass through
+                                   :popup-text "Ask Question"}]
+                 [c-action-button {:on-click #(do (.stopPropagation %)
+                                                  (rf/dispatch [:b/round.rate-response resp-id 1]))
+                                   :icon "thumbs up outline"
+                                   :popup-text "Approve"}]
+                 [c-action-button {:on-click #(do (.stopPropagation %)
+                                                  (rf/dispatch [:b/round.rate-response resp-id 0]))
+                                   :icon "thumbs down outline"
+                                   :popup-text "Disapprove"}]]])])]
+         [c-cell-modal id modal-showing?& @modal-response&]]
+        ;; no products in round yet
+        [:> ui/Segment {:class "detail-container"
+                        :style {:margin-left 20}}
+         [:p [:em "Your requirements have been submitted."]]
+         [:p (str "We are gathering information for you to review "
+                  "from all relevant vendors. Check back soon for updates.")]]))))
+
+(def c-round-grid
+  (let [;; keep a reference to the window-scroll fn (will be created on mount)
+        ;; so we can remove the event listener upon unmount
+        window-scroll-fn-ref (atom nil)
+        ;; really just affects which cursor displayed
+        update-draggability
+        (fn [this]
+          (let [node (r/dom-node this)]
+            (if (> (.-scrollWidth node) (.-clientWidth node))
+              (.add (.-classList (r/dom-node this)) "draggable")
+              (.remove (.-classList (r/dom-node this)) "draggable"))))]
+    (with-meta c-round-grid*
+      {:component-did-mount
+       (fn [this] ; make grid draggable
+         (let [node (r/dom-node this)
+               mousedown? (atom false)
+               x-at-mousedown (atom nil)
+               scroll-left-at-mousedown (atom nil)
+               mousedown (fn [e]
+                           (.add (.-classList node) "dragging")
+                           (reset! mousedown? true)
+                           (reset! x-at-mousedown (- (.-pageX e) (.-offsetLeft node)))
+                           (reset! scroll-left-at-mousedown (.-scrollLeft node)))
+               mousemove (fn [e]
+                           (when @mousedown?
+                             (let [x-displacement (- (- (.-pageX e) (.-offsetLeft node))
+                                                     @x-at-mousedown)
+                                   new-scroll-left (- @scroll-left-at-mousedown
+                                                      (* 3 x-displacement))]
+                               (.preventDefault e)
+                               (aset node "scrollLeft" new-scroll-left)
+                               ;; if you drag more than 3px, disable the cell clickability
+                               (when (and (> (Math/abs x-displacement) 3)
+                                          (not @cell-click-disabled?))
+                                 (reset! cell-click-disabled? true)))))
+               mouseup (fn [e]
+                         (.remove (.-classList node) "dragging")
+                         (reset! mousedown? false))
+               
+               ;; make requirements row 'sticky' upon window scroll
+               requirements-pickup-y (atom nil) ; nil when not in 'sticky mode'
+               all-requirements-nodes #(array-seq (.getElementsByClassName js/document "requirement"))
+               ;; the horizontal position of the requirement row needs to
+               ;; be manually updated when in 'sticky mode'
+               scroll (fn []
+                        (.requestAnimationFrame
+                         js/window
+                         (fn []
+                           (when @requirements-pickup-y
+                             (doseq [req-node (all-requirements-nodes)]
+                               (aset (.-style req-node) "marginLeft" (str (* -1 (.-scrollLeft node)) "px")))))))
+               ;; zero out the artificial horizontal scrolling of the requirements row
+               ;; this needs to be called when we leave 'sticky mode'
+               zero-out-req-scroll (fn []
+                                     (doseq [req-node (all-requirements-nodes)]
+                                       (aset (.-style req-node) "marginLeft" "0px")))
+               ;; turn on and off requirements row 'sticky mode' as needed
+               window-scroll (fn []
+                               (.requestAnimationFrame
+                                js/window
+                                (fn []
+                                  (if @requirements-pickup-y
+                                    (when (< (.-scrollY js/window) @requirements-pickup-y)
+                                      (reset! requirements-pickup-y nil)
+                                      (.remove (.-classList node) "fixed")
+                                      (zero-out-req-scroll))
+                                    (when (> (.-scrollY js/window) (.-offsetTop node))
+                                      (reset! requirements-pickup-y (.-offsetTop node))
+                                      (.add (.-classList node) "fixed")
+                                      ;; call 'scroll' to update horiz pos of req row
+                                      ;; (only matters if grid was horiz scrolled/dragged)
+                                      (scroll))))))
+               _ (reset! window-scroll-fn-ref window-scroll)]
+           (.addEventListener node "mousedown" mousedown)
+           (.addEventListener node "mousemove" mousemove)
+           (.addEventListener node "mouseup" mouseup)
+           (.addEventListener node "mouseleave" mouseup)
+           (.addEventListener node "scroll" scroll)
+           (.addEventListener js/window "scroll" window-scroll)
+           (update-draggability this)))
+
+       :component-did-update
+       (fn [this]
+         (update-draggability this))
+
+       :component-will-unmount
+       (fn [this]
+         (when @window-scroll-fn-ref
+           (.removeEventListener js/window "scroll" @window-scroll-fn-ref)))})))
 
 (defn c-round
   "Component to display Round details."
-  [{:keys [id status title products] :as round}]
+  [{:keys [id status title products] :as round}
+   req-form-template
+   round-product]
   [:<>
    [:> ui/Segment {:id "round-title-container"
                    :class (str "detail-container " (when (> (count title) 50) "long"))}
@@ -405,7 +462,7 @@
                                      :style {:margin-left 20}}
                       [c-round-initiation round]]
      #{"in-progress"
-       "complete"} [c-round-grid round])])
+       "complete"} [c-round-grid round req-form-template round-product])])
 
 (defn c-add-requirement-button
   [{:keys [id] :as round}]
@@ -494,16 +551,20 @@
 
 (defn c-products
   "Component to display product boxes with various buttons."
-  [round products]
+  [round round-product]
   [:<>
-   (for [{product-id :id
-          pname :pname
-          vendor :vendor
-          :as product} products       ; TODO actual disqualified value
-         :let [product-disqualified? false]]
+   (for [rp round-product
+         :let [{product-id :id
+                product-idstr :idstr
+                pname :pname
+                vendor :vendor
+                :as product} (:product rp)
+                                        ; TODO actual disqualified value
+               product-disqualified? false]]
      ^{:key product-id}
      [:> ui/Segment {:class (str "round-product " (when (> (count pname) 17) "long"))}
-      [:h3.name pname]
+      [:a.name {:on-click #(rf/dispatch [:b/nav-product-detail product-idstr])}
+       pname]
       [c-declare-winner-button round product product-disqualified?]
       [bc/c-setup-call-button product vendor]
       [c-disqualify-button round product product-disqualified?]])])
@@ -515,23 +576,43 @@
                                 [[:rounds {:idstr @round-idstr&
                                            :deleted nil}
                                   [:id :idstr :created :status :title
-                                   [:products {:deleted nil
-                                               :ref-deleted nil}
-                                    [:id :pname
-                                     [:vendor
-                                      [:id :oname]]]]
+                                   ;; requirements form template
+                                   [:req-form-template
+                                    [:id
+                                     [:prompts {:ref-deleted nil
+                                                :_order_by {:sort :asc}}
+                                      [:id :idstr :prompt :descr]]]]
+                                   ;; round initiation form response
                                    [:init-doc
                                     [:id
                                      [:response-prompts {:ref-deleted nil}
                                       [:id :prompt-id :prompt-prompt :prompt-term
                                        [:response-prompt-fields
                                         [:id :prompt-field-fname :idx
-                                         :sval :nval :dval]]]]]]]]]}])]
+                                         :sval :nval :dval]]]]]]
+                                   ;; requirements responses from vendors
+                                   [:round-product
+                                    [:id
+                                     [:product
+                                      [:id :idstr :pname
+                                       [:vendor
+                                        [:id :oname]]]]
+                                     [:vendor-response-form-docs
+                                      [:id :title :doc-id :doc-title
+                                       :ftype :fsubtype
+                                       [:doc-from-org [:id :oname]]
+                                       [:doc-to-org [:id :oname]]
+                                       [:response-prompts {:ref-deleted nil}
+                                        [:id :prompt-id :prompt-prompt :prompt-term
+                                         [:response-prompt-fields
+                                          [:id :prompt-field-fname :idx
+                                           :sval :nval :dval]]]]]]]]]]]}])]
     (fn []
       [:div.container-with-sidebar.round-details
+       ;; (cljs.pprint/pprint @rounds&)
        (if (= :loading @rounds&)
          [cc/c-loader]
-         (let [{:keys [status products] :as round} (-> @rounds& :rounds first)]
+         (let [{:keys [status req-form-template round-product] :as round} (-> @rounds& :rounds first)]
            [:<> ; sidebar margins (and detail container margins) are customized on this page
             [:div.sidebar {:style {:margin-right 0}}
              [:div {:style {:padding "0 15px"}}
@@ -539,10 +620,9 @@
                "All VetdRounds"]]
              [:div {:style {:height 154}}] ; spacer
              (when (and (#{"in-progress" "complete"} status)
-                        (seq products))
+                        (seq round-product))
                [:<>
                 [:div {:style {:padding "0 15px"}}
                  [c-add-requirement-button round]]
-                [c-products round products]])]
-            [:div.inner-container [c-round round]]]))])))
-
+                [c-products round round-product]])]
+            [:div.inner-container [c-round round req-form-template round-product]]]))])))

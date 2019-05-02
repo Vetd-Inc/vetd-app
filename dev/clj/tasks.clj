@@ -163,7 +163,7 @@
           (clojure.pprint/pprint t))))
     :done))
 
-#_ (create-vendor-profiles 10000)
+#_ (create-vendor-profiles 15000)
 
 (defn apply-product-values-to-form
   [{:keys [pname product] :as v} {:keys [prompts ftype fsubtype] :as form}]
@@ -197,7 +197,7 @@
           (clojure.pprint/pprint t))))
     :done))
 
-#_ (create-product-profiles 5000)
+#_ (create-product-profiles 50000)
 
 
 #_
