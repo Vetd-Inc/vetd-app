@@ -324,12 +324,12 @@
                  ^{:key (str req-prompt-id "-" pid)}
                  [:div.cell {:on-mouse-down #(reset! cell-click-disabled? false)
                              :on-click #(when-not @cell-click-disabled?
-                                             (show-modal {:req-prompt-id req-prompt-id
-                                                          :req-prompt-text req-prompt-text
-                                                          :pid pid
-                                                          :pname pname
-                                                          :resp-id resp-id
-                                                          :resp-text resp-text}))}
+                                          (show-modal {:req-prompt-id req-prompt-id
+                                                       :req-prompt-text req-prompt-text
+                                                       :pid pid
+                                                       :pname pname
+                                                       :resp-id resp-id
+                                                       :resp-text resp-text}))}
                   [:div.text (if (not-empty resp-text)
                                (util/truncate-text resp-text 150)
                                [:> ui/Popup
