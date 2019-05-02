@@ -13,7 +13,9 @@
   (if (not-empty q)
     (let [ids (db/hs-query {:select [[:o.id :oid]]
                             :from [[:orgs :o]]
-                            :where [(keyword "~*") :o.oname (str ".*?\\m" q ".*")]
+                            :where [:and
+                                    [:= :o.deleted nil]
+                                    [(keyword "~*") :o.oname (str ".*?\\m" q ".*")]]
                             :limit 30})
           vids (->> ids
                     (map :oid)

@@ -47,13 +47,17 @@
                      :rounds
                      first
                      :products)
-        to-add (filter (fn [{:keys [forms ref-deleted]}]
+        prod-id->exists (->> products
+                             (group-by :id)
+                             (ut/fmap (partial some
+                                               (comp nil? :ref-deleted) )))
+        to-add (filter (fn [{:keys [forms id]}]
                          (and (empty? forms)
-                              (nil? ref-deleted)))
+                              (prod-id->exists id)))
                        products)
-        to-remove (filter (fn [{:keys [forms ref-deleted]}]
+        to-remove (filter (fn [{:keys [forms id]}]
                             (not (or (empty? forms)
-                                     (nil? ref-deleted))))
+                                     (prod-id->exists id))))
                           products)]
     (doseq [{:keys [vendor-id id ref-id]} to-add]
       (docs/create-form-from-template {:form-template-id form-template-id

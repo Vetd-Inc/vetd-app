@@ -23,9 +23,12 @@
     (let [ids (db/hs-query {:select [[:p.id :pid] [:o.id :vid]]
                             :from [[:products :p]]
                             :join [[:orgs :o] [:= :o.id :p.vendor_id]]
-                            :where [:or
-                                    [(keyword "~*") :p.pname (str ".*?" q ".*")]
-                                    [(keyword "~*") :o.oname (str ".*?" q ".*")]]
+                            :where [:and
+                                    [:= :p.deleted nil]
+                                    [:= :o.deleted nil]
+                                    [:or
+                                     [(keyword "~*") :p.pname (str ".*?\\m" q ".*")]
+                                     [(keyword "~*") :o.oname (str ".*?\\m" q ".*")]]]
                             :limit 30})
           pids (map :pid ids)
           vids (->> ids
@@ -42,7 +45,9 @@
     (mapv :id
           (db/hs-query {:select [:id]
                         :from [:categories]
-                        :where [(keyword "~*") :cname (str ".*?" q ".*")]
+                        :where [:and
+                                [:= :deleted nil]
+                                [(keyword "~*") :cname (str ".*?" q ".*")]]
                         :limit 5}))))
 
 (defn select-rounds-by-ids
