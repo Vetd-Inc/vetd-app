@@ -323,7 +323,7 @@
                                               req-prompt-id)]]
                  ^{:key (str req-prompt-id "-" pid)}
                  [:div.cell {:on-mouse-down #(reset! cell-click-disabled? false)
-                             :on-mouse-up #(when-not @cell-click-disabled?
+                             :on-click #(when-not @cell-click-disabled?
                                              (show-modal {:req-prompt-id req-prompt-id
                                                           :req-prompt-text req-prompt-text
                                                           :pid pid
