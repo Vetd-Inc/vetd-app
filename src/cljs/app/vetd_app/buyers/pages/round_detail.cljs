@@ -558,19 +558,24 @@
                 product-idstr :idstr
                 pname :pname
                 vendor :vendor
+                preposals :docs
                 :as product} (:product rp)
-                                        ; TODO actual disqualified value
+               ;; TODO actual disqualified value
                product-disqualified? false]]
      ^{:key product-id}
      [:> ui/Segment {:class (str "round-product " (when (> (count pname) 17) "long"))}
-      [:a.name {:on-click #(rf/dispatch [:b/nav-product-detail product-idstr])}
+      [:a.name {:on-click #(rf/dispatch
+                            (if (seq preposals)
+                              [:b/nav-preposal-detail (-> preposals first :idstr)]
+                              [:b/nav-product-detail product-idstr]))}
        pname]
       [c-declare-winner-button round product product-disqualified?]
       [bc/c-setup-call-button product vendor]
       [c-disqualify-button round product product-disqualified?]])])
 
 (defn c-page []
-  (let [round-idstr& (rf/subscribe [:round-idstr])
+  (let [org-id& (rf/subscribe [:org-id])
+        round-idstr& (rf/subscribe [:round-idstr])
         rounds& (rf/subscribe [:gql/sub
                                {:queries
                                 [[:rounds {:idstr @round-idstr&
@@ -595,6 +600,9 @@
                                     [:id
                                      [:product
                                       [:id :idstr :pname
+                                       [:docs {:dtype "preposal" ; completed preposals
+                                               :to-org-id @org-id&}
+                                        [:id :idstr]]
                                        [:vendor
                                         [:id :oname]]]]
                                      [:vendor-response-form-docs

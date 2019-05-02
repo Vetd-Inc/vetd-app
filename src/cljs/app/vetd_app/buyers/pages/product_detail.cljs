@@ -145,10 +145,10 @@
       (or (util/parse-md (v-fn :product/description))
           [:p "No description available."])
       [:br]
-      [:h3.display-field-key "Pitch"]
+      [:h3.display-field-key "Preposal Pitch"]
       [:p "Request a Preposal to get a personalized pitch."]
       [:br]
-      [:h3.display-field-key "Pricing Estimate"]
+      [:h3.display-field-key "Preposal Pricing Estimate"]
       "Request a Preposal to get a personalized estimate."]
      [:> ui/GridColumn {:width 4}
       (when-let [website-url (v-fn :product/website)]
