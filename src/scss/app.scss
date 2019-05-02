@@ -366,11 +366,12 @@ $cell-height: 201px;
   overflow-x: auto;
   box-sizing: border-box;
   position: relative;
-  cursor: ew-resize;
   padding-top: 14px;
   // since the requirements are fixed position
   // this keeps them from overflowing
   clip-path: inset(-100px 0px 0px 0px);
+
+  
 
   .column {
     width: $cell-width;
@@ -394,23 +395,6 @@ $cell-height: 201px;
       padding: 0 7px;
     }
   }
-
-  &.fixed {
-    margin-top: 38px;
-  }
-  &.fixed .requirement {
-    position: fixed;
-    top: 0;
-    z-index: 999;
-    background: white;
-    box-shadow: 0 2px 14px 0 rgba(50,50,50,0.1) !important;
-    border-top-left-radius: 0;
-    border-top-right-radius: 0;
-  }
-
-  // &:hover .column:not(:hover) {
-  //   opacity: 0.6;
-  // }
   
   .cell {
     display: flex;
@@ -454,11 +438,36 @@ $cell-height: 201px;
   .column:last-of-type .cell {
     padding-right: 0;
   }
-  
-  &.dragging,
-  &.dragging .cell {
-    cursor: grabbing !important;
+
+  &.draggable {
+    cursor: ew-resize;
+
+    &.dragging,
+    &.dragging .cell {
+      cursor: grabbing;
+    }
   }
+  &:not(.draggable) {
+    .cell {
+      cursor: pointer;
+    }
+  }
+  // if the requirements header is in sticky mode
+  &.fixed {
+    margin-top: 38px;
+  }
+  &.fixed .requirement {
+    position: fixed;
+    top: 0;
+    z-index: 999;
+    background: white;
+    box-shadow: 0 2px 14px 0 rgba(50,50,50,0.1) !important;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+  }
+  // &:hover .column:not(:hover) {
+  //   opacity: 0.6;
+  // }
 }
 
 #round-title-container {
@@ -483,16 +492,25 @@ $cell-height: 201px;
 }
 .round-product {
 
-  .title {
-    font-size: 18px;
+  .name {
+    display: block;
+    height: 37px;
+    font-size: 18px !important;
+    font-weight: 600 !important;
+    line-height: 23px !important;
+    color: #444 !important;
+
+    &:hover {
+      color: #888 !important;
+    }
   }
 
   &.long {
     padding-top: 8px;
     
     .name {
-      font-size: 14px;
-      margin-bottom: 7px;
+      font-size: 14px !important;
+      margin-bottom: 7px !important;
     }
   }
 }

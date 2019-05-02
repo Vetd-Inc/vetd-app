@@ -181,23 +181,8 @@
     "You have already submitted your requirements." ; this should never show
     [c-round-initiation-form id]))
 
-(def dummy-products ["SendGrid" "Mailchimp" "Mandrill" "iContact"])
-(def dummy-resps
-  {"Pricing Estimate" ["$45 / mo."
-                       "$200 / mo."
-                       "If you are in the $0-2M pricing tier, the base fee is $4,000."
-                       "Unavailable"]
-   "Free Trial" ["First 30 days." "" "Yes" "Yes"]
-   "Current Customers" ["Google, Patreon, YouTube, Vetd, Make Offices"
-                        "Apple, Cisco Enterprise, Symantec, Tommy's Coffee"
-                        "Heinz, Philadelphia Business Group, Wizards of the Coast"
-                        "None currently."]
-   "Integration with GMail" ["Yes" "Yes" "Yes, with PRO account." "No"]
-   "Subscription Billing" ["Yes" "Yes" "Yes" "No"]
-   "One Time Billing" ["Yes" "No" "Yes" "Yes"]
-   "Parent / Child Heirarchical Billing" ["Yes" "Yes" "Yes" "No"]})
-
 (defn c-action-button
+  "Component to display small icon button for grid cell actions."
   [{:keys [icon on-click popup-text props]}]
   [:> ui/Popup
    {:content popup-text
@@ -229,7 +214,13 @@
                      (reset! modal-showing? true))
         ;; keep a reference to the window-scroll fn (will be created on mount)
         ;; so we can remove the event listener upon unmount
-        window-scroll-fn-ref (atom nil)]
+        window-scroll-fn-ref (atom nil)
+        ;; really just affects which cursor displayed
+        update-draggability (fn [this]
+                              (let [node (r/dom-node this)]
+                                (if (> (.-scrollWidth node) (.-clientWidth node))
+                                  (.add (.-classList (r/dom-node this)) "draggable")
+                                  (.remove (.-classList (r/dom-node this)) "draggable"))))]
     (r/create-class
      {:component-did-mount
       (fn [this]
@@ -298,7 +289,12 @@
           (.addEventListener node "mouseup" mouseup)
           (.addEventListener node "mouseleave" mouseup)
           (.addEventListener node "scroll" scroll)
-          (.addEventListener js/window "scroll" window-scroll)))
+          (.addEventListener js/window "scroll" window-scroll)
+          (update-draggability this)))
+
+      :component-did-update
+      (fn [this]
+        (update-draggability this))
 
       :component-will-unmount
       (fn [this]
@@ -319,20 +315,21 @@
                (for [rp round-product
                      :let [{pname :pname
                             pid :id} (:product rp)
-                           response (docs/get-value-by-prompt-id
-                                     (-> rp
-                                         :vendor-response-form-docs
-                                         :response-prompts)
-                                     req-prompt-id)]]
+                           {response-id :id
+                            response-text :sval} (docs/get-response-by-prompt-id
+                                                  (-> rp
+                                                      :vendor-response-form-docs
+                                                      :response-prompts)
+                                                  req-prompt-id)]]
                  ^{:key (str req-prompt-id "-" pid)}
                  [:div.cell {:on-mouse-down #(reset! cell-click-disabled? false)
                              :on-mouse-up #(when-not @cell-click-disabled?
                                              (show-modal {:title req-prompt-text}
                                                          {:id pid
                                                           :pname pname}
-                                                         response))}
-                  [:div.text (if (not-empty response)
-                               (util/truncate-text response 150)
+                                                         response-text))}
+                  [:div.text (if (not-empty response-text)
+                               (util/truncate-text response-text 150)
                                [:> ui/Popup
                                 {:content "Waiting for Vendor Response"
                                  :position "bottom center"
@@ -344,10 +341,12 @@
                    [c-action-button {:on-click #()
                                      :icon "chat outline"
                                      :popup-text "Ask Question"}]
-                   [c-action-button {:on-click #()
+                   [c-action-button {:on-click #(rf/dispatch
+                                                 [:b/round.rate-response response-id 1])
                                      :icon "thumbs up outline"
                                      :popup-text "Approve"}]
-                   [c-action-button {:on-click #()
+                   [c-action-button {:on-click #(rf/dispatch
+                                                 [:b/round.rate-response response-id 0])
                                      :icon "thumbs down outline"
                                      :popup-text "Disapprove"}]]])])]
            [:> ui/Modal {:open @modal-showing?
@@ -507,6 +506,7 @@
   [:<>
    (for [rp round-product
          :let [{product-id :id
+                product-idstr :idstr
                 pname :pname
                 vendor :vendor
                 :as product} (:product rp)
@@ -514,7 +514,8 @@
                product-disqualified? false]]
      ^{:key product-id}
      [:> ui/Segment {:class (str "round-product " (when (> (count pname) 17) "long"))}
-      [:h3.name pname]
+      [:a.name {:on-click #(rf/dispatch [:b/nav-product-detail product-idstr])}
+       pname]
       [c-declare-winner-button round product product-disqualified?]
       [bc/c-setup-call-button product vendor]
       [c-disqualify-button round product product-disqualified?]])])
@@ -544,7 +545,7 @@
                                    [:round-product
                                     [:id
                                      [:product
-                                      [:id :pname  
+                                      [:id :idstr :pname
                                        [:vendor
                                         [:id :oname]]]]
                                      [:vendor-response-form-docs
@@ -559,7 +560,7 @@
                                            :sval :nval :dval]]]]]]]]]]]}])]
     (fn []
       [:div.container-with-sidebar.round-details
-       (cljs.pprint/pprint @rounds&)
+       ;; (cljs.pprint/pprint @rounds&)
        (if (= :loading @rounds&)
          [cc/c-loader]
          (let [{:keys [status req-form-template round-product] :as round} (-> @rounds& :rounds first)]

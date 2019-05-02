@@ -47,6 +47,18 @@
             first)
        (or val-type :sval)))
 
+(defn get-response-by-prompt-id
+  "A little more info than get-value-by-prompt-id."
+  [response-prompts prompt-id & [field]]
+  (->> response-prompts
+       (filter #(-> % :prompt-id (= prompt-id)))
+       first
+       :response-prompt-fields
+       (filter #(-> %
+                    :prompt-field-fname
+                    (= (or field "value"))))
+       first))
+
 (defn get-field-value
   "Given a reponses map, get value for prompt->field->key"
   [responses prompt field k]
