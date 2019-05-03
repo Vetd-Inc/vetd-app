@@ -320,7 +320,7 @@
                    :let [{pname :pname
                           pid :id} (:product rp)
                          resp (docs/get-response-by-prompt-id
-                               (-> rp :vendor-response-form-docs :response-prompts)
+                               (-> rp :vendor-response-form-docs first :response-prompts)
                                req-prompt-id)
                          {resp-id :id
                           resp-text :sval} resp]]
@@ -596,7 +596,7 @@
                                         [:id :prompt-field-fname :idx
                                          :sval :nval :dval]]]]]]
                                    ;; requirements responses from vendors
-                                   [:round-product
+                                   [:round-product {:deleted nil}
                                     [:id
                                      [:product
                                       [:id :idstr :pname

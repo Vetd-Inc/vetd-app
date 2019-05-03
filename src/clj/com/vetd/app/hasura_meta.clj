@@ -68,7 +68,7 @@
                     :vetd :form_docs]
            :fields [:vendor-response-form-docs :round-product]
            :cols [:id :subject]
-           :rel :many-one}
+           :rel :many-many}
           
           {:tables [:vetd :orgs
                     :vetd :memberships]
