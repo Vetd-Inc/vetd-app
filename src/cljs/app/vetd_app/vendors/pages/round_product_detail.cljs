@@ -56,7 +56,7 @@
       (if (= :loading @round-product&)
         [cc/c-loader]
         [:div
-         (let [form-doc (-> @round-product& :round-product first :vendor-response-form-docs)]
+         (let [form-doc (-> @round-product& :round-product first :vendor-response-form-docs first)]
            ^{:key (str "form-doc" (:id form-doc))}
            [docs/c-form-maybe-doc
             (docs/mk-form-doc-state form-doc)
