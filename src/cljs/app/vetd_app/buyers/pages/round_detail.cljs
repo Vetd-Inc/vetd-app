@@ -499,19 +499,19 @@
                    [:> ui/Icon {:name "plus"}]])}])))
 
 (defn c-declare-winner-button
-  [round product product-disqualified?]
+  [round product result]
   [bc/c-sidebar-button
    {:text "Declare Winner"
     :dispatch [:b/round.declare-winner (:id round) (:id product)]
     :icon "checkmark"
     :props {:color "vetd-gradient"
-            :disabled product-disqualified?}}])
+            :disabled (= "0" result)}}])
 
 (defn c-disqualify-button
-  [round product product-disqualified?]
+  [round product result]
   (let [popup-open? (r/atom false)]
-    (fn [round product product-disqualified?]
-      (if-not product-disqualified?
+    (fn [round product result]
+      (if-not (= "0" result)
         [:> ui/Popup
          {:position "top left"
           :on "click"
@@ -557,8 +557,7 @@
                 pname :pname
                 vendor :vendor
                 preposals :docs
-                :as product} (:product rp)
-               product-disqualified? (= "0" (:result rp))]]
+                :as product} (:product rp)]]
      ^{:key product-id}
      [:> ui/Segment {:class (str "round-product " (when (> (count pname) 17) "long"))}
       [:a.name {:on-click #(rf/dispatch
@@ -566,9 +565,9 @@
                               [:b/nav-preposal-detail (-> preposals first :idstr)]
                               [:b/nav-product-detail product-idstr]))}
        pname]
-      [c-declare-winner-button round product product-disqualified?]
+      [c-declare-winner-button round product (:result rp)]
       [bc/c-setup-call-button product vendor]
-      [c-disqualify-button round product product-disqualified?]])])
+      [c-disqualify-button round product (:result rp)]])])
 
 (defn sort-round-products
   [round-product] ; if result is nil, then sort it in-between winner and disqualified
