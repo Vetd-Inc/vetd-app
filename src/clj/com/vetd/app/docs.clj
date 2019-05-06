@@ -816,24 +816,37 @@
      :children (->> response-prompts first :fields
                     (map (fn [field] {:item field})))}))
 
+(defn get-prompts-by-sval [sval]
+  (-> [[:prompts
+        {:prompt sval} 
+        [:id]]]
+      ha/sync-query
+      :prompts))
+
 ;; TODO the prompt-id for existing prompts should be present in field jval
 (defn group-by-prompt-exists
   [prompts]
   (ut/$- ->> prompts
          (map (fn [{:keys [item]}]
                 {:item
-                 (merge (let [{:keys [sval]} item]
-                          (-> [[:prompts
-                                {:prompt sval} 
-                                [:id]]]
-                              ha/sync-query
-                              :prompts
-                              first))
+                 (merge (-> item
+                            :sval
+                            get-prompts-by-sval
+                            first)
                         (dissoc item :id))}))
          (group-by (comp nil? :id :item))
          (clojure.set/rename-keys $
                                   {false :prompt-exists
                                    true :prompt-new})))
+
+(defn create-round-req-prompt&fields [requirement-text]
+  (let [{:keys [id] :as prompt} (insert-prompt {:prompt requirement-text})]
+    (insert-prompt-field {:prompt-id id
+                          :fname "value"
+                          :ftype "s"
+                          :fsubtype "multi"
+                          :list? false})
+    prompt))
 
 (defn create-form-template-from-round-doc
   [round-id round-init-doc-id]
@@ -848,15 +861,10 @@
                          :children (group-by-prompt-exists children)])
          {:prompt-exists [] ;; [] acts like `identity`
           :prompt-new [(tree-assoc-fn [item]
-                                      (let [{:keys [sval idx]} item
-                                            {prompt-id :id :as item'} (insert-prompt {:prompt sval})]
-                                        (insert-prompt-field {:prompt-id prompt-id
-                                                              :fname "value"
-                                                              :ftype "s"
-                                                              :fsubtype "multi"
-                                                              :list? false})
-                                        [:item (assoc item'
-                                                      :idx idx)]))]}
+                                      (let [{:keys [sval idx]} item]
+                                        [:item (-> sval
+                                                   create-round-req-prompt&fields
+                                                   (assoc :idx idx))]))]}
          (tree-assoc-fn [children]
                         [:children (->> children vals (apply concat))])
          {:prompt-all [(tree-assoc-fn [item children parent]
@@ -864,3 +872,30 @@
                                                                           (:id item)
                                                                           (:idx item))])]}])
        :item))
+
+
+(defn upsert-prompts-to-form
+  [prompts {form-id :id existing :prompts}]
+  (let [id-set (->> existing
+                    (map :id)
+                    set)]
+    (doseq [{prompt-id :id sort' :sort} prompts]
+      (when-not (id-set prompt-id)
+        (insert-form-prompt form-id prompt-id sort')))))
+
+(defn merge-template-to-forms
+  [req-form-template-id]
+  (let [prompts (->> [[:form-templates {:id req-form-template-id}
+                       [[:prompts [:id :sort]]]]]
+                     ha/sync-query
+                     :form-templates
+                     first
+                     :prompts)]
+    (->> [[:forms {:form-template-id req-form-template-id}
+           [:id
+            [:prompts [:id]]]]]
+         ha/sync-query
+         :forms
+         (map (partial upsert-prompts-to-form prompts))
+         doall)))
+

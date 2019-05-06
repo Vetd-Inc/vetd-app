@@ -205,6 +205,25 @@ Product: '%s'"
                        :reason reason}
                       :round_product))))
 
+(defn add-requirement-to-round
+  [round-id requirement-text]
+  (let [req-form-template-id (->> [[:rounds {:id round-id
+                                             :deleted nil}
+                                    [:req-form-template-id]]]
+                                  ha/sync-query
+                                  :rounds
+                                  first
+                                  :req-form-template-id)
+        {:keys [id]} (-> requirement-text
+                         docs/get-prompts-by-sval
+                         first
+                         (or (docs/create-round-req-prompt&fields requirement-text)))]
+    (docs/insert-form-template-prompt req-form-template-id
+                                      id
+                                      ;; TODO dynamically determine idx??
+                                      0)
+    (docs/merge-template-to-forms req-form-template-id)))
+
 ;; TODO there could be multiple preposals/rounds per buyer-vendor pair
 
 ;; TODO use session-id to verify permissions!!!!!!!!!!!!!
@@ -246,6 +265,10 @@ Product: '%s'"
 (defmethod com/handle-ws-inbound :b/ask-a-question
   [{:keys [product-id message round-id requirement-text buyer-id]} ws-id sub-fn]
   (send-ask-question-req product-id message round-id requirement-text buyer-id))
+
+(defmethod com/handle-ws-inbound :b/round.add-requirement
+  [{:keys [round-id requirement-text]} ws-id sub-fn]
+  (add-requirement-to-round round-id requirement-text))
 
 (defmethod com/handle-ws-inbound :save-doc
   [{:keys [data ftype update-doc-id from-org-id] :as req} ws-id sub-fn]
