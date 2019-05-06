@@ -414,6 +414,9 @@ $cell-height: 201px;
     &:hover {
       transform: scale(1);
     }
+    &.disqualified {
+      opacity: 0.5;
+    }
     .text {
       flex: 1;
       display: flex;

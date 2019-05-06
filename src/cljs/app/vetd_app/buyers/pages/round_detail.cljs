@@ -319,9 +319,11 @@
                                (-> rp :vendor-response-form-docs first :response-prompts)
                                req-prompt-id)
                          {resp-id :id
-                          resp-text :sval} resp]]
+                          resp-text :sval} resp
+                         product-disqualified? (= "0" (:result rp))]]
                ^{:key (str req-prompt-id "-" pid)}
-               [:div.cell {:on-mouse-down #(reset! cell-click-disabled? false)
+               [:div.cell {:class (when product-disqualified? "disqualified")
+                           :on-mouse-down #(reset! cell-click-disabled? false)
                            :on-click #(when-not @cell-click-disabled?
                                         (show-modal {:req-prompt-id req-prompt-id
                                                      :req-prompt-text req-prompt-text
@@ -568,6 +570,10 @@
       [bc/c-setup-call-button product vendor]
       [c-disqualify-button round product product-disqualified?]])])
 
+(defn sort-round-products
+  [round-product] ; if result is nil, then sort it in-between winner and disqualified
+  (sort-by (juxt #(or (:result %) "05") (comp :pname :product)) > round-product))
+
 (defn c-page []
   (let [org-id& (rf/subscribe [:org-id])
         round-idstr& (rf/subscribe [:round-idstr])
@@ -615,7 +621,8 @@
        ;; (cljs.pprint/pprint @rounds&)
        (if (= :loading @rounds&)
          [cc/c-loader]
-         (let [{:keys [status req-form-template round-product] :as round} (-> @rounds& :rounds first)]
+         (let [{:keys [status req-form-template round-product] :as round} (-> @rounds& :rounds first)
+               sorted-round-products (sort-round-products round-product)]
            [:<> ; sidebar margins (and detail container margins) are customized on this page
             [:div.sidebar {:style {:margin-right 0}}
              [:div {:style {:padding "0 15px"}}
@@ -623,9 +630,9 @@
                "All VetdRounds"]]
              [:div {:style {:height 154}}] ; spacer
              (when (and (#{"in-progress" "complete"} status)
-                        (seq round-product))
+                        (seq sorted-round-products))
                [:<>
                 [:div {:style {:padding "0 15px"}}
                  [c-add-requirement-button round]]
-                [c-products round round-product]])]
-            [:div.inner-container [c-round round req-form-template round-product]]]))])))
+                [c-products round sorted-round-products]])]
+            [:div.inner-container [c-round round req-form-template sorted-round-products]]]))])))
