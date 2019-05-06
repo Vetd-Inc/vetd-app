@@ -505,8 +505,10 @@
    {:text "Declare Winner"
     :dispatch [:b/round.declare-winner (:id round) (:id product)]
     :icon "checkmark"
-    :props {:color "vetd-gradient"
-            :disabled (= "0" result)}}])
+    :props {:color (if (= "1" result)
+                     "white"
+                     "vetd-gradient")
+            :disabled (not (nil? result))}}])
 
 (defn c-disqualify-button
   [round product result]
@@ -540,7 +542,8 @@
                     [:> ui/Button {:color "white"
                                    :icon true
                                    :fluid true
-                                   :labelPosition "left"}
+                                   :labelPosition "left"
+                                   :disabled (= "1" result)}
                      "Disqualify Product"
                      [:> ui/Icon {:name "ban"}]])}]
         [bc/c-sidebar-button
@@ -560,14 +563,20 @@
                 preposals :docs
                 :as product} (:product rp)]]
      ^{:key product-id}
-     [:> ui/Segment {:class (str "round-product " (when (> (count pname) 17) "long"))}
+     [:> ui/Segment {:class (str "round-product"
+                                 (when (> (count pname) 17) " long")
+                                 (when (= "1" (:result rp)) " winner")
+                                 (when (= "0" (:result rp)) " disqualified"))}
       [:a.name {:on-click #(rf/dispatch
                             (if (seq preposals)
                               [:b/nav-preposal-detail (-> preposals first :idstr)]
                               [:b/nav-product-detail product-idstr]))}
        pname]
       [c-declare-winner-button round product (:result rp)]
-      [bc/c-setup-call-button product vendor (= "0" (:result rp))]
+      [bc/c-setup-call-button product vendor {:disabled (= "0" (:result rp))
+                                              :color (if (= "1" (:result rp))
+                                                       "white"
+                                                       "lightblue")}]
       [c-disqualify-button round product (:result rp)]])])
 
 (defn sort-round-products

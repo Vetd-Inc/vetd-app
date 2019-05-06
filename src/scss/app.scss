@@ -510,6 +510,21 @@ $cell-height: 201px;
       margin-bottom: 7px !important;
     }
   }
+
+  &.disqualified {
+
+    .name {
+      opacity: 0.5;
+    }
+  }
+
+  &.winner {
+    background: linear-gradient(to right, #32abde, #6dccce) !important;
+
+    .name {
+      color: white !important;
+    }
+  }
 }
 
 /* Loading Spinner */
