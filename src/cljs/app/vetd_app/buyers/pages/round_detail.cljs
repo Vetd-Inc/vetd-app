@@ -9,11 +9,6 @@
             [re-frame.core :as rf]
             [clojure.string :as s]))
 
-(def last-query-id (atom 0))
-
-(defn get-next-query-id []
-  (swap! last-query-id inc))
-
 ;; Events
 (rf/reg-event-fx
  :b/nav-round-detail
@@ -42,55 +37,51 @@
 (rf/reg-event-fx
  :b/round.declare-winner
  (fn [{:keys [db]} [_ round-id product-id]]
-   (let [qid (get-next-query-id)]
-     {:ws-send {:payload {:cmd :b/round.declare-winner
-                          :round-id round-id
-                          :product-id product-id
-                          :buyer-id (util/db->current-org-id db)}}
-      :analytics/track {:event "Declare Winner"
-                        :props {:category "Round"
-                                :label product-id}}})))
+   {:ws-send {:payload {:cmd :b/round.declare-winner
+                        :round-id round-id
+                        :product-id product-id
+                        :buyer-id (util/db->current-org-id db)}}
+    :analytics/track {:event "Declare Winner"
+                      :props {:category "Round"
+                              :label product-id}}}))
 
 (rf/reg-event-fx
  :b/round.disqualify
  (fn [{:keys [db]} [_ round-id product-id reason]]
-   (let [qid (get-next-query-id)]
-     {:ws-send {:payload {:cmd :b/round.disqualify
-                          :round-id round-id
-                          :product-id product-id
-                          :reason reason
-                          :buyer-id (util/db->current-org-id db)}}
-      :analytics/track {:event "Disqualify Product"
-                        :props {:category "Round"
-                                :label product-id}}})))
+   {:ws-send {:payload {:cmd :b/round.disqualify
+                        :round-id round-id
+                        :product-id product-id
+                        :reason reason
+                        :buyer-id (util/db->current-org-id db)}}
+    :analytics/track {:event "Disqualify Product"
+                      :props {:category "Round"
+                              :label product-id}}}))
 
 (rf/reg-event-fx
  :b/round.ask-a-question
  (fn [{:keys [db]} [_ product-id product-name message
                     round-id requirement-text]]
-   (let [qid (get-next-query-id)]
-     {:ws-send {:payload {:cmd :b/ask-a-question
-                          :return {:handler :b/ask-a-question-return}
-                          :product-id product-id
-                          :message message
-                          :round-id round-id
-                          :requirement-text requirement-text
-                          :buyer-id (util/db->current-org-id db)}}
-      :analytics/track {:event "Ask A Question"
-                        :props {:category "Round"
-                                :label product-name}}})))
+   {:ws-send {:payload {:cmd :b/ask-a-question
+                        :return {:handler :b/ask-a-question-return}
+                        :product-id product-id
+                        :message message
+                        :round-id round-id
+                        :requirement-text requirement-text
+                        :buyer-id (util/db->current-org-id db)}}
+    :analytics/track {:event "Ask A Question"
+                      :props {:category "Round"
+                              :label product-name}}}))
 
 (rf/reg-event-fx
  :b/round.rate-response
  (fn [{:keys [db]} [_ response-id rating]]
-   (let [qid (get-next-query-id)]
-     {:ws-send {:payload {:cmd :b/round.rate-response
-                          :response-id response-id
-                          :rating rating
-                          :buyer-id (util/db->current-org-id db)}}
-      :analytics/track {:event "Rate Response"
-                        :props {:category "Round"
-                                :label rating}}})))
+   {:ws-send {:payload {:cmd :b/round.rate-response
+                        :response-id response-id
+                        :rating rating
+                        :buyer-id (util/db->current-org-id db)}}
+    :analytics/track {:event "Rate Response"
+                      :props {:category "Round"
+                              :label rating}}}))
 
 ;; Subscriptions
 (rf/reg-sub
@@ -100,13 +91,8 @@
 
 ;; Components
 (defn get-requirements-options []
-  [;; {:key "Subscription Billing"
-   ;;  :text "Subscription Billing"
-   ;;  :value "Subscription Billing"}
-   ;; {:key "Free Trial"
-   ;;  :text "Free Trial"
-   ;;  :value "Free Trial"}
-   ])
+  (util/as-dropdown-options [;; "Subscription Billing" "Free Trial"
+                             ]))
 
 (defn c-round-initiation-form
   [round-id]
@@ -132,24 +118,9 @@
          [:> ui/FormField
           [:label "When do you need to decide by?"]
           [:> ui/Dropdown {:selection true
-                           :options [{:key "Within 2 Weeks"
-                                      :text "Within 2 Weeks"
-                                      :value "Within 2 Weeks"}
-                                     {:key "Within 3 Weeks"
-                                      :text "Within 3 Weeks"
-                                      :value "Within 3 Weeks"}
-                                     {:key "Within 1 Month"
-                                      :text "Within 1 Month"
-                                      :value "Within 1 Month"}
-                                     {:key "Within 2 Months"
-                                      :text "Within 2 Months"
-                                      :value "Within 2 Months"}
-                                     {:key "Within 6 Months"
-                                      :text "Within 6 Months"
-                                      :value "Within 6 Months"}
-                                     {:key "Within 12 Months"
-                                      :text "Within 12 Months"
-                                      :value "Within 12 Months"}]
+                           :options (util/as-dropdown-options
+                                     ["Within 2 Weeks" "Within 3 Weeks" "Within 1 Month"
+                                      "Within 2 Months" "Within 6 Months" "Within 12 Months"])
                            :on-change (fn [_ this]
                                         (reset! start-using (.-value this)))}]]
          [:> ui/FormField

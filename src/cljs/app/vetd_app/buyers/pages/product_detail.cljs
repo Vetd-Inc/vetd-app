@@ -9,11 +9,6 @@
             [re-frame.core :as rf]
             [clojure.string :as s]))
 
-(def last-query-id (atom 0))
-
-(defn get-next-query-id []
-  (swap! last-query-id inc))
-
 ;; Events
 (rf/reg-event-fx
  :b/nav-product-detail
@@ -32,16 +27,15 @@
 (rf/reg-event-fx
  :b/request-complete-profile
  (fn [{:keys [db]} [_ etype eid ename field-key]]
-   (let [qid (get-next-query-id)]
-     {:ws-send {:payload {:cmd :b/request-complete-profile
-                          :return {:handler :b/request-complete-profile-return}
-                          :etype etype
-                          :eid eid
-                          :field-key field-key
-                          :buyer-id (util/db->current-org-id db)}}
-      :analytics/track {:event "Request"
-                        :props {:category (str (s/capitalize (name etype)) " Profile")
-                                :label (str ename " - " field-key)}}})))
+   {:ws-send {:payload {:cmd :b/request-complete-profile
+                        :return {:handler :b/request-complete-profile-return}
+                        :etype etype
+                        :eid eid
+                        :field-key field-key
+                        :buyer-id (util/db->current-org-id db)}}
+    :analytics/track {:event "Request"
+                      :props {:category (str (s/capitalize (name etype)) " Profile")
+                              :label (str ename " - " field-key)}}}))
 
 (rf/reg-event-fx
  :b/request-complete-profile-return
@@ -53,14 +47,13 @@
 (rf/reg-event-fx
  :b/setup-call
  (fn [{:keys [db]} [_ product-id product-name]]
-   (let [qid (get-next-query-id)]
-     {:ws-send {:payload {:cmd :b/setup-call
-                          :return {:handler :b/setup-call-return}
-                          :product-id product-id
-                          :buyer-id (util/db->current-org-id db)}}
-      :analytics/track {:event "Setup Call"
-                        :props {:category "Product"
-                                :label product-name}}})))
+   {:ws-send {:payload {:cmd :b/setup-call
+                        :return {:handler :b/setup-call-return}
+                        :product-id product-id
+                        :buyer-id (util/db->current-org-id db)}}
+    :analytics/track {:event "Setup Call"
+                      :props {:category "Product"
+                              :label product-name}}}))
 
 (rf/reg-event-fx
  :b/setup-call-return
@@ -72,15 +65,14 @@
 (rf/reg-event-fx
  :b/ask-a-question
  (fn [{:keys [db]} [_ product-id product-name message]]
-   (let [qid (get-next-query-id)]
-     {:ws-send {:payload {:cmd :b/ask-a-question
-                          :return {:handler :b/ask-a-question-return}
-                          :product-id product-id
-                          :message message
-                          :buyer-id (util/db->current-org-id db)}}
-      :analytics/track {:event "Ask A Question"
-                        :props {:category "Product"
-                                :label product-name}}})))
+   {:ws-send {:payload {:cmd :b/ask-a-question
+                        :return {:handler :b/ask-a-question-return}
+                        :product-id product-id
+                        :message message
+                        :buyer-id (util/db->current-org-id db)}}
+    :analytics/track {:event "Ask A Question"
+                      :props {:category "Product"
+                              :label product-name}}}))
 
 ;; :b/round.ask-a-question also points to this
 (rf/reg-event-fx
