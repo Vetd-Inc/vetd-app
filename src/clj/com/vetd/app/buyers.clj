@@ -190,6 +190,21 @@ Product: '%s'"
                     (-> from-user-id auth/select-user-by-id :uname) ; buyer user name
                     (product-id->name prod-id)))) ; product name
 
+(defn set-round-product-result [round-id product-id result reason]
+  (let [id (->> [[:round-product {:round-id round-id
+                                  :product-id product-id
+                                  :deleted nil}
+                  [:id]]]
+                ha/sync-query
+                :round-product
+                first
+                :id)]
+    (when id
+      (db/update-any! {:id id
+                       :result result
+                       :reason reason}
+                      :round_product))))
+
 ;; TODO there could be multiple preposals/rounds per buyer-vendor pair
 
 ;; TODO use session-id to verify permissions!!!!!!!!!!!!!
@@ -237,6 +252,14 @@ Product: '%s'"
   (if (nil? update-doc-id)
     (docs/create-doc req)
     (docs/update-doc req)))
+
+(defmethod com/handle-ws-inbound :b/round.declare-winner
+  [{:keys [round-id product-id buyer-id] :as req} ws-id sub-fn]
+  (set-round-product-result round-id product-id 1 nil))
+
+(defmethod com/handle-ws-inbound :b/round.disqualify
+  [{:keys [round-id product-id buyer-id reason] :as req} ws-id sub-fn]
+    (set-round-product-result round-id product-id 0 reason))
 
 (defn notify-round-init-form-completed
   [doc-id]
