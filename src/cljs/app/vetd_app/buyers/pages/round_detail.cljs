@@ -268,7 +268,7 @@
                          :props {:style {:float "right"
                                          :margin-right 4}}}]
        req-prompt-text]
-      resp-text]
+      (util/parse-md resp-text)]
      [:> ui/ModalActions
       [:> ui/Form
        [:> ui/FormField
