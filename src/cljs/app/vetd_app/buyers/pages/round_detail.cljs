@@ -53,6 +53,7 @@
                         :product-id product-id
                         :result 1
                         :buyer-id (util/db->current-org-id db)}}
+    :confetti nil
     :analytics/track {:event "Declare Winner"
                       :props {:category "Round"
                               :label round-id}}}))

@@ -7,6 +7,7 @@
             vetd-app.url
             vetd-app.debounce
             vetd-app.signup
+            vetd-app.common.fx
             [vetd-app.hooks :as hooks]
             [vetd-app.buyers.fixtures :as b-fix]
             [vetd-app.buyers.pages.signup :as p-bsignup]

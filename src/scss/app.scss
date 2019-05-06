@@ -583,3 +583,8 @@ div.spinner i:nth-child(2) {
     transform: translate3d(4px, 0, 0);
   }
 }
+
+#confetti-canvas {
+  position: fixed;
+  top: 0px;
+}
