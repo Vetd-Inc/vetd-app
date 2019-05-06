@@ -35,6 +35,17 @@
                               :label round-id}}}))
 
 (rf/reg-event-fx
+ :b/round.add-requirement
+ (fn [{:keys [db]} [_ round-id requirement-text]]
+   {:ws-send {:payload {:cmd :b/round.add-requirement
+                        :round-id round-id
+                        :requirement-text requirement-text
+                        :buyer-id (util/db->current-org-id db)}}
+    :analytics/track {:event "Add Requirement"
+                      :props {:category "Round"
+                              :label round-id}}}))
+
+(rf/reg-event-fx
  :b/round.declare-winner
  (fn [{:keys [db]} [_ round-id product-id]]
    {:ws-send {:payload {:cmd :b/round.declare-winner
