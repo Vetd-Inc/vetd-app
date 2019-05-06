@@ -1224,8 +1224,15 @@
     [:alter-table {:schema :vetd
                    :name :rounds
                    :columns
-                   {:add {:req_form_template_id [:bigint]}}}]]])
+                   {:add {:req_form_template_id [:bigint]}}}]]
+
+   [[2019 5 6 00 00]
+    
+    [:alter-table {:schema :vetd
+                   :name :round_product
+                   :columns
+                   {:add {:result [:integer]
+                          :reason [:text]}}}]]])
 
 #_(mig/mk-migration-files migrations
                           "migrations")
-
