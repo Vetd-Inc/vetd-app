@@ -566,7 +566,7 @@
                               [:b/nav-product-detail product-idstr]))}
        pname]
       [c-declare-winner-button round product (:result rp)]
-      [bc/c-setup-call-button product vendor]
+      [bc/c-setup-call-button product vendor (= "0" (:result rp))]
       [c-disqualify-button round product (:result rp)]])])
 
 (defn sort-round-products

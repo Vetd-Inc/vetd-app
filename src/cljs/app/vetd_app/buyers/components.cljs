@@ -110,7 +110,9 @@
      [:> ui/StepDescription "Final decision"]]]])
 
 (defn c-setup-call-button
-  [{:keys [id pname] :as product} {:keys [oname] :as vendor}]
+  [{:keys [id pname] :as product}
+   {:keys [oname] :as vendor}
+   disabled?]
   (fn []
     [:> ui/Popup
      {:content (str "Let us setup a call for you with " oname
@@ -122,7 +124,8 @@
                                :color "lightblue"
                                :fluid true
                                :icon true
-                               :labelPosition "left"}
+                               :labelPosition "left"
+                               :disabled disabled?}
                  "Set Up a Call"
                  [:> ui/Icon {:name "left call"}]])}]))
 

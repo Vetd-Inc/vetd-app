@@ -191,19 +191,32 @@ Product: '%s'"
                     (product-id->name prod-id)))) ; product name
 
 (defn set-round-product-result [round-id product-id result reason]
-  (let [id (->> [[:round-product {:round-id round-id
-                                  :product-id product-id
-                                  :deleted nil}
-                  [:id]]]
-                ha/sync-query
-                :round-product
-                first
-                :id)]
-    (when id
-      (db/update-any! {:id id
-                       :result result
-                       :reason reason}
-                      :round_product))))
+  "Set the result of a product in a round (0 - disqualified, 1 - winner)."
+  (do (let [id (->> [[:round-product {:round-id round-id
+                                      :product-id product-id
+                                      :deleted nil}
+                      [:id]]]
+                    ha/sync-query
+                    :round-product
+                    first
+                    :id)]
+        (when id
+          (db/update-any! {:id id
+                           :result result
+                           :reason reason}
+                          :round_product)))
+      (when (= 1 result) ; when declaring winner, need to disqualify all others
+        (let [rps (->> [[:round-product {:round-id round-id
+                                         :result nil ; fragile? (expects no existing winner)
+                                         :deleted nil}
+                         [:id]]]
+                       ha/sync-query
+                       :round-product)]
+          (doseq [{:keys [id]} rps]
+            (db/update-any! {:id id
+                             :result 0
+                             :reason "Other product was declared winner."}
+                            :round_product))))))
 
 (defn add-requirement-to-round
   [round-id requirement-text]
