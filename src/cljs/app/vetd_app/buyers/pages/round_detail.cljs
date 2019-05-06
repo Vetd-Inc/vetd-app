@@ -48,25 +48,39 @@
 (rf/reg-event-fx
  :b/round.declare-winner
  (fn [{:keys [db]} [_ round-id product-id]]
-   {:ws-send {:payload {:cmd :b/round.declare-winner
+   {:ws-send {:payload {:cmd :b/round.declare-result
                         :round-id round-id
                         :product-id product-id
+                        :result 1
                         :buyer-id (util/db->current-org-id db)}}
     :analytics/track {:event "Declare Winner"
                       :props {:category "Round"
-                              :label product-id}}}))
+                              :label round-id}}}))
 
 (rf/reg-event-fx
  :b/round.disqualify
  (fn [{:keys [db]} [_ round-id product-id reason]]
-   {:ws-send {:payload {:cmd :b/round.disqualify
+   {:ws-send {:payload {:cmd :b/round.declare-result
                         :round-id round-id
                         :product-id product-id
+                        :result 0
                         :reason reason
                         :buyer-id (util/db->current-org-id db)}}
     :analytics/track {:event "Disqualify Product"
                       :props {:category "Round"
-                              :label product-id}}}))
+                              :label round-id}}}))
+
+(rf/reg-event-fx
+ :b/round.undo-disqualify
+ (fn [{:keys [db]} [_ round-id product-id]]
+   {:ws-send {:payload {:cmd :b/round.declare-result
+                        :round-id round-id
+                        :product-id product-id
+                        :result nil
+                        :buyer-id (util/db->current-org-id db)}}
+    :analytics/track {:event "Undo Disqualify Product"
+                      :props {:category "Round"
+                              :label round-id}}}))
 
 (rf/reg-event-fx
  :b/round.ask-a-question
@@ -494,7 +508,7 @@
 (defn c-disqualify-button
   [round product product-disqualified?]
   (let [popup-open? (r/atom false)]
-    (fn []
+    (fn [round product product-disqualified?]
       (if-not product-disqualified?
         [:> ui/Popup
          {:position "top left"
@@ -542,8 +556,7 @@
                 vendor :vendor
                 preposals :docs
                 :as product} (:product rp)
-               ;; TODO actual disqualified value
-               product-disqualified? false]]
+               product-disqualified? (= "0" (:result rp))]]
      ^{:key product-id}
      [:> ui/Segment {:class (str "round-product " (when (> (count pname) 17) "long"))}
       [:a.name {:on-click #(rf/dispatch
@@ -579,7 +592,7 @@
                                          :sval :nval :dval]]]]]]
                                    ;; requirements responses from vendors
                                    [:round-product {:deleted nil}
-                                    [:id
+                                    [:id :result :reason
                                      [:product
                                       [:id :idstr :pname
                                        [:docs {:dtype "preposal" ; completed preposals

@@ -253,13 +253,10 @@ Product: '%s'"
     (docs/create-doc req)
     (docs/update-doc req)))
 
-(defmethod com/handle-ws-inbound :b/round.declare-winner
-  [{:keys [round-id product-id buyer-id] :as req} ws-id sub-fn]
-  (set-round-product-result round-id product-id 1 nil))
-
-(defmethod com/handle-ws-inbound :b/round.disqualify
-  [{:keys [round-id product-id buyer-id reason] :as req} ws-id sub-fn]
-    (set-round-product-result round-id product-id 0 reason))
+;; result - 0 (disqualify), 1 (winner), nil (undisqualify, etc...)
+(defmethod com/handle-ws-inbound :b/round.declare-result
+  [{:keys [round-id product-id buyer-id result reason] :as req} ws-id sub-fn]
+  (set-round-product-result round-id product-id result reason))
 
 (defn notify-round-init-form-completed
   [doc-id]
@@ -296,13 +293,10 @@ Product: '%s'"
 ;; additional side effects upon creating a round-initiation doc
 (defmethod docs/handle-doc-creation :round-initiation
   [{:keys [id]} {:keys [round-id]}]
-  (try
-    (notify-round-init-form-completed id)
-    (catch Throwable t
-      (log/error t)))
   (let [{form-template-id :id} (try (docs/create-form-template-from-round-doc round-id id)
                                     (catch Throwable t
                                       (log/error t)))]
+    
     ;; TODO invite pre-selected product, if there is one
     (try
       (db/update-any! {:id round-id
@@ -311,5 +305,8 @@ Product: '%s'"
                        :status "in-progress"}
                       :rounds)
       (catch Throwable t
+        (log/error t)))
+    (try
+      (notify-round-init-form-completed id)
+      (catch Throwable t
         (log/error t)))))
-
