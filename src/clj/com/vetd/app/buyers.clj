@@ -205,6 +205,25 @@ Product: '%s'"
                        :reason reason}
                       :round_product))))
 
+(defn add-requirement-to-round
+  [round-id requirement-text]
+  (let [req-form-template-id (->> [[:rounds {:id round-id
+                                             :deleted nil}
+                                    [:req-form-template-id]]]
+                                  ha/sync-query
+                                  :rounds
+                                  first
+                                  :req-form-template-id)
+        {:keys [id]} (-> requirement-text
+                         docs/get-prompts-by-sval
+                         first
+                         (or (docs/create-round-req-prompt&fields requirement-text)))]
+    (docs/insert-form-template-prompt req-form-template-id
+                                      id
+                                      ;; TODO dynamically determine idx??
+                                      0)
+    (docs/merge-template-to-forms req-form-template-id)))
+
 ;; TODO there could be multiple preposals/rounds per buyer-vendor pair
 
 ;; TODO use session-id to verify permissions!!!!!!!!!!!!!
@@ -247,6 +266,10 @@ Product: '%s'"
   [{:keys [product-id message round-id requirement-text buyer-id]} ws-id sub-fn]
   (send-ask-question-req product-id message round-id requirement-text buyer-id))
 
+(defmethod com/handle-ws-inbound :b/round.add-requirement
+  [{:keys [round-id requirement-text]} ws-id sub-fn]
+  (add-requirement-to-round round-id requirement-text))
+
 (defmethod com/handle-ws-inbound :save-doc
   [{:keys [data ftype update-doc-id from-org-id] :as req} ws-id sub-fn]
   (if (nil? update-doc-id)
@@ -259,7 +282,7 @@ Product: '%s'"
 
 (defmethod com/handle-ws-inbound :b/round.disqualify
   [{:keys [round-id product-id buyer-id reason] :as req} ws-id sub-fn]
-    (set-round-product-result round-id product-id 0 reason))
+  (set-round-product-result round-id product-id 0 reason))
 
 (defn notify-round-init-form-completed
   [doc-id]
@@ -296,13 +319,10 @@ Product: '%s'"
 ;; additional side effects upon creating a round-initiation doc
 (defmethod docs/handle-doc-creation :round-initiation
   [{:keys [id]} {:keys [round-id]}]
-  (try
-    (notify-round-init-form-completed id)
-    (catch Throwable t
-      (log/error t)))
   (let [{form-template-id :id} (try (docs/create-form-template-from-round-doc round-id id)
                                     (catch Throwable t
                                       (log/error t)))]
+    
     ;; TODO invite pre-selected product, if there is one
     (try
       (db/update-any! {:id round-id
@@ -311,5 +331,8 @@ Product: '%s'"
                        :status "in-progress"}
                       :rounds)
       (catch Throwable t
+        (log/error t)))
+    (try
+      (notify-round-init-form-completed id)
+      (catch Throwable t
         (log/error t)))))
-
