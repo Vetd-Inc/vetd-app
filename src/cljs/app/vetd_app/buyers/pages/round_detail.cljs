@@ -502,7 +502,7 @@
 (defn c-declare-winner-button
   [round product result]
   [bc/c-sidebar-button
-   {:text "Declare Winner"
+   {:text (if (= "1" result) "Declared Winner" "Declare Winner")
     :dispatch [:b/round.declare-winner (:id round) (:id product)]
     :icon "checkmark"
     :props {:color (if (= "1" result)
@@ -642,6 +642,8 @@
                         (seq sorted-round-products))
                [:<>
                 [:div {:style {:padding "0 15px"}}
-                 [c-add-requirement-button round]]
+                 (if (some (comp (partial = "1") :result) sorted-round-products)
+                   [:div {:style {:height 36}}]
+                   [c-add-requirement-button round])]
                 [c-products round sorted-round-products]])]
             [:div.inner-container [c-round round req-form-template sorted-round-products]]]))])))
