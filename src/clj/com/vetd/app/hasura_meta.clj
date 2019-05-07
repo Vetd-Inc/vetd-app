@@ -259,13 +259,13 @@
 
           {:tables [:vetd :responses
                     :vetd :response_prompt]
-           :fields [:subject-of-reponse-prompt]
+           :fields [:subject-of-response-prompt]
            :cols [:id :subject]
            :rel :one-many}
 
           {:tables [:vetd :responses
                     :vetd :response_prompt]
-           :fields [:subject-reponse-prompt]
+           :fields [:subject-response-prompt]
            :cols [:subject :id]
            :rel :many-one}
           
@@ -290,3 +290,4 @@
 
 #_
 (mig/proc-hasura-meta-cfg2 hasura-meta-cfg)
+

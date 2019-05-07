@@ -319,10 +319,11 @@
              (for [rp round-product
                    :let [{pname :pname
                           pid :id} (:product rp)
-                         resp (docs/get-response-by-prompt-id
+                         resp (docs/get-response-field-by-prompt-id
                                (-> rp :vendor-response-form-docs first :response-prompts)
                                req-prompt-id)
-                         {resp-id :id
+                         {id :id
+                          resp-id :resp-id
                           resp-text :sval} resp
                          product-disqualified? (= "0" (:result rp))]]
                ^{:key (str req-prompt-id "-" pid)}
@@ -626,14 +627,15 @@
                                        [:response-prompts {:ref-deleted nil}
                                         [:id :prompt-id :prompt-prompt :prompt-term
                                          [:response-prompt-fields
-                                          [:id :prompt-field-fname :idx
+                                          [:id :prompt-field-fname :idx :resp-id
                                            :sval :nval :dval]]
                                          [:subject-of-reponse-prompt
-                                          {:deleted nil}
-                                          [:id]]]]]]]]]]]}])]
+                                          {:deleted nil
+                                           :prompt-term "round.response/rating"}
+                                          [[:response-prompt-fields
+                                            {:deleted nil}
+                                            [:nval]]]]]]]]]]]]]}])]
     (fn []
-      (println "HELLO")
-      (def r1 @rounds&)
       [:div.container-with-sidebar.round-details
        (if (= :loading @rounds&)
          [cc/c-loader]
@@ -654,6 +656,3 @@
                    [c-add-requirement-button round])]
                 [c-products round sorted-round-products]])]
             [:div.inner-container [c-round round req-form-template sorted-round-products]]]))])))
-
-#_ (cljs.pprint/pprint r1)
-

@@ -484,3 +484,4 @@
  (json/parse-string
   (slurp (clojure.java.io/resource "hasura-metadata.json"))
   keyword))
+

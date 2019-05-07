@@ -207,7 +207,7 @@
 
 (def mig-prompt-fields-2019-05-07-down
   (mig/mk-exe-honeysql-fn
-   {:delete-from :prompts_fields
+   {:delete-from :prompt_fields
     :where [:= :id 1093790890400]}))
 
 
@@ -1252,30 +1252,6 @@
 
    [[2019 5 7 00 00]
 
-    [:create-or-replace-view
-     {:schema :vetd
-      :name :response_prompt
-      :honey {:select [:r.id
-                       :r.idstr                                    
-                       :r.created
-                       :r.updated
-                       :r.deleted
-                       :r.prompt_id
-                       :r.user_id
-                       :r.notes
-                       [:p.idstr :prompt_idstr]
-                       [:p.created :prompt_created]
-                       [:p.updated :prompt_updated]
-                       [:p.deleted :prompt_deleted]
-                       [:p.prompt :prompt_prompt]
-                       [:p.term :prompt_term]                       
-                       [:p.descr :prompt_descr]]
-              :from [[:responses :r]]
-              :join [[:prompts :p]
-                     [:= :p.id :r.prompt_id]]}
-      :owner :vetd
-      :grants {:hasura [:SELECT]}}]
-
     [:alter-table {:schema :vetd
                    :name :responses
                    :columns
@@ -1289,7 +1265,35 @@
     [:copy-from '{:name :mig-prompt-fields-2019-05-07
                   :ns com.vetd.app.migrations
                   :up-fn mig-prompt-fields-2019-05-07-up
-                  :down-fn mig-prompt-fields-2019-05-07-down}]]])
+                  :down-fn mig-prompt-fields-2019-05-07-down}]
+
+    [:create-or-replace-view
+     {:schema :vetd
+      :name :response_prompt
+      :honey {:select [:r.id
+                       :r.idstr                                    
+                       :r.created
+                       :r.updated
+                       :r.deleted
+                       :r.prompt_id
+                       :r.user_id
+                       :r.notes
+                       :r.subject
+                       :r.subject_type
+                       [:p.idstr :prompt_idstr]
+                       [:p.created :prompt_created]
+                       [:p.updated :prompt_updated]
+                       [:p.deleted :prompt_deleted]
+                       [:p.prompt :prompt_prompt]
+                       [:p.term :prompt_term]                       
+                       [:p.descr :prompt_descr]]
+              :from [[:responses :r]]
+              :join [[:prompts :p]
+                     [:= :p.id :r.prompt_id]]}
+      :owner :vetd
+      :grants {:hasura [:SELECT]}}]
+
+]])
 
 #_(mig/mk-migration-files migrations
                           "migrations")
