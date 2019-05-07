@@ -362,7 +362,7 @@
                                                         (aset (.-style @col) "transform" (str "translateX(0px)"))
                                                         (.remove (.-classList this) "reordering")
                                                         (.remove (.-classList this) "reordering-left"))))]
-                             #_{:on-mouse-down mousedown
+                             {:on-mouse-down mousedown
                               :on-mouse-move mousemove
                               :on-mouse-up mouseup-or-leave
                               :on-mouse-leave mouseup-or-leave
