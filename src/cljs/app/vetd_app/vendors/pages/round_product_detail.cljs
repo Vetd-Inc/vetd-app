@@ -22,11 +22,6 @@
                :page-params {:round-idstr round-idstr
                              :product-idstr product-idstr})}))
 
-(rf/reg-sub
- :product-idstr
- :<- [:page-params] 
- (fn [{:keys [product-idstr]}] product-idstr))
-
 (defn c-page []
   (let [org-id& (rf/subscribe [:org-id])
         round-idstr& (rf/subscribe [:round-idstr])

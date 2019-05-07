@@ -328,6 +328,7 @@
                                col (atom nil)
                                col-pos-x-at-mousedown (atom nil)
                                last-x-displacement (atom 0)
+                               col-pos-x-by-col-idx (atom [])
                                mousedown (fn [e]
                                            (let [this (.-currentTarget e)
                                                  target (.-target e)]
@@ -336,6 +337,7 @@
                                                (reset! mousedown? true)
                                                (reset! x-at-mousedown (.-pageX e))
                                                (reset! col-pos-x-at-mousedown (.-offsetLeft this))
+                                               
                                                (reset! reverse-scroll-drag? true)
                                                (.add (.-classList this) "reordering"))))
                                mousemove (fn [e]
