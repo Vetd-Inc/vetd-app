@@ -15,6 +15,7 @@
               [:vetd :categories_by_round] [[:vetd :categories]]              
               [:vetd :responses_by_doc] [[:vetd :responses]]
               [:vetd :response_prompt_by_doc] [[:vetd :responses]]
+              [:vetd :response_prompt] [[:vetd :responses]]
               [:vetd :form_docs] [[:vetd :forms]]}
    :rels [{:tables [:vetd :categories
                     :vetd :rounds_by_category]

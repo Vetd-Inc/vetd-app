@@ -101,10 +101,13 @@
 (rf/reg-event-fx
  :b/round.rate-response
  (fn [{:keys [db]} [_ response-id rating]]
-   {:ws-send {:payload {:cmd :b/round.rate-response
-                        :response-id response-id
-                        :rating rating
-                        :buyer-id (util/db->current-org-id db)}}
+   {:ws-send {:payload {:cmd :save-response
+                        :subject response-id
+                        :subject-type "response"
+                        :term :round.response/rating
+                        :fields {:value rating}
+                        :user-id (-> db :user :id)
+                        :org-id (util/db->current-org-id db)}}
     :analytics/track {:event "Rate Response"
                       :props {:category "Round"
                               :label rating}}}))
@@ -624,10 +627,14 @@
                                         [:id :prompt-id :prompt-prompt :prompt-term
                                          [:response-prompt-fields
                                           [:id :prompt-field-fname :idx
-                                           :sval :nval :dval]]]]]]]]]]]}])]
+                                           :sval :nval :dval]]
+                                         [:subject-of-reponse-prompt
+                                          {:deleted nil}
+                                          [:id]]]]]]]]]]]}])]
     (fn []
+      (println "HELLO")
+      (def r1 @rounds&)
       [:div.container-with-sidebar.round-details
-       ;; (cljs.pprint/pprint @rounds&)
        (if (= :loading @rounds&)
          [cc/c-loader]
          (let [{:keys [status req-form-template round-product] :as round} (-> @rounds& :rounds first)
@@ -647,3 +654,6 @@
                    [c-add-requirement-button round])]
                 [c-products round sorted-round-products]])]
             [:div.inner-container [c-round round req-form-template sorted-round-products]]]))])))
+
+#_ (cljs.pprint/pprint r1)
+
