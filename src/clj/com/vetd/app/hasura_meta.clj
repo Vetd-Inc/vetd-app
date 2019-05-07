@@ -255,6 +255,18 @@
            :fields [:response-prompt-fields]
            :cols [:id :resp_id]
            :rel :one-many}
+
+          {:tables [:vetd :responses
+                    :vetd :response_prompt]
+           :fields [:subject-of-reponse-prompt]
+           :cols [:id :subject]
+           :rel :one-many}
+
+          {:tables [:vetd :responses
+                    :vetd :response_prompt]
+           :fields [:subject-reponse-prompt]
+           :cols [:subject :id]
+           :rel :many-one}
           
           {:tables [:vetd :resp_fields
                     :vetd :prompt_fields]

@@ -194,6 +194,22 @@
    {:delete-from :form_templates
     :where [:= :id 860340375214]}))
 
+(def mig-prompts-2019-05-07-up
+  (mig/mk-copy-from-up-fn "mig-prompts-2019-05-07.sql"))
+
+(def mig-prompts-2019-05-07-down
+  (mig/mk-exe-honeysql-fn
+   {:delete-from :prompts
+    :where [:= :id 1093760230399]}))
+
+(def mig-prompt-fields-2019-05-07-up
+  (mig/mk-copy-from-up-fn "mig-prompt-fields-2019-05-07.sql"))
+
+(def mig-prompt-fields-2019-05-07-down
+  (mig/mk-exe-honeysql-fn
+   {:delete-from :prompts_fields
+    :where [:= :id 1093790890400]}))
+
 
 (def migrations
   [[[2019 2 4 00 00]
@@ -1232,7 +1248,48 @@
                    :name :round_product
                    :columns
                    {:add {:result [:integer]
-                          :reason [:text]}}}]]])
+                          :reason [:text]}}}]]
+
+   [[2019 5 7 00 00]
+
+    [:create-or-replace-view
+     {:schema :vetd
+      :name :response_prompt
+      :honey {:select [:r.id
+                       :r.idstr                                    
+                       :r.created
+                       :r.updated
+                       :r.deleted
+                       :r.prompt_id
+                       :r.user_id
+                       :r.notes
+                       [:p.idstr :prompt_idstr]
+                       [:p.created :prompt_created]
+                       [:p.updated :prompt_updated]
+                       [:p.deleted :prompt_deleted]
+                       [:p.prompt :prompt_prompt]
+                       [:p.term :prompt_term]                       
+                       [:p.descr :prompt_descr]]
+              :from [[:responses :r]]
+              :join [[:prompts :p]
+                     [:= :p.id :r.prompt_id]]}
+      :owner :vetd
+      :grants {:hasura [:SELECT]}}]
+
+    [:alter-table {:schema :vetd
+                   :name :responses
+                   :columns
+                   {:add {:subject_type [:text]}}}]
+
+    [:copy-from '{:name :mig-prompts-2019-05-07
+                  :ns com.vetd.app.migrations
+                  :up-fn mig-prompts-2019-05-07-up
+                  :down-fn mig-prompts-2019-05-07-down}]
+
+    [:copy-from '{:name :mig-prompt-fields-2019-05-07
+                  :ns com.vetd.app.migrations
+                  :up-fn mig-prompt-fields-2019-05-07-up
+                  :down-fn mig-prompt-fields-2019-05-07-down}]]])
 
 #_(mig/mk-migration-files migrations
                           "migrations")

@@ -1,3 +1,3 @@
 ALTER TABLE vetd.round_product 
-ADD COLUMN result bigint,
+ADD COLUMN result integer,
 ADD COLUMN reason text

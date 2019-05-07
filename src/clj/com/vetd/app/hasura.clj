@@ -169,10 +169,16 @@
 (defn long->str [l]
   (when l (str l)))
 
+(defn coerce-to-long?
+  [kw]
+  (or (.endsWith (name kw) "id")
+      ;; HACK
+      (#{:subject :sort :idx :result} kw)))
+
 (defn walk-gql-query->args
   [field args sub]
   (-> (for [[k v] args]
-        [k (if (->> k name (take-last 2) (= [\i \d]))  ;; HACK \i \d
+        [k (if (coerce-to-long? k)
              (if (coll? v)
                (mapv long->str v)
                (long->str v))
