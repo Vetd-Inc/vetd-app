@@ -5,3 +5,4 @@ analytics.track;
 analytics.page;
 analytics.group;
 
+var startConfetti, stopConfetti;
