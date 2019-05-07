@@ -70,16 +70,15 @@
 (rf/reg-event-fx
  :b/start-round
  (fn [{:keys [db]} [_ title etype eid]]
-   (let [qid (get-next-query-id)]
-     {:ws-send {:payload {:cmd :b/start-round
-                          :return {:handler :b/start-round-return}
-                          :title title
-                          :etype etype
-                          :eid eid
-                          :buyer-id (util/db->current-org-id db)}}
-      :analytics/track {:event "Start"
-                        :props {:category "Round"
-                                :label etype}}})))
+   {:ws-send {:payload {:cmd :b/start-round
+                        :return {:handler :b/start-round-return}
+                        :title title
+                        :etype etype
+                        :eid eid
+                        :buyer-id (util/db->current-org-id db)}}
+    :analytics/track {:event "Start"
+                      :props {:category "Round"
+                              :label etype}}}))
 
 (rf/reg-event-fx
  :b/start-round-return
@@ -92,17 +91,16 @@
 (rf/reg-event-fx
  :b/create-preposal-req
  (fn [{:keys [db]} [_ product vendor]]
-   (let [qid (get-next-query-id)]
-     {:ws-send {:payload {:cmd :b/create-preposal-req
-                          :return {:handler :b/create-preposal-req-return
-                                   :product product
-                                   :vendor vendor}
-                          :prep-req {:from-org-id (->> (:active-memb-id db)
-                                                       (get (group-by :id (:memberships db)))
-                                                       first
-                                                       :org-id)
-                                     :from-user-id (-> db :user :id)
-                                     :prod-id (:id product)}}}})))
+   {:ws-send {:payload {:cmd :b/create-preposal-req
+                        :return {:handler :b/create-preposal-req-return
+                                 :product product
+                                 :vendor vendor}
+                        :prep-req {:from-org-id (->> (:active-memb-id db)
+                                                     (get (group-by :id (:memberships db)))
+                                                     first
+                                                     :org-id)
+                                   :from-user-id (-> db :user :id)
+                                   :prod-id (:id product)}}}}))
 
 (rf/reg-event-fx
  :b/create-preposal-req-return
@@ -117,12 +115,11 @@
 (rf/reg-event-fx
  :b/req-new-prod-cat
  (fn [{:keys [db]} [_ req]]
-   (let [qid (get-next-query-id)]
-     {:ws-send {:payload {:cmd :b/req-new-prod-cat
-                          :return {:handler :b/req-new-prod-cat-return}
-                          :org-id (-> db :memberships first :org-id)
-                          :user-id (-> db :user :id)
-                          :req req}}})))
+   {:ws-send {:payload {:cmd :b/req-new-prod-cat
+                        :return {:handler :b/req-new-prod-cat-return}
+                        :org-id (-> db :memberships first :org-id)
+                        :user-id (-> db :user :id)
+                        :req req}}}))
 
 (rf/reg-event-fx
  :b/req-new-prod-cat-return

@@ -414,6 +414,9 @@ $cell-height: 201px;
     &:hover {
       transform: scale(1);
     }
+    &.disqualified {
+      opacity: 0.35;
+    }
     .text {
       flex: 1;
       display: flex;
@@ -507,6 +510,21 @@ $cell-height: 201px;
       margin-bottom: 7px !important;
     }
   }
+
+  &.disqualified {
+
+    .name {
+      opacity: 0.5;
+    }
+  }
+
+  &.winner {
+    background: linear-gradient(to right, #32abde, #6dccce) !important;
+
+    .name {
+      color: white !important;
+    }
+  }
 }
 
 /* Loading Spinner */
@@ -579,4 +597,9 @@ div.spinner i:nth-child(2) {
   40%, 60% {
     transform: translate3d(4px, 0, 0);
   }
+}
+
+#confetti-canvas {
+  position: fixed;
+  top: 0px;
 }

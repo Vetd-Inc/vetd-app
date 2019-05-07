@@ -9,11 +9,6 @@
             [re-frame.core :as rf]
             [clojure.string :as s]))
 
-(def last-query-id (atom 0))
-
-(defn get-next-query-id []
-  (swap! last-query-id inc))
-
 ;; Events
 (rf/reg-event-fx
  :b/nav-round-detail
@@ -40,57 +35,79 @@
                               :label round-id}}}))
 
 (rf/reg-event-fx
+ :b/round.add-requirement
+ (fn [{:keys [db]} [_ round-id requirement-text]]
+   {:ws-send {:payload {:cmd :b/round.add-requirement
+                        :round-id round-id
+                        :requirement-text requirement-text
+                        :buyer-id (util/db->current-org-id db)}}
+    :analytics/track {:event "Add Requirement"
+                      :props {:category "Round"
+                              :label round-id}}}))
+
+(rf/reg-event-fx
  :b/round.declare-winner
  (fn [{:keys [db]} [_ round-id product-id]]
-   (let [qid (get-next-query-id)]
-     {:ws-send {:payload {:cmd :b/round.declare-winner
-                          :round-id round-id
-                          :product-id product-id
-                          :buyer-id (util/db->current-org-id db)}}
-      :analytics/track {:event "Declare Winner"
-                        :props {:category "Round"
-                                :label product-id}}})))
+   {:ws-send {:payload {:cmd :b/round.declare-result
+                        :round-id round-id
+                        :product-id product-id
+                        :result 1
+                        :buyer-id (util/db->current-org-id db)}}
+    :confetti nil
+    :analytics/track {:event "Declare Winner"
+                      :props {:category "Round"
+                              :label round-id}}}))
 
 (rf/reg-event-fx
  :b/round.disqualify
  (fn [{:keys [db]} [_ round-id product-id reason]]
-   (let [qid (get-next-query-id)]
-     {:ws-send {:payload {:cmd :b/round.disqualify
-                          :round-id round-id
-                          :product-id product-id
-                          :reason reason
-                          :buyer-id (util/db->current-org-id db)}}
-      :analytics/track {:event "Disqualify Product"
-                        :props {:category "Round"
-                                :label product-id}}})))
+   {:ws-send {:payload {:cmd :b/round.declare-result
+                        :round-id round-id
+                        :product-id product-id
+                        :result 0
+                        :reason reason
+                        :buyer-id (util/db->current-org-id db)}}
+    :analytics/track {:event "Disqualify Product"
+                      :props {:category "Round"
+                              :label round-id}}}))
+
+(rf/reg-event-fx
+ :b/round.undo-disqualify
+ (fn [{:keys [db]} [_ round-id product-id]]
+   {:ws-send {:payload {:cmd :b/round.declare-result
+                        :round-id round-id
+                        :product-id product-id
+                        :result nil
+                        :buyer-id (util/db->current-org-id db)}}
+    :analytics/track {:event "Undo Disqualify Product"
+                      :props {:category "Round"
+                              :label round-id}}}))
 
 (rf/reg-event-fx
  :b/round.ask-a-question
  (fn [{:keys [db]} [_ product-id product-name message
                     round-id requirement-text]]
-   (let [qid (get-next-query-id)]
-     {:ws-send {:payload {:cmd :b/ask-a-question
-                          :return {:handler :b/ask-a-question-return}
-                          :product-id product-id
-                          :message message
-                          :round-id round-id
-                          :requirement-text requirement-text
-                          :buyer-id (util/db->current-org-id db)}}
-      :analytics/track {:event "Ask A Question"
-                        :props {:category "Round"
-                                :label product-name}}})))
+   {:ws-send {:payload {:cmd :b/ask-a-question
+                        :return {:handler :b/ask-a-question-return}
+                        :product-id product-id
+                        :message message
+                        :round-id round-id
+                        :requirement-text requirement-text
+                        :buyer-id (util/db->current-org-id db)}}
+    :analytics/track {:event "Ask A Question"
+                      :props {:category "Round"
+                              :label product-name}}}))
 
 (rf/reg-event-fx
  :b/round.rate-response
  (fn [{:keys [db]} [_ response-id rating]]
-   (let [qid (get-next-query-id)]
-     {:ws-send {:payload {:cmd :b/round.rate-response
-                          :response-id response-id
-                          :rating rating
-                          :buyer-id (util/db->current-org-id db)}}
-      :analytics/track {:event "Rate Response"
-                        :props {:category "Round"
-                                :label rating}}})))
+   {:ws-send {:payload {:cmd :b/round.rate-response
+                        :response-id response-id
+                        :rating rating
+                        :buyer-id (util/db->current-org-id db)}}
+    :analytics/track {:event "Rate Response"
+                      :props {:category "Round"
+                              :label rating}}}))
 
 ;; Subscriptions
 (rf/reg-sub
@@ -100,13 +117,8 @@
 
 ;; Components
 (defn get-requirements-options []
-  [;; {:key "Subscription Billing"
-   ;;  :text "Subscription Billing"
-   ;;  :value "Subscription Billing"}
-   ;; {:key "Free Trial"
-   ;;  :text "Free Trial"
-   ;;  :value "Free Trial"}
-   ])
+  (util/as-dropdown-options [;; "Subscription Billing" "Free Trial"
+                             ]))
 
 (defn c-round-initiation-form
   [round-id]
@@ -132,24 +144,9 @@
          [:> ui/FormField
           [:label "When do you need to decide by?"]
           [:> ui/Dropdown {:selection true
-                           :options [{:key "Within 2 Weeks"
-                                      :text "Within 2 Weeks"
-                                      :value "Within 2 Weeks"}
-                                     {:key "Within 3 Weeks"
-                                      :text "Within 3 Weeks"
-                                      :value "Within 3 Weeks"}
-                                     {:key "Within 1 Month"
-                                      :text "Within 1 Month"
-                                      :value "Within 1 Month"}
-                                     {:key "Within 2 Months"
-                                      :text "Within 2 Months"
-                                      :value "Within 2 Months"}
-                                     {:key "Within 6 Months"
-                                      :text "Within 6 Months"
-                                      :value "Within 6 Months"}
-                                     {:key "Within 12 Months"
-                                      :text "Within 12 Months"
-                                      :value "Within 12 Months"}]
+                           :options (util/as-dropdown-options
+                                     ["Within 2 Weeks" "Within 3 Weeks" "Within 1 Month"
+                                      "Within 2 Months" "Within 6 Months" "Within 12 Months"])
                            :on-change (fn [_ this]
                                         (reset! start-using (.-value this)))}]]
          [:> ui/FormField
@@ -268,7 +265,7 @@
                          :props {:style {:float "right"
                                          :margin-right 4}}}]
        req-prompt-text]
-      resp-text]
+      (util/parse-md resp-text)]
      [:> ui/ModalActions
       [:> ui/Form
        [:> ui/FormField
@@ -323,9 +320,11 @@
                                (-> rp :vendor-response-form-docs first :response-prompts)
                                req-prompt-id)
                          {resp-id :id
-                          resp-text :sval} resp]]
+                          resp-text :sval} resp
+                         product-disqualified? (= "0" (:result rp))]]
                ^{:key (str req-prompt-id "-" pid)}
-               [:div.cell {:on-mouse-down #(reset! cell-click-disabled? false)
+               [:div.cell {:class (when product-disqualified? "disqualified")
+                           :on-mouse-down #(reset! cell-click-disabled? false)
                            :on-click #(when-not @cell-click-disabled?
                                         (show-modal {:req-prompt-id req-prompt-id
                                                      :req-prompt-text req-prompt-text
@@ -501,19 +500,21 @@
                    [:> ui/Icon {:name "plus"}]])}])))
 
 (defn c-declare-winner-button
-  [round product product-disqualified?]
+  [round product result]
   [bc/c-sidebar-button
-   {:text "Declare Winner"
+   {:text (if (= "1" result) "Declared Winner" "Declare Winner")
     :dispatch [:b/round.declare-winner (:id round) (:id product)]
     :icon "checkmark"
-    :props {:color "vetd-gradient"
-            :disabled product-disqualified?}}])
+    :props {:color (if (= "1" result)
+                     "white"
+                     "vetd-gradient")
+            :disabled (not (nil? result))}}])
 
 (defn c-disqualify-button
-  [round product product-disqualified?]
+  [round product result]
   (let [popup-open? (r/atom false)]
-    (fn []
-      (if-not product-disqualified?
+    (fn [round product result]
+      (if-not (= "0" result)
         [:> ui/Popup
          {:position "top left"
           :on "click"
@@ -541,7 +542,8 @@
                     [:> ui/Button {:color "white"
                                    :icon true
                                    :fluid true
-                                   :labelPosition "left"}
+                                   :labelPosition "left"
+                                   :disabled (= "1" result)}
                      "Disqualify Product"
                      [:> ui/Icon {:name "ban"}]])}]
         [bc/c-sidebar-button
@@ -559,19 +561,27 @@
                 pname :pname
                 vendor :vendor
                 preposals :docs
-                :as product} (:product rp)
-               ;; TODO actual disqualified value
-               product-disqualified? false]]
+                :as product} (:product rp)]]
      ^{:key product-id}
-     [:> ui/Segment {:class (str "round-product " (when (> (count pname) 17) "long"))}
+     [:> ui/Segment {:class (str "round-product"
+                                 (when (> (count pname) 17) " long")
+                                 (when (= "1" (:result rp)) " winner")
+                                 (when (= "0" (:result rp)) " disqualified"))}
       [:a.name {:on-click #(rf/dispatch
                             (if (seq preposals)
                               [:b/nav-preposal-detail (-> preposals first :idstr)]
                               [:b/nav-product-detail product-idstr]))}
        pname]
-      [c-declare-winner-button round product product-disqualified?]
-      [bc/c-setup-call-button product vendor]
-      [c-disqualify-button round product product-disqualified?]])])
+      [c-declare-winner-button round product (:result rp)]
+      [bc/c-setup-call-button product vendor {:disabled (= "0" (:result rp))
+                                              :color (if (= "1" (:result rp))
+                                                       "white"
+                                                       "lightblue")}]
+      [c-disqualify-button round product (:result rp)]])])
+
+(defn sort-round-products
+  [round-product] ; if result is nil, then sort it in-between winner and disqualified
+  (sort-by (juxt #(or (:result %) "05") (comp :pname :product)) > round-product))
 
 (defn c-page []
   (let [org-id& (rf/subscribe [:org-id])
@@ -597,7 +607,7 @@
                                          :sval :nval :dval]]]]]]
                                    ;; requirements responses from vendors
                                    [:round-product {:deleted nil}
-                                    [:id
+                                    [:id :result :reason
                                      [:product
                                       [:id :idstr :pname
                                        [:docs {:dtype "preposal" ; completed preposals
@@ -620,7 +630,8 @@
        ;; (cljs.pprint/pprint @rounds&)
        (if (= :loading @rounds&)
          [cc/c-loader]
-         (let [{:keys [status req-form-template round-product] :as round} (-> @rounds& :rounds first)]
+         (let [{:keys [status req-form-template round-product] :as round} (-> @rounds& :rounds first)
+               sorted-round-products (sort-round-products round-product)]
            [:<> ; sidebar margins (and detail container margins) are customized on this page
             [:div.sidebar {:style {:margin-right 0}}
              [:div {:style {:padding "0 15px"}}
@@ -628,9 +639,11 @@
                "All VetdRounds"]]
              [:div {:style {:height 154}}] ; spacer
              (when (and (#{"in-progress" "complete"} status)
-                        (seq round-product))
+                        (seq sorted-round-products))
                [:<>
                 [:div {:style {:padding "0 15px"}}
-                 [c-add-requirement-button round]]
-                [c-products round round-product]])]
-            [:div.inner-container [c-round round req-form-template round-product]]]))])))
+                 (if (some (comp (partial = "1") :result) sorted-round-products)
+                   [:div {:style {:height 36}}]
+                   [c-add-requirement-button round])]
+                [c-products round sorted-round-products]])]
+            [:div.inner-container [c-round round req-form-template sorted-round-products]]]))])))

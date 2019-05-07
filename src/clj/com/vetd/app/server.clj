@@ -202,7 +202,9 @@
      (control-cache
       (if (admin-session? cookies)
         "/js/full.js"
-        "/js/app.js")))]))
+        "/js/app.js")))
+    (page/include-js
+     "/assets/js/confetti.js")]))
 
 (def app
   (-> (c/routes
