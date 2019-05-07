@@ -47,7 +47,7 @@
             first)
        (or val-type :sval)))
 
-(defn get-response-by-prompt-id
+(defn get-response-field-by-prompt-id
   "A little more info than get-value-by-prompt-id."
   [response-prompts prompt-id & [field]]
   (->> response-prompts

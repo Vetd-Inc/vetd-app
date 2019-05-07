@@ -101,10 +101,13 @@
 (rf/reg-event-fx
  :b/round.rate-response
  (fn [{:keys [db]} [_ response-id rating]]
-   {:ws-send {:payload {:cmd :b/round.rate-response
-                        :response-id response-id
-                        :rating rating
-                        :buyer-id (util/db->current-org-id db)}}
+   {:ws-send {:payload {:cmd :save-response
+                        :subject response-id
+                        :subject-type "response"
+                        :term :round.response/rating
+                        :fields {:value rating}
+                        :user-id (-> db :user :id)
+                        :org-id (util/db->current-org-id db)}}
     :analytics/track {:event "Rate Response"
                       :props {:category "Round"
                               :label rating}}}))
@@ -368,10 +371,11 @@
              (for [rp round-product
                    :let [{pname :pname
                           pid :id} (:product rp)
-                         resp (docs/get-response-by-prompt-id
+                         resp (docs/get-response-field-by-prompt-id
                                (-> rp :vendor-response-form-docs first :response-prompts)
                                req-prompt-id)
-                         {resp-id :id
+                         {id :id
+                          resp-id :resp-id
                           resp-text :sval} resp
                          product-disqualified? (= "0" (:result rp))]]
                ^{:key (str req-prompt-id "-" pid)}
@@ -679,11 +683,16 @@
                                        [:response-prompts {:ref-deleted nil}
                                         [:id :prompt-id :prompt-prompt :prompt-term
                                          [:response-prompt-fields
-                                          [:id :prompt-field-fname :idx
-                                           :sval :nval :dval]]]]]]]]]]]}])]
+                                          [:id :prompt-field-fname :idx :resp-id
+                                           :sval :nval :dval]]
+                                         [:subject-of-reponse-prompt
+                                          {:deleted nil
+                                           :prompt-term "round.response/rating"}
+                                          [[:response-prompt-fields
+                                            {:deleted nil}
+                                            [:nval]]]]]]]]]]]]]}])]
     (fn []
       [:div.container-with-sidebar.round-details
-       ;; (cljs.pprint/pprint @rounds&)
        (if (= :loading @rounds&)
          [cc/c-loader]
          (let [{:keys [status req-form-template round-product] :as round} (-> @rounds& :rounds first)
