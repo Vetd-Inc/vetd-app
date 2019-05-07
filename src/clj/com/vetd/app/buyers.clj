@@ -205,18 +205,23 @@ Product: '%s'"
                            :result result
                            :reason reason}
                           :round_product)))
-      (when (= 1 result) ; when declaring winner, need to disqualify all others
+      (when (= 1 result) ; declaring a winner
         (let [rps (->> [[:round-product {:round-id round-id
-                                         :result nil ; fragile? (expects no existing winner)
+                                         :result nil
                                          :deleted nil}
                          [:id]]]
                        ha/sync-query
                        :round-product)]
+          ;; disqualify any live products in the round
           (doseq [{:keys [id]} rps]
             (db/update-any! {:id id
                              :result 0
-                             :reason "Other product was declared winner."}
-                            :round_product))))))
+                             :reason "A different product was declared winner."}
+                            :round_product))
+          ;; update round status
+          (db/update-any! {:id round-id
+                           :status "complete"}
+                          :rounds)))))
 
 (defn add-requirement-to-round
   [round-id requirement-text]

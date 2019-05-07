@@ -265,7 +265,9 @@
                          :props {:style {:float "right"
                                          :margin-right 4}}}]
        req-prompt-text]
-      (util/parse-md resp-text)]
+      (if resp-text
+        (util/parse-md resp-text)
+        "Waiting for vendor response.")]
      [:> ui/ModalActions
       [:> ui/Form
        [:> ui/FormField
