@@ -322,88 +322,88 @@
       (if (seq round-product)
         [:<>
          [:div.round-grid
-          (for [req prompts
-                :let [{req-prompt-id :id
-                       req-prompt-text :prompt} req]]
-            ^{:key req-prompt-id}
-            [:div.column (let [mousedown? (atom false)
-                               x-at-mousedown (atom nil)
-                               col (atom nil)
-                               col-pos-x-at-mousedown (atom nil)
-                               last-x-displacement (atom 0)
-                               col-pos-x-by-col-idx (atom [])
-                               mousedown (fn [e]
-                                           (let [this (.-currentTarget e)
-                                                 target (.-target e)]
-                                             (when (.contains (.-classList target) "requirement")
-                                               (reset! col this)
-                                               (reset! mousedown? true)
-                                               (reset! x-at-mousedown (.-pageX e))
-                                               (reset! col-pos-x-at-mousedown (.-offsetLeft this))
-                                               
-                                               (reset! reverse-scroll-drag? true)
-                                               (.add (.-classList this) "reordering"))))
-                               mousemove (fn [e]
-                                           (when @mousedown?
+          (let []
+            (for [req prompts
+                  :let [{req-prompt-id :id
+                         req-prompt-text :prompt} req]]
+              ^{:key req-prompt-id}
+              [:div.column (let [mousedown? (atom false)
+                                 x-at-mousedown (atom nil)
+                                 col (atom nil)
+                                 col-pos-x-at-mousedown (atom nil)
+                                 last-x-displacement (atom 0)
+                                 mousedown (fn [e]
                                              (let [this (.-currentTarget e)
-                                                   x-displacement (- (.-pageX e)
-                                                                     @x-at-mousedown)]
-                                               (.preventDefault e)
-                                               (when (> (Math/abs (- x-displacement @last-x-displacement)) 1)
-                                                 (if (< x-displacement @last-x-displacement)
-                                                   (.add (.-classList this) "reordering-left")
-                                                   (.remove (.-classList this) "reordering-left"))
-                                                 (reset! last-x-displacement x-displacement))
-                                               (aset (.-style @col) "transform" (str "translateX(" (* 2 x-displacement) "px)")))))
-                               mouseup-or-leave (fn [e]
-                                                  (when @col
-                                                    (let [this (.-currentTarget e)]
-                                                      (reset! mousedown? false)
-                                                      (aset (.-style @col) "transform" (str "translateX(0px)"))
-                                                      (.remove (.-classList this) "reordering")
-                                                      (.remove (.-classList this) "reordering-left"))))]
-                           {:on-mouse-down mousedown
-                            :on-mouse-move mousemove
-                            :on-mouse-up mouseup-or-leave
-                            :on-mouse-leave mouseup-or-leave
-                            })
-             [:h4.requirement req-prompt-text]
-             (for [rp round-product
-                   :let [{pname :pname
-                          pid :id} (:product rp)
-                         resp (docs/get-response-field-by-prompt-id
-                               (-> rp :vendor-response-form-docs first :response-prompts)
-                               req-prompt-id)
-                         {id :id
-                          resp-id :resp-id
-                          resp-text :sval} resp
-                         product-disqualified? (= "0" (:result rp))]]
-               ^{:key (str req-prompt-id "-" pid)}
-               [:div.cell {:class (when product-disqualified? "disqualified")
-                           :on-mouse-down #(reset! cell-click-disabled? false)
-                           :on-click #(when-not @cell-click-disabled?
-                                        (show-modal {:req-prompt-id req-prompt-id
-                                                     :req-prompt-text req-prompt-text
-                                                     :pid pid
-                                                     :pname pname
-                                                     :resp-id resp-id
-                                                     :resp-text resp-text}))}
-                [:div.text (if (not-empty resp-text)
-                             (util/truncate-text resp-text 150)
-                             (if (= status "complete")
-                               [c-no-response]
-                               [c-waiting-for-response]))]
-                [:div.actions
-                 [c-action-button {:icon "chat outline" ; on-click just pass through
-                                   :popup-text "Ask Question"}]
-                 [c-action-button {:on-click #(do (.stopPropagation %)
-                                                  (rf/dispatch [:b/round.rate-response resp-id 1]))
-                                   :icon "thumbs up outline"
-                                   :popup-text "Approve"}]
-                 [c-action-button {:on-click #(do (.stopPropagation %)
-                                                  (rf/dispatch [:b/round.rate-response resp-id 0]))
-                                   :icon "thumbs down outline"
-                                   :popup-text "Disapprove"}]]])])]
+                                                   target (.-target e)]
+                                               (when (.contains (.-classList target) "requirement")
+                                                 (reset! col this)
+                                                 (reset! mousedown? true)
+                                                 (reset! x-at-mousedown (.-pageX e))
+                                                 (reset! col-pos-x-at-mousedown (.-offsetLeft this))
+                                                 
+                                                 (reset! reverse-scroll-drag? true)
+                                                 (.add (.-classList this) "reordering"))))
+                                 mousemove (fn [e]
+                                             (when @mousedown?
+                                               (let [this (.-currentTarget e)
+                                                     x-displacement (- (.-pageX e)
+                                                                       @x-at-mousedown)]
+                                                 (.preventDefault e)
+                                                 (when (> (Math/abs (- x-displacement @last-x-displacement)) 1)
+                                                   (if (< x-displacement @last-x-displacement)
+                                                     (.add (.-classList this) "reordering-left")
+                                                     (.remove (.-classList this) "reordering-left"))
+                                                   (reset! last-x-displacement x-displacement))
+                                                 (aset (.-style @col) "transform" (str "translateX(" (* 2 x-displacement) "px)")))))
+                                 mouseup-or-leave (fn [e]
+                                                    (when @col
+                                                      (let [this (.-currentTarget e)]
+                                                        (reset! mousedown? false)
+                                                        (aset (.-style @col) "transform" (str "translateX(0px)"))
+                                                        (.remove (.-classList this) "reordering")
+                                                        (.remove (.-classList this) "reordering-left"))))]
+                             #_{:on-mouse-down mousedown
+                              :on-mouse-move mousemove
+                              :on-mouse-up mouseup-or-leave
+                              :on-mouse-leave mouseup-or-leave
+                              })
+               [:h4.requirement req-prompt-text]
+               (for [rp round-product
+                     :let [{pname :pname
+                            pid :id} (:product rp)
+                           resp (docs/get-response-field-by-prompt-id
+                                 (-> rp :vendor-response-form-docs first :response-prompts)
+                                 req-prompt-id)
+                           {id :id
+                            resp-id :resp-id
+                            resp-text :sval} resp
+                           product-disqualified? (= "0" (:result rp))]]
+                 ^{:key (str req-prompt-id "-" pid)}
+                 [:div.cell {:class (when product-disqualified? "disqualified")
+                             :on-mouse-down #(reset! cell-click-disabled? false)
+                             :on-click #(when-not @cell-click-disabled?
+                                          (show-modal {:req-prompt-id req-prompt-id
+                                                       :req-prompt-text req-prompt-text
+                                                       :pid pid
+                                                       :pname pname
+                                                       :resp-id resp-id
+                                                       :resp-text resp-text}))}
+                  [:div.text (if (not-empty resp-text)
+                               (util/truncate-text resp-text 150)
+                               (if (= status "complete")
+                                 [c-no-response]
+                                 [c-waiting-for-response]))]
+                  [:div.actions
+                   [c-action-button {:icon "chat outline" ; on-click just pass through
+                                     :popup-text "Ask Question"}]
+                   [c-action-button {:on-click #(do (.stopPropagation %)
+                                                    (rf/dispatch [:b/round.rate-response resp-id 1]))
+                                     :icon "thumbs up outline"
+                                     :popup-text "Approve"}]
+                   [c-action-button {:on-click #(do (.stopPropagation %)
+                                                    (rf/dispatch [:b/round.rate-response resp-id 0]))
+                                     :icon "thumbs down outline"
+                                     :popup-text "Disapprove"}]]])]))]
          [c-cell-modal id modal-showing?& @modal-response&]]
         ;; no products in round yet
         [:> ui/Segment {:class "detail-container"
@@ -685,7 +685,7 @@
                                          [:response-prompt-fields
                                           [:id :prompt-field-fname :idx :resp-id
                                            :sval :nval :dval]]
-                                         [:subject-of-reponse-prompt
+                                         [:subject-of-response-prompt
                                           {:deleted nil
                                            :prompt-term "round.response/rating"}
                                           [[:response-prompt-fields
