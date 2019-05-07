@@ -15,6 +15,7 @@
               [:vetd :categories_by_round] [[:vetd :categories]]              
               [:vetd :responses_by_doc] [[:vetd :responses]]
               [:vetd :response_prompt_by_doc] [[:vetd :responses]]
+              [:vetd :response_prompt] [[:vetd :responses]]
               [:vetd :form_docs] [[:vetd :forms]]}
    :rels [{:tables [:vetd :categories
                     :vetd :rounds_by_category]
@@ -255,6 +256,18 @@
            :fields [:response-prompt-fields]
            :cols [:id :resp_id]
            :rel :one-many}
+
+          {:tables [:vetd :responses
+                    :vetd :response_prompt]
+           :fields [:subject-of-response-prompt]
+           :cols [:id :subject]
+           :rel :one-many}
+
+          {:tables [:vetd :responses
+                    :vetd :response_prompt]
+           :fields [:subject-response-prompt]
+           :cols [:subject :id]
+           :rel :many-one}
           
           {:tables [:vetd :resp_fields
                     :vetd :prompt_fields]
@@ -277,3 +290,4 @@
 
 #_
 (mig/proc-hasura-meta-cfg2 hasura-meta-cfg)
+

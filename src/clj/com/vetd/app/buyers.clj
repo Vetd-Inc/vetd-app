@@ -205,18 +205,23 @@ Product: '%s'"
                            :result result
                            :reason reason}
                           :round_product)))
-      (when (= 1 result) ; when declaring winner, need to disqualify all others
+      (when (= 1 result) ; declaring a winner
         (let [rps (->> [[:round-product {:round-id round-id
-                                         :result nil ; fragile? (expects no existing winner)
+                                         :result nil
                                          :deleted nil}
                          [:id]]]
                        ha/sync-query
                        :round-product)]
+          ;; disqualify any live products in the round
           (doseq [{:keys [id]} rps]
             (db/update-any! {:id id
                              :result 0
-                             :reason "Other product was declared winner."}
-                            :round_product))))))
+                             :reason "A different product was declared winner."}
+                            :round_product))
+          ;; update round status
+          (db/update-any! {:id round-id
+                           :status "complete"}
+                          :rounds)))))
 
 (defn add-requirement-to-round
   [round-id requirement-text]
@@ -293,6 +298,39 @@ Product: '%s'"
 (defmethod com/handle-ws-inbound :b/round.declare-result
   [{:keys [round-id product-id buyer-id result reason] :as req} ws-id sub-fn]
   (set-round-product-result round-id product-id result reason))
+
+(defmethod com/handle-ws-inbound :save-response
+  [{:keys [subject subject-type term user-id round-id org-id fields] :as req} ws-id sub-fn]
+  (when-not (= term :round.response/rating)
+    (throw (Exception. (format "NOT IMPLEMENTED: term = %s"
+                               term))))
+  (let [rating-prompt-id 1093760230399 ;; HACK -- hard-coded id
+        rating-prompt-field-id 1093790890400]
+    (db/update-deleted-where :responses
+                             [:and
+                              [:= :prompt_id rating-prompt-id]
+                              [:= :subject subject]])
+    (let [{:keys [value]} fields
+          {:keys [id]} (-> req
+                           (assoc :prompt-id rating-prompt-id)
+                           docs/insert-response)]
+      (docs/insert-response-field id
+                                  {:prompt-field-id rating-prompt-field-id
+                                   :idx 0
+                                   :sval nil
+                                   :nval value
+                                   :dval nil
+                                   :jval nil}))))
+
+#_
+(com/handle-ws-inbound {:cmd :save-response
+                        :subject 1
+                        :subject-type "form"
+                        :term :round.response/rating
+                        :user-id 22
+                        :round-id 3
+                        :fields {:value 123}}
+                       nil nil)
 
 (defn notify-round-init-form-completed
   [doc-id]

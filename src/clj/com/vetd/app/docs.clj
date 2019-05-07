@@ -172,7 +172,7 @@
         first)))
 
 (defn insert-response
-  [{:keys [org-id prompt-id notes user-id]}]
+  [{:keys [org-id prompt-id notes user-id subject subject-type]}]
   (let [[id idstr] (ut/mk-id&str)]
     (-> (db/insert! :responses
                     {:id id
@@ -182,7 +182,9 @@
                      :deleted nil
                      :prompt_id prompt-id
                      :notes notes
-                     :user_id user-id})
+                     :user_id user-id
+                     :subject subject
+                     :subject_type subject-type})
         first)))
 
 ;; TODO add sort field??
