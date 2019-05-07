@@ -364,6 +364,7 @@ $cell-height: 201px;
   display: flex;
   flex-wrap: nowrap; // unnecessary?
   overflow-x: auto;
+  overflow-y: hidden;
   box-sizing: border-box;
   position: relative;
   padding-top: 14px;
@@ -374,9 +375,24 @@ $cell-height: 201px;
   .column {
     width: $cell-width;
     flex: 0 0 auto;
+    transition: transform 0.3s 0s ease-out;
     
     &:first-of-type {
       margin-left: 6px;
+    }
+    &.reordering {
+      transition: none;
+      z-index: 999;
+
+      .requirement, .cell {
+        transition: transform 0.1s 0s linear !important;
+        transform: rotate(4deg);
+      }
+    }
+    &.reordering-left {
+      .requirement, .cell {
+        transform: rotate(-4deg);
+      }
     }
     .requirement {
       width: $cell-width - 7px;
@@ -391,6 +407,8 @@ $cell-height: 201px;
       border-radius: 4px;
       font-size: 14px;
       padding: 0 7px;
+      cursor: grab;
+      user-select: none; 
     }
   }
   
@@ -408,7 +426,7 @@ $cell-height: 201px;
     background: #fff;
     font-size: 14px;
     font-weight: 400;
-    transition: transform .05s ease-out !important;
+    transition: transform .05s ease-out;
     transform: scale(0.98);
     
     &:hover {
@@ -436,11 +454,13 @@ $cell-height: 201px;
     
   }
 
+  // draggable has to do with dragging to *scroll* (not to reorder)
   &.draggable {
     cursor: ew-resize;
 
     &.dragging,
-    &.dragging .cell {
+    &.dragging .requirement,
+    &.dragging .cell, {
       cursor: grabbing;
     }
   }

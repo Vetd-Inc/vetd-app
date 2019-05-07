@@ -297,10 +297,11 @@
         "Submit Question"]]]]))
 
 (def cell-click-disabled? (r/atom false))
+(def reverse-scroll-drag? (r/atom false))
 
 (defn c-round-grid*
   [round req-form-template round-product]
-  (let [;; The response currently in the modal.
+  (let [ ;; The response currently in the modal.
         ;; E.g., {:req-prompt-id 123
         ;;        :req-prompt-text "Something"
         ;;        :pid 321
@@ -322,7 +323,45 @@
                 :let [{req-prompt-id :id
                        req-prompt-text :prompt} req]]
             ^{:key req-prompt-id}
-            [:div.column
+            [:div.column (let [mousedown? (atom false)
+                               x-at-mousedown (atom nil)
+                               col (atom nil)
+                               col-pos-x-at-mousedown (atom nil)
+                               last-x-displacement (atom 0)
+                               mousedown (fn [e]
+                                           (let [this (.-currentTarget e)
+                                                 target (.-target e)]
+                                             (when (.contains (.-classList target) "requirement")
+                                               (reset! col this)
+                                               (reset! mousedown? true)
+                                               (reset! x-at-mousedown (.-pageX e))
+                                               (reset! col-pos-x-at-mousedown (.-offsetLeft this))
+                                               (reset! reverse-scroll-drag? true)
+                                               (.add (.-classList this) "reordering"))))
+                               mousemove (fn [e]
+                                           (when @mousedown?
+                                             (let [this (.-currentTarget e)
+                                                   x-displacement (- (.-pageX e)
+                                                                     @x-at-mousedown)]
+                                               (.preventDefault e)
+                                               (when (> (Math/abs (- x-displacement @last-x-displacement)) 1)
+                                                 (if (< x-displacement @last-x-displacement)
+                                                   (.add (.-classList this) "reordering-left")
+                                                   (.remove (.-classList this) "reordering-left"))
+                                                 (reset! last-x-displacement x-displacement))
+                                               (aset (.-style @col) "transform" (str "translateX(" (* 2 x-displacement) "px)")))))
+                               mouseup-or-leave (fn [e]
+                                                  (when @col
+                                                    (let [this (.-currentTarget e)]
+                                                      (reset! mousedown? false)
+                                                      (aset (.-style @col) "transform" (str "translateX(0px)"))
+                                                      (.remove (.-classList this) "reordering")
+                                                      (.remove (.-classList this) "reordering-left"))))]
+                           {:on-mouse-down mousedown
+                            :on-mouse-move mousemove
+                            :on-mouse-up mouseup-or-leave
+                            :on-mouse-leave mouseup-or-leave
+                            })
              [:h4.requirement req-prompt-text]
              (for [rp round-product
                    :let [{pname :pname
@@ -380,7 +419,7 @@
               (.remove (.-classList (r/dom-node this)) "draggable"))))]
     (with-meta c-round-grid*
       {:component-did-mount
-       (fn [this] ; make grid draggable
+       (fn [this] ; make grid draggable to scroll horizontally
          (let [node (r/dom-node this)
                mousedown? (atom false)
                x-at-mousedown (atom nil)
@@ -395,7 +434,8 @@
                              (let [x-displacement (- (- (.-pageX e) (.-offsetLeft node))
                                                      @x-at-mousedown)
                                    new-scroll-left (- @scroll-left-at-mousedown
-                                                      (* 3 x-displacement))]
+                                                      (* (if @reverse-scroll-drag? -1 3)
+                                                         x-displacement))]
                                (.preventDefault e)
                                (aset node "scrollLeft" new-scroll-left)
                                ;; if you drag more than 3px, disable the cell clickability
@@ -404,6 +444,7 @@
                                  (reset! cell-click-disabled? true)))))
                mouseup (fn [e]
                          (.remove (.-classList node) "dragging")
+                         (reset! reverse-scroll-drag? false)
                          (reset! mousedown? false))
                
                ;; make requirements row 'sticky' upon window scroll
