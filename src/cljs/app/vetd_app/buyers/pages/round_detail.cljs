@@ -228,9 +228,18 @@
                                     :size "mini"}
                                    props)])}])
 
+(defn c-no-response []
+  [:> ui/Popup
+   {:content "Vendor did not respond"
+    :position "bottom center"
+    :trigger (r/as-element
+              [:> ui/Icon {:name "ban"
+                           :size "large"
+                           :style {:color "#aaa"}}])}])
+
 (defn c-waiting-for-response []
   [:> ui/Popup
-   {:content "Waiting for Vendor Response"
+   {:content "Waiting for vendor response"
     :position "bottom center"
     :trigger (r/as-element
               [:> ui/Icon {:name "clock outline"
@@ -336,7 +345,9 @@
                                                      :resp-text resp-text}))}
                 [:div.text (if (not-empty resp-text)
                              (util/truncate-text resp-text 150)
-                             [c-waiting-for-response])]
+                             (if (= status "complete")
+                               [c-no-response]
+                               [c-waiting-for-response]))]
                 [:div.actions
                  [c-action-button {:icon "chat outline" ; on-click just pass through
                                    :popup-text "Ask Question"}]

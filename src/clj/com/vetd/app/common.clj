@@ -61,4 +61,6 @@
       (aws/invoke sns-client arg)
       ;; TODO make separate sns for dev
       (do (println "SNS PUBLISH SUPPRESSED")
-          (clojure.pprint/pprint arg)))))
+          (clojure.pprint/pprint arg)
+          {} ; to ensure ws return gets triggered
+          ))))
