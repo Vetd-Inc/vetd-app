@@ -322,7 +322,8 @@
       (if (seq round-product)
         [:<>
          [:div.round-grid
-          (let []
+          (let [req-prompt-id-order (into [] (map :id prompts))
+                _ (println req-prompt-id-order)]
             (for [req prompts
                   :let [{req-prompt-id :id
                          req-prompt-text :prompt} req]]
@@ -377,7 +378,7 @@
                            {id :id
                             resp-id :resp-id
                             resp-text :sval} resp
-                           product-disqualified? (= "0" (:result rp))]]
+                           product-disqualified? (= 0 (:result rp))]]
                  ^{:key (str req-prompt-id "-" pid)}
                  [:div.cell {:class (when product-disqualified? "disqualified")
                              :on-mouse-down #(reset! cell-click-disabled? false)
@@ -565,7 +566,7 @@
    {:text (if (= "1" result) "Declared Winner" "Declare Winner")
     :dispatch [:b/round.declare-winner (:id round) (:id product)]
     :icon "checkmark"
-    :props {:color (if (= "1" result)
+    :props {:color (if (= 1 result)
                      "white"
                      "vetd-gradient")
             :disabled (not (nil? result))}}])
@@ -574,7 +575,7 @@
   [round product result]
   (let [popup-open? (r/atom false)]
     (fn [round product result]
-      (if-not (= "0" result)
+      (if-not (= 0 result)
         [:> ui/Popup
          {:position "top left"
           :on "click"
@@ -603,7 +604,7 @@
                                    :icon true
                                    :fluid true
                                    :labelPosition "left"
-                                   :disabled (= "1" result)}
+                                   :disabled (= 1 result)}
                      "Disqualify Product"
                      [:> ui/Icon {:name "ban"}]])}]
         [bc/c-sidebar-button
@@ -625,23 +626,23 @@
      ^{:key product-id}
      [:> ui/Segment {:class (str "round-product"
                                  (when (> (count pname) 17) " long")
-                                 (when (= "1" (:result rp)) " winner")
-                                 (when (= "0" (:result rp)) " disqualified"))}
+                                 (when (= 1 (:result rp)) " winner")
+                                 (when (= 0 (:result rp)) " disqualified"))}
       [:a.name {:on-click #(rf/dispatch
                             (if (seq preposals)
                               [:b/nav-preposal-detail (-> preposals first :idstr)]
                               [:b/nav-product-detail product-idstr]))}
        pname]
       [c-declare-winner-button round product (:result rp)]
-      [bc/c-setup-call-button product vendor {:disabled (= "0" (:result rp))
-                                              :color (if (= "1" (:result rp))
+      [bc/c-setup-call-button product vendor {:disabled (= 0 (:result rp))
+                                              :color (if (= 1 (:result rp))
                                                        "white"
                                                        "lightblue")}]
       [c-disqualify-button round product (:result rp)]])])
 
 (defn sort-round-products
   [round-product] ; if result is nil, then sort it in-between winner and disqualified
-  (sort-by (juxt #(or (:result %) "05") (comp :pname :product)) > round-product))
+  (sort-by (juxt #(or (:result %) 0.5) (comp :pname :product)) > round-product))
 
 (defn c-page []
   (let [org-id& (rf/subscribe [:org-id])
@@ -707,7 +708,7 @@
                         (seq sorted-round-products))
                [:<>
                 [:div {:style {:padding "0 15px"}}
-                 (if (some (comp (partial = "1") :result) sorted-round-products)
+                 (if (some (comp (partial = 1) :result) sorted-round-products)
                    [:div {:style {:height 36}}]
                    [c-add-requirement-button round])]
                 [c-products round sorted-round-products]])]
