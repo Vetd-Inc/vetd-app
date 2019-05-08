@@ -188,16 +188,7 @@
     (page/include-css "/assets/lib/toastr/toastr.min.css")
     (page/include-css (control-cache "/assets/css/app.css"))
     (when (admin-session? cookies)
-      (page/include-css (control-cache "/assets/css/admin.css")))]
-   [:body
-    [:div {:id "app"}
-     ;; loading spinner
-     [:div {:class "spinner"
-            :style "margin: 175px auto;"}
-      [:i] [:i] [:i]]]
-    ;; load Segment's "Analytics.js"
-    [:script {:type "text/javascript"}
-     "!function(){var analytics=window.analytics=window.analytics||[];if(!analytics.initialize)if(analytics.invoked)window.console&&console.error&&console.error(\"Segment snippet included twice.\");else{analytics.invoked=!0;analytics.methods=[\"trackSubmit\",\"trackClick\",\"trackLink\",\"trackForm\",\"pageview\",\"identify\",\"reset\",\"group\",\"track\",\"ready\",\"alias\",\"debug\",\"page\",\"once\",\"off\",\"on\"];analytics.factory=function(t){return function(){var e=Array.prototype.slice.call(arguments);e.unshift(t);analytics.push(e);return analytics}};for(var t=0;t<analytics.methods.length;t++){var e=analytics.methods[t];analytics[e]=analytics.factory(e)}analytics.load=function(t,e){var n=document.createElement(\"script\");n.type=\"text/javascript\";n.async=!0;n.src=\"https://cdn.segment.com/analytics.js/v1/\"+t+\"/analytics.min.js\";var a=document.getElementsByTagName(\"script\")[0];a.parentNode.insertBefore(n,a);analytics._loadOptions=e};analytics.SNIPPET_VERSION=\"4.1.0\";}}();"]
+      (page/include-css (control-cache "/assets/css/admin.css")))
     (when-not (admin-session? cookies)
       ;; load FullStory
       [:script {:type "text/javascript"}
@@ -215,7 +206,16 @@ window['_fs_namespace'] = 'FS';
     g.consent=function(a){g(\"consent\",!arguments.length||a)};
     g.identifyAccount=function(i,v){o='account';v=v||{};v.acctId=i;g(o,v)};
     g.clearUserCookie=function(){};
-})(window,document,window['_fs_namespace'],'script','user');"])
+})(window,document,window['_fs_namespace'],'script','user');"])]
+   [:body
+    [:div {:id "app"}
+     ;; loading spinner
+     [:div {:class "spinner"
+            :style "margin: 175px auto;"}
+      [:i] [:i] [:i]]]
+    ;; load Segment's "Analytics.js"
+    [:script {:type "text/javascript"}
+     "!function(){var analytics=window.analytics=window.analytics||[];if(!analytics.initialize)if(analytics.invoked)window.console&&console.error&&console.error(\"Segment snippet included twice.\");else{analytics.invoked=!0;analytics.methods=[\"trackSubmit\",\"trackClick\",\"trackLink\",\"trackForm\",\"pageview\",\"identify\",\"reset\",\"group\",\"track\",\"ready\",\"alias\",\"debug\",\"page\",\"once\",\"off\",\"on\"];analytics.factory=function(t){return function(){var e=Array.prototype.slice.call(arguments);e.unshift(t);analytics.push(e);return analytics}};for(var t=0;t<analytics.methods.length;t++){var e=analytics.methods[t];analytics[e]=analytics.factory(e)}analytics.load=function(t,e){var n=document.createElement(\"script\");n.type=\"text/javascript\";n.async=!0;n.src=\"https://cdn.segment.com/analytics.js/v1/\"+t+\"/analytics.min.js\";var a=document.getElementsByTagName(\"script\")[0];a.parentNode.insertBefore(n,a);analytics._loadOptions=e};analytics.SNIPPET_VERSION=\"4.1.0\";}}();"]
     (page/include-js
      (control-cache
       (if (admin-session? cookies)
