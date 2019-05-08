@@ -428,13 +428,7 @@ $cell-height: 201px;
     font-weight: 400;
     transition: transform .05s ease-out;
     transform: scale(0.98);
-    
-    &:hover {
-      transform: scale(1);
-    }
-    &.disqualified {
-      opacity: 0.35;
-    }
+
     .text {
       flex: 1;
       display: flex;
@@ -445,13 +439,54 @@ $cell-height: 201px;
     }
     .actions {
       margin-top: 10px;
-      opacity: 0.3;
-      transition: opacity .05s ease-out !important;
-    }
-    &:hover .actions {
-      opacity: 1;
+
+      .action-button {
+        opacity: 0.3;
+        transition: opacity .05s ease-out !important;
+      }
     }
     
+    
+    &:hover {
+      transform: scale(1);
+      
+      .action-button {
+        opacity: 1;
+      }
+    }
+    &.disqualified {
+      opacity: 0.35;
+    }
+    &.response-approved {
+      // box-shadow: 0 1px 3px 0 rgba(0,150,0,0.7) !important;
+      // border: 1px solid rgb(0, 150, 0) !important;
+
+      .approve {
+        opacity: 1;
+
+        box-shadow: 0 0 0px 1px #4ec2c4; //rgba(0, 150, 0, 0.8);
+        color: #4ec2c4 !important;
+      }
+    }
+    &.response-disapproved {
+      // box-shadow: 0 1px 10px 0 rgba(190,0,0,0.7) !important;
+      // border: 1px solid rgb(150, 0, 0) !important;
+      // background: rgba(255,220,220,1);
+      // transform: rotateY(190deg);
+      // perspective-origin: 0 0;
+
+      .disapprove {
+        opacity: 1;
+
+        // option 1
+        // background: rgba(230, 0, 0, 0.7) !important;
+        // color: white !important;
+
+        // option 2
+        box-shadow: 0 0 0px 1px rgba(230, 0, 20, 0.8);
+        color: rgba(230, 0, 0, 0.8) !important;
+      }
+    }
   }
 
   // draggable has to do with dragging to *scroll* (not to reorder)

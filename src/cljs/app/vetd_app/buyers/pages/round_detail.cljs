@@ -373,15 +373,25 @@
                (for [rp round-product
                      :let [{pname :pname
                             pid :id} (:product rp)
-                           resp (docs/get-response-field-by-prompt-id
-                                 (-> rp :vendor-response-form-docs first :response-prompts)
-                                 req-prompt-id)
+                           response-prompts (-> rp :vendor-response-form-docs first :response-prompts)
+                           response-prompt (docs/get-response-prompt-by-prompt-id
+                                            response-prompts
+                                            req-prompt-id)
+                           rating (some-> response-prompt
+                                          :subject-of-response-prompt
+                                          first
+                                          :response-prompt-fields
+                                          first
+                                          :nval)
+                           resp (docs/get-response-field-by-prompt-id response-prompts req-prompt-id)
                            {id :id
                             resp-id :resp-id
                             resp-text :sval} resp
                            product-disqualified? (= 0 (:result rp))]]
                  ^{:key (str req-prompt-id "-" pid)}
-                 [:div.cell {:class (when product-disqualified? "disqualified")
+                 [:div.cell {:class (str (when product-disqualified? "disqualified" )
+                                         (when (= 1 rating) "response-approved ")
+                                         (when (= 0 rating) "response-disapproved "))
                              :on-mouse-down #(reset! cell-click-disabled? false)
                              :on-click #(when-not @cell-click-disabled?
                                           (show-modal {:req-prompt-id req-prompt-id
@@ -396,16 +406,19 @@
                                  [c-no-response]
                                  [c-waiting-for-response]))]
                   [:div.actions
-                   [c-action-button {:icon "chat outline" ; on-click just pass through
+                   [c-action-button {:props {:class "action-button question"}
+                                     :icon "chat outline" ; on-click just pass through
                                      :popup-text "Ask Question"}]
-                   [c-action-button {:on-click #(do (.stopPropagation %)
+                   [c-action-button {:props {:class "action-button approve"}
+                                     :on-click #(do (.stopPropagation %)
                                                     (rf/dispatch [:b/round.rate-response resp-id 1]))
                                      :icon "thumbs up outline"
-                                     :popup-text "Approve"}]
-                   [c-action-button {:on-click #(do (.stopPropagation %)
+                                     :popup-text (if (= 1 rating) "Approved" "Approve")}]
+                   [c-action-button {:props {:class "action-button disapprove"}
+                                     :on-click #(do (.stopPropagation %)
                                                     (rf/dispatch [:b/round.rate-response resp-id 0]))
                                      :icon "thumbs down outline"
-                                     :popup-text "Disapprove"}]]])]))]
+                                     :popup-text (if (= 0 rating) "Disapproved" "Disapprove")}]]])]))]
          [c-cell-modal id modal-showing?& @modal-response&]]
         ;; no products in round yet
         [:> ui/Segment {:class "detail-container"
