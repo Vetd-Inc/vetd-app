@@ -323,7 +323,8 @@
         [:<>
          [:div.round-grid
           (let [req-prompt-id-order (into [] (map :id prompts))
-                _ (println req-prompt-id-order)]
+                ;; _ (println req-prompt-id-order)
+                ]
             (for [req prompts
                   :let [{req-prompt-id :id
                          req-prompt-text :prompt} req]]
