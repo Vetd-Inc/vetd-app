@@ -222,7 +222,7 @@
 (defn c-declare-winner-button
   [round product result]
   [:> ui/Popup
-   {:content (if (= "1" result) "Declared Winner" "Declare Winner")
+   {:content (if (= 1 result) "Declared Winner" "Declare Winner")
     ;; :header "Decision"
     :position "bottom left"
     :trigger (r/as-element
@@ -422,7 +422,6 @@
                                                  (reset! mousedown? true)
                                                  (reset! x-at-mousedown (.-pageX e))
                                                  (reset! col-pos-x-at-mousedown (.-offsetLeft this))
-                                                 
                                                  (reset! reverse-scroll-drag? true)
                                                  (.add (.-classList this) "reordering"))))
                                  mousemove (fn [e]
@@ -639,7 +638,7 @@
                     [:> ui/Form {:style {:width 350}}
                      [:> ui/Dropdown {:style {:width "100%"}
                                       :options @requirements-options
-                                      :placeholder "Enter requirement..."
+                                      :placeholder "Enter topic..."
                                       :search true
                                       :selection true
                                       :multiple false
