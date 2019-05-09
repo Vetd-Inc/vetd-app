@@ -285,19 +285,13 @@
           :trigger (r/as-element
                     [:> ui/Button {:icon "ban"
                                    :basic true
+                                   ;; :color "white"
                                    :size "mini"
-                                   :disabled (= 1 result)}]
-                    #_[:> ui/Button {:color "white"
-                                     :icon true
-                                     :fluid true
-                                     :labelPosition "left"
-                                     :disabled (= 1 result)}
-                       "Disqualify Product"
-                       [:> ui/Icon {:name "ban"}]])}]
-        [bc/c-sidebar-button
-         {:text "Undo Disqualify"
-          :dispatch [:b/round.undo-disqualify (:id round) (:id product)]
-          :icon "undo"}]))))
+                                   :disabled (= 1 result)}])}]
+        [:> ui/Button {:icon "undo"
+                       :basic true
+                       :on-click #(rf/dispatch [:b/round.undo-disqualify (:id round) (:id product)])
+                       :size "mini"}]))))
 
 (defn c-action-button
   "Component to display small icon button for grid cell actions."
@@ -415,46 +409,46 @@
                          :as product} (:product rp)
                         product-disqualified? (= 0 (:result rp))]]
               ^{:key product-id}
-              [:div.column #_(let [mousedown? (atom false)
-                                   x-at-mousedown (atom nil)
-                                   col (atom nil)
-                                   col-pos-x-at-mousedown (atom nil)
-                                   last-x-displacement (atom 0)
-                                   mousedown (fn [e]
+              [:div.column (let [mousedown? (atom false)
+                                 x-at-mousedown (atom nil)
+                                 col (atom nil)
+                                 col-pos-x-at-mousedown (atom nil)
+                                 last-x-displacement (atom 0)
+                                 mousedown (fn [e]
+                                             (let [this (.-currentTarget e)
+                                                   target (.-target e)]
+                                               (when (.contains (.-classList target) "reorder-handle")
+                                                 (reset! col this)
+                                                 (reset! mousedown? true)
+                                                 (reset! x-at-mousedown (.-pageX e))
+                                                 (reset! col-pos-x-at-mousedown (.-offsetLeft this))
+                                                 
+                                                 (reset! reverse-scroll-drag? true)
+                                                 (.add (.-classList this) "reordering"))))
+                                 mousemove (fn [e]
+                                             (when @mousedown?
                                                (let [this (.-currentTarget e)
-                                                     target (.-target e)]
-                                                 (when (.contains (.-classList target) "requirement")
-                                                   (reset! col this)
-                                                   (reset! mousedown? true)
-                                                   (reset! x-at-mousedown (.-pageX e))
-                                                   (reset! col-pos-x-at-mousedown (.-offsetLeft this))
-                                                   
-                                                   (reset! reverse-scroll-drag? true)
-                                                   (.add (.-classList this) "reordering"))))
-                                   mousemove (fn [e]
-                                               (when @mousedown?
-                                                 (let [this (.-currentTarget e)
-                                                       x-displacement (- (.-pageX e)
-                                                                         @x-at-mousedown)]
-                                                   (.preventDefault e)
-                                                   (when (> (Math/abs (- x-displacement @last-x-displacement)) 1)
-                                                     (if (< x-displacement @last-x-displacement)
-                                                       (.add (.-classList this) "reordering-left")
-                                                       (.remove (.-classList this) "reordering-left"))
-                                                     (reset! last-x-displacement x-displacement))
-                                                   (aset (.-style @col) "transform" (str "translateX(" (* 2 x-displacement) "px)")))))
-                                   mouseup-or-leave (fn [e]
-                                                      (when @col
-                                                        (let [this (.-currentTarget e)]
-                                                          (reset! mousedown? false)
-                                                          (aset (.-style @col) "transform" (str "translateX(0px)"))
-                                                          (.remove (.-classList this) "reordering")
-                                                          (.remove (.-classList this) "reordering-left"))))]
-                               {:on-mouse-down mousedown
-                                :on-mouse-move mousemove
-                                :on-mouse-up mouseup-or-leave
-                                :on-mouse-leave mouseup-or-leave
-                                })
+                                                     x-displacement (- (.-pageX e)
+                                                                       @x-at-mousedown)]
+                                                 (.preventDefault e)
+                                                 (when (> (Math/abs (- x-displacement @last-x-displacement)) 1)
+                                                   (if (< x-displacement @last-x-displacement)
+                                                     (.add (.-classList this) "reordering-left")
+                                                     (.remove (.-classList this) "reordering-left"))
+                                                   (reset! last-x-displacement x-displacement))
+                                                 (aset (.-style @col) "transform" (str "translateX(" (* 2 x-displacement) "px)")))))
+                                 mouseup-or-leave (fn [e]
+                                                    (when @col
+                                                      (let [this (.-currentTarget e)]
+                                                        (reset! mousedown? false)
+                                                        (aset (.-style @col) "transform" (str "translateX(0px)"))
+                                                        (.remove (.-classList this) "reordering")
+                                                        (.remove (.-classList this) "reordering-left"))))]
+                             {:on-mouse-down mousedown
+                              :on-mouse-move mousemove
+                              :on-mouse-up mouseup-or-leave
+                              :on-mouse-leave mouseup-or-leave
+                              })
                #_[:h4.requirement pname]
                [:div {:class (str "round-product"
                                   (when (> (count pname) 17) " long")
@@ -467,8 +461,14 @@
                                          [:b/nav-product-detail product-idstr]))}
                   pname]
                  [c-declare-winner-button round product (:result rp)]
+                 [c-disqualify-button round product (:result rp)]
                  [c-setup-call-button round product vendor (:result rp)]
-                 [c-disqualify-button round product (:result rp)]]]
+                 [:> ui/Button {:class "reorder-handle"
+                                :icon "move"
+                                ;; :color "white"
+                                :basic true
+                                :size "mini"}]
+                 ]]
                (for [req prompts
                      :let [{req-prompt-id :id
                             req-prompt-text :prompt} req
@@ -646,18 +646,26 @@
                                       :selectOnBlur false
                                       :allowAdditions true
                                       :additionLabel "Hit 'Enter' to Add "
-                                      :noResultsMessage "Type to add a new requirement..."
+                                      :noResultsMessage "Type to add a new topic..."
                                       :onChange (fn [_ this]
                                                   (reset! popup-open? false)
                                                   (rf/dispatch
                                                    [:b/round.add-requirement id (.-value this)]))}]]))
         :trigger (r/as-element
                   [:> ui/Button {:color "teal"
-                                 :icon true
-                                 :fluid true
-                                 :labelPosition "left"}
-                   "Add Requirement"
-                   [:> ui/Icon {:name "plus"}]])}])))
+                                 ;; :basic true
+                                 :size "mini"
+                                 :icon "plus"
+                                 :style {:position "relative"
+                                         :top -4
+                                         :left 5}
+                                 }]
+                  #_[:> ui/Button {:color "teal"
+                                   :icon true
+                                   :fluid true
+                                   :labelPosition "left"}
+                     "Add a Topic"
+                     [:> ui/Icon {:name "plus"}]])}])))
 
 (defn c-products
   "Component to display product boxes with various buttons."
@@ -686,7 +694,7 @@
 
 (defn c-requirements
   [{:keys [prompts] :as req-form-template}]
-  [:<>
+  [:div
    (for [req prompts
          :let [{req-prompt-id :id
                 req-prompt-text :prompt} req]]
@@ -764,6 +772,8 @@
                 [:div {:style {:padding "0 15px"}}
                  (if (some (comp (partial = 1) :result) sorted-round-products)
                    [:div {:style {:height 36}}]
-                   [c-add-requirement-button round])]
+                   [:div {:class "requirements-heading"}
+                    "Topics "
+                    [c-add-requirement-button round]])]
                 [c-requirements req-form-template]])]
             [:div.inner-container [c-round round req-form-template sorted-round-products]]]))])))
