@@ -218,6 +218,80 @@
     "You have already submitted your requirements." ; this should never show
     [c-round-initiation-form id]))
 
+
+(defn c-declare-winner-button
+  [round product result]
+  [:> ui/Popup
+   {:content (if (= 1 result) "Declared Winner" "Declare Winner")
+    ;; :header "Decision"
+    :position "bottom left"
+    :trigger (r/as-element
+              [:> ui/Button {:icon "checkmark"
+                             :color (if (= 1 result)
+                                      "white"
+                                      "lightblue"
+                                      ;; "vetd-gradient"
+                                      )
+                             :onClick #(rf/dispatch [:b/round.declare-winner (:id round) (:id product)])
+                             :size "mini"
+                             :disabled (not (nil? result))}])}])
+
+(defn c-setup-call-button
+  [round product vendor result]
+  [:> ui/Popup
+   {:content (str "Set up call with " (:oname vendor))
+    ;; :header "Set Up a Call"
+    :position "bottom left"
+    :trigger (r/as-element
+              [:> ui/Button {:icon "call"
+                             :color (if (= 1 result)
+                                      "white"
+                                      "lightteal"
+                                      ;; "lightblue"
+                                      )
+                             :onClick #(rf/dispatch [:b/setup-call (:id product) (:pname product)])
+                             :size "mini"
+                             :disabled (= 0 result)}])}])
+
+(defn c-disqualify-button
+  [round product result]
+  (let [popup-open? (r/atom false)]
+    (fn [round product result]
+      (if-not (= 0 result)
+        [:> ui/Popup
+         {:position "top left"
+          :on "click"
+          :open @popup-open?
+          :onOpen #(reset! popup-open? true)
+          :onClose #(reset! popup-open? false)
+          :content (r/as-element
+                    (let [reason (atom "")]
+                      [:> ui/Form {:style {:width 450}}
+                       [:> ui/FormField
+                        [:> ui/Input
+                         {:placeholder "Enter reason..."
+                          :on-change (fn [_ this]
+                                       (reset! reason (.-value this)))
+                          :action (r/as-element
+                                   [:> ui/Button
+                                    {:color "teal"
+                                     :on-click #(do (reset! popup-open? false)
+                                                    (rf/dispatch [:b/round.disqualify
+                                                                  (:id round)
+                                                                  (:id product)
+                                                                  @reason]))}
+                                    "Disqualify"])}]]]))
+          :trigger (r/as-element
+                    [:> ui/Button {:icon "ban"
+                                   :basic true
+                                   ;; :color "white"
+                                   :size "mini"
+                                   :disabled (= 1 result)}])}]
+        [:> ui/Button {:icon "undo"
+                       :basic true
+                       :on-click #(rf/dispatch [:b/round.undo-disqualify (:id round) (:id product)])
+                       :size "mini"}]))))
+
 (defn c-action-button
   "Component to display small icon button for grid cell actions."
   [{:keys [icon on-click popup-text props]}]
@@ -252,7 +326,7 @@
 (defn c-cell-modal
   [round-id
    modal-showing?&
-   {:keys [req-prompt-id req-prompt-text pid pname
+   {:keys [req-prompt-id req-prompt-text product-id pname
            resp-id resp-text]
     :as modal-response}]
   (let [modal-message& (r/atom "")]
@@ -294,7 +368,7 @@
        [:> ui/Button
         {:onClick #(do (rf/dispatch
                         [:b/round.ask-a-question
-                         pid pname @modal-message& round-id req-prompt-text])
+                         product-id pname @modal-message& round-id req-prompt-text])
                        (reset! modal-showing?& false))
          :color "blue"}
         "Submit Question"]]]]))
@@ -307,7 +381,7 @@
   (let [ ;; The response currently in the modal.
         ;; E.g., {:req-prompt-id 123
         ;;        :req-prompt-text "Something"
-        ;;        :pid 321
+        ;;        :product-id 321
         ;;        :pname "Some Product"
         ;;        :resp-id 456
         ;;        :resp-text "Some answer to prompt"}
@@ -322,13 +396,18 @@
       (if (seq round-product)
         [:<>
          [:div.round-grid
-          (let [req-prompt-id-order (into [] (map :id prompts))
+          (let [;; req-prompt-id-order (into [] (map :id prompts))
                 ;; _ (println req-prompt-id-order)
                 ]
-            (for [req prompts
-                  :let [{req-prompt-id :id
-                         req-prompt-text :prompt} req]]
-              ^{:key req-prompt-id}
+            (for [rp round-product
+                  :let [{pname :pname
+                         product-id :id
+                         product-idstr :idstr
+                         vendor :vendor
+                         preposals :docs
+                         :as product} (:product rp)
+                        product-disqualified? (= 0 (:result rp))]]
+              ^{:key product-id}
               [:div.column (let [mousedown? (atom false)
                                  x-at-mousedown (atom nil)
                                  col (atom nil)
@@ -337,12 +416,11 @@
                                  mousedown (fn [e]
                                              (let [this (.-currentTarget e)
                                                    target (.-target e)]
-                                               (when (.contains (.-classList target) "requirement")
+                                               (when (.contains (.-classList target) "reorder-handle")
                                                  (reset! col this)
                                                  (reset! mousedown? true)
                                                  (reset! x-at-mousedown (.-pageX e))
                                                  (reset! col-pos-x-at-mousedown (.-offsetLeft this))
-                                                 
                                                  (reset! reverse-scroll-drag? true)
                                                  (.add (.-classList this) "reordering"))))
                                  mousemove (fn [e]
@@ -369,24 +447,42 @@
                               :on-mouse-up mouseup-or-leave
                               :on-mouse-leave mouseup-or-leave
                               })
-               [:h4.requirement req-prompt-text]
-               (for [rp round-product
-                     :let [{pname :pname
-                            pid :id} (:product rp)
+               #_[:h4.requirement pname]
+               [:div {:class (str "round-product"
+                                  (when (> (count pname) 17) " long")
+                                  (when (= 1 (:result rp)) " winner")
+                                  (when (= 0 (:result rp)) " disqualified"))}
+                [:div
+                 [:a.name {:on-click #(rf/dispatch
+                                       (if (seq preposals)
+                                         [:b/nav-preposal-detail (-> preposals first :idstr)]
+                                         [:b/nav-product-detail product-idstr]))}
+                  pname]
+                 [c-declare-winner-button round product (:result rp)]
+                 [c-disqualify-button round product (:result rp)]
+                 [c-setup-call-button round product vendor (:result rp)]
+                 #_[:> ui/Button {:class "reorder-handle"
+                                :icon "move"
+                                ;; :color "white"
+                                :basic true
+                                :size "mini"}]
+                 ]]
+               (for [req prompts
+                     :let [{req-prompt-id :id
+                            req-prompt-text :prompt} req
                            resp (docs/get-response-field-by-prompt-id
                                  (-> rp :vendor-response-form-docs first :response-prompts)
                                  req-prompt-id)
                            {id :id
                             resp-id :resp-id
-                            resp-text :sval} resp
-                           product-disqualified? (= 0 (:result rp))]]
-                 ^{:key (str req-prompt-id "-" pid)}
+                            resp-text :sval} resp]]
+                 ^{:key (str req-prompt-id "-" product-id)}
                  [:div.cell {:class (when product-disqualified? "disqualified")
                              :on-mouse-down #(reset! cell-click-disabled? false)
                              :on-click #(when-not @cell-click-disabled?
                                           (show-modal {:req-prompt-id req-prompt-id
                                                        :req-prompt-text req-prompt-text
-                                                       :pid pid
+                                                       :product-id product-id
                                                        :pname pname
                                                        :resp-id resp-id
                                                        :resp-text resp-text}))}
@@ -455,35 +551,35 @@
                          (reset! reverse-scroll-drag? false)
                          (reset! mousedown? false))
                
-               ;; make requirements row 'sticky' upon window scroll
-               requirements-pickup-y (atom nil) ; nil when not in 'sticky mode'
-               all-requirements-nodes #(array-seq (.getElementsByClassName js/document "requirement"))
+               ;; make header row 'sticky' upon window scroll
+               header-pickup-y (atom nil) ; nil when not in 'sticky mode'
+               all-header-nodes #(array-seq (.getElementsByClassName js/document "round-product"))
                ;; the horizontal position of the requirement row needs to
                ;; be manually updated when in 'sticky mode'
                scroll (fn []
                         (.requestAnimationFrame
                          js/window
                          (fn []
-                           (when @requirements-pickup-y
-                             (doseq [req-node (all-requirements-nodes)]
+                           (when @header-pickup-y
+                             (doseq [req-node (all-header-nodes)]
                                (aset (.-style req-node) "marginLeft" (str (* -1 (.-scrollLeft node)) "px")))))))
-               ;; zero out the artificial horizontal scrolling of the requirements row
+               ;; zero out the artificial horizontal scrolling of the header row
                ;; this needs to be called when we leave 'sticky mode'
                zero-out-req-scroll (fn []
-                                     (doseq [req-node (all-requirements-nodes)]
+                                     (doseq [req-node (all-header-nodes)]
                                        (aset (.-style req-node) "marginLeft" "0px")))
-               ;; turn on and off requirements row 'sticky mode' as needed
+               ;; turn on and off header row 'sticky mode' as needed
                window-scroll (fn []
                                (.requestAnimationFrame
                                 js/window
                                 (fn []
-                                  (if @requirements-pickup-y
-                                    (when (< (.-scrollY js/window) @requirements-pickup-y)
-                                      (reset! requirements-pickup-y nil)
+                                  (if @header-pickup-y
+                                    (when (< (.-scrollY js/window) @header-pickup-y)
+                                      (reset! header-pickup-y nil)
                                       (.remove (.-classList node) "fixed")
                                       (zero-out-req-scroll))
                                     (when (> (.-scrollY js/window) (.-offsetTop node))
-                                      (reset! requirements-pickup-y (.-offsetTop node))
+                                      (reset! header-pickup-y (.-offsetTop node))
                                       (.add (.-classList node) "fixed")
                                       ;; call 'scroll' to update horiz pos of req row
                                       ;; (only matters if grid was horiz scrolled/dragged)
@@ -541,77 +637,33 @@
                     [:> ui/Form {:style {:width 350}}
                      [:> ui/Dropdown {:style {:width "100%"}
                                       :options @requirements-options
-                                      :placeholder "Enter requirement..."
+                                      :placeholder "Enter topic..."
                                       :search true
                                       :selection true
                                       :multiple false
                                       :selectOnBlur false
                                       :allowAdditions true
                                       :additionLabel "Hit 'Enter' to Add "
-                                      :noResultsMessage "Type to add a new requirement..."
+                                      :noResultsMessage "Type to add a new topic..."
                                       :onChange (fn [_ this]
                                                   (reset! popup-open? false)
                                                   (rf/dispatch
                                                    [:b/round.add-requirement id (.-value this)]))}]]))
         :trigger (r/as-element
                   [:> ui/Button {:color "teal"
-                                 :icon true
-                                 :fluid true
-                                 :labelPosition "left"}
-                   "Add Requirement"
-                   [:> ui/Icon {:name "plus"}]])}])))
-
-(defn c-declare-winner-button
-  [round product result]
-  [bc/c-sidebar-button
-   {:text (if (= "1" result) "Declared Winner" "Declare Winner")
-    :dispatch [:b/round.declare-winner (:id round) (:id product)]
-    :icon "checkmark"
-    :props {:color (if (= 1 result)
-                     "white"
-                     "vetd-gradient")
-            :disabled (not (nil? result))}}])
-
-(defn c-disqualify-button
-  [round product result]
-  (let [popup-open? (r/atom false)]
-    (fn [round product result]
-      (if-not (= 0 result)
-        [:> ui/Popup
-         {:position "top left"
-          :on "click"
-          :open @popup-open?
-          :onOpen #(reset! popup-open? true)
-          :onClose #(reset! popup-open? false)
-          :content (r/as-element
-                    (let [reason (atom "")]
-                      [:> ui/Form {:style {:width 450}}
-                       [:> ui/FormField
-                        [:> ui/Input
-                         {:placeholder "Enter reason..."
-                          :on-change (fn [_ this]
-                                       (reset! reason (.-value this)))
-                          :action (r/as-element
-                                   [:> ui/Button
-                                    {:color "teal"
-                                     :on-click #(do (reset! popup-open? false)
-                                                    (rf/dispatch [:b/round.disqualify
-                                                                  (:id round)
-                                                                  (:id product)
-                                                                  @reason]))}
-                                    "Disqualify"])}]]]))
-          :trigger (r/as-element
-                    [:> ui/Button {:color "white"
+                                 ;; :basic true
+                                 :size "mini"
+                                 :icon "plus"
+                                 :style {:position "relative"
+                                         :top -4
+                                         :left 5}
+                                 }]
+                  #_[:> ui/Button {:color "teal"
                                    :icon true
                                    :fluid true
-                                   :labelPosition "left"
-                                   :disabled (= 1 result)}
-                     "Disqualify Product"
-                     [:> ui/Icon {:name "ban"}]])}]
-        [bc/c-sidebar-button
-         {:text "Undo Disqualify"
-          :dispatch [:b/round.undo-disqualify (:id round) (:id product)]
-          :icon "undo"}]))))
+                                   :labelPosition "left"}
+                     "Add a Topic"
+                     [:> ui/Icon {:name "plus"}]])}])))
 
 (defn c-products
   "Component to display product boxes with various buttons."
@@ -635,11 +687,18 @@
                               [:b/nav-product-detail product-idstr]))}
        pname]
       [c-declare-winner-button round product (:result rp)]
-      [bc/c-setup-call-button product vendor {:disabled (= 0 (:result rp))
-                                              :color (if (= 1 (:result rp))
-                                                       "white"
-                                                       "lightblue")}]
+      [c-setup-call-button round product vendor (:result rp)]
       [c-disqualify-button round product (:result rp)]])])
+
+(defn c-requirements
+  [{:keys [prompts] :as req-form-template}]
+  [:div
+   (for [req prompts
+         :let [{req-prompt-id :id
+                req-prompt-text :prompt} req]]
+     ^{:key (str req-prompt-id)}
+     [:> ui/Segment {:class "requirement"}
+      req-prompt-text])])
 
 (defn sort-round-products
   [round-product] ; if result is nil, then sort it in-between winner and disqualified
@@ -704,13 +763,15 @@
              [:div {:style {:padding "0 15px"}}
               [bc/c-back-button {:on-click #(rf/dispatch [:b/nav-rounds])}
                "All VetdRounds"]]
-             [:div {:style {:height 154}}] ; spacer
+             [:div {:style {:height 186}}] ; spacer
              (when (and (#{"in-progress" "complete"} status)
                         (seq sorted-round-products))
                [:<>
                 [:div {:style {:padding "0 15px"}}
                  (if (some (comp (partial = 1) :result) sorted-round-products)
                    [:div {:style {:height 36}}]
-                   [c-add-requirement-button round])]
-                [c-products round sorted-round-products]])]
+                   [:div {:class "requirements-heading"}
+                    "Topics "
+                    [c-add-requirement-button round]])]
+                [c-requirements req-form-template]])]
             [:div.inner-container [c-round round req-form-template sorted-round-products]]]))])))
