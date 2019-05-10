@@ -239,8 +239,7 @@
 (defn c-setup-call-button
   [round product vendor result]
   [:> ui/Popup
-   {:content (str "Let us setup a call for you with " (:oname vendor)
-                  " to discuss " (:pname product) ".")
+   {:content (str "Set up call with " (:oname vendor))
     ;; :header "Set Up a Call"
     :position "bottom left"
     :trigger (r/as-element
@@ -462,7 +461,7 @@
                  [c-declare-winner-button round product (:result rp)]
                  [c-disqualify-button round product (:result rp)]
                  [c-setup-call-button round product vendor (:result rp)]
-                 [:> ui/Button {:class "reorder-handle"
+                 #_[:> ui/Button {:class "reorder-handle"
                                 :icon "move"
                                 ;; :color "white"
                                 :basic true
