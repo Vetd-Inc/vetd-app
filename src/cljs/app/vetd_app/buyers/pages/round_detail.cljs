@@ -433,7 +433,8 @@
                                              (let [this (.-currentTarget e)
                                                    target (.-target e)]
                                                (println (str (array-seq (.-classList target))))
-                                               (when (.contains (.-classList target) "round-product")
+                                               (when (or (.contains (.-classList target) "round-product")
+                                                         (empty? (array-seq (.-classList target))))
                                                  (reset! col this)
                                                  (reset! mousedown? true)
                                                  (reset! x-at-mousedown (.-pageX e))
