@@ -37,9 +37,7 @@
   padding: 5px;
 }
 #admin-over-cont.open #admin-symbol {
-  animation: 15s infinite shark cubic-bezier(0.09, 0.6, 0.24, 0.03);
-
-                 // cubic-bezier(0.09, 0.6, 0.24, 0.03);
+  animation: 20s infinite shark cubic-bezier(0.09, 0.6, 0.24, 0.03);
   bottom: -27px;
 }
 @keyframes shark {

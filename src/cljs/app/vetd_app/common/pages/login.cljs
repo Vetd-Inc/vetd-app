@@ -79,7 +79,7 @@
  (fn [db]
    (assoc db :login-failed? false)))
 
-(defn login-page []
+(defn c-page []
   (let [email (r/atom "")
         pwd (r/atom "")
         login-failed? (rf/subscribe [:login-failed?])
@@ -118,9 +118,9 @@
              "Sign Up"]
             [:> ui/ButtonGroup {:fluid true}
              [:> ui/Button {:color "teal"
-                            :on-click #(rf/dispatch [:b/nav-signup])}
+                            :on-click #(rf/dispatch [:nav-signup :buyer])}
               "As a Buyer"]
              [:> ui/ButtonOr]
              [:> ui/Button {:color "blue"
-                            :on-click #(rf/dispatch [:v/nav-signup])}
+                            :on-click #(rf/dispatch [:nav-signup :vendor])}
               "As a Vendor"]]]]))})))

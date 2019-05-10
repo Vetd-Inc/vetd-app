@@ -47,6 +47,12 @@
             first)
        (or val-type :sval)))
 
+(defn get-response-prompt-by-prompt-id
+  [response-prompts prompt-id]
+  (->> response-prompts
+       (filter #(-> % :prompt-id (= prompt-id)))
+       first))
+
 (defn get-response-field-by-prompt-id
   "A little more info than get-value-by-prompt-id."
   [response-prompts prompt-id & [field]]

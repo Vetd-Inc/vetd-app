@@ -485,13 +485,6 @@ $cell-height: 201px;
     transition: transform .05s ease-out;
     transform: scale(0.98);
     
-    &:hover {
-      transform: scale(1);
-      z-index: 5;
-    }
-    &.disqualified {
-      opacity: 0.35;
-    }
     .text {
       flex: 1;
       display: flex;
@@ -502,13 +495,25 @@ $cell-height: 201px;
     }
     .actions {
       margin-top: 10px;
-      opacity: 0.3;
-      transition: opacity .05s ease-out !important;
-    }
-    &:hover .actions {
-      opacity: 1;
+
+      .action-button {
+        opacity: 0.3;
+        transition: opacity .05s ease-out !important;
+      }
     }
     
+    
+    &:hover {
+      transform: scale(1);
+      z-index: 5;
+      
+      .action-button {
+        opacity: 1;
+      }
+    }
+    &.disqualified {
+      opacity: 0.35;
+    }
   }
 
   // draggable has to do with dragging to *scroll* (not to reorder)
@@ -542,6 +547,21 @@ $cell-height: 201px;
   // &:hover .column:not(:hover) {
   //   opacity: 0.6;
   // }
+}
+
+.response-approved {
+  .approve.ui.button {
+    opacity: 1 !important;
+    box-shadow: 0 0 0px 1px #4ec2c4 !important;
+    color: #4ec2c4 !important;
+  }
+}
+.response-disapproved {
+  .disapprove.ui.button {
+    opacity: 1 !important;
+    box-shadow: 0 0 0px 1px rgba(230, 0, 20, 0.8) !important;
+    color: rgba(230, 0, 0, 0.8) !important;
+  }
 }
 
 
