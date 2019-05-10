@@ -169,10 +169,16 @@
 (defn long->str [l]
   (when l (str l)))
 
+(defn coerce-to-long?
+  [kw]
+  (or (.endsWith (name kw) "id")
+      ;; HACK
+      (#{:subject :sort :idx :result} kw)))
+
 (defn walk-gql-query->args
   [field args sub]
   (-> (for [[k v] args]
-        [k (if (->> k name (take-last 2) (= [\i \d]))  ;; HACK \i \d
+        [k (if (coerce-to-long? k)
              (if (coll? v)
                (mapv long->str v)
                (long->str v))
@@ -217,35 +223,6 @@
   (->> v
        walk-gql
        dgql/graphql-query))
-
-#_(clojure.pprint/pprint 
- (walk-gql {:queries
-            [[:orgs {:id #{4 5 6}}
-              [:id :oname :idstr :short-desc
-               [:products {:id #{1 2 3}}
-                [:id :pname :idstr :short-desc :logo
-                 [:rounds {:buyer-id 123
-                           :status "active"}
-                  [:id :created :status]]
-                 [:categories [:id :idstr :cname]]]]]]]}))
-
-#_(println
- (dgql/graphql-query
-  (walk-gql {:queries
-             [[:orgs {:id #{4 5 6}}
-               [:id :oname :idstr :short-desc
-                [:products {:id #{1 2 3}}
-                 [:id :pname :idstr :short-desc :logo :buyer?
-                  [:rounds {:buyer-id 123
-                            :status "active"}
-                   [:id :created :status]]
-                  [:categories [:id :idstr :cname]]]]]]]})))
-
-#_(->gql-str {:queries [[:sessions
-                         {:id 5
-                          :_where {:code {:_eq "session-code"}
-                                   :deleted {:_is_null false}}}
-                         [:user_id]]]})
 
 (defn walk-result-sub-kw [field sub v]
   (sql-field->clj-kw sub))
@@ -507,3 +484,4 @@
  (json/parse-string
   (slurp (clojure.java.io/resource "hasura-metadata.json"))
   keyword))
+

@@ -14,6 +14,9 @@
                    :event [:v/nav-products]}
                   {:text "Profile"
                    :pages #{:v/profile}
-                   :event [:v/nav-profile]}]]
+                   :event [:v/nav-profile]}
+                  {:text "VetdRounds"
+                   :pages #{:v/rounds}
+                   :event [:v/nav-rounds]}]]
    body
    [:div {:style {:height 100}}]])

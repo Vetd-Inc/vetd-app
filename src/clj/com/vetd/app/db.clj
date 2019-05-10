@@ -1,6 +1,5 @@
 (ns com.vetd.app.db
-  (:require [com.vetd.app.common :as com]
-            [com.vetd.app.util :as ut]
+  (:require [com.vetd.app.util :as ut]
             [com.vetd.app.env :as env]
             [migratus.core :as mig]
             [clojure.java.jdbc :as j]
@@ -151,3 +150,9 @@ WHERE table_schema = 'vetd' AND table_catalog = 'vetd1';")
   (hs-exe! {:update tbl-kw
             :set {:deleted (ut/now-ts)}
             :where [:= :id id]}))
+
+(defn update-deleted-where
+  [tbl-kw hny-where]
+  (hs-exe! {:update tbl-kw
+            :set {:deleted (ut/now-ts)}
+            :where hny-where}))

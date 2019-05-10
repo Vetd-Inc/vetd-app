@@ -1,7 +1,9 @@
 @import 'semantic-ui/globals/_variables';
 
+$bg-color: #fafafa;
+
 body {
-  background: #fafafa;
+  background: $bg-color;
   font-size: 14px;
   font-weight: 300;
   color: #444;
@@ -357,80 +359,137 @@ textarea {
 }
 
 /* Round Grid */
-$cell-width: 210px;
+$cell-width: 205px;
 $cell-height: 201px;
 
 .round-grid {
   display: flex;
   flex-wrap: nowrap; // unnecessary?
   overflow-x: auto;
+  overflow-y: hidden;
   box-sizing: border-box;
   position: relative;
-  cursor: ew-resize;
   padding-top: 14px;
-  // since the requirements are fixed position
+  // since the header row is in fixed position
   // this keeps them from overflowing
   clip-path: inset(-100px 0px 0px 0px);
 
   .column {
     width: $cell-width;
     flex: 0 0 auto;
+    transition: transform 0.3s 0s ease-out;
+    margin-left: 7px;
     
     &:first-of-type {
       margin-left: 6px;
     }
-    .requirement {
-      width: $cell-width - 7px;
-      height: 38px;
+    &.reordering {
+      transition: none;
+      z-index: 999;
+
+      .round-product, .cell {
+        transition: transform 0.1s 0s linear !important;
+        transform: rotate(4deg);
+      }
+    }
+    &.reordering-left {
+      .round-product, .cell {
+        transform: rotate(-4deg);
+      }
+    }
+
+
+    .round-product {
+      width: $cell-width;
+      height: 84px;
+      
+      text-align: center;
+      background: $bg-color;
+      box-shadow: none !important;
+      border: none !important;
+      font-size: 14px;
+      padding: 14px 7px;
+      cursor: grab;
+      user-select: none; 
+
       display: flex;
       flex-direction: column;
-      justify-content: center;
+      justify-content: flex-end;
       align-items: center;
-      text-align: center;
-      background: white;
-      box-shadow: 0 2px 14px 0 rgba(50,50,50,0.1) !important;
-      border-radius: 4px;
-      font-size: 14px;
-      padding: 0 7px;
+
+      .button {
+        margin-left: 7px;
+
+        &:first-of-type {
+          margin-left: 0px;
+        }
+      }
+      
+      .name {
+        display: block;
+        // height: 37px;
+        margin-bottom: 9px;
+        font-size: 18px !important;
+        font-weight: 600 !important;
+        line-height: 23px !important;
+        color: #444 !important;
+
+        &:hover {
+          color: #888 !important;
+        }
+      }
+
+      &.long {
+        padding-top: 8px;
+        
+        .name {
+          font-size: 14px !important;
+          line-height: 17px !important;
+          // margin-bottom: 7px !important;
+        }
+      }
+
+      &.disqualified {
+
+        .name {
+          opacity: 0.5;
+        }
+      }
+
+      &.winner {
+        background: linear-gradient(to right, #32abde, #6dccce) !important;
+
+        .name {
+          color: white !important;
+        }
+      }
     }
   }
-
-  &.fixed {
-    margin-top: 38px;
-  }
-  &.fixed .requirement {
-    position: fixed;
-    top: 0;
-    z-index: 999;
-    background: white;
-    box-shadow: 0 2px 14px 0 rgba(50,50,50,0.1) !important;
-    border-top-left-radius: 0;
-    border-top-right-radius: 0;
-  }
-
-  // &:hover .column:not(:hover) {
-  //   opacity: 0.6;
-  // }
   
   .cell {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     height: $cell-height;
     padding: 14px;
-    margin: 14px 7px 14px 0;
+    margin: 0 0 2px 0;
     box-shadow: 0 2px 14px 0 rgba(50,50,50,0.1) !important;
     border: none !important;
     border-radius: 4px;
     background: #fff;
     font-size: 14px;
     font-weight: 400;
-    transition: transform .05s ease-out !important;
+    transition: transform .05s ease-out;
     transform: scale(0.98);
     
     &:hover {
       transform: scale(1);
+      z-index: 5;
+    }
+    &.disqualified {
+      opacity: 0.35;
     }
     .text {
       flex: 1;
@@ -451,13 +510,70 @@ $cell-height: 201px;
     
   }
 
-  .column:last-of-type .cell {
-    padding-right: 0;
+  // draggable has to do with dragging to *scroll* (not to reorder)
+  &.draggable {
+    cursor: ew-resize;
+
+    &.dragging,
+    &.dragging .round-product,
+    &.dragging .cell, {
+      cursor: grabbing;
+    }
   }
+  &:not(.draggable) {
+    .cell {
+      cursor: pointer;
+    }
+  }
+  // if the header row is in sticky mode
+  &.fixed {
+    margin-top: 84px;
+  }
+  &.fixed .round-product {
+    position: fixed;
+    top: 0;
+    z-index: 999;
+    background: white;
+    box-shadow: 0 2px 14px 0 rgba(50,50,50,0.1) !important;
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
+  }
+  // &:hover .column:not(:hover) {
+  //   opacity: 0.6;
+  // }
+}
+
+
+.requirements-heading {
+  text-align: left;
+  font-size: 24px;
+  background: transparent;
+  font-weight: 600;
+}
+
+.requirement.segment.ui {
+  display: flex;
+  flex-direction: column;
   
-  &.dragging,
-  &.dragging .cell {
-    cursor: grabbing !important;
+  align-items: flex-start;
+  
+  justify-content: center;
+  height: $cell-height;
+  padding: 14px 14px 14px 14px;
+  margin-top: 2px !important;
+  margin-bottom: 0px !important;
+  font-size: 14px;
+  font-weight: 600;
+  
+  // text-align: center;
+  text-align: left;
+  
+  background: transparent !important;
+  box-shadow: none !important;
+
+  &:first-of-type {
+    margin-top: 14px !important;
+    // margin-bottom: 0px !important;    
   }
 }
 
@@ -481,21 +597,7 @@ $cell-height: 201px;
   margin-left: 20px;
   margin-bottom: 0;
 }
-.round-product {
 
-  .title {
-    font-size: 18px;
-  }
-
-  &.long {
-    padding-top: 8px;
-    
-    .name {
-      font-size: 14px;
-      margin-bottom: 7px;
-    }
-  }
-}
 
 /* Loading Spinner */
 div.spinner {
@@ -567,4 +669,9 @@ div.spinner i:nth-child(2) {
   40%, 60% {
     transform: translate3d(4px, 0, 0);
   }
+}
+
+#confetti-canvas {
+  position: fixed;
+  top: 0px;
 }

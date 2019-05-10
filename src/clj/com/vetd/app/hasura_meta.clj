@@ -15,6 +15,7 @@
               [:vetd :categories_by_round] [[:vetd :categories]]              
               [:vetd :responses_by_doc] [[:vetd :responses]]
               [:vetd :response_prompt_by_doc] [[:vetd :responses]]
+              [:vetd :response_prompt] [[:vetd :responses]]
               [:vetd :form_docs] [[:vetd :forms]]}
    :rels [{:tables [:vetd :categories
                     :vetd :rounds_by_category]
@@ -33,7 +34,7 @@
            :fields [:products]
            :cols [:id :round_id]
            :rel :one-many}
-
+          
           {:tables [:vetd :rounds
                     :vetd :orgs]
            :fields [:buyer :rounds-out]
@@ -42,9 +43,33 @@
 
           {:tables [:vetd :rounds
                     :vetd :docs]
-           :fields [:doc :rounds]
+           :fields [:init-doc :rounds]
            :cols [:doc_id :id]
            :rel :one-one}
+
+          {:tables [:vetd :rounds
+                    :vetd :form_templates]
+           :fields [:req-form-template :round]
+           :cols [:req_form_template_id :id]
+           :rel :one-one}
+
+          {:tables [:vetd :round_product
+                    :vetd :rounds]
+           :fields [:rounds :round-product]
+           :cols [:round_id :id]
+           :rel :many-one}
+
+          {:tables [:vetd :round_product
+                    :vetd :products]
+           :fields [:product :round-products]
+           :cols [:product_id :id]
+           :rel :many-one}
+
+          {:tables [:vetd :round_product
+                    :vetd :form_docs]
+           :fields [:vendor-response-form-docs :round-product]
+           :cols [:id :subject]
+           :rel :many-many}
           
           {:tables [:vetd :orgs
                     :vetd :memberships]
@@ -231,6 +256,18 @@
            :fields [:response-prompt-fields]
            :cols [:id :resp_id]
            :rel :one-many}
+
+          {:tables [:vetd :responses
+                    :vetd :response_prompt]
+           :fields [:subject-of-response-prompt]
+           :cols [:id :subject]
+           :rel :one-many}
+
+          {:tables [:vetd :responses
+                    :vetd :response_prompt]
+           :fields [:subject-response-prompt]
+           :cols [:subject :id]
+           :rel :many-one}
           
           {:tables [:vetd :resp_fields
                     :vetd :prompt_fields]
@@ -253,3 +290,4 @@
 
 #_
 (mig/proc-hasura-meta-cfg2 hasura-meta-cfg)
+

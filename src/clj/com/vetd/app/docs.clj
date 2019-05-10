@@ -1,6 +1,6 @@
 (ns com.vetd.app.docs
   (:require [com.vetd.app.db :as db]
-            [com.vetd.app.common :as com]
+            [com.vetd.app.proc-tree :as ptree :refer [tree-assoc-fn]]
             [com.vetd.app.util :as ut]
             [com.vetd.app.hasura :as ha]
             [taoensso.timbre :as log]
@@ -25,14 +25,10 @@
                (handle-doc-creation d# ~handler-args)))
      r#))
 
-(defmacro tree-assoc-fn
-  [key-bindings & body]
-  `(fn [x#]
-     (let [{:keys ~key-bindings :as x#} (assoc x#
-                                               :parent
-                                               (-> x# :parents last))
-           r# (do ~@body)]
-       (apply assoc x# r#))))
+(defn proc-tree
+  [ops {:keys [handler-args] :as v}]
+  (with-doc-handling handler-args
+    (ptree/proc-tree ops v)))
 
 (defn convert-field-val
   [v ftype fsubtype]
@@ -176,7 +172,7 @@
         first)))
 
 (defn insert-response
-  [{:keys [org-id prompt-id notes user-id]}]
+  [{:keys [org-id prompt-id notes user-id subject subject-type]}]
   (let [[id idstr] (ut/mk-id&str)]
     (-> (db/insert! :responses
                     {:id id
@@ -186,7 +182,9 @@
                      :deleted nil
                      :prompt_id prompt-id
                      :notes notes
-                     :user_id user-id})
+                     :user_id user-id
+                     :subject subject
+                     :subject_type subject-type})
         first)))
 
 ;; TODO add sort field??
@@ -259,7 +257,7 @@
                       :updated (ut/now-ts)
                       :deleted nil
                       :prompt_id prompt-id
-                      :fname "New Field"
+                      :fname "value"
                       :list_qm false
                       :descr ""
                       :ftype "s"
@@ -325,7 +323,7 @@
       (insert-form-prompt form-id prompt-id sort'))
     form))
 
-(defn- update-deleted [tbl-kw id]
+(defn update-deleted [tbl-kw id]
   (db/hs-exe! {:update tbl-kw
                :set {:deleted (ut/now-ts)}
                :where [:= :id id]}))
@@ -638,7 +636,7 @@
             :forms
             first)))))
 
-(defn fields->appliable-tree
+(defn fields->proc-tree
   [resp-fields fields]
   (let [fields-by-fname (group-by :fname fields)]
     (vec (for [[k value] resp-fields]
@@ -651,7 +649,7 @@
                                                ftype
                                                fsubtype))})))))
 
-(defn response-prompts->appliable-tree
+(defn response-prompts->proc-tree
   [{:keys [terms prompt-ids]} prompts]
   (let [responses (merge terms prompt-ids)
         grouped-prompts (-> (merge (group-by (comp keyword :term) prompts)
@@ -662,11 +660,11 @@
              (if prompt-id
                {:item {}
                 :children [{:item {:prompt-id prompt-id}
-                             :children (fields->appliable-tree r fields)}]}
+                             :children (fields->proc-tree r fields)}]}
                (throw (Exception. (str "Could not find prompt with term or id: " k)))))))))
 
 ;; TODO set responses.subject
-(defn doc->appliable-tree
+(defn doc->proc-tree
   [{:keys [data dtype dsubtype update-doc-id] :as d}]
   (if-let [{:keys [id ftype fsubtype prompts]} (doc->appliable--find-form d)]
     {:handler-args d
@@ -679,7 +677,7 @@
                     :dsubtype fsubtype}
                    (when update-doc-id
                      {:id update-doc-id}))
-     :children (response-prompts->appliable-tree data
+     :children (response-prompts->proc-tree data
                                                  prompts)}
     (throw (Exception. (str "Couldn't find form by querying with: "
                             {:ftype dtype
@@ -687,53 +685,12 @@
                              :doc-id update-doc-id})))))
 
 
-(declare apply-tree)
 
-(defn apply-tree-child-reducer
-  [m v' agg [k vs]]
-  (if-let [mk (and m (m k))]
-    (assoc agg
-           k
-           (mapv #(dissoc (apply-tree mk
-                                    (merge v' %))
-                          :parents)
-                 vs))
-    agg))
-
-(defn apply-tree-map
-  [m {:keys [item children parents] :as v}]
-  (let [parents' (conj (or parents [])
-                       item)
-        v' (-> v
-               (dissoc :item
-                       :children)
-               (assoc :parents parents'))]
-    (assoc v
-           :children
-           (reduce (partial apply-tree-child-reducer
-                            m
-                            v')
-                   {}
-                   (if (map? children)
-                     children
-                     {(ffirst m) children})))))
-
-(defn apply-tree
-  [[& ops] {:keys [handler-args] :as v}]
-  (with-doc-handling handler-args
-    (loop [[head & tail] (flatten ops)
-           v' v]
-      (if head
-        (recur (flatten tail)
-               (if (map? head)
-                 (apply-tree-map head v')
-                 (head v')))
-        v'))))
 
 (defn create-doc [d]
   (->> d
-       doc->appliable-tree
-       (apply-tree
+       doc->proc-tree
+       (proc-tree
         [(tree-assoc-fn [item]
                         [:item (insert-doc item)])
          {:doc-responses [{:response
@@ -818,8 +775,8 @@
 ;; TODO support reusing existing responses
 (defn update-doc [d]
   (->> d
-       doc->appliable-tree
-       (apply-tree
+       doc->proc-tree
+       (proc-tree
         [(tree-assoc-fn [item children]
                         (-> item
                             ha/walk-clj-kw->sql-field
@@ -846,3 +803,101 @@
                                                :item
                                                :id
                                                (insert-doc-response (:id parent)))])]}])))
+
+(defn round-init-doc-id->create-form-proc-tree
+  [round-init-doc-id]
+  (let [{:keys [response-prompts] :as doc} (-> [[:docs {:id round-init-doc-id}
+                                                 [:title
+                                                  [:response-prompts
+                                                   {:prompt-term "rounds/requirements"}
+                                                   [[:fields [:id :sval :idx]]]]]]]
+                                               ha/sync-query
+                                               :docs
+                                               first)]
+    {:item doc
+     :children (->> response-prompts first :fields
+                    (map (fn [field] {:item field})))}))
+
+(defn get-prompts-by-sval [sval]
+  (-> [[:prompts
+        {:prompt sval} 
+        [:id]]]
+      ha/sync-query
+      :prompts))
+
+;; TODO the prompt-id for existing prompts should be present in field jval
+(defn group-by-prompt-exists
+  [prompts]
+  (ut/$- ->> prompts
+         (map (fn [{:keys [item]}]
+                {:item
+                 (merge (-> item
+                            :sval
+                            get-prompts-by-sval
+                            first)
+                        (dissoc item :id))}))
+         (group-by (comp nil? :id :item))
+         (clojure.set/rename-keys $
+                                  {false :prompt-exists
+                                   true :prompt-new})))
+
+(defn create-round-req-prompt&fields [requirement-text]
+  (let [{:keys [id] :as prompt} (insert-prompt {:prompt requirement-text})]
+    (insert-prompt-field {:prompt-id id
+                          :fname "value"
+                          :ftype "s"
+                          :fsubtype "multi"
+                          :list? false})
+    prompt))
+
+(defn create-form-template-from-round-doc
+  [round-id round-init-doc-id]
+  (->> round-init-doc-id
+       round-init-doc-id->create-form-proc-tree
+       (proc-tree
+        [(tree-assoc-fn [item children]
+                        [:item (-> item
+                                   (assoc :ftype "round-product-requirements"
+                                          :fsubtype (str "round-product-requirements-" round-id))
+                                   insert-form-template)
+                         :children (group-by-prompt-exists children)])
+         {:prompt-exists [] ;; [] acts like `identity`
+          :prompt-new [(tree-assoc-fn [item]
+                                      (let [{:keys [sval idx]} item]
+                                        [:item (-> sval
+                                                   create-round-req-prompt&fields
+                                                   (assoc :idx idx))]))]}
+         (tree-assoc-fn [children]
+                        [:children (->> children vals (apply concat))])
+         {:prompt-all [(tree-assoc-fn [item children parent]
+                                      [:item (insert-form-template-prompt (:id parent)
+                                                                          (:id item)
+                                                                          (:idx item))])]}])
+       :item))
+
+
+(defn upsert-prompts-to-form
+  [prompts {form-id :id existing :prompts}]
+  (let [id-set (->> existing
+                    (map :id)
+                    set)]
+    (doseq [{prompt-id :id sort' :sort} prompts]
+      (when-not (id-set prompt-id)
+        (insert-form-prompt form-id prompt-id sort')))))
+
+(defn merge-template-to-forms
+  [req-form-template-id]
+  (let [prompts (->> [[:form-templates {:id req-form-template-id}
+                       [[:prompts [:id :sort]]]]]
+                     ha/sync-query
+                     :form-templates
+                     first
+                     :prompts)]
+    (->> [[:forms {:form-template-id req-form-template-id}
+           [:id
+            [:prompts [:id]]]]]
+         ha/sync-query
+         :forms
+         (map (partial upsert-prompts-to-form prompts))
+         doall)))
+

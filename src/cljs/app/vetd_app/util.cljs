@@ -175,11 +175,9 @@
       :else (println :error "in the reg-sub for" query-id ", the input-signals function returns:" signals))
     dereffed-signals))
 
-
-
 (defn reg-sub-special
   [query-id inputs-fn init-fn]
-  (let [err-header     (str "reg-sub-special for " query-id ", ")]
+  (let [err-header (str "reg-sub-special for " query-id ", ")]
     (rf-reg/register-handler
      :sub
      query-id
@@ -255,6 +253,13 @@
    (fn [i x] (with-meta x {:key i}))
    xs))
 
+(defn as-dropdown-options
+  "Given a coll of String options, return a coll maps that ui/Dropdown expects."
+  [options]
+  (map #(hash-map :key %
+                  :text %
+                  :value %)
+       options))
 
 ;;;; Base 31/36 idstr calculation
 (defn long-floor-div

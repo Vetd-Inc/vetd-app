@@ -110,21 +110,23 @@
      [:> ui/StepDescription "Final decision"]]]])
 
 (defn c-setup-call-button
-  [{:keys [id pname] :as product} {:keys [oname] :as vendor}]
-  (fn []
-    [:> ui/Popup
-     {:content (str "Let us setup a call for you with " oname
-                    " to discuss " pname ".")
-      :header "Set Up a Call"
-      :position "bottom left"
-      :trigger (r/as-element
-                [:> ui/Button {:onClick #(rf/dispatch [:b/setup-call id pname])
-                               :color "lightblue"
-                               :fluid true
-                               :icon true
-                               :labelPosition "left"}
-                 "Set Up a Call"
-                 [:> ui/Icon {:name "left call"}]])}]))
+  [{:keys [id pname] :as product}
+   {:keys [oname] :as vendor}
+   props]
+  [:> ui/Popup
+   {:content (str "Let us setup a call for you with " oname
+                  " to discuss " pname ".")
+    :header "Set Up a Call"
+    :position "bottom left"
+    :trigger (r/as-element
+              [:> ui/Button (merge {:onClick #(rf/dispatch [:b/setup-call id pname])
+                                    :color "lightblue"
+                                    :fluid true
+                                    :icon true
+                                    :labelPosition "left"}
+                                   props)
+               "Set Up a Call"
+               [:> ui/Icon {:name "left call"}]])}])
 
 (defn c-ask-a-question-button
   [{:keys [id pname] :as product} {:keys [oname] :as vendor}]

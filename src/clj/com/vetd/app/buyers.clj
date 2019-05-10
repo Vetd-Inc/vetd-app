@@ -2,6 +2,7 @@
   (:require [com.vetd.app.db :as db]
             [com.vetd.app.hasura :as ha]
             [com.vetd.app.auth :as auth]
+            [com.vetd.app.rounds :as rounds]
             [com.vetd.app.common :as com]
             [com.vetd.app.util :as ut]
             [com.vetd.app.docs :as docs]
@@ -22,9 +23,12 @@
     (let [ids (db/hs-query {:select [[:p.id :pid] [:o.id :vid]]
                             :from [[:products :p]]
                             :join [[:orgs :o] [:= :o.id :p.vendor_id]]
-                            :where [:or
-                                    [(keyword "~*") :p.pname (str ".*?" q ".*")]
-                                    [(keyword "~*") :o.oname (str ".*?" q ".*")]]
+                            :where [:and
+                                    [:= :p.deleted nil]
+                                    [:= :o.deleted nil]
+                                    [:or
+                                     [(keyword "~*") :p.pname (str ".*?\\m" q ".*")]
+                                     [(keyword "~*") :o.oname (str ".*?\\m" q ".*")]]]
                             :limit 30})
           pids (map :pid ids)
           vids (->> ids
@@ -41,7 +45,9 @@
     (mapv :id
           (db/hs-query {:select [:id]
                         :from [:categories]
-                        :where [(keyword "~*") :cname (str ".*?" q ".*")]
+                        :where [:and
+                                [:= :deleted nil]
+                                [(keyword "~*") :cname (str ".*?" q ".*")]]
                         :limit 5}))))
 
 (defn select-rounds-by-ids
@@ -87,18 +93,6 @@
                      :updated (ut/now-ts)})
         first)))
 
-(defn insert-round-product
-  [round-id prod-id]
-  (let [[id idstr] (ut/mk-id&str)]
-    (-> (db/insert! :round_product
-                    {:id id
-                     :idstr idstr
-                     :round_id round-id
-                     :product_id prod-id
-                     :created (ut/now-ts)
-                     :updated (ut/now-ts)})
-        first)))
-
 (defn insert-round-category
   [round-id category-id]
   (let [[id idstr] (ut/mk-id&str)]
@@ -115,7 +109,8 @@
   [buyer-id title eid etype]
   (let [{:keys [id] :as r} (insert-round buyer-id title)]
     (case etype
-      :product (insert-round-product id eid)
+      ;; TODO call sync-round-vendor-req-forms too, once we're ready
+      :product (rounds/invite-product-to-round eid id) 
       :category (insert-round-category id eid))
     (try
       (let [msg (with-out-str
@@ -195,6 +190,58 @@ Product: '%s'"
                     (-> from-user-id auth/select-user-by-id :uname) ; buyer user name
                     (product-id->name prod-id)))) ; product name
 
+(defn set-round-product-result [round-id product-id result reason]
+  "Set the result of a product in a round (0 - disqualified, 1 - winner)."
+  (do (let [id (->> [[:round-product {:round-id round-id
+                                      :product-id product-id
+                                      :deleted nil}
+                      [:id]]]
+                    ha/sync-query
+                    :round-product
+                    first
+                    :id)]
+        (when id
+          (db/update-any! {:id id
+                           :result result
+                           :reason reason}
+                          :round_product)))
+      (when (= 1 result) ; declaring a winner
+        (let [rps (->> [[:round-product {:round-id round-id
+                                         :result nil
+                                         :deleted nil}
+                         [:id]]]
+                       ha/sync-query
+                       :round-product)]
+          ;; disqualify any live products in the round
+          (doseq [{:keys [id]} rps]
+            (db/update-any! {:id id
+                             :result 0
+                             :reason "A different product was declared winner."}
+                            :round_product))
+          ;; update round status
+          (db/update-any! {:id round-id
+                           :status "complete"}
+                          :rounds)))))
+
+(defn add-requirement-to-round
+  [round-id requirement-text]
+  (let [req-form-template-id (->> [[:rounds {:id round-id
+                                             :deleted nil}
+                                    [:req-form-template-id]]]
+                                  ha/sync-query
+                                  :rounds
+                                  first
+                                  :req-form-template-id)
+        {:keys [id]} (-> requirement-text
+                         docs/get-prompts-by-sval
+                         first
+                         (or (docs/create-round-req-prompt&fields requirement-text)))]
+    (docs/insert-form-template-prompt req-form-template-id
+                                      id
+                                      ;; TODO dynamically determine idx??
+                                      0)
+    (docs/merge-template-to-forms req-form-template-id)))
+
 ;; TODO there could be multiple preposals/rounds per buyer-vendor pair
 
 ;; TODO use session-id to verify permissions!!!!!!!!!!!!!
@@ -237,52 +284,103 @@ Product: '%s'"
   [{:keys [product-id message round-id requirement-text buyer-id]} ws-id sub-fn]
   (send-ask-question-req product-id message round-id requirement-text buyer-id))
 
+(defmethod com/handle-ws-inbound :b/round.add-requirement
+  [{:keys [round-id requirement-text]} ws-id sub-fn]
+  (add-requirement-to-round round-id requirement-text))
+
 (defmethod com/handle-ws-inbound :save-doc
   [{:keys [data ftype update-doc-id from-org-id] :as req} ws-id sub-fn]
   (if (nil? update-doc-id)
     (docs/create-doc req)
     (docs/update-doc req)))
 
+;; result - 0 (disqualify), 1 (winner), nil (undisqualify, etc...)
+(defmethod com/handle-ws-inbound :b/round.declare-result
+  [{:keys [round-id product-id buyer-id result reason] :as req} ws-id sub-fn]
+  (set-round-product-result round-id product-id result reason))
+
+(defmethod com/handle-ws-inbound :save-response
+  [{:keys [subject subject-type term user-id round-id org-id fields] :as req} ws-id sub-fn]
+  (when-not (= term :round.response/rating)
+    (throw (Exception. (format "NOT IMPLEMENTED: term = %s"
+                               term))))
+  (let [rating-prompt-id 1093760230399 ;; HACK -- hard-coded id
+        rating-prompt-field-id 1093790890400]
+    (db/update-deleted-where :responses
+                             [:and
+                              [:= :prompt_id rating-prompt-id]
+                              [:= :subject subject]])
+    (let [{:keys [value]} fields
+          {:keys [id]} (-> req
+                           (assoc :prompt-id rating-prompt-id)
+                           docs/insert-response)]
+      (docs/insert-response-field id
+                                  {:prompt-field-id rating-prompt-field-id
+                                   :idx 0
+                                   :sval nil
+                                   :nval value
+                                   :dval nil
+                                   :jval nil}))))
+
+#_
+(com/handle-ws-inbound {:cmd :save-response
+                        :subject 1
+                        :subject-type "form"
+                        :term :round.response/rating
+                        :user-id 22
+                        :round-id 3
+                        :fields {:value 123}}
+                       nil nil)
+
+(defn notify-round-init-form-completed
+  [doc-id]
+  (let [round (-> [[:docs {:id doc-id}
+                    [[:rounds
+                      [:id :created
+                       [:buyer [:oname]]
+                       [:products [:pname]]
+                       [:categories [:cname]]
+                       [:init-doc
+                        [:id
+                         [:response-prompts {:ref-deleted nil}
+                          [:id :prompt-id :prompt-prompt :prompt-term
+                           [:response-prompt-fields
+                            [:id :prompt-field-fname :idx
+                             :sval :nval :dval]]]]]]]]]]]
+                  ha/sync-query
+                  vals
+                  ffirst
+                  :rounds)]
+    (com/sns-publish
+     :ui-misc
+     "Vendor Round Initiation Form Completed"
+     (str "Vendor Round Initiation Form Completed\n\n"
+          (str "Buyer (Org): " (-> round :buyer :oname)
+               "\nProducts: " (->> round :products (map :pname) (interpose ", ") (apply str))
+               "\nCategories: " (->> round :categories (map :cname) (interpose ", ") (apply str))
+               "\n-- Form Data --"
+               (apply str
+                      (for [rp (-> round :init-doc :response-prompts)]
+                        (str "\n" (:prompt-prompt rp) ": "
+                             (->> rp :response-prompt-fields (map :sval) (interpose ", ") (apply str))))))))))
+
 ;; additional side effects upon creating a round-initiation doc
 (defmethod docs/handle-doc-creation :round-initiation
   [{:keys [id]} {:keys [round-id]}]
-  (try
-    (db/update-any! {:id round-id
-                     :doc_id id
-                     :status "in-progress"}
-                    :rounds)
-    (catch Throwable t
-      (log/error t)))
-  (try
-    (let [round (-> [[:docs {:id id}
-                      [[:rounds
-                        [:id :created
-                         [:buyer [:oname]]
-                         [:products [:pname]]
-                         [:categories [:cname]]
-                         [:doc
-                          [:id
-                           [:response-prompts {:ref-deleted nil}
-                            [:id :prompt-id :prompt-prompt :prompt-term
-                             [:response-prompt-fields
-                              [:id :prompt-field-fname :idx
-                               :sval :nval :dval]]]]]]]]]]]
-                    ha/sync-query
-                    vals
-                    ffirst
-                    :rounds)]
-      (com/sns-publish
-       :ui-misc
-       "Vendor Round Initiation Form Completed"
-       (str "Vendor Round Initiation Form Completed\n\n"
-            (str "Buyer (Org): " (-> round :buyer :oname)
-                 "\nProducts: " (->> round :products (map :pname) (interpose ", ") (apply str))
-                 "\nCategories: " (->> round :categories (map :cname) (interpose ", ") (apply str))
-                 "\n-- Form Data --"
-                 (apply str
-                        (for [rp (-> round :doc :response-prompts)]
-                          (str "\n" (:prompt-prompt rp) ": "
-                               (->> rp :response-prompt-fields (map :sval) (interpose ", ") (apply str)))))))))
-    (catch Throwable t)))
-
-
+  (let [{form-template-id :id} (try (docs/create-form-template-from-round-doc round-id id)
+                                    (catch Throwable t
+                                      (log/error t)))]
+    
+    ;; TODO invite pre-selected product, if there is one
+    (try
+      (db/update-any! {:id round-id
+                       :doc_id id
+                       :req_form_template_id form-template-id
+                       :status "in-progress"}
+                      :rounds)
+      (catch Throwable t
+        (log/error t)))
+    (try
+      (notify-round-init-form-completed id)
+      (catch Throwable t
+        (log/error t)))))
