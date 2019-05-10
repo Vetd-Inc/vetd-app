@@ -342,7 +342,6 @@
       (let [{:keys [req-prompt-id req-prompt-text product-id pname
                     resp-id resp-text resp-rating]
              :as modal-response} @modal-response&]
-        (println @modal-showing?& " " resp-rating)
         [:> ui/Modal {:open @modal-showing?&
                       :on-close #(reset! modal-showing?& false)
                       :size "tiny"
@@ -433,7 +432,8 @@
                                  mousedown (fn [e]
                                              (let [this (.-currentTarget e)
                                                    target (.-target e)]
-                                               (when (.contains (.-classList target) "reorder-handle")
+                                               (println (str (array-seq (.-classList target))))
+                                               (when (.contains (.-classList target) "round-product")
                                                  (reset! col this)
                                                  (reset! mousedown? true)
                                                  (reset! x-at-mousedown (.-pageX e))
@@ -446,19 +446,20 @@
                                                      x-displacement (- (.-pageX e)
                                                                        @x-at-mousedown)]
                                                  (.preventDefault e)
-                                                 (when (> (Math/abs (- x-displacement @last-x-displacement)) 1)
-                                                   (if (< x-displacement @last-x-displacement)
-                                                     (.add (.-classList this) "reordering-left")
-                                                     (.remove (.-classList this) "reordering-left"))
-                                                   (reset! last-x-displacement x-displacement))
-                                                 (aset (.-style @col) "transform" (str "translateX(" (* 2 x-displacement) "px)")))))
+                                                 #_(when (> (Math/abs (- x-displacement @last-x-displacement)) 1)
+                                                     (if (< x-displacement @last-x-displacement)
+                                                       (.add (.-classList this) "reordering-left")
+                                                       (.remove (.-classList this) "reordering-left"))
+                                                     (reset! last-x-displacement x-displacement))
+                                                 (aset (.-style @col) "transform" (str "translateX(" (* 2 x-displacement) "px) scale(1.015)")))))
                                  mouseup-or-leave (fn [e]
                                                     (when @col
                                                       (let [this (.-currentTarget e)]
                                                         (reset! mousedown? false)
                                                         (aset (.-style @col) "transform" (str "translateX(0px)"))
                                                         (.remove (.-classList this) "reordering")
-                                                        (.remove (.-classList this) "reordering-left"))))]
+                                                        ;; (.remove (.-classList this) "reordering-left")
+                                                        )))]
                              {:on-mouse-down mousedown
                               :on-mouse-move mousemove
                               :on-mouse-up mouseup-or-leave
@@ -476,8 +477,8 @@
                                          [:b/nav-product-detail product-idstr]))}
                   pname]
                  [c-declare-winner-button round product (:result rp)]
-                 [c-disqualify-button round product (:result rp)]
                  [c-setup-call-button round product vendor (:result rp)]
+                 [c-disqualify-button round product (:result rp)]
                  #_[:> ui/Button {:class "reorder-handle"
                                   :icon "move"
                                   ;; :color "white"

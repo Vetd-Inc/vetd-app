@@ -359,7 +359,7 @@ textarea {
 }
 
 /* Round Grid */
-$cell-width: 205px;
+$cell-width: 220px;
 $cell-height: 201px;
 
 .round-grid {
@@ -378,24 +378,30 @@ $cell-height: 201px;
     width: $cell-width;
     flex: 0 0 auto;
     transition: transform 0.3s 0s ease-out;
-    margin-left: 7px;
+    margin-left: 14px;
+
+    // box-shadow: 0 -50px 125px 50px #11526d inset !important;
+    background-image: radial-gradient(at center 100px, #fafafa 0px, #f2f2f2 120px);
+    background-repeat: no-repeat;
+
+    
+    border-radius: 4px;
+    padding-left: 5px;
+    padding-right: 5px;
+    
     
     &:first-of-type {
       margin-left: 6px;
     }
     &.reordering {
-      transition: none;
       z-index: 999;
-
-      .round-product, .cell {
-        transition: transform 0.1s 0s linear !important;
-        transform: rotate(4deg);
-      }
+      // transition: transform 0.1s 0s linear !important;
+      transition: none !important;
+      // transform: rotate(4deg);
+      transform: scale(1.015);
     }
     &.reordering-left {
-      .round-product, .cell {
-        transform: rotate(-4deg);
-      }
+      // transform: rotate(-4deg);
     }
 
 
@@ -404,7 +410,8 @@ $cell-height: 201px;
       height: 84px;
       
       text-align: center;
-      background: $bg-color;
+      
+      // background: $bg-color;
       box-shadow: none !important;
       border: none !important;
       font-size: 14px;
