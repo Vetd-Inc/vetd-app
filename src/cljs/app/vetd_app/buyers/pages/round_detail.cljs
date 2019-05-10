@@ -282,15 +282,23 @@
                                                                   @reason]))}
                                     "Disqualify"])}]]]))
           :trigger (r/as-element
-                    [:> ui/Button {:icon "ban"
+                    [:> ui/Popup
+                     {:content "Disqualify"
+                      :position "bottom center"
+                      :trigger (r/as-element
+                                [:> ui/Button {:icon "ban"
+                                               :basic true
+                                               :size "mini"
+                                               :disabled (= 1 result)
+                                               :on-click #(swap! popup-open? not)}])}])}]
+        [:> ui/Popup
+         {:content "Undo Disqualify"
+          :position "bottom center"
+          :trigger (r/as-element
+                    [:> ui/Button {:icon "undo"
                                    :basic true
-                                   ;; :color "white"
-                                   :size "mini"
-                                   :disabled (= 1 result)}])}]
-        [:> ui/Button {:icon "undo"
-                       :basic true
-                       :on-click #(rf/dispatch [:b/round.undo-disqualify (:id round) (:id product)])
-                       :size "mini"}]))))
+                                   :on-click #(rf/dispatch [:b/round.undo-disqualify (:id round) (:id product)])
+                                   :size "mini"}])}]))))
 
 (defn c-action-button
   "Component to display small icon button for grid cell actions."
