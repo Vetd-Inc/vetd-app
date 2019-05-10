@@ -494,37 +494,43 @@
                             resp-id :resp-id
                             resp-text :sval} resp]]
                  ^{:key (str req-prompt-id "-" product-id)}
-                 [:div.cell {:class (str (when product-disqualified? "disqualified" )
-                                         (when (= 1 resp-rating) "response-approved ")
-                                         (when (= 0 resp-rating) "response-disapproved "))
-                             :on-mouse-down #(reset! cell-click-disabled? false)
-                             :on-click #(when-not @cell-click-disabled?
-                                          (show-modal {:req-prompt-id req-prompt-id
-                                                       :req-prompt-text req-prompt-text
-                                                       :product-id product-id
-                                                       :pname pname
-                                                       :resp-id resp-id
-                                                       :resp-text resp-text
-                                                       :resp-rating resp-rating}))}
-                  [:div.text (if (not-empty resp-text)
-                               (util/truncate-text resp-text 150)
-                               (if (= status "complete")
-                                 [c-no-response]
-                                 [c-waiting-for-response]))]
-                  [:div.actions
-                   [c-action-button {:props {:class "action-button question"}
-                                     :icon "chat outline" ; on-click just pass through
-                                     :popup-text "Ask Question"}]
-                   [c-action-button {:props {:class "action-button approve"}
-                                     :on-click #(do (.stopPropagation %)
-                                                    (rf/dispatch [:b/round.rate-response resp-id 1]))
-                                     :icon "thumbs up outline"
-                                     :popup-text (if (= 1 resp-rating) "Approved" "Approve")}]
-                   [c-action-button {:props {:class "action-button disapprove"}
-                                     :on-click #(do (.stopPropagation %)
-                                                    (rf/dispatch [:b/round.rate-response resp-id 0]))
-                                     :icon "thumbs down outline"
-                                     :popup-text (if (= 0 resp-rating) "Disapproved" "Disapprove")}]]])]))]
+                 [:div.cell-wrapper
+                  [:div.cell {:class (str (when product-disqualified? "disqualified" )
+                                          (when (= 1 resp-rating) "response-approved ")
+                                          (when (= 0 resp-rating) "response-disapproved "))
+                              :on-mouse-down #(reset! cell-click-disabled? false)
+                              :on-click #(when-not @cell-click-disabled?
+                                           (let [this (.-currentTarget %)]
+                                             (.add (.-classList this) "flipped"))
+                                           #_(show-modal {:req-prompt-id req-prompt-id
+                                                          :req-prompt-text req-prompt-text
+                                                          :product-id product-id
+                                                          :pname pname
+                                                          :resp-id resp-id
+                                                          :resp-text resp-text
+                                                          :resp-rating resp-rating}))}
+                   [:div.face.front
+                    [:div.text (if (not-empty resp-text)
+                                 (util/truncate-text resp-text 150)
+                                 (if (= status "complete")
+                                   [c-no-response]
+                                   [c-waiting-for-response]))]
+                    [:div.actions
+                     [c-action-button {:props {:class "action-button question"}
+                                       :icon "chat outline" ; on-click just pass through
+                                       :popup-text "Ask Question"}]
+                     [c-action-button {:props {:class "action-button approve"}
+                                       :on-click #(do (.stopPropagation %)
+                                                      (rf/dispatch [:b/round.rate-response resp-id 1]))
+                                       :icon "thumbs up outline"
+                                       :popup-text (if (= 1 resp-rating) "Approved" "Approve")}]
+                     [c-action-button {:props {:class "action-button disapprove"}
+                                       :on-click #(do (.stopPropagation %)
+                                                      (rf/dispatch [:b/round.rate-response resp-id 0]))
+                                       :icon "thumbs down outline"
+                                       :popup-text (if (= 0 resp-rating) "Disapproved" "Disapprove")}]]]
+                   [:div.face.back
+                    "back"]]])]))]
          [c-cell-modal id modal-showing?& modal-response&]]
         ;; no products in round yet
         [:> ui/Segment {:class "detail-container"
