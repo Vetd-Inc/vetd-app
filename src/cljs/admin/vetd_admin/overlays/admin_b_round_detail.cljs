@@ -37,7 +37,8 @@
             product-options& (when (> (count search-term) 3)
                                (rf/subscribe [:gql/q
                                               {:queries
-                                               [[:products {:_where {:pname {:_ilike (str search-term "%")}}}
+                                               [[:products {:_where {:pname {:_ilike (str search-term "%")}}
+                                                            :deleted nil}
                                                  [:id :pname
                                                   [:vendor
                                                    [:id :oname]]]]]}]))
