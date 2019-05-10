@@ -458,6 +458,7 @@ $cell-height: 201px;
 
       &.winner {
         background: linear-gradient(to right, #32abde, #6dccce) !important;
+        border-radius: 4px;
 
         .name {
           color: white !important;
