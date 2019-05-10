@@ -1,7 +1,9 @@
 @import 'semantic-ui/globals/_variables';
 
+$bg-color: #fafafa;
+
 body {
-  background: #fafafa;
+  background: $bg-color;
   font-size: 14px;
   font-weight: 300;
   color: #444;
@@ -357,7 +359,7 @@ textarea {
 }
 
 /* Round Grid */
-$cell-width: 210px;
+$cell-width: 205px;
 $cell-height: 201px;
 
 .round-grid {
@@ -368,7 +370,7 @@ $cell-height: 201px;
   box-sizing: border-box;
   position: relative;
   padding-top: 14px;
-  // since the requirements are fixed position
+  // since the header row is in fixed position
   // this keeps them from overflowing
   clip-path: inset(-100px 0px 0px 0px);
 
@@ -376,6 +378,7 @@ $cell-height: 201px;
     width: $cell-width;
     flex: 0 0 auto;
     transition: transform 0.3s 0s ease-out;
+    margin-left: 7px;
     
     &:first-of-type {
       margin-left: 6px;
@@ -384,42 +387,94 @@ $cell-height: 201px;
       transition: none;
       z-index: 999;
 
-      .requirement, .cell {
+      .round-product, .cell {
         transition: transform 0.1s 0s linear !important;
         transform: rotate(4deg);
       }
     }
     &.reordering-left {
-      .requirement, .cell {
+      .round-product, .cell {
         transform: rotate(-4deg);
       }
     }
-    .requirement {
-      width: $cell-width - 7px;
-      height: 38px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
+
+
+    .round-product {
+      width: $cell-width;
+      height: 84px;
+      
       text-align: center;
-      background: white;
-      box-shadow: 0 2px 14px 0 rgba(50,50,50,0.1) !important;
-      border-radius: 4px;
+      background: $bg-color;
+      box-shadow: none !important;
+      border: none !important;
       font-size: 14px;
-      padding: 0 7px;
+      padding: 14px 7px;
       cursor: grab;
       user-select: none; 
+
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      align-items: center;
+
+      .button {
+        margin-left: 7px;
+
+        &:first-of-type {
+          margin-left: 0px;
+        }
+      }
+      
+      .name {
+        display: block;
+        // height: 37px;
+        margin-bottom: 9px;
+        font-size: 18px !important;
+        font-weight: 600 !important;
+        line-height: 23px !important;
+        color: #444 !important;
+
+        &:hover {
+          color: #888 !important;
+        }
+      }
+
+      &.long {
+        padding-top: 8px;
+        
+        .name {
+          font-size: 14px !important;
+          line-height: 17px !important;
+          // margin-bottom: 7px !important;
+        }
+      }
+
+      &.disqualified {
+
+        .name {
+          opacity: 0.5;
+        }
+      }
+
+      &.winner {
+        background: linear-gradient(to right, #32abde, #6dccce) !important;
+
+        .name {
+          color: white !important;
+        }
+      }
     }
   }
   
   .cell {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     height: $cell-height;
     padding: 14px;
-    margin: 14px 7px 14px 0;
+    margin: 0 0 2px 0;
     box-shadow: 0 2px 14px 0 rgba(50,50,50,0.1) !important;
     border: none !important;
     border-radius: 4px;
@@ -428,7 +483,7 @@ $cell-height: 201px;
     font-weight: 400;
     transition: transform .05s ease-out;
     transform: scale(0.98);
-
+    
     .text {
       flex: 1;
       display: flex;
@@ -449,6 +504,7 @@ $cell-height: 201px;
     
     &:hover {
       transform: scale(1);
+      z-index: 5;
       
       .action-button {
         opacity: 1;
@@ -457,36 +513,6 @@ $cell-height: 201px;
     &.disqualified {
       opacity: 0.35;
     }
-    &.response-approved {
-      // box-shadow: 0 1px 3px 0 rgba(0,150,0,0.7) !important;
-      // border: 1px solid rgb(0, 150, 0) !important;
-
-      .approve {
-        opacity: 1;
-
-        box-shadow: 0 0 0px 1px #4ec2c4; //rgba(0, 150, 0, 0.8);
-        color: #4ec2c4 !important;
-      }
-    }
-    &.response-disapproved {
-      // box-shadow: 0 1px 10px 0 rgba(190,0,0,0.7) !important;
-      // border: 1px solid rgb(150, 0, 0) !important;
-      // background: rgba(255,220,220,1);
-      // transform: rotateY(190deg);
-      // perspective-origin: 0 0;
-
-      .disapprove {
-        opacity: 1;
-
-        // option 1
-        // background: rgba(230, 0, 0, 0.7) !important;
-        // color: white !important;
-
-        // option 2
-        box-shadow: 0 0 0px 1px rgba(230, 0, 20, 0.8);
-        color: rgba(230, 0, 0, 0.8) !important;
-      }
-    }
   }
 
   // draggable has to do with dragging to *scroll* (not to reorder)
@@ -494,7 +520,7 @@ $cell-height: 201px;
     cursor: ew-resize;
 
     &.dragging,
-    &.dragging .requirement,
+    &.dragging .round-product,
     &.dragging .cell, {
       cursor: grabbing;
     }
@@ -504,22 +530,71 @@ $cell-height: 201px;
       cursor: pointer;
     }
   }
-  // if the requirements header is in sticky mode
+  // if the header row is in sticky mode
   &.fixed {
-    margin-top: 38px;
+    margin-top: 84px;
   }
-  &.fixed .requirement {
+  &.fixed .round-product {
     position: fixed;
     top: 0;
     z-index: 999;
     background: white;
     box-shadow: 0 2px 14px 0 rgba(50,50,50,0.1) !important;
-    border-top-left-radius: 0;
-    border-top-right-radius: 0;
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
   }
   // &:hover .column:not(:hover) {
   //   opacity: 0.6;
   // }
+}
+
+.response-approved {
+  .approve.ui.button {
+    opacity: 1 !important;
+    box-shadow: 0 0 0px 1px #4ec2c4 !important;
+    color: #4ec2c4 !important;
+  }
+}
+.response-disapproved {
+  .disapprove.ui.button {
+    opacity: 1 !important;
+    box-shadow: 0 0 0px 1px rgba(230, 0, 20, 0.8) !important;
+    color: rgba(230, 0, 0, 0.8) !important;
+  }
+}
+
+
+.requirements-heading {
+  text-align: left;
+  font-size: 24px;
+  background: transparent;
+  font-weight: 600;
+}
+
+.requirement.segment.ui {
+  display: flex;
+  flex-direction: column;
+  
+  align-items: flex-start;
+  
+  justify-content: center;
+  height: $cell-height;
+  padding: 14px 14px 14px 14px;
+  margin-top: 2px !important;
+  margin-bottom: 0px !important;
+  font-size: 14px;
+  font-weight: 600;
+  
+  // text-align: center;
+  text-align: left;
+  
+  background: transparent !important;
+  box-shadow: none !important;
+
+  &:first-of-type {
+    margin-top: 14px !important;
+    // margin-bottom: 0px !important;    
+  }
 }
 
 #round-title-container {
@@ -542,45 +617,7 @@ $cell-height: 201px;
   margin-left: 20px;
   margin-bottom: 0;
 }
-.round-product {
 
-  .name {
-    display: block;
-    height: 37px;
-    font-size: 18px !important;
-    font-weight: 600 !important;
-    line-height: 23px !important;
-    color: #444 !important;
-
-    &:hover {
-      color: #888 !important;
-    }
-  }
-
-  &.long {
-    padding-top: 8px;
-    
-    .name {
-      font-size: 14px !important;
-      margin-bottom: 7px !important;
-    }
-  }
-
-  &.disqualified {
-
-    .name {
-      opacity: 0.5;
-    }
-  }
-
-  &.winner {
-    background: linear-gradient(to right, #32abde, #6dccce) !important;
-
-    .name {
-      color: white !important;
-    }
-  }
-}
 
 /* Loading Spinner */
 div.spinner {
