@@ -390,9 +390,12 @@
 
 (def cell-click-disabled? (r/atom false))
 (def reverse-scroll-drag? (r/atom false))
+;; product id's in sort order
+(def products-order& (r/atom []))
 
-(defn c-column
-  [{:keys [id status] :as round}
+(defn c-column*
+  [index
+   {:keys [id status] :as round}
    {:keys [prompts] :as req-form-template}
    rp
    show-modal-fn]
@@ -403,42 +406,8 @@
          preposals :docs
          :as product} (:product rp)
         product-disqualified? (= 0 (:result rp))]
-    [:div.column (let [mousedown? (atom false)
-                       x-at-mousedown (atom nil)
-                       col (atom nil)
-                       col-pos-x-at-mousedown (atom nil)
-                       last-x-displacement (atom 0)
-                       mousedown (fn [e]
-                                   (let [this (.-currentTarget e)
-                                         target (.-target e)]
-                                     (println (str (array-seq (.-classList target))))
-                                     (when (or (.contains (.-classList target) "round-product")
-                                               (empty? (array-seq (.-classList target))))
-                                       (reset! col this)
-                                       (reset! mousedown? true)
-                                       (reset! x-at-mousedown (.-pageX e))
-                                       (reset! col-pos-x-at-mousedown (.-offsetLeft this))
-                                       (reset! reverse-scroll-drag? true)
-                                       (.add (.-classList this) "reordering"))))
-                       mousemove (fn [e]
-                                   (when @mousedown?
-                                     (let [this (.-currentTarget e)
-                                           x-displacement (- (.-pageX e)
-                                                             @x-at-mousedown)]
-                                       (.preventDefault e)
-                                       (aset (.-style @col) "transform" (str "translateX(" (* 2 x-displacement) "px) scale(1.01)")))))
-                       mouseup-or-leave (fn [e]
-                                          (when @col
-                                            (let [this (.-currentTarget e)]
-                                              (reset! mousedown? false)
-                                              (aset (.-style @col) "transform" (str "translateX(0px)"))
-                                              (.remove (.-classList this) "reordering"))))]
-                   {:on-mouse-down mousedown
-                    :on-mouse-move mousemove
-                    :on-mouse-up mouseup-or-leave
-                    :on-mouse-leave mouseup-or-leave
-                    })
-     #_[:h4.requirement pname]
+    [:div.column {:data-product-id product-id
+                  :style {:left (str (* index 234) "px")}}
      [:div {:class (str "round-product"
                         (when (> (count pname) 17) " long")
                         (when (= 1 (:result rp)) " winner")
@@ -451,13 +420,7 @@
         pname]
        [c-declare-winner-button round product (:result rp)]
        [c-setup-call-button round product vendor (:result rp)]
-       [c-disqualify-button round product (:result rp)]
-       #_[:> ui/Button {:class "reorder-handle"
-                        :icon "move"
-                        ;; :color "white"
-                        :basic true
-                        :size "mini"}]
-       ]]
+       [c-disqualify-button round product (:result rp)]]]
      (for [req prompts
            :let [{req-prompt-id :id
                   req-prompt-text :prompt} req
@@ -508,6 +471,53 @@
                            :icon "thumbs down outline"
                            :popup-text (if (= 0 resp-rating) "Disapproved" "Disapprove")}]]])]))
 
+(def c-column
+  (with-meta c-column*
+    {:component-did-mount
+     (fn [this] ; make columns draggable to reorder
+       (let [node (r/dom-node this)
+             mousedown? (atom false)
+             x-at-mousedown (atom nil)
+             col (atom nil)
+             col-pos-x-at-mousedown (atom nil)
+             last-x-displacement (atom 0)
+             part-of-drag-handle? (fn [dom-node]
+                                    (or (.contains (.-classList dom-node) "round-product")
+                                        (empty? (array-seq (.-classList dom-node)))))
+             mousedown (fn [e]
+                         (when (part-of-drag-handle? (.-target e))
+                           (reset! col node)
+                           (reset! mousedown? true)
+                           (reset! x-at-mousedown (.-pageX e))
+                           (reset! col-pos-x-at-mousedown (js/parseInt (.-left (.-style node))))
+                           (reset! reverse-scroll-drag? true)
+                           (aset (.-style @col) "transform" (str "translateX(0px) scale(1.01)"))
+                           (.add (.-classList node) "reordering")))
+             mousemove (fn [e]
+                         (when @mousedown?
+                           (let [x-displacement (- (.-pageX e) @x-at-mousedown)]
+                             (.preventDefault e)
+                             (aset (.-style @col) "transform" (str "translateX(" (* 2 x-displacement) "px) scale(1.01)"))
+                             (when (> x-displacement 110)
+                                 (println "do a swap")
+                                 (let [product-id (js/parseInt (.getAttribute @col "data-product-id"))
+                                       old-index (.indexOf @products-order& product-id)
+                                       new-index 1] ; zero-based
+                                   (swap! products-order&
+                                          assoc
+                                          old-index (@products-order& new-index)
+                                          new-index product-id))))))
+             mouseup-or-leave (fn [e]
+                                (when @col
+                                  (reset! mousedown? false)
+                                  (aset (.-style @col) "transform" (str "translateX(0px) scale(1)"))
+                                  (.remove (.-classList node) "reordering")))
+             ]
+         (.addEventListener node "mousedown" mousedown)
+         (.addEventListener node "mousemove" mousemove)
+         (.addEventListener node "mouseup" mouseup-or-leave)
+         (.addEventListener node "mouseleave" mouseup-or-leave)))}))
+
 (defn c-round-grid*
   [round req-form-template round-product]
   (let [ ;; The response currently in the modal.
@@ -522,17 +532,19 @@
         modal-showing?& (r/atom false)
         show-modal-fn (fn [response]
                         (reset! modal-response& response)
-                        (reset! modal-showing?& true))]
+                        (reset! modal-showing?& true))
+        _ (when (empty? @products-order&)
+            (reset! products-order& (into [] (map (comp :id :product) round-product))))]
     (fn [round req-form-template round-product]
       (if (seq round-product)
         [:<>
          [:div.round-grid
-          (let [ ;; req-prompt-id-order (into [] (map :id prompts))
-                ;; _ (println req-prompt-id-order)
-                ]
-            (for [rp round-product]
-              ^{:key (-> rp :product :id)}
-              [c-column round req-form-template rp show-modal-fn]))]
+          (map-indexed
+           (fn [index product-id]
+             (let [rp (first (filter #(= product-id (-> % :product :id)) round-product))]
+               ^{:key (-> rp :product :id)}
+               [c-column index round req-form-template rp show-modal-fn]))
+           @products-order&)]
          [c-cell-modal (:id round) modal-showing?& modal-response&]]
         ;; no products in round yet
         [:> ui/Segment {:class "detail-container"
