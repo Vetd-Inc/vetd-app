@@ -381,7 +381,7 @@ $cell-height: 201px;
     margin-left: 14px;
 
     // box-shadow: 0 -50px 125px 50px #11526d inset !important;
-    background-image: radial-gradient(at center 100px, #fafafa 0px, #f2f2f2 120px);
+    background-image: radial-gradient(at center 100px, #f5f5f5 0px, #eee 120px);
     background-repeat: no-repeat;
 
     
@@ -397,17 +397,13 @@ $cell-height: 201px;
       z-index: 999;
       // transition: transform 0.1s 0s linear !important;
       transition: none !important;
-      // transform: rotate(4deg);
-      transform: scale(1.015);
-    }
-    &.reordering-left {
-      // transform: rotate(-4deg);
+      transform: scale(1.01);
     }
 
 
     .round-product {
       width: $cell-width;
-      height: 84px;
+      // height: 84px;
       
       text-align: center;
       
@@ -415,7 +411,7 @@ $cell-height: 201px;
       box-shadow: none !important;
       border: none !important;
       font-size: 14px;
-      padding: 14px 7px;
+      padding: 14px 7px 10px 7px;
       cursor: grab;
       user-select: none; 
 
@@ -451,8 +447,8 @@ $cell-height: 201px;
         
         .name {
           font-size: 14px !important;
-          line-height: 17px !important;
-          // margin-bottom: 7px !important;
+          line-height: 16px !important;
+          margin-bottom: 7px !important;
         }
       }
 
