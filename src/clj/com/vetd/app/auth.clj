@@ -251,4 +251,10 @@
   [{:keys [id]} ws-id sub-fn]
   (delete-memb id))
 
+(defmethod com/handle-ws-inbound :switch-membership
+  [{:keys [user-id org-id]} ws-id sub-fn]
+  (doseq [{:keys [id]} (select-memb-org-by-user-id user-id)]
+    (delete-memb id))
+  (create-or-find-memb user-id org-id))
+
 ;; TODO logout!!!!!!!!!!!!!!!
