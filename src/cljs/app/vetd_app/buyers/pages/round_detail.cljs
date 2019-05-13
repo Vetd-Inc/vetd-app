@@ -392,6 +392,8 @@
 (def reverse-scroll-drag? (r/atom false))
 ;; product id's in sort order
 (def products-order& (r/atom []))
+;; the id of the product currently being reordered
+(def reordering-product (atom nil))
 
 (defn c-column*
   [index
@@ -406,8 +408,10 @@
          preposals :docs
          :as product} (:product rp)
         product-disqualified? (= 0 (:result rp))]
-    [:div.column {:data-product-id product-id
-                  :style {:left (str (* index 234) "px")}}
+    [:div.column (merge {:data-product-id product-id}
+                        ;; don't affect a column that is being reordered
+                        (when-not (= @reordering-product product-id)
+                          {:style {:left (str (* index 234) "px")}}))
      [:div {:class (str "round-product"
                         (when (> (count pname) 17) " long")
                         (when (= 1 (:result rp)) " winner")
@@ -492,7 +496,8 @@
                            (reset! col-pos-x-at-mousedown (js/parseInt (.-left (.-style node))))
                            (reset! reverse-scroll-drag? true)
                            (aset (.-style @col) "transform" (str "scale(1.01)"))
-                           (.add (.-classList node) "reordering")))
+                           (.add (.-classList node) "reordering")
+                           (reset! reordering-product (js/parseInt (.getAttribute @col "data-product-id")))))
              mousemove (fn [e]
                          (when @mousedown?
                            (let [x-displacement (- (.-pageX e) @x-at-mousedown)]
@@ -518,7 +523,8 @@
                                   (let [product-id (js/parseInt (.getAttribute @col "data-product-id"))
                                         index (.indexOf @products-order& product-id)]
                                     (aset (.-style @col) "left" (str (* 234 index) "px")))
-                                  (.remove (.-classList node) "reordering")))
+                                  (.remove (.-classList node) "reordering")
+                                  (reset! reordering-product nil)))
              ]
          (.addEventListener node "mousedown" mousedown)
          (.addEventListener node "mousemove" mousemove)
