@@ -491,26 +491,33 @@
                            (reset! x-at-mousedown (.-pageX e))
                            (reset! col-pos-x-at-mousedown (js/parseInt (.-left (.-style node))))
                            (reset! reverse-scroll-drag? true)
-                           (aset (.-style @col) "transform" (str "translateX(0px) scale(1.01)"))
+                           (aset (.-style @col) "transform" (str "scale(1.01)"))
                            (.add (.-classList node) "reordering")))
              mousemove (fn [e]
                          (when @mousedown?
                            (let [x-displacement (- (.-pageX e) @x-at-mousedown)]
                              (.preventDefault e)
-                             (aset (.-style @col) "transform" (str "translateX(" (* 2 x-displacement) "px) scale(1.01)"))
+                             (aset (.-style @col) "transform" (str "scale(1.01)"))
+                             (aset (.-style @col) "left" (str (+ @col-pos-x-at-mousedown
+                                                                 (* 1 x-displacement)) "px"))
+                             #_(aset (.-style @col) "left" (str (+ @col-pos-x-at-mousedown
+                                                                   (* 2 x-displacement)) "px"))
                              (when (> x-displacement 110)
-                                 (println "do a swap")
-                                 (let [product-id (js/parseInt (.getAttribute @col "data-product-id"))
-                                       old-index (.indexOf @products-order& product-id)
-                                       new-index 1] ; zero-based
-                                   (swap! products-order&
-                                          assoc
-                                          old-index (@products-order& new-index)
-                                          new-index product-id))))))
+                               (println "do a swap")
+                               (let [product-id (js/parseInt (.getAttribute @col "data-product-id"))
+                                     old-index (.indexOf @products-order& product-id)
+                                     new-index 1] ; zero-based
+                                 (swap! products-order&
+                                        assoc
+                                        old-index (@products-order& new-index)
+                                        new-index product-id))))))
              mouseup-or-leave (fn [e]
                                 (when @col
                                   (reset! mousedown? false)
-                                  (aset (.-style @col) "transform" (str "translateX(0px) scale(1)"))
+                                  (aset (.-style @col) "transform" (str "scale(1)"))
+                                  (let [product-id (js/parseInt (.getAttribute @col "data-product-id"))
+                                        index (.indexOf @products-order& product-id)]
+                                    (aset (.-style @col) "left" (str (* 234 index) "px")))
                                   (.remove (.-classList node) "reordering")))
              ]
          (.addEventListener node "mousedown" mousedown)
@@ -538,7 +545,8 @@
     (fn [round req-form-template round-product]
       (if (seq round-product)
         [:<>
-         [:div.round-grid
+         [:div.round-grid {:style {:height (+ 60
+                                              (* 201 (-> req-form-template :prompts count)))}}
           (map-indexed
            (fn [index product-id]
              (let [rp (first (filter #(= product-id (-> % :product :id)) round-product))]
@@ -581,8 +589,10 @@
                              (let [x-displacement (- (- (.-pageX e) (.-offsetLeft node))
                                                      @x-at-mousedown)
                                    new-scroll-left (- @scroll-left-at-mousedown
-                                                      (* (if @reverse-scroll-drag? -1 3)
-                                                         x-displacement))]
+                                                      (* (if @reverse-scroll-drag? 0 3)
+                                                         x-displacement)
+                                                      #_(* (if @reverse-scroll-drag? -1 3)
+                                                           x-displacement))]
                                (.preventDefault e)
                                (aset node "scrollLeft" new-scroll-left)
                                ;; if you drag more than 3px, disable the cell clickability
