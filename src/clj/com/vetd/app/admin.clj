@@ -72,6 +72,11 @@
   [{:keys [entity]} ws-id sub-fn]
   (db/update-any! entity))
 
+(defmethod com/handle-ws-inbound :a/delete-any
+  [{:keys [id]} ws-id sub-fn]
+  (db/update-any! {:id id
+                   :deleted (ut/now-ts)}))
+
 (defmethod com/handle-ws-inbound :a/set-round-products
   [{:keys [product-ids round-id]} ws-id sub-fn]
   (let [existing-prod-ids (->> [[:rounds {:id round-id}

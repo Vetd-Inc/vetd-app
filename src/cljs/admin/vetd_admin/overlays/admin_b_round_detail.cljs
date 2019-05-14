@@ -28,6 +28,18 @@
                         :round-id round-id
                         :product-ids product-ids}}}))
 
+(rf/reg-event-fx
+ :a/delete-any
+ (fn [{:keys [db]} [_ {:keys [id]}]]
+   {:ws-send {:payload {:cmd :a/delete-any
+                        :id id}}}))
+
+(defn c-delete-round [round-id]
+  [:> ui/Button {:color "teal"
+                 :on-click #(rf/dispatch [:a/delete-any {:id round-id}])}
+   "Delete VetdRound"])
+
+
 (defn c-product-selector [round-id round-with-products&]
   (let [search-term& (r/atom "")
         selected& (r/atom [])]
@@ -87,5 +99,8 @@
                                      [:vendor
                                       [:id :oname]]]]]]]}])]
     (fn []
-      [:div {:style {:display "flex"}}
-       [c-product-selector (util/base31->num @round-idstr&) rounds&]])))
+      (let [round-id (util/base31->num @round-idstr&)]
+        [:div
+         [:div {:style {:display "flex"}}
+          [c-product-selector round-id rounds&]]
+         [c-delete-round round-id]]))))
