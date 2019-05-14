@@ -703,19 +703,11 @@
                                                    [:b/round.add-requirement id (.-value this)]))}]]))
         :trigger (r/as-element
                   [:> ui/Button {:color "teal"
-                                 ;; :basic true
                                  :size "mini"
                                  :icon "plus"
                                  :style {:position "relative"
                                          :top -4
-                                         :left 5}
-                                 }]
-                  #_[:> ui/Button {:color "teal"
-                                   :icon true
-                                   :fluid true
-                                   :labelPosition "left"}
-                     "Add a Topic"
-                     [:> ui/Icon {:name "plus"}]])}])))
+                                         :left 5}}])}])))
 
 (defn c-products
   "Component to display product boxes with various buttons."

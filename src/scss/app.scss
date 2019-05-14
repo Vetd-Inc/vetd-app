@@ -379,7 +379,10 @@ $cell-height: 201px;
   .column {
     width: $cell-width;
     flex: 0 0 auto;
-    transition: left 0.4s 0s ease-out, transform 0.4s 0s ease-out, z-index 0s 0.4s ease-out;
+    transition: left 0.4s 0s ease-out,
+                transform 0.4s 0s ease-out,
+                z-index 0s 0.4s ease-out,
+                box-shadow 0.4s 0s ease-out;
     z-index: 3;
 
     // box-shadow: 0 -50px 125px 50px #11526d inset !important;
@@ -396,6 +399,8 @@ $cell-height: 201px;
       z-index: 999;
       transition: none !important;
       transform: scale(1.01);
+      // box-shadow: 0 0 60px -5px #e0f2fa !important;
+      box-shadow: 0 0 30px 5px #fff !important;
     }
 
 
