@@ -363,66 +363,43 @@ $cell-width: 220px;
 $cell-height: 201px;
 
 .round-grid {
+  position: relative;
+  padding-top: 14px;
+  margin-left: 20px !important;
   display: flex;
   flex-wrap: nowrap; // unnecessary?
   overflow-x: auto;
   overflow-y: hidden;
   box-sizing: border-box;
-  position: relative;
-  padding-top: 14px;
-  // since the header row is in fixed position
-  // this keeps them from overflowing
+  // since the header row is in fixed position, this keeps them from overflowing
   clip-path: inset(-100px 0px 0px 0px);
-
-  margin-left: 20px !important;
-
-  &:not(.fixed) .column.reordering {
-    transform: scale(1.01);
-  }
   
   .column {
+    position: absolute;
     width: $cell-width;
+    padding-left: 5px;
+    padding-right: 5px;
     flex: 0 0 auto;
     transition: left 0.4s 0s ease-out,
                 transform 0.4s 0s ease-out,
                 z-index 0s 0.4s ease-out,
                 box-shadow 0.4s 0s ease-out;
-    z-index: 3;
-
-    // box-shadow: 0 -50px 125px 50px #11526d inset !important;
     background-image: radial-gradient(at center 100px, #f5f5f5 0px, #eee 120px);
     background-repeat: no-repeat;
-    
     border-radius: 4px;
-    padding-left: 5px;
-    padding-right: 5px;
-
-    position: absolute;
-    
-    &.reordering {
-      z-index: 999;
-      transition: none !important;
-      box-shadow: 0 0 40px 5px #fff !important;
-    }
+    z-index: 3;
 
     .round-product {
       width: $cell-width - 10px;
-      // height: 84px;
-      
-      text-align: center;
-      
-      // background: $bg-color;
-      box-shadow: none !important;
-      border: none !important;
-      font-size: 14px;
       padding: 14px 5px 10px 5px;
-      cursor: grab;
-      user-select: none; 
-
       display: flex;
       flex-direction: column;
       justify-content: flex-end;
       align-items: center;
+      font-size: 14px;
+      text-align: center;
+      user-select: none;
+      cursor: grab;
 
       .button {
         margin-left: 7px;
@@ -434,7 +411,6 @@ $cell-height: 201px;
       
       .name {
         display: block;
-        // height: 37px;
         margin-bottom: 9px;
         font-size: 18px !important;
         font-weight: 600 !important;
@@ -457,7 +433,6 @@ $cell-height: 201px;
       }
 
       &.disqualified {
-
         .name {
           opacity: 0.5;
         }
@@ -472,19 +447,24 @@ $cell-height: 201px;
         }
       }
     }
+
+    &.reordering {
+      z-index: 999;
+      transition: none !important;
+      box-shadow: 0 0 40px 5px #fff !important;
+    }
   }
   
   .cell {
     position: relative;
+    height: $cell-height;
+    padding: 14px;
+    margin: 0 0 2px 0;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    height: $cell-height;
-    padding: 14px;
-    margin: 0 0 2px 0;
     box-shadow: 0 2px 14px 0 rgba(50,50,50,0.1) !important;
-    border: none !important;
     border-radius: 4px;
     background: #fff;
     font-size: 14px;
@@ -493,13 +473,14 @@ $cell-height: 201px;
     transform: scale(0.98);
     
     .text {
+      padding-top: 14px;
       flex: 1;
       display: flex;
       flex-direction: column;
       justify-content: center;
       text-align: center;
-      padding-top: 14px;
     }
+    
     .actions {
       margin-top: 10px;
 
@@ -509,7 +490,6 @@ $cell-height: 201px;
       }
     }
     
-    
     &:hover {
       transform: scale(1);
       z-index: 5;
@@ -518,6 +498,7 @@ $cell-height: 201px;
         opacity: 1;
       }
     }
+    
     &.disqualified {
       opacity: 0.35;
     }
@@ -540,7 +521,6 @@ $cell-height: 201px;
   }
   // if the header row is in sticky mode
   &.fixed {
-    // margin-top: 84px;
     padding-top: 98px;
   }
   &.fixed .round-product {
@@ -552,6 +532,11 @@ $cell-height: 201px;
     border-bottom-left-radius: 4px;
     border-bottom-right-radius: 4px;
   }
+  &:not(.fixed) .column.reordering {
+    transform: scale(1.01);
+  }
+
+  // experiment with fading other columns if not hovered upon
   // &:hover .column:not(:hover) {
   //   opacity: 0.6;
   // }
