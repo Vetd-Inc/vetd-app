@@ -390,6 +390,7 @@ $cell-height: 201px;
     z-index: 3;
 
     .round-product {
+      height: 84px;
       width: $cell-width - 10px;
       padding: 14px 5px 10px 5px;
       display: flex;
@@ -446,12 +447,6 @@ $cell-height: 201px;
           color: white !important;
         }
       }
-    }
-
-    &.reordering {
-      z-index: 999;
-      transition: none !important;
-      box-shadow: 0 0 40px 5px #fff !important;
     }
   }
   
@@ -519,6 +514,17 @@ $cell-height: 201px;
       cursor: pointer;
     }
   }
+  .column.reordering {
+    z-index: 999;
+    transition: none !important;
+    box-shadow: 0 0 40px 5px #fff !important;
+    
+  }
+  .column.reordering,
+  .column.reordering .round-product {
+    cursor: grabbing !important;
+  }
+  
   // if the header row is in sticky mode
   &.fixed {
     padding-top: 98px;
@@ -532,9 +538,10 @@ $cell-height: 201px;
     border-bottom-left-radius: 4px;
     border-bottom-right-radius: 4px;
   }
-  &:not(.fixed) .column.reordering {
-    transform: scale(1.01);
-  }
+  // commented out because it has issues when there's a lot of requirements
+  // &:not(.fixed) .column.reordering {
+  //   transform: scale(1.01);
+  // }
 
   // experiment with fading other columns if not hovered upon
   // &:hover .column:not(:hover) {

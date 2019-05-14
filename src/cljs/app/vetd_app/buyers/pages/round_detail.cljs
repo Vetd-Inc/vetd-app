@@ -67,6 +67,8 @@
                         :result 0
                         :reason reason
                         :buyer-id (util/db->current-org-id db)}}
+    :toast {:type "success"
+            :title "Product Disqualified from VetdRound"}
     :analytics/track {:event "Disqualify Product"
                       :props {:category "Round"
                               :label round-id}}}))
@@ -396,6 +398,9 @@
 ;; the current x position of a column being reordered
 (defonce curr-reordering-pos-x (r/atom nil))
 
+
+(defonce default-products-order& (atom nil))
+
 (defn get-col-index
   [product-id]
   (.indexOf @products-order& product-id))
@@ -482,7 +487,7 @@
 
 (defn c-round-grid*
   [round req-form-template round-product]
-  (let [ ;; The response currently in the modal.
+  (let [;; The response currently in the modal.
         ;; E.g., {:req-prompt-id 123
         ;;        :req-prompt-text "Something"
         ;;        :product-id 321
@@ -495,13 +500,16 @@
         show-modal-fn (fn [response]
                         (reset! modal-response& response)
                         (reset! modal-showing?& true))
-        ;; TODO this keeps sort order changes that flow into this component from happening...
-        _ (when (empty? @products-order&)
-            (reset! products-order& (into [] (map (comp :id :product) round-product))))]
+        ;; _ (println (into [] (map (comp :id :product) round-product)))
+        ;; default-products-order& (atom nil)
+        _ (when (or (empty? @products-order&)
+                    #_(not= @default-products-order&
+                            (into [] (map (comp :id :product) round-product))))
+            (reset! products-order& (into [] (map (comp :id :product) round-product)))
+            (reset! default-products-order& @products-order&))]
     (fn [round req-form-template round-product]
       (if (seq round-product)
         [:<>
-         (println (-> req-form-template :prompts count))
          [:div.round-grid {:style {:min-height (+ 46 84 (* 202 (-> req-form-template :prompts count)))}}
           [:div {:style {:min-width (* 234 (count round-product))}}
            (for [rp round-product]
@@ -645,6 +653,10 @@
 
        :component-did-update
        (fn [this]
+         (when (not= @default-products-order&
+                     (into [] (map (comp :id :product) round-product)))
+           (reset! products-order& (into [] (map (comp :id :product) round-product)))
+           (reset! default-products-order& @products-order&))
          (update-draggability this))
 
        :component-will-unmount
