@@ -501,7 +501,8 @@
     (fn [round req-form-template round-product]
       (if (seq round-product)
         [:<>
-         [:div.round-grid {:style {:height (+ 100 (* 203 (-> req-form-template :prompts count)))}}
+         (println (-> req-form-template :prompts count))
+         [:div.round-grid {:style {:min-height (+ 46 84 (* 202 (-> req-form-template :prompts count)))}}
           [:div {:style {:min-width (* 234 (count round-product))}}
            (for [rp round-product]
              ^{:key (-> rp :product :id)}
@@ -574,6 +575,8 @@
                ;; Reordering (and more Scrolling logic)
                part-of-drag-handle? (fn [dom-node]
                                       (or (.contains (.-classList dom-node) "round-product")
+                                          ;; consider making the name also a drag handle
+                                          ;; (.contains (.-classList dom-node) "name")
                                           (empty? (array-seq (.-classList dom-node)))))
                col-pos-x-at-mousedown (atom nil)
                reordering-col-node (atom nil)
@@ -584,15 +587,15 @@
                            (if (and (part-of-drag-handle? (.-target e))
                                     (> (count @products-order&) 1)) ; only able to reorder if more than one product
                              ;; Reordering
-                             (let [col (.closest (.-target e) ".column")
-                                   col-left (js/parseInt (.-left (.-style col)))]
-                               (reset! reordering-col-node col)
-                               (reset! col-pos-x-at-mousedown col-left)
-                               (reset! curr-reordering-pos-x col-left)
-                               ;; remember the id of the product we are currently reordering
-                               (reset! reordering-product (js/parseInt (.getAttribute col "data-product-id")))
-                               (reset! reverse-scroll-drag? true)
-                               (.add (.-classList col) "reordering"))
+                             (when-let [col (.closest (.-target e) ".column")] ; is the mousedown even on a column?
+                               (let [col-left (js/parseInt (.-left (.-style col)))]
+                                 (reset! reordering-col-node col)
+                                 (reset! col-pos-x-at-mousedown col-left)
+                                 (reset! curr-reordering-pos-x col-left)
+                                 ;; remember the id of the product we are currently reordering
+                                 (reset! reordering-product (js/parseInt (.getAttribute col "data-product-id")))
+                                 (reset! reverse-scroll-drag? true)
+                                 (.add (.-classList col) "reordering")))
                              ;; Scrolling
                              (do (reset! scroll-left-at-mousedown (.-scrollLeft node))
                                  (.add (.-classList node) "dragging"))))
