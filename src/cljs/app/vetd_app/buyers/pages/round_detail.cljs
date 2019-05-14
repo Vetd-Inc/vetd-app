@@ -482,54 +482,62 @@
        (let [node (r/dom-node this)
              mousedown? (atom false)
              x-at-mousedown (atom nil)
-             col (atom nil)
              col-pos-x-at-mousedown (atom nil)
-             last-x-displacement (atom 0)
              part-of-drag-handle? (fn [dom-node]
                                     (or (.contains (.-classList dom-node) "round-product")
                                         (empty? (array-seq (.-classList dom-node)))))
              mousedown (fn [e]
                          (when (part-of-drag-handle? (.-target e))
-                           (reset! col node)
                            (reset! mousedown? true)
                            (reset! x-at-mousedown (.-pageX e))
                            (reset! col-pos-x-at-mousedown (js/parseInt (.-left (.-style node))))
-                           (reset! reverse-scroll-drag? true)
-                           (aset (.-style @col) "transform" (str "scale(1.01)"))
                            (.add (.-classList node) "reordering")
-                           (reset! reordering-product (js/parseInt (.getAttribute @col "data-product-id")))))
+                           ;; remember the id of the product we are currently reordering
+                           (reset! reordering-product (js/parseInt (.getAttribute node "data-product-id")))
+                           (reset! reverse-scroll-drag? true)))
              mousemove (fn [e]
                          (when @mousedown?
                            (let [x-displacement (- (.-pageX e) @x-at-mousedown)]
-                             (.preventDefault e)
-                             (aset (.-style @col) "transform" (str "scale(1.01)"))
-                             (aset (.-style @col) "left" (str (+ @col-pos-x-at-mousedown
+                             (aset (.-style node) "left" (str (+ @col-pos-x-at-mousedown
                                                                  (* 1 x-displacement)) "px"))
-                             #_(aset (.-style @col) "left" (str (+ @col-pos-x-at-mousedown
+                             #_(aset (.-style node) "left" (str (+ @col-pos-x-at-mousedown
                                                                    (* 2 x-displacement)) "px"))
-                             (when (> x-displacement 110)
-                               (println "do a swap")
-                               (let [product-id (js/parseInt (.getAttribute @col "data-product-id"))
-                                     old-index (.indexOf @products-order& product-id)
-                                     new-index 1] ; zero-based
-                                 (swap! products-order&
-                                        assoc
-                                        old-index (@products-order& new-index)
-                                        new-index product-id))))))
+                             (let [product-id (js/parseInt (.getAttribute node "data-product-id"))
+                                   old-index (.indexOf @products-order& product-id)
+                                   new-index (-> @col-pos-x-at-mousedown
+                                                 (+ x-displacement)
+                                                 (/ 234)
+                                                 (+ 0.5) ; to cause swap to occur when middle of a col is passed
+                                                 Math/floor
+                                                 (max 0) ; clamp between 0 and max index
+                                                 (min (- (count @products-order&) 1)))]
+                               (when (not= old-index new-index)
+                                 (println "i think a change is coming"))
+                               (swap! products-order&
+                                      assoc
+                                      old-index (@products-order& new-index)
+                                      new-index product-id)))))
              mouseup-or-leave (fn [e]
-                                (when @col
+                                (when @mousedown?
                                   (reset! mousedown? false)
-                                  (aset (.-style @col) "transform" (str "scale(1)"))
-                                  (let [product-id (js/parseInt (.getAttribute @col "data-product-id"))
+                                  (let [product-id (js/parseInt (.getAttribute node "data-product-id"))
                                         index (.indexOf @products-order& product-id)]
-                                    (aset (.-style @col) "left" (str (* 234 index) "px")))
+                                    (aset (.-style node) "left" (str (* 234 index) "px")))
                                   (.remove (.-classList node) "reordering")
                                   (reset! reordering-product nil)))
              ]
          (.addEventListener node "mousedown" mousedown)
          (.addEventListener node "mousemove" mousemove)
          (.addEventListener node "mouseup" mouseup-or-leave)
-         (.addEventListener node "mouseleave" mouseup-or-leave)))}))
+         (.addEventListener node "mouseleave" mouseup-or-leave)))
+
+     :component-did-update
+     (fn [this]
+       (println (str "did update " (rand-int 30000))))
+
+     :component-will-unmount
+     (fn [this]
+       (println (str "will unmount " (rand-int 30000))))}))
 
 (defn c-round-grid*
   [round req-form-template round-product]
