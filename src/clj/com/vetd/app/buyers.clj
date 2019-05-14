@@ -156,15 +156,26 @@ User '%s'
 
 
 (defn send-setup-call-req [buyer-id product-id]
-  (com/sns-publish :ui-misc
-                   "Setup Call Request"
-                   (format
-                    "Setup Call Request
+  (let [{:keys [pname rounds]} (-> [[:products {:id product-id}
+                                     [:pname
+                                      [:rounds {:deleted nil}
+                                       [:idstr]]]]]
+                                   ha/sync-query
+                                   :products
+                                   first)]
+    (com/sns-publish :ui-misc
+                     "Setup Call Request"
+                     (format
+                      "Setup Call Request
 Buyer (Org): '%s'
-Product: '%s'"
-                    (-> buyer-id auth/select-org-by-id :oname) ; buyer name
-                    (product-id->name product-id)))) ; product name
-
+Product: '%s'
+Round URLs (if any):
+%s"
+                      (-> buyer-id auth/select-org-by-id :oname) ; buyer name
+                      pname
+                      (->> (for [{:keys [idstr]} rounds]
+                             (str "https://app.vetd.com/b/rounds/" idstr))
+                           (clojure.string/join "\n"))))))
 
 (defn send-ask-question-req [product-id message round-id requirement-text buyer-id]
   (com/sns-publish :ui-misc

@@ -474,9 +474,6 @@
                         (catch Exception e2 "")))
       (throw e))))
 
-
-#_(clojure.pprint/pprint  (sync-query [[:categories {:_limit 10} [:id [:rounds [:id]]]]]))
-
 #_(send-terminate)
 
 #_
