@@ -394,7 +394,6 @@ $cell-height: 201px;
     
     &.reordering {
       z-index: 999;
-      // transition: all 0.1s 0s linear !important;
       transition: none !important;
       transform: scale(1.01);
     }

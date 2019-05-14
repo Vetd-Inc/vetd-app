@@ -587,7 +587,7 @@
                mousedown (fn [e]
                            (reset! mousedown? true)
                            (reset! x-at-mousedown (.-pageX e))
-                           (when (part-of-drag-handle? (.-target e))
+                           (if (part-of-drag-handle? (.-target e))
                              ;; Reordering
                              (let [col (.closest (.-target e) ".column")
                                    col-left (js/parseInt (.-left (.-style col)))]
@@ -597,18 +597,17 @@
                                ;; remember the id of the product we are currently reordering
                                (reset! reordering-product (js/parseInt (.getAttribute col "data-product-id")))
                                (reset! reverse-scroll-drag? true)
-                               (.add (.-classList col) "reordering")))
-                           ;; Scrolling
-                           (do (reset! scroll-left-at-mousedown (.-scrollLeft node))
-                               (.add (.-classList node) "dragging")))
+                               (.add (.-classList col) "reordering"))
+                             ;; Scrolling
+                             (do (reset! scroll-left-at-mousedown (.-scrollLeft node))
+                                 (.add (.-classList node) "dragging"))))
                mousemove (fn [e]
                            (when @mousedown?
                              (let [x-displacement (- (.-pageX e) @x-at-mousedown)]
-                               (when @reordering-product
+                               (if @reordering-product
                                  (do (reset! curr-reordering-pos-x (+ @col-pos-x-at-mousedown
                                                                       (* 1 x-displacement)))
-                                     (let [product-id (js/parseInt (.getAttribute @reordering-col-node "data-product-id"))
-                                           old-index (.indexOf @products-order& product-id)
+                                     (let [old-index (.indexOf @products-order& @reordering-product)
                                            new-index (-> @col-pos-x-at-mousedown
                                                          (+ x-displacement)
                                                          (/ 234)
@@ -620,16 +619,16 @@
                                          (swap! products-order&
                                                 assoc
                                                 old-index (@products-order& new-index)
-                                                new-index product-id)))))
-                               (let [new-scroll-left (- @scroll-left-at-mousedown
-                                                        (* (if @reverse-scroll-drag? 0 2)
-                                                           x-displacement))]
-                                 (.preventDefault e)
-                                 (aset node "scrollLeft" new-scroll-left)
-                                 ;; if you drag more than 3px, disable the cell clickability
-                                 (when (and (> (Math/abs x-displacement) 3)
-                                            (not @cell-click-disabled?))
-                                   (reset! cell-click-disabled? true))))))
+                                                new-index @reordering-product))))
+                                 (let [new-scroll-left (- @scroll-left-at-mousedown
+                                                          (* (if @reverse-scroll-drag? 0 2)
+                                                             x-displacement))]
+                                   (.preventDefault e)
+                                   (aset node "scrollLeft" new-scroll-left)
+                                   ;; if you drag more than 3px, disable the cell clickability
+                                   (when (and (> (Math/abs x-displacement) 3)
+                                              (not @cell-click-disabled?))
+                                     (reset! cell-click-disabled? true)))))))
                mouseup (fn [e]
                          (when @mousedown?
                            (reset! mousedown? false)
