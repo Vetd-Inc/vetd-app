@@ -396,7 +396,7 @@
 ;; the current x position of a column being reordered
 (defonce curr-reordering-pos-x (r/atom nil))
 
-(defn get-col-index                     ; todo, use this below as well
+(defn get-col-index
   [product-id]
   (.indexOf @products-order& product-id))
 
@@ -416,12 +416,7 @@
                         (if (and @products-order& ; to trigger re-render
                                  (= @reordering-product product-id))
                           {:style {:left (str @curr-reordering-pos-x "px")}}
-                          {:style {:left (str (* (get-col-index product-id) 234) "px")}})
-                        #_(when-not @reordering-product
-                            {:style {:left (str (* (get-col-index product-id) 234) "px")}})
-                        ;; don't affect a column that is being reordered
-                        #_(when-not (= @reordering-product product-id)
-                            {:style {:left (str (* (get-col-index product-id) 234) "px")}}))
+                          {:style {:left (str (* (get-col-index product-id) 234) "px")}}))
      [:div {:class (str "round-product"
                         (when (> (count pname) 17) " long")
                         (when (= 1 (:result rp)) " winner")
@@ -431,7 +426,6 @@
                              (if (seq preposals)
                                [:b/nav-preposal-detail (-> preposals first :idstr)]
                                [:b/nav-product-detail product-idstr]))}
-        #_(str pname " " (get-col-index product-id))
         pname]
        [c-declare-winner-button round product (:result rp)]
        [c-setup-call-button round product vendor (:result rp)]
@@ -507,7 +501,7 @@
     (fn [round req-form-template round-product]
       (if (seq round-product)
         [:<>
-         [:div.round-grid {:style {:height (+ 60 (* 201 (-> req-form-template :prompts count)))}}
+         [:div.round-grid {:style {:height (+ 100 (* 203 (-> req-form-template :prompts count)))}}
           [:div {:style {:min-width (* 234 (count round-product))}}
            (for [rp round-product]
              ^{:key (-> rp :product :id)}
@@ -587,7 +581,8 @@
                mousedown (fn [e]
                            (reset! mousedown? true)
                            (reset! x-at-mousedown (.-pageX e))
-                           (if (part-of-drag-handle? (.-target e))
+                           (if (and (part-of-drag-handle? (.-target e))
+                                    (> (count @products-order&) 1)) ; only able to reorder if more than one product
                              ;; Reordering
                              (let [col (.closest (.-target e) ".column")
                                    col-left (js/parseInt (.-left (.-style col)))]
@@ -607,7 +602,7 @@
                                (if @reordering-product
                                  (do (reset! curr-reordering-pos-x (+ @col-pos-x-at-mousedown
                                                                       (* 1 x-displacement)))
-                                     (let [old-index (.indexOf @products-order& @reordering-product)
+                                     (let [old-index (get-col-index @reordering-product)
                                            new-index (-> @col-pos-x-at-mousedown
                                                          (+ x-displacement)
                                                          (/ 234)
@@ -651,6 +646,7 @@
 
        :component-will-unmount
        (fn [this]
+         (reset! products-order& [])
          (when @window-scroll-fn-ref
            (.removeEventListener js/window "scroll" @window-scroll-fn-ref)))})))
 
