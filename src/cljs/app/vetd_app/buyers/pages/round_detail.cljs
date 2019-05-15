@@ -414,15 +414,14 @@
          preposals :docs
          :as product} (:product rp)
         product-disqualified? (= 0 (:result rp))]
-    [:div.column (merge {:data-product-id product-id}
+    [:div.column (merge {:class (str (when (= 1 (:result rp)) " winner")
+                                     (when (= 0 (:result rp)) " disqualified"))
+                         :data-product-id product-id}
                         (if (and @products-order& ; to trigger re-render
                                  (= @reordering-product product-id))
                           {:style {:left (str @curr-reordering-pos-x "px")}}
                           {:style {:left (str (* (get-col-index product-id) 234) "px")}}))
-     [:div {:class (str "round-product"
-                        (when (> (count pname) 17) " long")
-                        (when (= 1 (:result rp)) " winner")
-                        (when (= 0 (:result rp)) " disqualified"))}
+     [:div.round-product {:class (when (> (count pname) 17) " long")}
       [:div
        [:a.name {:on-click #(rf/dispatch
                              (if (seq preposals)
@@ -769,8 +768,7 @@
                                            :prompt-term "round.response/rating"}
                                           [[:response-prompt-fields
                                             {:deleted nil}
-                                            [:nval]]]]]]]]]]]]]}])
-        _ (cljs.pprint/pprint @rounds&)]
+                                            [:nval]]]]]]]]]]]]]}])]
     (fn []
       [:div.container-with-sidebar.round-details
        (if (= :loading @rounds&)
