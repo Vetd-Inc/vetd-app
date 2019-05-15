@@ -492,9 +492,12 @@
         show-modal-fn (fn [response]
                         (reset! modal-response& response)
                         (reset! modal-showing?& true))
-        _ (when (empty? @products-order&)
-            (reset! products-order& (into [] (map (comp :id :product) round-product))))]
+        default-products-order& (atom [])]
     (fn [round req-form-template round-product]
+      (when (not= @default-products-order&
+                  (into [] (map (comp :id :product) round-product)))
+        (reset! default-products-order& (into [] (map (comp :id :product) round-product)))
+        (reset! products-order& (into [] (map (comp :id :product) round-product))))
       (if (seq round-product)
         [:<>
          [:div.round-grid {:style {:min-height (+ 46 84 (* 202 (-> req-form-template :prompts count)))}}
