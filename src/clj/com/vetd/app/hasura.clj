@@ -113,19 +113,19 @@
 
 (defn process-sub-gql-map [m]
   (->> (for [[k v] m]
-            (if-let [op (drop-kw-underscore k)]
-              [[op] v]
-              [[:where k] (cond (map? v) v
-                                (coll? v) {:_in v}
-                                (nil? v) {:_is_null true}
-                                :else {:_eq v})]))
+         (if-let [op (drop-kw-underscore k)]
+           [[op] v]
+           [[:where k] (cond (map? v) v
+                             (coll? v) {:_in v}
+                             (nil? v) {:_is_null true}
+                             :else {:_eq v})]))
        (reduce process-sub-gql-map*
                {})))
 
 #_(process-sub-gql-map {:id 4
-                      :xx {:_eq "hi"}
-                      :_where {:yy {:> 555}}
-                      :_order :hihih})
+                        :xx {:_eq "hi"}
+                        :_where {:yy {:> 555}}
+                        :_order :hihih})
 
 ;; TODO _ => - in table names????????????
 
@@ -240,7 +240,7 @@
 
 (defn walk-result-sub-val [field sub v]
   ;; HACK -- Hasura returns bigints as string
-  (if (->> sub name (take-last 2) (= [\i \d]))
+  (if (coerce-to-long? sub)
     (ut/->long v)
     v))
 
@@ -286,7 +286,7 @@
 (defmulti handle-from-graphql (fn [{gtype :type}] (gql-msg-types-str->kw gtype)))
 
 (defn ws-send [ws msg]
-#_  (clojure.pprint/pprint msg)
+  #_  (clojure.pprint/pprint msg)
   (try
     (ut/$- -> msg
            json/generate-string
@@ -316,8 +316,8 @@
 
 (defn ws-ib-handler
   [id data]
-#_  (println id)
-#_  (clojure.pprint/pprint data)
+  #_  (println id)
+  #_  (clojure.pprint/pprint data)
   (let [data' (json/parse-string data keyword)]
     (when-let [errors (-> data' :payload :errors)]
       (log/error errors))
@@ -349,7 +349,7 @@
      (case state
        :pre-init (do (when
                          (send-init ws)
-                         (swap! cn& assoc :state :init-sent))
+                       (swap! cn& assoc :state :init-sent))
                      false)
        :init-sent false
        :ackd true
@@ -359,9 +359,9 @@
   [ws]
   (try
     (when-let [msgs (-> queue&
-                         (swap-vals! (constantly []))
-                         first
-                         not-empty)]
+                        (swap-vals! (constantly []))
+                        first
+                        not-empty)]
       (doseq [m msgs]
         (ws-send ws m))
       (count msgs))
@@ -432,7 +432,7 @@
 ;; ws from client
 (defmethod com/handle-ws-inbound :graphql
   [{:keys [sub-id query subscription? stop] :as msg} ws-id resp-fn]
-#_  (clojure.pprint/pprint query)
+  #_  (clojure.pprint/pprint query)
   (let [qual-sub-id (keyword (name ws-id)
                              (str sub-id))]
     (if-not stop

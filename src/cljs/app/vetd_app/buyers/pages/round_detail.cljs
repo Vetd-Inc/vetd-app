@@ -398,9 +398,6 @@
 ;; the current x position of a column being reordered
 (defonce curr-reordering-pos-x (r/atom nil))
 
-
-(defonce default-products-order& (atom nil))
-
 (defn get-col-index
   [product-id]
   (.indexOf @products-order& product-id))
@@ -500,13 +497,8 @@
         show-modal-fn (fn [response]
                         (reset! modal-response& response)
                         (reset! modal-showing?& true))
-        ;; _ (println (into [] (map (comp :id :product) round-product)))
-        ;; default-products-order& (atom nil)
-        _ (when (or (empty? @products-order&)
-                    #_(not= @default-products-order&
-                            (into [] (map (comp :id :product) round-product))))
-            (reset! products-order& (into [] (map (comp :id :product) round-product)))
-            (reset! default-products-order& @products-order&))]
+        _ (when (empty? @products-order&)
+            (reset! products-order& (into [] (map (comp :id :product) round-product))))]
     (fn [round req-form-template round-product]
       (if (seq round-product)
         [:<>
@@ -653,10 +645,6 @@
 
        :component-did-update
        (fn [this]
-         (when (not= @default-products-order&
-                     (into [] (map (comp :id :product) round-product)))
-           (reset! products-order& (into [] (map (comp :id :product) round-product)))
-           (reset! default-products-order& @products-order&))
          (update-draggability this))
 
        :component-will-unmount
@@ -720,31 +708,6 @@
                                          :top -4
                                          :left 5}}])}])))
 
-(defn c-products
-  "Component to display product boxes with various buttons."
-  [round round-product]
-  [:<>
-   (for [rp round-product
-         :let [{product-id :id
-                product-idstr :idstr
-                pname :pname
-                vendor :vendor
-                preposals :docs
-                :as product} (:product rp)]]
-     ^{:key product-id}
-     [:> ui/Segment {:class (str "round-product"
-                                 (when (> (count pname) 17) " long")
-                                 (when (= 1 (:result rp)) " winner")
-                                 (when (= 0 (:result rp)) " disqualified"))}
-      [:a.name {:on-click #(rf/dispatch
-                            (if (seq preposals)
-                              [:b/nav-preposal-detail (-> preposals first :idstr)]
-                              [:b/nav-product-detail product-idstr]))}
-       pname]
-      [c-declare-winner-button round product (:result rp)]
-      [c-setup-call-button round product vendor (:result rp)]
-      [c-disqualify-button round product (:result rp)]])])
-
 (defn c-requirements
   [{:keys [prompts] :as req-form-template}]
   [:div
@@ -806,7 +769,8 @@
                                            :prompt-term "round.response/rating"}
                                           [[:response-prompt-fields
                                             {:deleted nil}
-                                            [:nval]]]]]]]]]]]]]}])]
+                                            [:nval]]]]]]]]]]]]]}])
+        _ (cljs.pprint/pprint @rounds&)]
     (fn []
       [:div.container-with-sidebar.round-details
        (if (= :loading @rounds&)
