@@ -220,40 +220,34 @@
     "You have already submitted your requirements." ; this should never show
     [c-round-initiation-form id]))
 
-
 (defn c-declare-winner-button
   [round product result]
-  [:> ui/Popup
-   {:content (if (= 1 result) "Declared Winner" "Declare Winner")
-    ;; :header "Decision"
-    :position "bottom left"
-    :trigger (r/as-element
-              [:> ui/Button {:icon "checkmark"
-                             :color (if (= 1 result)
-                                      "white"
-                                      "lightblue"
-                                      ;; "vetd-gradient"
-                                      )
-                             :onClick #(rf/dispatch [:b/round.declare-winner (:id round) (:id product)])
-                             :size "mini"
-                             :disabled (not (nil? result))}])}])
+  (let [won? (= 1 result)]
+    [:> ui/Popup
+     {:content (if won? "Declared Winner" "Declare Winner")
+      :position "bottom left"
+      :trigger (r/as-element
+                [:> ui/Button
+                 {:icon (if won? true "checkmark")
+                  :color (if won? "white" "lightblue")
+                  :onClick #(rf/dispatch [:b/round.declare-winner (:id round) (:id product)])
+                  :size "mini"
+                  :disabled (not (nil? result))}
+                 (when won?
+                   [:<> [:> ui/Icon {:name "checkmark"}] " Winner"])])}]))
 
 (defn c-setup-call-button
   [round product vendor result]
   [:> ui/Popup
    {:content (str "Set up call with " (:oname vendor))
-    ;; :header "Set Up a Call"
     :position "bottom left"
     :trigger (r/as-element
-              [:> ui/Button {:icon "call"
-                             :color (if (= 1 result)
-                                      "white"
-                                      "lightteal"
-                                      ;; "lightblue"
-                                      )
-                             :onClick #(rf/dispatch [:b/setup-call (:id product) (:pname product)])
-                             :size "mini"
-                             :disabled (= 0 result)}])}])
+              [:> ui/Button
+               {:icon "call"
+                :color (if (= 1 result) "white" "lightteal")
+                :onClick #(rf/dispatch [:b/setup-call (:id product) (:pname product)])
+                :size "mini"
+                :disabled (= 0 result)}])}])
 
 (defn c-disqualify-button
   [round product result]
@@ -428,9 +422,12 @@
                                [:b/nav-preposal-detail (-> preposals first :idstr)]
                                [:b/nav-product-detail product-idstr]))}
         pname]
-       [c-declare-winner-button round product (:result rp)]
-       [c-setup-call-button round product vendor (:result rp)]
-       [c-disqualify-button round product (:result rp)]]]
+       (when (not= 0 (:result rp))
+         [c-declare-winner-button round product (:result rp)])
+       (when (not= 0 (:result rp))
+         [c-setup-call-button round product vendor (:result rp)])
+       (when (not= 1 (:result rp))
+         [c-disqualify-button round product (:result rp)])]]
      (for [req prompts
            :let [{req-prompt-id :id
                   req-prompt-text :prompt} req
@@ -449,8 +446,7 @@
                   resp-id :resp-id
                   resp-text :sval} resp]]
        ^{:key (str req-prompt-id "-" product-id)}
-       [:div.cell {:class (str (when product-disqualified? "disqualified" )
-                               (when (= 1 resp-rating) "response-approved ")
+       [:div.cell {:class (str (when (= 1 resp-rating) "response-approved ")
                                (when (= 0 resp-rating) "response-disapproved "))
                    :on-mouse-down #(reset! cell-click-disabled? false)
                    :on-click #(when-not @cell-click-disabled?
