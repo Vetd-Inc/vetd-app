@@ -260,7 +260,8 @@
 
 (defn c-disqualify-button
   [round product result]
-  (let [popup-open? (r/atom false)]
+  (let [popup-open? (r/atom false)
+        context-ref (r/atom nil)]
     (fn [round product result]
       (if-not (= 0 result)
         [:> ui/Popup
@@ -286,22 +287,27 @@
                                                                   (:id product)
                                                                   @reason]))}
                                     "Disqualify"])}]]]))
+          :context @context-ref
           :trigger (r/as-element
                     [:> ui/Popup
                      {:content "Disqualify"
                       :position "bottom center"
+                      :context @context-ref
                       :trigger (r/as-element
                                 [:> ui/Button {:icon "ban"
                                                :basic true
+                                               :ref (fn [this] (reset! context-ref (r/dom-node this)))
                                                :size "mini"
                                                :disabled (= 1 result)
                                                :on-click #(swap! popup-open? not)}])}])}]
         [:> ui/Popup
-         {:content "Undo Disqualify"
+         {:content (str "Undo Disqualify")
           :position "bottom center"
+          :context @context-ref
           :trigger (r/as-element
                     [:> ui/Button {:icon "undo"
                                    :basic true
+                                   :ref (fn [this] (reset! context-ref (r/dom-node this)))
                                    :on-click #(rf/dispatch [:b/round.undo-disqualify (:id round) (:id product)])
                                    :size "mini"}])}]))))
 
