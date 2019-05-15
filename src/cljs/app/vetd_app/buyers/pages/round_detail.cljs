@@ -230,40 +230,39 @@
     [c-round-initiation-form id]))
 
 (defn c-declare-winner-button
-  [round product result]
-  (let [won? (= 1 result)]
-    [:> ui/Popup
-     {:content (if won? "Declared Winner" "Declare Winner")
-      :position "bottom left"
-      :trigger (r/as-element
-                [:> ui/Button
-                 {:icon (if won? true "checkmark")
-                  :color (if won? "white" "lightblue")
-                  :onClick #(rf/dispatch [:b/round.declare-winner (:id round) (:id product)])
-                  :size "mini"
-                  :disabled (not (nil? result))}
-                 (when won?
-                   [:<> [:> ui/Icon {:name "checkmark"}] " Winner"])])}]))
+  [round product won? disqualified?]
+  [:> ui/Popup
+   {:content (if won? "Declared Winner" "Declare Winner")
+    :position "bottom left"
+    :trigger (r/as-element
+              [:> ui/Button
+               {:icon (if won? true "checkmark")
+                :color (if won? "white" "lightblue")
+                :onClick #(rf/dispatch [:b/round.declare-winner (:id round) (:id product)])
+                :size "mini"
+                :disabled (or won? disqualified?)}
+               (when won?
+                 [:<> [:> ui/Icon {:name "checkmark"}] " Winner"])])}])
 
 (defn c-setup-call-button
-  [round product vendor result]
+  [round product vendor won? disqualified?]
   [:> ui/Popup
    {:content (str "Set up call with " (:oname vendor))
     :position "bottom left"
     :trigger (r/as-element
               [:> ui/Button
                {:icon "call"
-                :color (if (= 1 result) "white" "lightteal")
+                :color (if won? "white" "lightteal")
                 :onClick #(rf/dispatch [:b/setup-call (:id product) (:pname product)])
                 :size "mini"
-                :disabled (= 0 result)}])}])
+                :disabled disqualified?}])}])
 
 (defn c-disqualify-button
-  [round product result]
+  [round product won? disqualified?]
   (let [popup-open? (r/atom false)
         context-ref (r/atom nil)]
     (fn [round product result]
-      (if-not (= 0 result)
+      (if-not disqualified?
         [:> ui/Popup
          {:position "top left"
           :on "click"
@@ -298,7 +297,7 @@
                                                :basic true
                                                :ref (fn [this] (reset! context-ref (r/dom-node this)))
                                                :size "mini"
-                                               :disabled (= 1 result)
+                                               :disabled won?
                                                :on-click #(swap! popup-open? not)}])}])}]
         [:> ui/Popup
          {:content "Undo Disqualify"
@@ -429,14 +428,18 @@
              vendor :vendor
              preposals :docs
              :as product} (:product rp)
-            product-disqualified? (= 0 (:result rp))]
-        [:div.column (merge {:class (str (when (= 1 (:result rp)) " winner")
-                                         (when (= 0 (:result rp)) " disqualified"))
+            rp-result (:result rp)
+            [won? disqualified?] ((juxt (partial = 1) zero?) rp-result)]
+        [:div.column (merge {:class (str (when won? " winner")
+                                         (when disqualified? " disqualified"))
                              :data-product-id product-id}
                             (if (and @products-order& ; to trigger re-render
                                      (= @reordering-product product-id))
                               {:style {:left (str @curr-reordering-pos-x "px")}}
-                              {:style {:left (str (* (get-col-index product-id) 234) "px")}}))
+                              {:style {:left (-> product-id
+                                                 get-col-index
+                                                 (* 234)
+                                                 (str "px"))}}))
          [:div.round-product {:class (when (> (count pname) 17) " long")}
           (if @loading?&
             [cc/c-loader]
@@ -446,12 +449,12 @@
                                      [:b/nav-preposal-detail (-> preposals first :idstr)]
                                      [:b/nav-product-detail product-idstr]))}
               pname]
-             (when (not= 0 (:result rp))
-               [c-declare-winner-button round product (:result rp)])
-             (when (not= 0 (:result rp))
-               [c-setup-call-button round product vendor (:result rp)])
-             (when (not= 1 (:result rp))
-               [c-disqualify-button round product (:result rp)])])]
+             (when-not disqualified?
+               [c-declare-winner-button round product won? disqualified?])
+             (when-not disqualified?
+               [c-setup-call-button round product vendor won? disqualified?])
+             (when-not won?
+               [c-disqualify-button round product won? disqualified?])])]
          (for [req prompts
                :let [{req-prompt-id :id
                       req-prompt-text :prompt} req
@@ -516,12 +519,12 @@
         show-modal-fn (fn [response]
                         (reset! modal-response& response)
                         (reset! modal-showing?& true))
-        default-products-order& (atom [])]
+        last-default-products-order& (atom [])]
     (fn [round req-form-template round-product]
-      (when (not= @default-products-order&
-                  (into [] (map (comp :id :product) round-product)))
-        (reset! default-products-order& (into [] (map (comp :id :product) round-product)))
-        (reset! products-order& (into [] (map (comp :id :product) round-product))))
+      (let [default-products-order (vec (map (comp :id :product) round-product))]
+        (when (not= @last-default-products-order& default-products-order)
+          (reset! last-default-products-order& default-products-order)
+          (reset! products-order& default-products-order)))
       (if (seq round-product)
         [:<>
          [:div.round-grid {:style {:min-height (+ 46 84 (* 202 (-> req-form-template :prompts count)))}}
