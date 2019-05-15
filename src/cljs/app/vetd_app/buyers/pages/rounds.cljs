@@ -104,7 +104,8 @@
                                                :_order_by {:created :desc}
                                                :deleted nil}
                                       [:id :idstr :created :status :title
-                                       [:products [:pname]]]]]}])]
+                                       [:products {:ref-deleted nil}
+                                        [:pname]]]]]}])]
         (fn []
           (if (= :loading @rounds&)
             [cc/c-loader]

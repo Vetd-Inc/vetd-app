@@ -61,12 +61,21 @@
 (rf/reg-event-fx
  :b/round.disqualify
  (fn [{:keys [db]} [_ round-id product-id reason]]
-   {:ws-send {:payload {:cmd :b/round.declare-result
+   {;; :db (update-in db [:loading? :products] conj product-id)
+    :ws-send {:payload {:cmd :b/round.declare-result
+                        :return {:handler :b/round.declare-result-return
+                                 :round-id round-id
+                                 :product-id product-id}
                         :round-id round-id
                         :product-id product-id
                         :result 0
                         :reason reason
-                        :buyer-id (util/db->current-org-id db)}}
+                        :buyer-id (util/db->current-org-id db)}}}))
+
+(rf/reg-event-fx
+ :b/round.declare-result-return
+ (fn [{:keys [db]} [_ _ {{:keys [round-id product-id]} :return}]]
+   {;; :db (update-in db [:loading? :products] disj product-id)
     :toast {:type "success"
             :title "Product Disqualified from VetdRound"}
     :analytics/track {:event "Disqualify Product"
@@ -396,86 +405,95 @@
   [product-id]
   (.indexOf @products-order& product-id))
 
+(rf/reg-sub
+ :loading?
+ (fn [{:keys [loading?]} [_ product-id]]
+   ((:products loading?) product-id)))
+
 (defn c-column
-  [{:keys [id status] :as round}
-   {:keys [prompts] :as req-form-template}
-   rp
-   show-modal-fn]
-  (let [{pname :pname
-         product-id :id
-         product-idstr :idstr
-         vendor :vendor
-         preposals :docs
-         :as product} (:product rp)
-        product-disqualified? (= 0 (:result rp))]
-    [:div.column (merge {:class (str (when (= 1 (:result rp)) " winner")
-                                     (when (= 0 (:result rp)) " disqualified"))
-                         :data-product-id product-id}
-                        (if (and @products-order& ; to trigger re-render
-                                 (= @reordering-product product-id))
-                          {:style {:left (str @curr-reordering-pos-x "px")}}
-                          {:style {:left (str (* (get-col-index product-id) 234) "px")}}))
-     [:div.round-product {:class (when (> (count pname) 17) " long")}
-      [:div
-       [:a.name {:on-click #(rf/dispatch
-                             (if (seq preposals)
-                               [:b/nav-preposal-detail (-> preposals first :idstr)]
-                               [:b/nav-product-detail product-idstr]))}
-        pname]
-       (when (not= 0 (:result rp))
-         [c-declare-winner-button round product (:result rp)])
-       (when (not= 0 (:result rp))
-         [c-setup-call-button round product vendor (:result rp)])
-       (when (not= 1 (:result rp))
-         [c-disqualify-button round product (:result rp)])]]
-     (for [req prompts
-           :let [{req-prompt-id :id
-                  req-prompt-text :prompt} req
-                 response-prompts (-> rp :vendor-response-form-docs first :response-prompts)
-                 response-prompt (docs/get-response-prompt-by-prompt-id
-                                  response-prompts
-                                  req-prompt-id)
-                 resp-rating (some-> response-prompt
-                                     :subject-of-response-prompt
-                                     first
-                                     :response-prompt-fields
-                                     first
-                                     :nval)
-                 resp (docs/get-response-field-by-prompt-id response-prompts req-prompt-id)
-                 {id :id
-                  resp-id :resp-id
-                  resp-text :sval} resp]]
-       ^{:key (str req-prompt-id "-" product-id)}
-       [:div.cell {:class (str (when (= 1 resp-rating) "response-approved ")
-                               (when (= 0 resp-rating) "response-disapproved "))
-                   :on-mouse-down #(reset! cell-click-disabled? false)
-                   :on-click #(when-not @cell-click-disabled?
-                                (show-modal-fn {:req-prompt-id req-prompt-id
-                                                :req-prompt-text req-prompt-text
-                                                :product-id product-id
-                                                :pname pname
-                                                :resp-id resp-id
-                                                :resp-text resp-text
-                                                :resp-rating resp-rating}))}
-        [:div.text (if (not-empty resp-text)
-                     (util/truncate-text resp-text 150)
-                     (if (= status "complete")
-                       [c-no-response]
-                       [c-waiting-for-response]))]
-        [:div.actions
-         [c-action-button {:props {:class "action-button question"}
-                           :icon "chat outline" ; on-click just pass through
-                           :popup-text "Ask Question"}]
-         [c-action-button {:props {:class "action-button approve"}
-                           :on-click #(do (.stopPropagation %)
-                                          (rf/dispatch [:b/round.rate-response resp-id 1]))
-                           :icon "thumbs up outline"
-                           :popup-text (if (= 1 resp-rating) "Approved" "Approve")}]
-         [c-action-button {:props {:class "action-button disapprove"}
-                           :on-click #(do (.stopPropagation %)
-                                          (rf/dispatch [:b/round.rate-response resp-id 0]))
-                           :icon "thumbs down outline"
-                           :popup-text (if (= 0 resp-rating) "Disapproved" "Disapprove")}]]])]))
+  [round req-form-template rp show-modal-fn]
+  (let [loading?& (rf/subscribe [:loading? (:id (:product rp))])]
+    (fn [{:keys [id status] :as round}
+         {:keys [prompts] :as req-form-template}
+         rp
+         show-modal-fn]
+      (let [{pname :pname
+             product-id :id
+             product-idstr :idstr
+             vendor :vendor
+             preposals :docs
+             :as product} (:product rp)
+            product-disqualified? (= 0 (:result rp))]
+        [:div.column (merge {:class (str (when (= 1 (:result rp)) " winner")
+                                         (when (= 0 (:result rp)) " disqualified"))
+                             :data-product-id product-id}
+                            (if (and @products-order& ; to trigger re-render
+                                     (= @reordering-product product-id))
+                              {:style {:left (str @curr-reordering-pos-x "px")}}
+                              {:style {:left (str (* (get-col-index product-id) 234) "px")}}))
+         [:div.round-product {:class (when (> (count pname) 17) " long")}
+          (if @loading?&
+            [cc/c-loader]
+            [:div
+             [:a.name {:on-click #(rf/dispatch
+                                   (if (seq preposals)
+                                     [:b/nav-preposal-detail (-> preposals first :idstr)]
+                                     [:b/nav-product-detail product-idstr]))}
+              pname]
+             (when (not= 0 (:result rp))
+               [c-declare-winner-button round product (:result rp)])
+             (when (not= 0 (:result rp))
+               [c-setup-call-button round product vendor (:result rp)])
+             (when (not= 1 (:result rp))
+               [c-disqualify-button round product (:result rp)])])]
+         (for [req prompts
+               :let [{req-prompt-id :id
+                      req-prompt-text :prompt} req
+                     response-prompts (-> rp :vendor-response-form-docs first :response-prompts)
+                     response-prompt (docs/get-response-prompt-by-prompt-id
+                                      response-prompts
+                                      req-prompt-id)
+                     resp-rating (some-> response-prompt
+                                         :subject-of-response-prompt
+                                         first
+                                         :response-prompt-fields
+                                         first
+                                         :nval)
+                     resp (docs/get-response-field-by-prompt-id response-prompts req-prompt-id)
+                     {id :id
+                      resp-id :resp-id
+                      resp-text :sval} resp]]
+           ^{:key (str req-prompt-id "-" product-id)}
+           [:div.cell {:class (str (when (= 1 resp-rating) "response-approved ")
+                                   (when (= 0 resp-rating) "response-disapproved "))
+                       :on-mouse-down #(reset! cell-click-disabled? false)
+                       :on-click #(when-not @cell-click-disabled?
+                                    (show-modal-fn {:req-prompt-id req-prompt-id
+                                                    :req-prompt-text req-prompt-text
+                                                    :product-id product-id
+                                                    :pname pname
+                                                    :resp-id resp-id
+                                                    :resp-text resp-text
+                                                    :resp-rating resp-rating}))}
+            [:div.text (if (not-empty resp-text)
+                         (util/truncate-text resp-text 150)
+                         (if (= status "complete")
+                           [c-no-response]
+                           [c-waiting-for-response]))]
+            [:div.actions
+             [c-action-button {:props {:class "action-button question"}
+                               :icon "chat outline" ; on-click just pass through
+                               :popup-text "Ask Question"}]
+             [c-action-button {:props {:class "action-button approve"}
+                               :on-click #(do (.stopPropagation %)
+                                              (rf/dispatch [:b/round.rate-response resp-id 1]))
+                               :icon "thumbs up outline"
+                               :popup-text (if (= 1 resp-rating) "Approved" "Approve")}]
+             [c-action-button {:props {:class "action-button disapprove"}
+                               :on-click #(do (.stopPropagation %)
+                                              (rf/dispatch [:b/round.rate-response resp-id 0]))
+                               :icon "thumbs down outline"
+                               :popup-text (if (= 0 resp-rating) "Disapproved" "Disapprove")}]]])]))))
 
 (defn c-round-grid*
   [round req-form-template round-product]
