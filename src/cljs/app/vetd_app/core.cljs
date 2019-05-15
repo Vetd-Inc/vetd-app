@@ -68,7 +68,9 @@
  (constantly
   {:search-term ""
    :preposals-filter {:selected-categories #{}}
-   :rounds-filter {:selected-statuses #{}}}))
+   :rounds-filter {:selected-statuses #{}}
+   :loading? {:products #{}} ; entities (by ID) that are in a loading?=true state (for UI display)
+   }))
 
 (def public-pages #{:login :signup})
 

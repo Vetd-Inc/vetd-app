@@ -308,7 +308,8 @@ Product: '%s'"
 ;; result - 0 (disqualify), 1 (winner), nil (undisqualify, etc...)
 (defmethod com/handle-ws-inbound :b/round.declare-result
   [{:keys [round-id product-id buyer-id result reason] :as req} ws-id sub-fn]
-  (set-round-product-result round-id product-id result reason))
+  (set-round-product-result round-id product-id result reason)
+  {})
 
 (defmethod com/handle-ws-inbound :save-response
   [{:keys [subject subject-type term user-id round-id org-id fields] :as req} ws-id sub-fn]
