@@ -261,7 +261,7 @@
   [round product won? disqualified?]
   (let [popup-open? (r/atom false)
         context-ref (r/atom nil)]
-    (fn [round product result]
+    (fn [round product won? disqualified?]
       (if-not disqualified?
         [:> ui/Popup
          {:position "top left"
