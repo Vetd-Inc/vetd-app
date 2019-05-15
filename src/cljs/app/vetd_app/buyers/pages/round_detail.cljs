@@ -301,7 +301,7 @@
                                                :disabled (= 1 result)
                                                :on-click #(swap! popup-open? not)}])}])}]
         [:> ui/Popup
-         {:content (str "Undo Disqualify")
+         {:content "Undo Disqualify"
           :position "bottom center"
           :context @context-ref
           :trigger (r/as-element
