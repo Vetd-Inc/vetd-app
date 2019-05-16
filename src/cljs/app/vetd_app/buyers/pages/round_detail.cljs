@@ -420,11 +420,6 @@
              :color "blue"}
             "Submit Question"]]]]))))
 
-#_
-(defn get-col-index
-  [product-id]
-  (.indexOf @products-order& product-id))
-
 (rf/reg-sub
  :loading?
  (fn [{:keys [loading?]} [_ product-id]]
@@ -539,8 +534,7 @@
       (let [default-products-order (vec (map (comp :id :product) round-product))]
         (when (not= @last-default-products-order& default-products-order)
           (reset! last-default-products-order& default-products-order)
-          (rf/dispatch [:b/set-round-products-order (:id round) default-products-order])
-#_          (reset! products-order& default-products-order)))
+          (rf/dispatch [:b/set-round-products-order (:id round) default-products-order])))
       (if (seq round-product)
         [:<>
          [:div.round-grid {:style {:min-height (+ 46 84 (* 202 (-> req-form-template :prompts count)))}}
