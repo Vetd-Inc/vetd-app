@@ -479,8 +479,7 @@
   (let [{:keys [id]} (insert-prompt {:prompt "Empty Prompt"
                                      :descr "Empty Description"})]
     (insert-form-template-prompt form-template-id
-                                 id
-                                 100)))
+                                 id)))
 
 (defn- upsert*
   [exists?-fn ins-fn dissoc-fields entity & [use-id?]]
