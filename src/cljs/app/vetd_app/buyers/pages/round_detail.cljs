@@ -562,7 +562,8 @@
 
                ;;;; Scrolling
                scroll-left-at-mousedown (atom nil)
-               reverse-scroll-drag? (atom false)
+               default-scroll-drag-μ -2
+               scroll-drag-μ (atom default-scroll-drag-μ)
 
                ;; make header row 'sticky' upon window scroll
                header-pickup-y (atom nil) ; nil when not in 'sticky mode'
@@ -614,8 +615,8 @@
                mousedown (fn [e]
                            (reset! mousedown? true)
                            (reset! x-at-mousedown (.-pageX e))
-                           (if (and (part-of-drag-handle? (.-target e))
-                                    (> (count @products-order&) 1)) ; only able to reorder if more than one product
+                           (when (and (part-of-drag-handle? (.-target e))
+                                      (> (count @products-order&) 1)) ; only able to reorder if more than one product
                              ;; Reordering
                              (when-let [col (.closest (.-target e) ".column")] ; is the mousedown even on/in a column?
                                (let [col-left (js/parseInt (.-left (.-style col)))]
@@ -624,11 +625,11 @@
                                  (reset! curr-reordering-pos-x col-left)
                                  ;; remember the id of the product we are currently reordering
                                  (reset! reordering-product (js/parseInt (.getAttribute col "data-product-id")))
-                                 (reset! reverse-scroll-drag? true)
-                                 (.add (.-classList col) "reordering")))
-                             ;; Scrolling
-                             (do (reset! scroll-left-at-mousedown (.-scrollLeft node))
-                                 (.add (.-classList node) "dragging"))))
+                                 (reset! scroll-drag-μ 0)
+                                 (.add (.-classList col) "reordering"))))
+                           ;; Scrolling
+                           (do (reset! scroll-left-at-mousedown (.-scrollLeft node))
+                               (.add (.-classList node) "dragging")))
                mousemove (fn [e]
                            (when @mousedown?
                              (let [x-displacement (- (.-pageX e) @x-at-mousedown)]
@@ -636,13 +637,14 @@
                                (when (and (> (Math/abs x-displacement) 3)
                                           (not @cell-click-disabled?))
                                  (reset! cell-click-disabled? true))
-                               (if @reordering-product
+                               ;; apply reordering
+                               (when @reordering-product
                                  (do (reset! curr-reordering-pos-x (+ @col-pos-x-at-mousedown
                                                                       (* 1 x-displacement)))
                                      (let [old-index (get-col-index @reordering-product)
                                            new-index (-> @col-pos-x-at-mousedown
                                                          (+ x-displacement)
-                                                         (/ 234)
+                                                         (/ 234) ; width of column
                                                          (+ 0.5) ; to cause swap to occur when middle of a col is passed
                                                          Math/floor
                                                          (max 0) ; clamp between 0 and max index
@@ -651,20 +653,20 @@
                                          (swap! products-order&
                                                 assoc
                                                 old-index (@products-order& new-index)
-                                                new-index @reordering-product))))
-                                 (let [new-scroll-left (- @scroll-left-at-mousedown
-                                                          (* (if @reverse-scroll-drag? 0 2)
-                                                             x-displacement))]
-                                   (.preventDefault e)
-                                   (aset node "scrollLeft" new-scroll-left))))))
+                                                new-index @reordering-product)))))
+                               ;; apply scroll
+                               (let [new-scroll-left (+ @scroll-left-at-mousedown
+                                                        (* x-displacement @scroll-drag-μ))]
+                                 (.preventDefault e)
+                                 (aset node "scrollLeft" new-scroll-left)))))
                mouseup (fn [e]
                          (when @mousedown?
                            (reset! mousedown? false)
-                           (reset! reverse-scroll-drag? false)
-                           (if @reordering-product
+                           (reset! scroll-drag-μ default-scroll-drag-μ)
+                           (when @reordering-product
                              (do (.remove (.-classList @reordering-col-node) "reordering")
-                                 (reset! reordering-product nil))
-                             (.remove (.-classList node) "dragging"))))]
+                                 (reset! reordering-product nil)))
+                           (.remove (.-classList node) "dragging")))]
            (.addEventListener node "mousedown" mousedown)
            (.addEventListener node "mousemove" mousemove)
            (.addEventListener node "mouseup" mouseup)
