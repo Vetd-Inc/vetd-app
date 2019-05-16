@@ -1291,9 +1291,14 @@
               :join [[:prompts :p]
                      [:= :p.id :r.prompt_id]]}
       :owner :vetd
-      :grants {:hasura [:SELECT]}}]
+      :grants {:hasura [:SELECT]}}]]
 
-]])
+   [[2019 5 16 00 00]
+
+    [:alter-table {:schema :vetd
+                   :name :round_product
+                   :columns
+                   {:add {:sort [:integer]}}}]]])
 
 #_(mig/mk-migration-files migrations
                           "migrations")

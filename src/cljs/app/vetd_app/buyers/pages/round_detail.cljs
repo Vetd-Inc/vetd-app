@@ -9,6 +9,13 @@
             [re-frame.core :as rf]
             [clojure.string :as s]))
 
+
+(defonce cell-click-disabled? (r/atom false))
+;; the id of the product currently being reordered
+(defonce reordering-product (r/atom nil))
+;; the current x position of a column being reordered
+(defonce curr-reordering-pos-x (r/atom nil))
+
 ;; Events
 (rf/reg-event-fx
  :b/nav-round-detail
@@ -123,11 +130,26 @@
                       :props {:category "Round"
                               :label rating}}}))
 
+(rf/reg-event-fx
+ :b/set-round-products-order
+ (fn [{:keys [db]} [_ round-id new-round-products-order]]
+   {:db (assoc db
+               :round-products-order new-round-products-order)
+    :ws-send {:payload {:cmd :b/set-round-products-order
+                        :product-ids new-round-products-order
+                        :round-id round-id                        
+                        :user-id (-> db :user :id)
+                        :org-id (util/db->current-org-id db)}}}))
+
 ;; Subscriptions
 (rf/reg-sub
  :round-idstr
  :<- [:page-params] 
  (fn [{:keys [round-idstr]}] round-idstr))
+
+(rf/reg-sub
+ :round-products-order
+ (fn [{:keys [round-products-order]}] round-products-order))
 
 ;; Components
 (defn get-requirements-options []
@@ -398,18 +420,6 @@
              :color "blue"}
             "Submit Question"]]]]))))
 
-(defonce cell-click-disabled? (r/atom false))
-;; product id's in sort order
-(defonce products-order& (r/atom []))
-;; the id of the product currently being reordered
-(defonce reordering-product (r/atom nil))
-;; the current x position of a column being reordered
-(defonce curr-reordering-pos-x (r/atom nil))
-
-(defn get-col-index
-  [product-id]
-  (.indexOf @products-order& product-id))
-
 (rf/reg-sub
  :loading?
  (fn [{:keys [loading?]} [_ product-id]]
@@ -417,7 +427,8 @@
 
 (defn c-column
   [round req-form-template rp show-modal-fn]
-  (let [loading?& (rf/subscribe [:loading? (:id (:product rp))])]
+  (let [loading?& (rf/subscribe [:loading? (:id (:product rp))])
+        products-order& (rf/subscribe [:round-products-order])]
     (fn [{:keys [id status] :as round}
          {:keys [prompts] :as req-form-template}
          rp
@@ -436,8 +447,7 @@
                             (if (and @products-order& ; to trigger re-render
                                      (= @reordering-product product-id))
                               {:style {:left (str @curr-reordering-pos-x "px")}}
-                              {:style {:left (-> product-id
-                                                 get-col-index
+                              {:style {:left (-> (.indexOf @products-order& product-id)
                                                  (* 234)
                                                  (str "px"))}}))
          [:div.round-product {:class (when (> (count pname) 17) " long")}
@@ -524,7 +534,7 @@
       (let [default-products-order (vec (map (comp :id :product) round-product))]
         (when (not= @last-default-products-order& default-products-order)
           (reset! last-default-products-order& default-products-order)
-          (reset! products-order& default-products-order)))
+          (rf/dispatch [:b/set-round-products-order (:id round) default-products-order])))
       (if (seq round-product)
         [:<>
          [:div.round-grid {:style {:min-height (+ 46 84 (* 202 (-> req-form-template :prompts count)))}}
@@ -541,7 +551,7 @@
                   "from all relevant vendors. Check back soon for updates.")]]))))
 
 (def c-round-grid
-  (let [;; keep a reference to the window-scroll fn (will be created on mount)
+  (let [ ;; keep a reference to the window-scroll fn (will be created on mount)
         ;; so we can remove the event listener upon unmount
         window-scroll-fn-ref (atom nil)
         ;; really just affects which cursor displayed
@@ -550,11 +560,13 @@
           (let [node (r/dom-node this)]
             (if (> (.-scrollWidth node) (.-clientWidth node))
               (.add (.-classList (r/dom-node this)) "draggable")
-              (.remove (.-classList (r/dom-node this)) "draggable"))))]
+              (.remove (.-classList (r/dom-node this)) "draggable"))))
+        products-order& (rf/subscribe [:round-products-order])]
     (with-meta c-round-grid*
       {:component-did-mount
-       (fn [this] ; make grid draggable (scrolling & reordering)
-         (let [node (r/dom-node this)
+       (fn [this]       ; make grid draggable (scrolling & reordering)
+         (let [round-id (-> this r/props :id)
+               node (r/dom-node this)
                mousedown? (atom false)
                x-at-mousedown (atom nil)
 
@@ -630,19 +642,20 @@
                                (if @reordering-product
                                  (do (reset! curr-reordering-pos-x (+ @col-pos-x-at-mousedown
                                                                       (* 1 x-displacement)))
-                                     (let [old-index (get-col-index @reordering-product)
+                                     (let [old-index (.indexOf @products-order& @reordering-product)
                                            new-index (-> @col-pos-x-at-mousedown
                                                          (+ x-displacement)
                                                          (/ 234)
                                                          (+ 0.5) ; to cause swap to occur when middle of a col is passed
                                                          Math/floor
                                                          (max 0) ; clamp between 0 and max index
-                                                         (min (- (count @products-order&) 1)))]
+                                                         (min (dec (count @products-order&))))]
                                        (when (not= old-index new-index)
-                                         (swap! products-order&
-                                                assoc
-                                                old-index (@products-order& new-index)
-                                                new-index @reordering-product))))
+                                         (rf/dispatch [:b/set-round-products-order
+                                                       round-id
+                                                       (assoc @products-order&
+                                                              old-index (@products-order& new-index)
+                                                              new-index @reordering-product)]))))
                                  (let [new-scroll-left (- @scroll-left-at-mousedown
                                                           (* (if @reverse-scroll-drag? 0 2)
                                                              x-displacement))]
@@ -674,7 +687,7 @@
 
        :component-will-unmount
        (fn [this]
-         (reset! products-order& [])
+         #_         (reset! products-order& [])
          (when @window-scroll-fn-ref
            (.removeEventListener js/window "scroll" @window-scroll-fn-ref)))})))
 
@@ -745,7 +758,13 @@
 
 (defn sort-round-products
   [round-product] ; if result is nil, then sort it in-between winner and disqualified
-  (sort-by (juxt #(or (:result %) 0.5) (comp :pname :product)) > round-product))
+  (sort-by (juxt #(if-let [r (:result %)]
+                    (->> r
+                         (- 0.5)
+                         (* 100000))
+                    (:sort % 1))
+                 (comp :pname :product))
+           < round-product))
 
 (defn c-page []
   (let [org-id& (rf/subscribe [:org-id])
@@ -770,8 +789,9 @@
                                         [:id :prompt-field-fname :idx
                                          :sval :nval :dval]]]]]]
                                    ;; requirements responses from vendors
-                                   [:round-product {:deleted nil}
-                                    [:id :result :reason
+                                   [:round-product {:deleted nil
+                                                    :_order_by {:sort :asc}}
+                                    [:id :result :reason :sort
                                      [:product
                                       [:id :idstr :pname
                                        [:docs {:dtype "preposal" ; completed preposals
@@ -818,3 +838,4 @@
                     [c-add-requirement-button round]])]
                 [c-requirements req-form-template]])]
             [:div.inner-container [c-round round req-form-template sorted-round-products]]]))])))
+
