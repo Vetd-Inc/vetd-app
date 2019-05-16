@@ -560,10 +560,11 @@
                mousedown? (atom false)
                x-at-mousedown (atom nil)
 
-               ;;;; Scrolling
+               col-width 234 ; includes any spacing to the right of each col
+               
+               ;; Scrolling
                scroll-left-at-mousedown (atom nil)
-               default-scroll-drag-μ -2
-               scroll-drag-μ (atom default-scroll-drag-μ)
+               scroll-drag-μ -2
 
                ;; make header row 'sticky' upon window scroll
                header-pickup-y (atom nil) ; nil when not in 'sticky mode'
@@ -603,7 +604,7 @@
                ;; keep a reference to the window-scroll function (for listener removal)
                _ (reset! window-scroll-fn-ref window-scroll)
                
-               ;;;; Reordering (+ additional Scrolling logic)
+               ;; Reordering (+ additional Scrolling logic)
                part-of-drag-handle? (fn [dom-node]
                                       (let [class-list (.-classList dom-node)]
                                         (or (.contains class-list "round-product") ; top portion of column
@@ -625,7 +626,6 @@
                                  (reset! curr-reordering-pos-x col-left)
                                  ;; remember the id of the product we are currently reordering
                                  (reset! reordering-product (js/parseInt (.getAttribute col "data-product-id")))
-                                 (reset! scroll-drag-μ 0)
                                  (.add (.-classList col) "reordering"))))
                            ;; Scrolling
                            (do (reset! scroll-left-at-mousedown (.-scrollLeft node))
@@ -633,6 +633,7 @@
                mousemove (fn [e]
                            (when @mousedown?
                              (let [x-displacement (- (.-pageX e) @x-at-mousedown)]
+                               (.preventDefault e) ; seems to prevent cell text selection when scrolling
                                ;; if you drag more than 3px, disable the cell & product name clickability
                                (when (and (> (Math/abs x-displacement) 3)
                                           (not @cell-click-disabled?))
@@ -644,7 +645,7 @@
                                      (let [old-index (get-col-index @reordering-product)
                                            new-index (-> @col-pos-x-at-mousedown
                                                          (+ x-displacement)
-                                                         (/ 234) ; width of column
+                                                         (/ col-width) ; width of column
                                                          (+ 0.5) ; to cause swap to occur when middle of a col is passed
                                                          Math/floor
                                                          (max 0) ; clamp between 0 and max index
@@ -655,14 +656,31 @@
                                                 old-index (@products-order& new-index)
                                                 new-index @reordering-product)))))
                                ;; apply scroll
-                               (let [new-scroll-left (+ @scroll-left-at-mousedown
-                                                        (* x-displacement @scroll-drag-μ))]
-                                 (.preventDefault e)
-                                 (aset node "scrollLeft" new-scroll-left)))))
+                               (aset node "scrollLeft"
+                                     (+ @scroll-left-at-mousedown
+                                        (if @reordering-product
+                                          (let [reordering-right-edge (+ @curr-reordering-pos-x col-width)
+                                                grid-right-edge (+ @scroll-left-at-mousedown (.-clientWidth node))
+                                                delta-past-right-edge (- reordering-right-edge grid-right-edge)]
+                                            (cond
+                                              (pos? delta-past-right-edge)
+                                              (do (reset! curr-reordering-pos-x
+                                                          (- (+ grid-right-edge
+                                                                (Math/floor
+                                                                 (* -1 2 delta-past-right-edge scroll-drag-μ)
+                                                                 )
+                                                                ;; (* 2 delta-past-right-edge)
+                                                                )
+                                                             col-width))
+                                                  (* -1.5 delta-past-right-edge scroll-drag-μ)
+                                                  ;; delta-past-right-edge
+                                                  )
+                                              
+                                              :else 0))
+                                          (* x-displacement scroll-drag-μ)))))))
                mouseup (fn [e]
                          (when @mousedown?
                            (reset! mousedown? false)
-                           (reset! scroll-drag-μ default-scroll-drag-μ)
                            (when @reordering-product
                              (do (.remove (.-classList @reordering-col-node) "reordering")
                                  (reset! reordering-product nil)))
