@@ -157,8 +157,19 @@
                      :sort sort'})
         first)))
 
+(defn get-max-prompt-sort-by-form-template-id
+  [form-template-id]
+  (->> [[:form-templates {:id form-template-id}
+         [[:prompts [:sort]]]]]
+       ha/sync-query
+       :form-templates
+       first
+       :prompts
+       (map :sort)
+       (apply max)))
+
 (defn insert-form-template-prompt
-  [form-template-id prompt-id sort']
+  [form-template-id prompt-id & [sort']]
   (let [[id idstr] (ut/mk-id&str)]
     (-> (db/insert! :form_template_prompt
                     {:id id
@@ -168,7 +179,10 @@
                      :deleted nil
                      :form_template_id form-template-id
                      :prompt_id prompt-id
-                     :sort sort'})
+                     :sort (or sort'
+                               (-> form-template-id
+                                   get-max-prompt-sort-by-form-template-id
+                                   inc))})
         first)))
 
 (defn insert-response
