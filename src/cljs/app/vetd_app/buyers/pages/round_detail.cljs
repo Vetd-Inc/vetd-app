@@ -560,7 +560,7 @@
                mousedown? (atom false)
                x-at-mousedown (atom nil)
 
-               ;; Scrolling
+               ;;;; Scrolling
                scroll-left-at-mousedown (atom nil)
                reverse-scroll-drag? (atom false)
 
@@ -586,25 +586,28 @@
                                (.requestAnimationFrame
                                 js/window
                                 (fn []
-                                  (if @header-pickup-y
-                                    (when (< (.-scrollY js/window) @header-pickup-y)
-                                      (reset! header-pickup-y nil)
-                                      (.remove (.-classList node) "fixed")
-                                      (zero-out-req-scroll))
-                                    (when (> (.-scrollY js/window) (.-offsetTop node))
-                                      (reset! header-pickup-y (.-offsetTop node))
-                                      (.add (.-classList node) "fixed")
-                                      ;; call 'scroll' to update horiz pos of req row
-                                      ;; (only matters if grid was horiz scrolled/dragged)
-                                      (scroll))))))
+                                  (let [window-scroll-y (.-scrollY js/window)
+                                        node-offset-top (.-offsetTop node)]
+                                    (if @header-pickup-y
+                                      (when (< window-scroll-y @header-pickup-y)
+                                        (reset! header-pickup-y nil)
+                                        (.remove (.-classList node) "fixed")
+                                        (zero-out-req-scroll))
+                                      (when (> window-scroll-y node-offset-top)
+                                        (reset! header-pickup-y node-offset-top)
+                                        (.add (.-classList node) "fixed")
+                                        ;; call 'scroll' to update horiz pos of products row
+                                        ;; (only matters if grid was horiz scrolled/dragged)
+                                        (scroll)))))))
+               ;; keep a reference to the window-scroll function (for listener removal)
                _ (reset! window-scroll-fn-ref window-scroll)
                
-               ;; Reordering (and more Scrolling logic)
+               ;;;; Reordering (+ additional Scrolling logic)
                part-of-drag-handle? (fn [dom-node]
-                                      (or (.contains (.-classList dom-node) "round-product")
-                                          ;; consider making the name also a drag handle
-                                          (.contains (.-classList dom-node) "name")
-                                          (empty? (array-seq (.-classList dom-node)))))
+                                      (let [class-list (.-classList dom-node)]
+                                        (or (.contains class-list "round-product") ; top portion of column
+                                            (.contains class-list "name") ; the product name
+                                            (empty? (array-seq class-list))))) ; the column node itself
                col-pos-x-at-mousedown (atom nil)
                reordering-col-node (atom nil)
                
@@ -614,7 +617,7 @@
                            (if (and (part-of-drag-handle? (.-target e))
                                     (> (count @products-order&) 1)) ; only able to reorder if more than one product
                              ;; Reordering
-                             (when-let [col (.closest (.-target e) ".column")] ; is the mousedown even on a column?
+                             (when-let [col (.closest (.-target e) ".column")] ; is the mousedown even on/in a column?
                                (let [col-left (js/parseInt (.-left (.-style col)))]
                                  (reset! reordering-col-node col)
                                  (reset! col-pos-x-at-mousedown col-left)
