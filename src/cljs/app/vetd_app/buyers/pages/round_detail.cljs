@@ -430,16 +430,19 @@
              :as product} (:product rp)
             rp-result (:result rp)
             [won? disqualified?] ((juxt (partial = 1) zero?) rp-result)]
-        [:div.column (merge {:class (str (when won? " winner")
-                                         (when disqualified? " disqualified"))
-                             :data-product-id product-id}
-                            (if (and @products-order& ; to trigger re-render
-                                     (= @reordering-product product-id))
-                              {:style {:left (str @curr-reordering-pos-x "px")}}
-                              {:style {:left (-> product-id
-                                                 get-col-index
-                                                 (* 234)
-                                                 (str "px"))}}))
+        [:div.column {:class (str (when won? " winner")
+                                  (when disqualified? " disqualified"))
+                      :data-product-id product-id
+                      :style {:transform
+                              (str "translateX("
+                                   (if (and @products-order& ; to trigger re-render
+                                            (= @reordering-product product-id))
+                                     @curr-reordering-pos-x
+                                     (-> product-id
+                                         get-col-index
+                                         (* 234)))
+                                   "px)")}
+                      }
          [:div.round-product {:class (when (> (count pname) 17) " long")}
           (if @loading?&
             [cc/c-loader]
@@ -559,8 +562,13 @@
          (let [node (r/dom-node this)
                mousedown? (atom false)
                x-at-mousedown (atom nil)
-
                col-width 234 ; includes any spacing to the right of each col
+
+               ;; anim-loop-fn (fn anim-loop
+               ;;                [timestamp]
+               ;;                (println timestamp)
+               ;;                (js/requestAnimationFrame anim-loop))
+               ;; _ (js/requestAnimationFrame anim-loop-fn)
                
                ;; Scrolling
                scroll-left-at-mousedown (atom nil)
@@ -575,9 +583,9 @@
                         (.requestAnimationFrame
                          js/window
                          (fn []
-                           (when @header-pickup-y
-                             (doseq [req-node (all-header-nodes)]
-                               (aset (.-style req-node) "marginLeft" (str (* -1 (.-scrollLeft node)) "px")))))))
+                           #_(when @header-pickup-y
+                               (doseq [req-node (all-header-nodes)]
+                                 (aset (.-style req-node) "marginLeft" (str (* -1 (.-scrollLeft node)) "px")))))))
                ;; zero out the artificial horizontal scrolling of the header row
                ;; this needs to be called when we leave 'sticky mode'
                zero-out-req-scroll (fn []
@@ -664,17 +672,8 @@
                                                 delta-past-right-edge (- reordering-right-edge grid-right-edge)]
                                             (cond
                                               (pos? delta-past-right-edge)
-                                              (do (reset! curr-reordering-pos-x
-                                                          (- (+ grid-right-edge
-                                                                (Math/floor
-                                                                 (* -1 2 delta-past-right-edge scroll-drag-μ)
-                                                                 )
-                                                                ;; (* 2 delta-past-right-edge)
-                                                                )
-                                                             col-width))
-                                                  (* -1.5 delta-past-right-edge scroll-drag-μ)
-                                                  ;; delta-past-right-edge
-                                                  )
+                                              (do (js/setInterval #() 50)
+                                                  delta-past-right-edge)
                                               
                                               :else 0))
                                           (* x-displacement scroll-drag-μ)))))))
