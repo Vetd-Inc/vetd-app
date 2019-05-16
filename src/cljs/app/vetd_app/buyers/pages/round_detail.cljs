@@ -444,10 +444,12 @@
           (if @loading?&
             [cc/c-loader]
             [:div
-             [:a.name {:on-click #(rf/dispatch
-                                   (if (seq preposals)
-                                     [:b/nav-preposal-detail (-> preposals first :idstr)]
-                                     [:b/nav-product-detail product-idstr]))}
+             [:a.name {:on-mouse-down #(reset! cell-click-disabled? false)
+                       :on-click #(when-not @cell-click-disabled?
+                                    (rf/dispatch
+                                     (if (seq preposals)
+                                       [:b/nav-preposal-detail (-> preposals first :idstr)]
+                                       [:b/nav-product-detail product-idstr])))}
               pname]
              (when-not disqualified?
                [c-declare-winner-button round product won? disqualified?])
@@ -601,7 +603,7 @@
                part-of-drag-handle? (fn [dom-node]
                                       (or (.contains (.-classList dom-node) "round-product")
                                           ;; consider making the name also a drag handle
-                                          ;; (.contains (.-classList dom-node) "name")
+                                          (.contains (.-classList dom-node) "name")
                                           (empty? (array-seq (.-classList dom-node)))))
                col-pos-x-at-mousedown (atom nil)
                reordering-col-node (atom nil)
@@ -627,6 +629,10 @@
                mousemove (fn [e]
                            (when @mousedown?
                              (let [x-displacement (- (.-pageX e) @x-at-mousedown)]
+                               ;; if you drag more than 3px, disable the cell & product name clickability
+                               (when (and (> (Math/abs x-displacement) 3)
+                                          (not @cell-click-disabled?))
+                                 (reset! cell-click-disabled? true))
                                (if @reordering-product
                                  (do (reset! curr-reordering-pos-x (+ @col-pos-x-at-mousedown
                                                                       (* 1 x-displacement)))
@@ -647,11 +653,7 @@
                                                           (* (if @reverse-scroll-drag? 0 2)
                                                              x-displacement))]
                                    (.preventDefault e)
-                                   (aset node "scrollLeft" new-scroll-left)
-                                   ;; if you drag more than 3px, disable the cell clickability
-                                   (when (and (> (Math/abs x-displacement) 3)
-                                              (not @cell-click-disabled?))
-                                     (reset! cell-click-disabled? true)))))))
+                                   (aset node "scrollLeft" new-scroll-left))))))
                mouseup (fn [e]
                          (when @mousedown?
                            (reset! mousedown? false)
