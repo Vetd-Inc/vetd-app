@@ -156,3 +156,10 @@ WHERE table_schema = 'vetd' AND table_catalog = 'vetd1';")
   (hs-exe! {:update tbl-kw
             :set {:deleted (ut/now-ts)}
             :where hny-where}))
+
+(defn update-where
+  [tbl-kw hny-set hny-where]
+  (hs-exe! {:update tbl-kw
+            :set (assoc hny-set
+                        :updated (ut/now-ts))
+            :where hny-where}))
