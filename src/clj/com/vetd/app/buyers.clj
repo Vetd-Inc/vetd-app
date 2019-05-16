@@ -248,9 +248,7 @@ Product: '%s'"
                          first
                          (or (docs/create-round-req-prompt&fields requirement-text)))]
     (docs/insert-form-template-prompt req-form-template-id
-                                      id
-                                      ;; TODO dynamically determine idx??
-                                      0)
+                                      id)
     (docs/merge-template-to-forms req-form-template-id)))
 
 ;; TODO there could be multiple preposals/rounds per buyer-vendor pair

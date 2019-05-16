@@ -779,7 +779,7 @@
                                     [:id
                                      [:prompts {:ref-deleted nil
                                                 :_order_by {:sort :asc}}
-                                      [:id :idstr :prompt :descr]]]]
+                                      [:id :idstr :prompt :descr :sort]]]]
                                    ;; round initiation form response
                                    [:init-doc
                                     [:id
