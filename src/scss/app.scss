@@ -381,8 +381,7 @@ $cell-height: 201px;
     padding-left: 5px;
     padding-right: 5px;
     flex: 0 0 auto;
-    transition: // left 0.4s 0s ease-out,
-                transform 0.4s 0s ease-out,
+    transition: transform 0.4s 0s ease-out,
                 z-index 0s 0.4s ease-out,
                 box-shadow 0.4s 0s ease-out,
                 background 1s 0s linear;

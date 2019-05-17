@@ -559,46 +559,33 @@
       {:component-did-mount
        (fn [this] ; make grid draggable (scrolling & reordering)
          (let [node (r/dom-node this)
-               ;; config
-               scroll-drag-μ -2
                col-width 234 ; includes any spacing to the right of each col
-               edge-scroll-speed 5
 
                mousedown? (atom false)
                x-at-mousedown (atom nil)
-               reordering-scroll-right? (atom false)
-               last-x-displacement (atom 0)
-               
-               ;; Scrolling
-               scroll-left-at-mousedown (atom nil)
+               mouse-x (atom nil) ; current mouse pos x
+               last-mouse-x (atom nil)
+               last-mouse-delta (atom 0)
+               drag-direction-intention (atom nil)
+               ;; distance that user mousedown'd from left side of column being dragged
+               drag-handle-offset (atom nil)
 
-               ;; scroll x position
+               ;; gets applied to scrollLeft
                scroll-x (atom 0)
-               ;; scroll velocity
+               ;; scroll velocity (on x axis)
                scroll-v (atom 0)
                ;; coefficient of friction
                scroll-k (atom 0.9)
                ;; amount of acceleration that gets applied per 1px mouse drag
                scroll-a-factor 1.5
-               scroll-speed-reordering 3
-
-               last-mouse-delta (atom 0)
-               drag-direction-intention (atom nil)
-
+               ;; when reordering near left or right edge of grid
+               scroll-speed-reordering 5
                ;; this should be updated on resize
                scroll-x-max (.-scrollWidth node)
 
-               drag-handle-offset (atom nil)
-
-               mouse-x (atom nil)
-               last-mouse-x-pos (atom nil)
-
-
-
-               ;; make header row 'sticky' upon window scroll
+               ;; make header row 'sticky' upon vertical window scroll
                header-pickup-y (atom nil) ; nil when not in 'sticky mode'
                all-header-nodes #(array-seq (.getElementsByClassName js/document "round-product"))
-               ;; zero out the artificial horizontal scrolling of the header row
                ;; this needs to be called when we leave 'sticky mode'
                zero-out-header-scroll (fn []
                                         (doseq [header-node (all-header-nodes)]
@@ -617,20 +604,19 @@
                                             (zero-out-header-scroll))
                                         (doseq [header-node (all-header-nodes)]
                                           (aset (.-style header-node) "transform"
-                                                (str "translateY("(- window-scroll-y node-offset-top) "px)"))))
+                                                (str "translateY(" (- window-scroll-y node-offset-top) "px)"))))
                                       (when (> window-scroll-y node-offset-top)
                                         (reset! header-pickup-y node-offset-top)
                                         (.add (.-classList node) "fixed")))))))
                ;; keep a reference to the window-scroll function (for listener removal)
                _ (reset! window-scroll-fn-ref window-scroll)
-               
-               ;; Reordering (+ additional Scrolling logic)
+
+               ;; is a given dom node considered a handle for beginning a column drag (for reorder)?
                part-of-drag-handle? (fn [dom-node]
                                       (let [class-list (.-classList dom-node)]
                                         (or (.contains class-list "round-product") ; top portion of column
                                             (.contains class-list "name") ; the product name
                                             (empty? (array-seq class-list))))) ; the column node itself
-               col-pos-x-at-mousedown (atom nil)
                reordering-col-node (atom nil)
                
                mousedown (fn [e]
@@ -643,7 +629,6 @@
                              (when-let [col (.closest (.-target e) ".column")] ; is the mousedown even on/in a column?
                                (let [col-left (js/parseInt (re-find #"\d+" (.-transform (.-style col))))]
                                  (reset! reordering-col-node col)
-                                 (reset! col-pos-x-at-mousedown col-left)
                                  (reset! curr-reordering-pos-x col-left)
                                  (reset! drag-direction-intention nil)
                                  (reset! drag-handle-offset (- (+ (- (.-pageX e)
@@ -652,11 +637,12 @@
                                                                col-left))
                                  ;; remember the id of the product we are currently reordering
                                  (reset! reordering-product (js/parseInt (.getAttribute col "data-product-id")))
-                                 (.add (.-classList col) "reordering"))))
+                                 (.add (.-classList @reordering-col-node) "reordering"))))
                            ;; Scrolling
-                           (do (reset! scroll-left-at-mousedown (.-scrollLeft node))
-                               (reset! last-mouse-x-pos (.-pageX e))
+                           (do (reset! last-mouse-x (.-pageX e))
                                (.add (.-classList node) "dragging")))
+               ;; based on the (physical) position of the column being dragged,
+               ;; update the sort pos if needed
                update-sort-pos (fn []
                                  (let [old-index (get-col-index @reordering-product)
                                        new-index (-> @curr-reordering-pos-x
@@ -682,19 +668,19 @@
                              ;; scrolling
                              (when-not @reordering-product
                                (reset! scroll-v (* -1
-                                                   (- (.-pageX e) @last-mouse-x-pos) ; disp
+                                                   (- (.-pageX e) @last-mouse-x) ; disp
                                                    scroll-a-factor)))
-                             (reset! last-mouse-delta (- @mouse-x @last-mouse-x-pos))
+                             ;; useful for determining if right or left edge scrolling is needed
+                             (reset! last-mouse-delta (- @mouse-x @last-mouse-x))
                              (when-not (zero? @last-mouse-delta)
                                (if (pos? @last-mouse-delta)
                                  (reset! drag-direction-intention "right")
                                  (reset! drag-direction-intention "left")))
-                             (reset! last-mouse-x-pos @mouse-x)))
+                             (reset! last-mouse-x @mouse-x)))
                mouseup (fn [e]
                          (reset! mouse-x (.-pageX e))
                          (when @mousedown?
                            (reset! mousedown? false)
-                           (reset! reordering-scroll-right? false)
                            (reset! last-mouse-delta 0)
                            (when @reordering-product
                              (do (.remove (.-classList @reordering-col-node) "reordering")
