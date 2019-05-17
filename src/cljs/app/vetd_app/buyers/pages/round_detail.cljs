@@ -584,12 +584,14 @@
                          (fn []
                            #_(when @header-pickup-y
                                (doseq [req-node (all-header-nodes)]
-                                 (aset (.-style req-node) "marginLeft" (str (* -1 (.-scrollLeft node)) "px")))))))
+                                 (println e)
+                                 (aset (.-style req-node) "marginTop" "50px")
+                                 )))))
                ;; zero out the artificial horizontal scrolling of the header row
                ;; this needs to be called when we leave 'sticky mode'
                zero-out-req-scroll (fn []
                                      (doseq [req-node (all-header-nodes)]
-                                       (aset (.-style req-node) "marginLeft" "0px")))
+                                       (aset (.-style req-node) "transform" "translateY(0px)")))
                ;; turn on and off header row 'sticky mode' as needed
                window-scroll (fn []
                                (.requestAnimationFrame
@@ -598,10 +600,13 @@
                                   (let [window-scroll-y (.-scrollY js/window)
                                         node-offset-top (.-offsetTop node)]
                                     (if @header-pickup-y
-                                      (when (< window-scroll-y @header-pickup-y)
-                                        (reset! header-pickup-y nil)
-                                        (.remove (.-classList node) "fixed")
-                                        (zero-out-req-scroll))
+                                      (if (< window-scroll-y @header-pickup-y)
+                                        (do (reset! header-pickup-y nil)
+                                            (.remove (.-classList node) "fixed")
+                                            (zero-out-req-scroll))
+                                        (doseq [req-node (all-header-nodes)]
+                                          (aset (.-style req-node) "transform"
+                                                (str "translateY("(- window-scroll-y node-offset-top) "px)"))))
                                       (when (> window-scroll-y node-offset-top)
                                         (reset! header-pickup-y node-offset-top)
                                         (.add (.-classList node) "fixed")
@@ -668,14 +673,14 @@
                                         (if @reordering-product
                                           0
                                           #_(let [reordering-right-edge (+ @curr-reordering-pos-x col-width)
-                                                grid-right-edge (+ @scroll-left-at-mousedown (.-clientWidth node))
-                                                delta-past-right-edge (- reordering-right-edge grid-right-edge)]
-                                            (cond
-                                              (pos? delta-past-right-edge)
-                                              (do (js/setInterval #() 50)
-                                                  delta-past-right-edge)
-                                              
-                                              :else 0))
+                                                  grid-right-edge (+ @scroll-left-at-mousedown (.-clientWidth node))
+                                                  delta-past-right-edge (- reordering-right-edge grid-right-edge)]
+                                              (cond
+                                                (pos? delta-past-right-edge)
+                                                (do (js/setInterval #() 50)
+                                                    delta-past-right-edge)
+                                                
+                                                :else 0))
                                           (* x-displacement scroll-drag-μ)))))))
                mouseup (fn [e]
                          (when @mousedown?
