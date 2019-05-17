@@ -576,22 +576,11 @@
                ;; make header row 'sticky' upon window scroll
                header-pickup-y (atom nil) ; nil when not in 'sticky mode'
                all-header-nodes #(array-seq (.getElementsByClassName js/document "round-product"))
-               ;; the horizontal position of the requirement row needs to
-               ;; be manually updated when in 'sticky mode'
-               scroll (fn []
-                        (.requestAnimationFrame
-                         js/window
-                         (fn []
-                           #_(when @header-pickup-y
-                               (doseq [req-node (all-header-nodes)]
-                                 (println e)
-                                 (aset (.-style req-node) "marginTop" "50px")
-                                 )))))
                ;; zero out the artificial horizontal scrolling of the header row
                ;; this needs to be called when we leave 'sticky mode'
-               zero-out-req-scroll (fn []
-                                     (doseq [req-node (all-header-nodes)]
-                                       (aset (.-style req-node) "transform" "translateY(0px)")))
+               zero-out-header-scroll (fn []
+                                        (doseq [header-node (all-header-nodes)]
+                                          (aset (.-style header-node) "transform" "translateY(0px)")))
                ;; turn on and off header row 'sticky mode' as needed
                window-scroll (fn []
                                (.requestAnimationFrame
@@ -603,16 +592,13 @@
                                       (if (< window-scroll-y @header-pickup-y)
                                         (do (reset! header-pickup-y nil)
                                             (.remove (.-classList node) "fixed")
-                                            (zero-out-req-scroll))
-                                        (doseq [req-node (all-header-nodes)]
-                                          (aset (.-style req-node) "transform"
+                                            (zero-out-header-scroll))
+                                        (doseq [header-node (all-header-nodes)]
+                                          (aset (.-style header-node) "transform"
                                                 (str "translateY("(- window-scroll-y node-offset-top) "px)"))))
                                       (when (> window-scroll-y node-offset-top)
                                         (reset! header-pickup-y node-offset-top)
-                                        (.add (.-classList node) "fixed")
-                                        ;; call 'scroll' to update horiz pos of products row
-                                        ;; (only matters if grid was horiz scrolled/dragged)
-                                        (scroll)))))))
+                                        (.add (.-classList node) "fixed")))))))
                ;; keep a reference to the window-scroll function (for listener removal)
                _ (reset! window-scroll-fn-ref window-scroll)
                
@@ -671,8 +657,8 @@
                                (aset node "scrollLeft"
                                      (+ @scroll-left-at-mousedown
                                         (if @reordering-product
-                                          0
-                                          #_(let [reordering-right-edge (+ @curr-reordering-pos-x col-width)
+                                          
+                                          (let [reordering-right-edge (+ @curr-reordering-pos-x col-width)
                                                   grid-right-edge (+ @scroll-left-at-mousedown (.-clientWidth node))
                                                   delta-past-right-edge (- reordering-right-edge grid-right-edge)]
                                               (cond
@@ -693,7 +679,6 @@
            (.addEventListener node "mousemove" mousemove)
            (.addEventListener node "mouseup" mouseup)
            (.addEventListener node "mouseleave" mouseup)
-           (.addEventListener node "scroll" scroll)
            (.addEventListener js/window "scroll" window-scroll)
            (update-draggability this)))
 
