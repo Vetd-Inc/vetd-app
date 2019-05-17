@@ -559,19 +559,20 @@
       {:component-did-mount
        (fn [this] ; make grid draggable (scrolling & reordering)
          (let [node (r/dom-node this)
+               ;; config
+               scroll-drag-μ -2
+               col-width 234 ; includes any spacing to the right of each col
+               edge-scroll-speed 5
+
                mousedown? (atom false)
                x-at-mousedown (atom nil)
-               col-width 234 ; includes any spacing to the right of each col
-
-               ;; anim-loop-fn (fn anim-loop
-               ;;                [timestamp]
-               ;;                (println timestamp)
-               ;;                (js/requestAnimationFrame anim-loop))
-               ;; _ (js/requestAnimationFrame anim-loop-fn)
+               at-right-edge? (atom false)
+               last-x-displacement (atom 0)
                
                ;; Scrolling
                scroll-left-at-mousedown (atom nil)
-               scroll-drag-μ -2
+
+
 
                ;; make header row 'sticky' upon window scroll
                header-pickup-y (atom nil) ; nil when not in 'sticky mode'
@@ -628,6 +629,19 @@
                            ;; Scrolling
                            (do (reset! scroll-left-at-mousedown (.-scrollLeft node))
                                (.add (.-classList node) "dragging")))
+               update-sort-pos (fn []
+                                 (let [old-index (get-col-index @reordering-product)
+                                       new-index (-> @curr-reordering-pos-x
+                                                     (/ col-width) ; width of column
+                                                     (+ 0.5) ; to cause swap to occur when middle of a col is passed
+                                                     Math/floor
+                                                     (max 0) ; clamp between 0 and max index
+                                                     (min (- (count @products-order&) 1)))]
+                                   (when (not= old-index new-index)
+                                     (swap! products-order&
+                                            assoc
+                                            old-index (@products-order& new-index)
+                                            new-index @reordering-product))))
                mousemove (fn [e]
                            (when @mousedown?
                              (let [x-displacement (- (.-pageX e) @x-at-mousedown)]
@@ -637,44 +651,48 @@
                                           (not @cell-click-disabled?))
                                  (reset! cell-click-disabled? true))
                                ;; apply reordering
-                               (when @reordering-product
-                                 (do (reset! curr-reordering-pos-x (+ @col-pos-x-at-mousedown
-                                                                      (* 1 x-displacement)))
-                                     (let [old-index (get-col-index @reordering-product)
-                                           new-index (-> @col-pos-x-at-mousedown
-                                                         (+ x-displacement)
-                                                         (/ col-width) ; width of column
-                                                         (+ 0.5) ; to cause swap to occur when middle of a col is passed
-                                                         Math/floor
-                                                         (max 0) ; clamp between 0 and max index
-                                                         (min (- (count @products-order&) 1)))]
-                                       (when (not= old-index new-index)
-                                         (swap! products-order&
-                                                assoc
-                                                old-index (@products-order& new-index)
-                                                new-index @reordering-product)))))
+                               (when (and @reordering-product
+                                          (not @at-right-edge?))
+                                 (reset! curr-reordering-pos-x (+ @col-pos-x-at-mousedown x-displacement))
+                                 (update-sort-pos))
                                ;; apply scroll
                                (aset node "scrollLeft"
                                      (+ @scroll-left-at-mousedown
                                         (if @reordering-product
-                                          
                                           (let [reordering-right-edge (+ @curr-reordering-pos-x col-width)
-                                                  grid-right-edge (+ @scroll-left-at-mousedown (.-clientWidth node))
-                                                  delta-past-right-edge (- reordering-right-edge grid-right-edge)]
-                                              (cond
-                                                (pos? delta-past-right-edge)
-                                                (do (js/setInterval #() 50)
-                                                    delta-past-right-edge)
-                                                
-                                                :else 0))
-                                          (* x-displacement scroll-drag-μ)))))))
+                                                grid-right-edge (+ @scroll-left-at-mousedown (.-clientWidth node))
+                                                delta-past-right-edge (- reordering-right-edge grid-right-edge)]
+                                            (cond
+                                              (and (pos? (- x-displacement @last-x-displacement))
+                                                   (> delta-past-right-edge 0))
+                                              (do (reset! at-right-edge? true)
+                                                  delta-past-right-edge)
+                                              
+                                              :else (do (when (< delta-past-right-edge 0)
+                                                          (reset! at-right-edge? false))
+                                                        0)))
+                                          (* x-displacement scroll-drag-μ))))
+                               (reset! last-x-displacement x-displacement))))
                mouseup (fn [e]
                          (when @mousedown?
                            (reset! mousedown? false)
+                           (reset! at-right-edge? false)
                            (when @reordering-product
                              (do (.remove (.-classList @reordering-col-node) "reordering")
                                  (reset! reordering-product nil)))
-                           (.remove (.-classList node) "dragging")))]
+                           (.remove (.-classList node) "dragging")))
+
+               anim-loop-fn (fn anim-loop
+                              [timestamp]
+                              (js/requestAnimationFrame anim-loop)
+                              (when (and @reordering-product @at-right-edge?)
+                                (swap! scroll-left-at-mousedown + edge-scroll-speed)
+                                (swap! curr-reordering-pos-x + edge-scroll-speed)
+                                (swap! last-x-displacement + edge-scroll-speed)
+                                (aset node "scrollLeft" @scroll-left-at-mousedown)
+                                (update-sort-pos))
+                              )
+               _ (js/requestAnimationFrame anim-loop-fn)]
            (.addEventListener node "mousedown" mousedown)
            (.addEventListener node "mousemove" mousemove)
            (.addEventListener node "mouseup" mouseup)
