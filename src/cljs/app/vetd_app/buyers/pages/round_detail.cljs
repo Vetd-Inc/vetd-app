@@ -441,8 +441,7 @@
                                      (-> product-id
                                          get-col-index
                                          (* 234)))
-                                   "px)")}
-                      }
+                                   "px)")}}
          [:div.round-product {:class (when (> (count pname) 17) " long")}
           (if @loading?&
             [cc/c-loader]
@@ -628,7 +627,7 @@
                                       (> (count @products-order&) 1)) ; only able to reorder if more than one product
                              ;; Reordering
                              (when-let [col (.closest (.-target e) ".column")] ; is the mousedown even on/in a column?
-                               (let [col-left (js/parseInt (.-left (.-style col)))]
+                               (let [col-left (js/parseInt (re-find #"\d+" (.-transform (.-style col))))]
                                  (reset! reordering-col-node col)
                                  (reset! col-pos-x-at-mousedown col-left)
                                  (reset! curr-reordering-pos-x col-left)
@@ -667,7 +666,8 @@
                                (aset node "scrollLeft"
                                      (+ @scroll-left-at-mousedown
                                         (if @reordering-product
-                                          (let [reordering-right-edge (+ @curr-reordering-pos-x col-width)
+                                          0
+                                          #_(let [reordering-right-edge (+ @curr-reordering-pos-x col-width)
                                                 grid-right-edge (+ @scroll-left-at-mousedown (.-clientWidth node))
                                                 delta-past-right-edge (- reordering-right-edge grid-right-edge)]
                                             (cond
