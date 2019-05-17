@@ -566,11 +566,32 @@
 
                mousedown? (atom false)
                x-at-mousedown (atom nil)
-               at-right-edge? (atom false)
+               reordering-scroll-right? (atom false)
                last-x-displacement (atom 0)
                
                ;; Scrolling
                scroll-left-at-mousedown (atom nil)
+
+               ;; scroll x position
+               scroll-x (atom 0)
+               ;; scroll velocity
+               scroll-v (atom 0)
+               ;; coefficient of friction
+               scroll-k (atom 0.9)
+               ;; amount of acceleration that gets applied per 1px mouse drag
+               scroll-a-factor 1.5
+               scroll-speed-reordering 3
+
+               last-mouse-delta (atom 0)
+               drag-direction-intention (atom nil)
+
+               ;; this should be updated on resize
+               scroll-x-max (.-scrollWidth node)
+
+               drag-handle-offset (atom nil)
+
+               mouse-x (atom nil)
+               last-mouse-x-pos (atom nil)
 
 
 
@@ -614,6 +635,7 @@
                
                mousedown (fn [e]
                            (reset! mousedown? true)
+                           (reset! mouse-x (.-pageX e))
                            (reset! x-at-mousedown (.-pageX e))
                            (when (and (part-of-drag-handle? (.-target e))
                                       (> (count @products-order&) 1)) ; only able to reorder if more than one product
@@ -623,11 +645,17 @@
                                  (reset! reordering-col-node col)
                                  (reset! col-pos-x-at-mousedown col-left)
                                  (reset! curr-reordering-pos-x col-left)
+                                 (reset! drag-direction-intention nil)
+                                 (reset! drag-handle-offset (- (+ (- (.-pageX e)
+                                                                     (.-offsetLeft node))
+                                                                  (.-scrollLeft node))
+                                                               col-left))
                                  ;; remember the id of the product we are currently reordering
                                  (reset! reordering-product (js/parseInt (.getAttribute col "data-product-id")))
                                  (.add (.-classList col) "reordering"))))
                            ;; Scrolling
                            (do (reset! scroll-left-at-mousedown (.-scrollLeft node))
+                               (reset! last-mouse-x-pos (.-pageX e))
                                (.add (.-classList node) "dragging")))
                update-sort-pos (fn []
                                  (let [old-index (get-col-index @reordering-product)
@@ -643,40 +671,31 @@
                                             old-index (@products-order& new-index)
                                             new-index @reordering-product))))
                mousemove (fn [e]
+                           (reset! mouse-x (.-pageX e))
                            (when @mousedown?
-                             (let [x-displacement (- (.-pageX e) @x-at-mousedown)]
-                               (.preventDefault e) ; seems to prevent cell text selection when scrolling
-                               ;; if you drag more than 3px, disable the cell & product name clickability
-                               (when (and (> (Math/abs x-displacement) 3)
-                                          (not @cell-click-disabled?))
-                                 (reset! cell-click-disabled? true))
-                               ;; apply reordering
-                               (when (and @reordering-product
-                                          (not @at-right-edge?))
-                                 (reset! curr-reordering-pos-x (+ @col-pos-x-at-mousedown x-displacement))
-                                 (update-sort-pos))
-                               ;; apply scroll
-                               (aset node "scrollLeft"
-                                     (+ @scroll-left-at-mousedown
-                                        (if @reordering-product
-                                          (let [reordering-right-edge (+ @curr-reordering-pos-x col-width)
-                                                grid-right-edge (+ @scroll-left-at-mousedown (.-clientWidth node))
-                                                delta-past-right-edge (- reordering-right-edge grid-right-edge)]
-                                            (cond
-                                              (and (pos? (- x-displacement @last-x-displacement))
-                                                   (> delta-past-right-edge 0))
-                                              (do (reset! at-right-edge? true)
-                                                  delta-past-right-edge)
-                                              
-                                              :else (do (when (< delta-past-right-edge 0)
-                                                          (reset! at-right-edge? false))
-                                                        0)))
-                                          (* x-displacement scroll-drag-μ))))
-                               (reset! last-x-displacement x-displacement))))
+                             ;; seems to prevent cell text selection when scrolling
+                             (.preventDefault e)
+                             ;; if you drag more than 3px, disable the cell & product name clickability
+                             (when (and (> (Math/abs (- @mouse-x @x-at-mousedown)) 3)
+                                        (not @cell-click-disabled?))
+                               (reset! cell-click-disabled? true))
+                             ;; scrolling
+                             (when-not @reordering-product
+                               (reset! scroll-v (* -1
+                                                   (- (.-pageX e) @last-mouse-x-pos) ; disp
+                                                   scroll-a-factor)))
+                             (reset! last-mouse-delta (- @mouse-x @last-mouse-x-pos))
+                             (when-not (zero? @last-mouse-delta)
+                               (if (pos? @last-mouse-delta)
+                                 (reset! drag-direction-intention "right")
+                                 (reset! drag-direction-intention "left")))
+                             (reset! last-mouse-x-pos @mouse-x)))
                mouseup (fn [e]
+                         (reset! mouse-x (.-pageX e))
                          (when @mousedown?
                            (reset! mousedown? false)
-                           (reset! at-right-edge? false)
+                           (reset! reordering-scroll-right? false)
+                           (reset! last-mouse-delta 0)
                            (when @reordering-product
                              (do (.remove (.-classList @reordering-col-node) "reordering")
                                  (reset! reordering-product nil)))
@@ -685,13 +704,42 @@
                anim-loop-fn (fn anim-loop
                               [timestamp]
                               (js/requestAnimationFrame anim-loop)
-                              (when (and @reordering-product @at-right-edge?)
-                                (swap! scroll-left-at-mousedown + edge-scroll-speed)
-                                (swap! curr-reordering-pos-x + edge-scroll-speed)
-                                (swap! last-x-displacement + edge-scroll-speed)
-                                (aset node "scrollLeft" @scroll-left-at-mousedown)
+                              ;; override scroll velcity if reordering
+                              (when (and @reordering-product
+                                         (= @drag-direction-intention "right")
+                                         (not (pos? @last-mouse-delta))
+                                         (> (- @mouse-x
+                                               (.-offsetLeft node))
+                                            (- (.-clientWidth node)
+                                               col-width)))
+                                (reset! scroll-v scroll-speed-reordering))
+                              (when (and @reordering-product
+                                         (= @drag-direction-intention "left")
+                                         (not (neg? @last-mouse-delta))
+                                         (< (- @mouse-x
+                                               (.-offsetLeft node))
+                                            col-width))
+                                (reset! scroll-v (* -1 scroll-speed-reordering)))
+                              ;; apply scroll velocity to scroll position
+                              (swap! scroll-x + @scroll-v)
+                              ;; right-side boundary
+                              (when (> @scroll-x scroll-x-max)
+                                (reset! scroll-v 0)
+                                (reset! scroll-x scroll-x-max))
+                              ;; left-side boundary
+                              (when (< @scroll-x 0)
+                                (reset! scroll-v 0)
+                                (reset! scroll-x 0))
+                              ;; apply position updates
+                              (aset node "scrollLeft" (Math/floor @scroll-x))
+                              (when @reordering-product
+                                (reset! curr-reordering-pos-x (- (+ (- @mouse-x
+                                                                       (.-offsetLeft node))
+                                                                    (.-scrollLeft node))
+                                                                 @drag-handle-offset))
                                 (update-sort-pos))
-                              )
+                              ;; apply friction
+                              (swap! scroll-v * @scroll-k))
                _ (js/requestAnimationFrame anim-loop-fn)]
            (.addEventListener node "mousedown" mousedown)
            (.addEventListener node "mousemove" mousemove)
