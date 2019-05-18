@@ -199,7 +199,7 @@
                                 :term @term&})
                         (assoc rpid
                                {:id rpid
-                                :sort @sort-order&}))
+                                :sort (js/parseInt @sort-order&)}))
         mk-on-change-fn (partial on-change-fn changes& changes-fn)]
     (fn [{:keys [fields id rpid prompt descr form-template-id] sort' :sort}]
       [ui/nx-accordion-item

@@ -70,7 +70,7 @@
    :preposals-filter {:selected-categories #{}}
    :rounds-filter {:selected-statuses #{}}
    :loading? {:products #{}} ; entities (by ID) that are in a loading?=true state (for UI display)
-   }))
+   :round-products-order []}))
 
 (def public-pages #{:login :signup})
 

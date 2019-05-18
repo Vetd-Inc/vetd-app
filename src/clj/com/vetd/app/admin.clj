@@ -57,8 +57,7 @@
 (defmethod com/handle-ws-inbound :a/add-existing-form-template-prompt
   [{:keys [form-template-prompt-id prompt-id]} ws-id sub-fn]
   (docs/insert-form-template-prompt form-template-prompt-id
-                                    prompt-id
-                                    100))
+                                    prompt-id))
 
 (defmethod com/handle-ws-inbound :a/delete-form-prompt-field
   [{:keys [prompt-field-id]} ws-id sub-fn]

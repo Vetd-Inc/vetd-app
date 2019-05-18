@@ -248,9 +248,7 @@ Product: '%s'"
                          first
                          (or (docs/create-round-req-prompt&fields requirement-text)))]
     (docs/insert-form-template-prompt req-form-template-id
-                                      id
-                                      ;; TODO dynamically determine idx??
-                                      0)
+                                      id)
     (docs/merge-template-to-forms req-form-template-id)))
 
 ;; TODO there could be multiple preposals/rounds per buyer-vendor pair
@@ -334,16 +332,6 @@ Product: '%s'"
                                    :dval nil
                                    :jval nil}))))
 
-#_
-(com/handle-ws-inbound {:cmd :save-response
-                        :subject 1
-                        :subject-type "form"
-                        :term :round.response/rating
-                        :user-id 22
-                        :round-id 3
-                        :fields {:value 123}}
-                       nil nil)
-
 (defn notify-round-init-form-completed
   [doc-id]
   (let [round (-> [[:docs {:id doc-id}
@@ -376,6 +364,17 @@ Product: '%s'"
                         (str "\n" (:prompt-prompt rp) ": "
                              (->> rp :response-prompt-fields (map :sval) (interpose ", ") (apply str))))))))))
 
+(defn set-round-products-order [round-id product-ids]
+  (doall
+   (map-indexed
+    (fn [idx product-id]
+      (db/update-where :round_product
+                       {:sort idx}
+                       [:and
+                        [:= :round_id round-id]
+                        [:= :product_id product-id]]))
+    product-ids)))
+
 ;; additional side effects upon creating a round-initiation doc
 (defmethod docs/handle-doc-creation :round-initiation
   [{:keys [id]} {:keys [round-id]}]
@@ -396,3 +395,7 @@ Product: '%s'"
       (notify-round-init-form-completed id)
       (catch Throwable t
         (log/error t)))))
+
+(defmethod com/handle-ws-inbound :b/set-round-products-order
+  [{:keys [product-ids user-id org-id round-id]} ws-id sub-fn]
+  (set-round-products-order round-id product-ids))
