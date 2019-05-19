@@ -9,7 +9,6 @@
             [re-frame.core :as rf]
             [clojure.string :as s]))
 
-
 (defonce cell-click-disabled? (r/atom false))
 ;; the id of the product currently being reordered
 (defonce reordering-product (r/atom nil))
@@ -591,7 +590,7 @@
                ;; when reordering near left or right edge of grid
                scroll-speed-reordering 5
                ;; this should be updated on resize
-               scroll-x-max (.-scrollWidth node)
+               scroll-x-max (- (.-scrollWidth node) (.-clientWidth node))
 
                ;; make header row 'sticky' upon vertical window scroll
                header-pickup-y (atom nil) ; nil when not in 'sticky mode'
@@ -702,7 +701,7 @@
                anim-loop-fn (fn anim-loop
                               [timestamp]
                               (js/requestAnimationFrame anim-loop)
-                              ;; override scroll velcity if reordering
+                              ;; override scroll velocity if reordering
                               (when (and @reordering-product
                                          (= @drag-direction-intention "right")
                                          (not (pos? @last-mouse-delta))
@@ -737,7 +736,9 @@
                                                                  @drag-handle-offset))
                                 (update-sort-pos))
                               ;; apply friction
-                              (swap! scroll-v * @scroll-k))
+                              (swap! scroll-v * @scroll-k)
+                              (if (< (Math/abs @scroll-v) 0.000001)
+                                (reset! scroll-v 0)))
                _ (js/requestAnimationFrame anim-loop-fn)]
            (.addEventListener node "mousedown" mousedown)
            (.addEventListener node "mousemove" mousemove)
