@@ -584,7 +584,7 @@
                ;; distance that user mousedown'd from left side of column being dragged
                drag-handle-offset (atom nil)
 
-               ;; gets applied to scrollLeft
+               ;; think of this as the grid's scrollLeft
                scroll-x (atom 0)
                ;; scroll velocity (on x axis)
                scroll-v (atom 0)
@@ -676,8 +676,8 @@
                              ;; seems to prevent cell text selection when scrolling
                              (.preventDefault e)
                              ;; if you drag more than 3px, disable the cell & product name clickability
-                             (when (and (> (Math/abs (- @mouse-x @x-at-mousedown)) 3)
-                                        (not @cell-click-disabled?))
+                             (when (and (not @cell-click-disabled?)
+                                        (> (Math/abs (- @mouse-x @x-at-mousedown)) 3))
                                (reset! cell-click-disabled? true))
                              ;; useful for determining if right or left edge scrolling is needed
                              (reset! last-mouse-delta (- @mouse-x @last-mouse-x))
@@ -687,10 +687,9 @@
                                  (reset! drag-direction-intention "left")))
                              ;; scrolling
                              (when-not @reordering-product
-                               (swap! scroll-x + (* -1 (- (.-pageX e) @last-mouse-x)))
-                               (reset! scroll-v (* -1
-                                                   (- (.-pageX e) @last-mouse-x) ; disp
-                                                   scroll-a-factor)))
+                               (let [neg-disp (* -1 (- (.-pageX e) @last-mouse-x))]
+                                 (swap! scroll-x + neg-disp)
+                                 (reset! scroll-v (* neg-disp scroll-a-factor))))
                              (reset! last-mouse-x @mouse-x)))
                
                mouseup (fn [e]

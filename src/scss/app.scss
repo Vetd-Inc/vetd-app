@@ -526,7 +526,6 @@ $cell-height: 201px;
   .column.reordering {
     z-index: 999;
     transition: none !important;
-    // transition: transform 0.08s 0s linear !important; // an attempt at smoothing the reordering drag
     box-shadow: 0 0 40px 5px #fff !important;
     opacity: 1; // to counteract translucency if column is disqualified
   }
