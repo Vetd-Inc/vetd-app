@@ -593,7 +593,7 @@
                ;; amount of acceleration that gets applied per 1px mouse drag
                scroll-a-factor 1
                ;; when reordering near left or right edge of grid
-               scroll-speed-reordering 3
+               scroll-speed-reordering 7
                ;; this should be updated on resize
                scroll-x-max (- (.-scrollWidth node) (.-clientWidth node))
 
@@ -689,8 +689,8 @@
                              (when-not @reordering-product
                                (swap! scroll-x + (* -1 (- (.-pageX e) @last-mouse-x)))
                                (reset! scroll-v (* -1
-                                                     (- (.-pageX e) @last-mouse-x) ; disp
-                                                     scroll-a-factor)))
+                                                   (- (.-pageX e) @last-mouse-x) ; disp
+                                                   scroll-a-factor)))
                              (reset! last-mouse-x @mouse-x)))
                
                mouseup (fn [e]
@@ -710,7 +710,7 @@
                               ;; override scroll velocity if reordering
                               (when (and @reordering-product
                                          (= @drag-direction-intention "right")
-                                         (not (pos? @last-mouse-delta))
+                                         (not (neg? @last-mouse-delta))
                                          (> (- @mouse-x
                                                (.-offsetLeft node))
                                             (- (.-clientWidth node)
@@ -718,7 +718,7 @@
                                 (reset! scroll-v scroll-speed-reordering))
                               (when (and @reordering-product
                                          (= @drag-direction-intention "left")
-                                         (not (neg? @last-mouse-delta))
+                                         (not (pos? @last-mouse-delta))
                                          (< (- @mouse-x
                                                (.-offsetLeft node))
                                             col-width))
@@ -742,7 +742,8 @@
                                                                  @drag-handle-offset))
                                 (update-sort-pos))
                               ;; apply friction
-                              (swap! scroll-v * @scroll-k)
+                              (when-not @reordering-product
+                                (swap! scroll-v * @scroll-k))
                               ;; zero out weak velocity
                               (if (< (Math/abs @scroll-v) 0.000001)
                                 (reset! scroll-v 0))
