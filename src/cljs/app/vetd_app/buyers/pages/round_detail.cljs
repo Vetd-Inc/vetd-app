@@ -137,13 +137,6 @@
 ;; persist any changes to round products sort order to backend
 (rf/reg-event-fx
  :b/store-round-products-order
- (fn [_ [_ round-id]]
-   {:dispatch-debounce [{:id :b/store-round-products-order-post-debounce
-                         :dispatch [:b/store-round-products-order-post-debounce round-id]
-                         :timeout 1000}]}))
-
-(rf/reg-event-fx
- :b/store-round-products-order-post-debounce
  (fn [{:keys [db]} [_ round-id]]
    {:ws-send {:payload {:cmd :b/set-round-products-order
                         :product-ids (:round-products-order db)
