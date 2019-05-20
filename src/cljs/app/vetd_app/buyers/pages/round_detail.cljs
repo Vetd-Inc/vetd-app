@@ -554,7 +554,8 @@
                   "from all relevant vendors. Check back soon for updates.")]]))))
 
 (def c-round-grid
-  (let [;; keep a reference to the window-scroll fn (will be created on mount)
+  (let [component-exists? (atom true)
+        ;; keep a reference to the window-scroll fn (will be created on mount)
         ;; so we can remove the event listener upon unmount
         window-scroll-fn-ref (atom nil)
         ;; really just affects which cursor displayed
@@ -587,9 +588,9 @@
                ;; coefficient of friction
                scroll-k (atom 0.9)
                ;; amount of acceleration that gets applied per 1px mouse drag
-               scroll-a-factor 1.5
+               scroll-a-factor 1.8
                ;; when reordering near left or right edge of grid
-               scroll-speed-reordering 5
+               scroll-speed-reordering 8
                ;; this should be updated on resize
                scroll-x-max (- (.-scrollWidth node) (.-clientWidth node))
 
@@ -699,47 +700,55 @@
                                  (reset! reordering-product nil)))
                            (.remove (.-classList node) "dragging")))
 
-               anim-loop-fn (fn anim-loop
+               timestamp-last-update (atom 0)
+               _ (reset! component-exists? true)
+               anim-loop-fn (fn anim-loop ; TODO make sure this isn't being created multiple times without being destroyed
                               [timestamp]
-                              (js/requestAnimationFrame anim-loop)
-                              ;; override scroll velocity if reordering
-                              (when (and @reordering-product
-                                         (= @drag-direction-intention "right")
-                                         (not (pos? @last-mouse-delta))
-                                         (> (- @mouse-x
-                                               (.-offsetLeft node))
-                                            (- (.-clientWidth node)
-                                               col-width)))
-                                (reset! scroll-v scroll-speed-reordering))
-                              (when (and @reordering-product
-                                         (= @drag-direction-intention "left")
-                                         (not (neg? @last-mouse-delta))
-                                         (< (- @mouse-x
-                                               (.-offsetLeft node))
-                                            col-width))
-                                (reset! scroll-v (* -1 scroll-speed-reordering)))
-                              ;; apply scroll velocity to scroll position
-                              (swap! scroll-x + @scroll-v)
-                              ;; right-side boundary
-                              (when (> @scroll-x scroll-x-max)
-                                (reset! scroll-v 0)
-                                (reset! scroll-x scroll-x-max))
-                              ;; left-side boundary
-                              (when (< @scroll-x 0)
-                                (reset! scroll-v 0)
-                                (reset! scroll-x 0))
-                              ;; apply position updates
-                              (aset node "scrollLeft" (Math/floor @scroll-x))
-                              (when @reordering-product
-                                (reset! curr-reordering-pos-x (- (+ (- @mouse-x
-                                                                       (.-offsetLeft node))
-                                                                    (.-scrollLeft node))
-                                                                 @drag-handle-offset))
-                                (update-sort-pos))
-                              ;; apply friction
-                              (swap! scroll-v * @scroll-k)
-                              (if (< (Math/abs @scroll-v) 0.000001)
-                                (reset! scroll-v 0)))
+                              (when @component-exists?
+                                (js/requestAnimationFrame anim-loop))
+                              (when (> (- timestamp @timestamp-last-update)
+                                       20 ; update every 20ms or longer
+                                       )
+                                ;; override scroll velocity if reordering
+                                (when (and @reordering-product
+                                           (= @drag-direction-intention "right")
+                                           (not (pos? @last-mouse-delta))
+                                           (> (- @mouse-x
+                                                 (.-offsetLeft node))
+                                              (- (.-clientWidth node)
+                                                 col-width)))
+                                  (reset! scroll-v scroll-speed-reordering))
+                                (when (and @reordering-product
+                                           (= @drag-direction-intention "left")
+                                           (not (neg? @last-mouse-delta))
+                                           (< (- @mouse-x
+                                                 (.-offsetLeft node))
+                                              col-width))
+                                  (reset! scroll-v (* -1 scroll-speed-reordering)))
+                                ;; apply scroll velocity to scroll position
+                                (swap! scroll-x + @scroll-v)
+                                ;; right-side boundary
+                                (when (> @scroll-x scroll-x-max)
+                                  (reset! scroll-v 0)
+                                  (reset! scroll-x scroll-x-max))
+                                ;; left-side boundary
+                                (when (< @scroll-x 0)
+                                  (reset! scroll-v 0)
+                                  (reset! scroll-x 0))
+                                ;; apply position updates
+                                (aset node "scrollLeft" (Math/floor @scroll-x))
+                                (when @reordering-product
+                                  (reset! curr-reordering-pos-x (- (+ (- @mouse-x
+                                                                         (.-offsetLeft node))
+                                                                      (.-scrollLeft node))
+                                                                   @drag-handle-offset))
+                                  (update-sort-pos))
+                                ;; apply friction
+                                (swap! scroll-v * @scroll-k)
+                                ;; zero out weak velocity
+                                (if (< (Math/abs @scroll-v) 0.000001)
+                                  (reset! scroll-v 0))
+                                (reset! timestamp-last-update timestamp)))
                _ (js/requestAnimationFrame anim-loop-fn)]
            (.addEventListener node "mousedown" mousedown)
            (.addEventListener node "mousemove" mousemove)
@@ -750,10 +759,12 @@
 
        :component-did-update
        (fn [this]
+         (println "grid did update")
          (update-draggability this))
 
        :component-will-unmount
        (fn [this]
+         (reset! component-exists? false)
          (when @window-scroll-fn-ref
            (.removeEventListener js/window "scroll" @window-scroll-fn-ref)))})))
 
