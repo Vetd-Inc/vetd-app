@@ -131,15 +131,25 @@
 
 (rf/reg-event-fx
  :b/set-round-products-order
- (fn [{:keys [db]} [_ round-id new-round-products-order update-on-backend?]]
-   (merge {:db (assoc db
-                      :round-products-order new-round-products-order)}
-          (when update-on-backend?
-            {:ws-send {:payload {:cmd :b/set-round-products-order
-                                 :product-ids new-round-products-order
-                                 :round-id round-id                        
-                                 :user-id (-> db :user :id)
-                                 :org-id (util/db->current-org-id db)}}}))))
+ (fn [{:keys [db]} [_ new-round-products-order]]
+   {:db (assoc db :round-products-order new-round-products-order)}))
+
+;; persist any changes to round products sort order to backend
+(rf/reg-event-fx
+ :b/store-round-products-order
+ (fn [_ [_ round-id]]
+   {:dispatch-debounce [{:id :b/store-round-products-order-post-debounce
+                         :dispatch [:b/store-round-products-order-post-debounce round-id]
+                         :timeout 1000}]}))
+
+(rf/reg-event-fx
+ :b/store-round-products-order-post-debounce
+ (fn [{:keys [db]} [_ round-id]]
+   {:ws-send {:payload {:cmd :b/set-round-products-order
+                        :product-ids (:round-products-order db)
+                        :round-id round-id                        
+                        :user-id (-> db :user :id)
+                        :org-id (util/db->current-org-id db)}}}))
 
 ;; Subscriptions
 (rf/reg-sub
@@ -537,7 +547,7 @@
       (let [default-products-order (vec (map (comp :id :product) round-product))]
         (when (not= @last-default-products-order& default-products-order)
           (reset! last-default-products-order& default-products-order)
-          (rf/dispatch [:b/set-round-products-order (:id round) default-products-order false])))
+          (rf/dispatch [:b/set-round-products-order default-products-order])))
       (if (seq round-product)
         [:<>
          [:div.round-grid {:style {:min-height (+ 46 84 (* 202 (-> req-form-template :prompts count)))}}
@@ -664,7 +674,6 @@
                                                      (min (dec (count @products-order&))))]
                                    (when (not= old-index new-index)
                                      (rf/dispatch [:b/set-round-products-order
-                                                   round-id
                                                    (assoc @products-order&
                                                           old-index (@products-order& new-index)
                                                           new-index @reordering-product)]))))
@@ -697,7 +706,8 @@
                            (reset! last-mouse-delta 0)
                            (when @reordering-product
                              (do (.remove (.-classList @reordering-col-node) "reordering")
-                                 (reset! reordering-product nil)))
+                                 (reset! reordering-product nil)
+                                 (rf/dispatch [:b/store-round-products-order round-id])))
                            (.remove (.-classList node) "dragging")))
 
                timestamp-last-update (atom 0)
