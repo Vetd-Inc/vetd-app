@@ -131,14 +131,15 @@
 
 (rf/reg-event-fx
  :b/set-round-products-order
- (fn [{:keys [db]} [_ round-id new-round-products-order]]
-   {:db (assoc db
-               :round-products-order new-round-products-order)
-    :ws-send {:payload {:cmd :b/set-round-products-order
-                        :product-ids new-round-products-order
-                        :round-id round-id                        
-                        :user-id (-> db :user :id)
-                        :org-id (util/db->current-org-id db)}}}))
+ (fn [{:keys [db]} [_ round-id new-round-products-order update-on-backend?]]
+   (merge {:db (assoc db
+                      :round-products-order new-round-products-order)}
+          (when update-on-backend?
+            {:ws-send {:payload {:cmd :b/set-round-products-order
+                                 :product-ids new-round-products-order
+                                 :round-id round-id                        
+                                 :user-id (-> db :user :id)
+                                 :org-id (util/db->current-org-id db)}}}))))
 
 ;; Subscriptions
 (rf/reg-sub
@@ -536,7 +537,7 @@
       (let [default-products-order (vec (map (comp :id :product) round-product))]
         (when (not= @last-default-products-order& default-products-order)
           (reset! last-default-products-order& default-products-order)
-          (rf/dispatch [:b/set-round-products-order (:id round) default-products-order])))
+          (rf/dispatch [:b/set-round-products-order (:id round) default-products-order false])))
       (if (seq round-product)
         [:<>
          [:div.round-grid {:style {:min-height (+ 46 84 (* 202 (-> req-form-template :prompts count)))}}
@@ -822,12 +823,9 @@
       req-prompt-text])])
 
 (defn sort-round-products
-  [round-product] ; if result is nil, then sort it in-between winner and disqualified
-  (sort-by (juxt #(if-let [r (:result %)]
-                    (->> r
-                         (- 0.5)
-                         (* 100000))
-                    (:sort % 1))
+  [round-product]
+  (sort-by (juxt #(- 1 (or (:result %) 0.5))
+                 #(:sort % 1)
                  (comp :pname :product))
            < round-product))
 
