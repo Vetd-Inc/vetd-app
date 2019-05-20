@@ -376,12 +376,12 @@ $cell-height: 201px;
   
   .column {
     position: absolute;
+    left: 0px;
     width: $cell-width;
     padding-left: 5px;
     padding-right: 5px;
     flex: 0 0 auto;
-    transition: left 0.4s 0s ease-out,
-                transform 0.4s 0s ease-out,
+    transition: transform 0.4s 0s ease-out,
                 z-index 0s 0.4s ease-out,
                 box-shadow 0.4s 0s ease-out,
                 background 1s 0s linear;
@@ -539,13 +539,18 @@ $cell-height: 201px;
     padding-top: 98px;
   }
   &.fixed .round-product {
-    position: fixed;
-    top: 0;
+    position: absolute;
+    top: -98px;
     z-index: 999;
     background: white;
+    // experiementing with shadow effect on upward scroll
+    // box-shadow: 0 2px 14px 0 rgba(50,50,50,0.1),
+    //             0 -150px 100px 0px rgba(50,50,50,0.4)
+    //               !important;
     box-shadow: 0 2px 14px 0 rgba(50,50,50,0.1) !important;
     border-bottom-left-radius: 4px;
     border-bottom-right-radius: 4px;
+    transition: transform 0.3s 0s ease-out;
   }
   
   // commented out because it has issues when there's a lot of requirements
@@ -628,7 +633,6 @@ $cell-height: 201px;
   margin-left: 20px;
   margin-bottom: 0;
 }
-
 
 /* Loading Spinner */
 div.spinner {

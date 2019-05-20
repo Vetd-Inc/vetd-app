@@ -9,7 +9,6 @@
             [re-frame.core :as rf]
             [clojure.string :as s]))
 
-
 (defonce cell-click-disabled? (r/atom false))
 ;; the id of the product currently being reordered
 (defonce reordering-product (r/atom nil))
@@ -132,11 +131,15 @@
 
 (rf/reg-event-fx
  :b/set-round-products-order
- (fn [{:keys [db]} [_ round-id new-round-products-order]]
-   {:db (assoc db
-               :round-products-order new-round-products-order)
-    :ws-send {:payload {:cmd :b/set-round-products-order
-                        :product-ids new-round-products-order
+ (fn [{:keys [db]} [_ new-round-products-order]]
+   {:db (assoc db :round-products-order new-round-products-order)}))
+
+;; persist any changes to round products sort order to backend
+(rf/reg-event-fx
+ :b/store-round-products-order
+ (fn [{:keys [db]} [_ round-id]]
+   {:ws-send {:payload {:cmd :b/set-round-products-order
+                        :product-ids (:round-products-order db)
                         :round-id round-id                        
                         :user-id (-> db :user :id)
                         :org-id (util/db->current-org-id db)}}}))
@@ -441,23 +444,26 @@
              :as product} (:product rp)
             rp-result (:result rp)
             [won? disqualified?] ((juxt (partial = 1) zero?) rp-result)]
-        [:div.column (merge {:class (str (when won? " winner")
-                                         (when disqualified? " disqualified"))
-                             :data-product-id product-id}
-                            (if (and @products-order& ; to trigger re-render
-                                     (= @reordering-product product-id))
-                              {:style {:left (str @curr-reordering-pos-x "px")}}
-                              {:style {:left (-> (.indexOf @products-order& product-id)
-                                                 (* 234)
-                                                 (str "px"))}}))
+        [:div.column {:class (str (when won? " winner")
+                                  (when disqualified? " disqualified"))
+                      :data-product-id product-id
+                      :style {:transform
+                              (str "translateX("
+                                   (if (and @products-order& ; to trigger re-render
+                                            (= @reordering-product product-id))
+                                     @curr-reordering-pos-x
+                                     (* 234 (.indexOf @products-order& product-id)))
+                                   "px)")}}
          [:div.round-product {:class (when (> (count pname) 17) " long")}
           (if @loading?&
             [cc/c-loader]
             [:div
-             [:a.name {:on-click #(rf/dispatch
-                                   (if (seq preposals)
-                                     [:b/nav-preposal-detail (-> preposals first :idstr)]
-                                     [:b/nav-product-detail product-idstr]))}
+             [:a.name {:on-mouse-down #(reset! cell-click-disabled? false)
+                       :on-click #(when-not @cell-click-disabled?
+                                    (rf/dispatch
+                                     (if (seq preposals)
+                                       [:b/nav-preposal-detail (-> preposals first :idstr)]
+                                       [:b/nav-product-detail product-idstr])))}
               pname]
              (when-not disqualified?
                [c-declare-winner-button round product won? disqualified?])
@@ -534,7 +540,7 @@
       (let [default-products-order (vec (map (comp :id :product) round-product))]
         (when (not= @last-default-products-order& default-products-order)
           (reset! last-default-products-order& default-products-order)
-          (rf/dispatch [:b/set-round-products-order (:id round) default-products-order])))
+          (rf/dispatch [:b/set-round-products-order default-products-order])))
       (if (seq round-product)
         [:<>
          [:div.round-grid {:style {:min-height (+ 46 84 (* 202 (-> req-form-template :prompts count)))}}
@@ -551,7 +557,8 @@
                   "from all relevant vendors. Check back soon for updates.")]]))))
 
 (def c-round-grid
-  (let [ ;; keep a reference to the window-scroll fn (will be created on mount)
+  (let [component-exists? (atom true)
+        ;; keep a reference to the window-scroll fn (will be created on mount)
         ;; so we can remove the event listener upon unmount
         window-scroll-fn-ref (atom nil)
         ;; really just affects which cursor displayed
@@ -564,120 +571,189 @@
         products-order& (rf/subscribe [:round-products-order])]
     (with-meta c-round-grid*
       {:component-did-mount
-       (fn [this]       ; make grid draggable (scrolling & reordering)
+       (fn [this] ; make grid draggable (scrolling & reordering)
          (let [round-id (-> this r/props :id)
                node (r/dom-node this)
+               col-width 234 ; includes any spacing to the right of each col
                mousedown? (atom false)
                x-at-mousedown (atom nil)
+               mouse-x (atom nil) ; current mouse pos x
+               last-mouse-x (atom nil)
+               last-mouse-delta (atom 0)
+               drag-direction-intention (atom nil)
+               ;; distance that user mousedown'd from left side of column being dragged
+               drag-handle-offset (atom nil)
 
-               ;; Scrolling
-               scroll-left-at-mousedown (atom nil)
-               reverse-scroll-drag? (atom false)
+               ;; think of this as the grid's scrollLeft
+               scroll-x (atom 0)
+               ;; scroll velocity (on x axis)
+               scroll-v (atom 0)
+               ;; coefficient of friction
+               scroll-k (atom 0.85)
+               ;; amount of acceleration that gets applied per 1px mouse drag
+               scroll-a-factor 1
+               ;; when reordering near left or right edge of grid
+               scroll-speed-reordering 7
+               ;; this should be updated on resize
+               scroll-x-max (- (.-scrollWidth node) (.-clientWidth node))
 
-               ;; make header row 'sticky' upon window scroll
+               ;; make header row 'sticky' upon vertical window scroll
                header-pickup-y (atom nil) ; nil when not in 'sticky mode'
                all-header-nodes #(array-seq (.getElementsByClassName js/document "round-product"))
-               ;; the horizontal position of the requirement row needs to
-               ;; be manually updated when in 'sticky mode'
-               scroll (fn []
-                        (.requestAnimationFrame
-                         js/window
-                         (fn []
-                           (when @header-pickup-y
-                             (doseq [req-node (all-header-nodes)]
-                               (aset (.-style req-node) "marginLeft" (str (* -1 (.-scrollLeft node)) "px")))))))
-               ;; zero out the artificial horizontal scrolling of the header row
                ;; this needs to be called when we leave 'sticky mode'
-               zero-out-req-scroll (fn []
-                                     (doseq [req-node (all-header-nodes)]
-                                       (aset (.-style req-node) "marginLeft" "0px")))
+               zero-out-header-scroll (fn []
+                                        (doseq [header-node (all-header-nodes)]
+                                          (aset (.-style header-node) "transform" "translateY(0px)")))
                ;; turn on and off header row 'sticky mode' as needed
                window-scroll (fn []
                                (.requestAnimationFrame
                                 js/window
                                 (fn []
-                                  (if @header-pickup-y
-                                    (when (< (.-scrollY js/window) @header-pickup-y)
-                                      (reset! header-pickup-y nil)
-                                      (.remove (.-classList node) "fixed")
-                                      (zero-out-req-scroll))
-                                    (when (> (.-scrollY js/window) (.-offsetTop node))
-                                      (reset! header-pickup-y (.-offsetTop node))
-                                      (.add (.-classList node) "fixed")
-                                      ;; call 'scroll' to update horiz pos of req row
-                                      ;; (only matters if grid was horiz scrolled/dragged)
-                                      (scroll))))))
+                                  (let [window-scroll-y (.-scrollY js/window)
+                                        node-offset-top (.-offsetTop node)]
+                                    (if @header-pickup-y
+                                      (if (< window-scroll-y @header-pickup-y)
+                                        (do (reset! header-pickup-y nil)
+                                            (.remove (.-classList node) "fixed")
+                                            (zero-out-header-scroll))
+                                        (doseq [header-node (all-header-nodes)]
+                                          (aset (.-style header-node) "transform"
+                                                (str "translateY(" (- window-scroll-y node-offset-top) "px)"))))
+                                      (when (> window-scroll-y node-offset-top)
+                                        (reset! header-pickup-y node-offset-top)
+                                        (.add (.-classList node) "fixed")))))))
+               ;; keep a reference to the window-scroll function (for listener removal)
                _ (reset! window-scroll-fn-ref window-scroll)
-               
-               ;; Reordering (and more Scrolling logic)
+
+               ;; is a given dom node considered a handle for beginning a column drag (for reorder)?
                part-of-drag-handle? (fn [dom-node]
-                                      (or (.contains (.-classList dom-node) "round-product")
-                                          ;; consider making the name also a drag handle
-                                          ;; (.contains (.-classList dom-node) "name")
-                                          (empty? (array-seq (.-classList dom-node)))))
-               col-pos-x-at-mousedown (atom nil)
+                                      (let [class-list (.-classList dom-node)]
+                                        (or (.contains class-list "round-product") ; top portion of column
+                                            (.contains class-list "name") ; the product name
+                                            (empty? (array-seq class-list))))) ; the column node itself
                reordering-col-node (atom nil)
                
                mousedown (fn [e]
                            (reset! mousedown? true)
+                           (reset! mouse-x (.-pageX e))
                            (reset! x-at-mousedown (.-pageX e))
-                           (if (and (part-of-drag-handle? (.-target e))
-                                    (> (count @products-order&) 1)) ; only able to reorder if more than one product
+                           (when (and (part-of-drag-handle? (.-target e))
+                                      (> (count @products-order&) 1)) ; only able to reorder if more than one product
                              ;; Reordering
-                             (when-let [col (.closest (.-target e) ".column")] ; is the mousedown even on a column?
-                               (let [col-left (js/parseInt (.-left (.-style col)))]
+                             (when-let [col (.closest (.-target e) ".column")] ; is the mousedown even on/in a column?
+                               (let [col-left (js/parseInt (re-find #"\d+" (.-transform (.-style col))))]
                                  (reset! reordering-col-node col)
-                                 (reset! col-pos-x-at-mousedown col-left)
                                  (reset! curr-reordering-pos-x col-left)
+                                 (reset! drag-direction-intention nil)
+                                 (reset! drag-handle-offset (- (+ (- (.-pageX e)
+                                                                     (.-offsetLeft node))
+                                                                  (.-scrollLeft node))
+                                                               col-left))
                                  ;; remember the id of the product we are currently reordering
                                  (reset! reordering-product (js/parseInt (.getAttribute col "data-product-id")))
-                                 (reset! reverse-scroll-drag? true)
-                                 (.add (.-classList col) "reordering")))
-                             ;; Scrolling
-                             (do (reset! scroll-left-at-mousedown (.-scrollLeft node))
-                                 (.add (.-classList node) "dragging"))))
+                                 (.add (.-classList @reordering-col-node) "reordering"))))
+                           ;; Scrolling
+                           (do (reset! last-mouse-x (.-pageX e))
+                               (.add (.-classList node) "dragging")))
+               ;; based on the (physical) position of the column being dragged,
+               ;; update the sort pos if needed
+               update-sort-pos (fn []
+                                 (let [old-index (.indexOf @products-order& @reordering-product)
+                                       new-index (-> @curr-reordering-pos-x
+                                                     (/ col-width) ; width of column
+                                                     (+ 0.5) ; to cause swap to occur when middle of a col is passed
+                                                     Math/floor
+                                                     (max 0) ; clamp between 0 and max index
+                                                     (min (dec (count @products-order&))))]
+                                   (when (not= old-index new-index)
+                                     (rf/dispatch [:b/set-round-products-order
+                                                   (assoc @products-order&
+                                                          old-index (@products-order& new-index)
+                                                          new-index @reordering-product)]))))
                mousemove (fn [e]
+                           (reset! mouse-x (.-pageX e))
                            (when @mousedown?
-                             (let [x-displacement (- (.-pageX e) @x-at-mousedown)]
-                               (if @reordering-product
-                                 (do (reset! curr-reordering-pos-x (+ @col-pos-x-at-mousedown
-                                                                      (* 1 x-displacement)))
-                                     (let [old-index (.indexOf @products-order& @reordering-product)
-                                           new-index (-> @col-pos-x-at-mousedown
-                                                         (+ x-displacement)
-                                                         (/ 234)
-                                                         (+ 0.5) ; to cause swap to occur when middle of a col is passed
-                                                         Math/floor
-                                                         (max 0) ; clamp between 0 and max index
-                                                         (min (dec (count @products-order&))))]
-                                       (when (not= old-index new-index)
-                                         (rf/dispatch [:b/set-round-products-order
-                                                       round-id
-                                                       (assoc @products-order&
-                                                              old-index (@products-order& new-index)
-                                                              new-index @reordering-product)]))))
-                                 (let [new-scroll-left (- @scroll-left-at-mousedown
-                                                          (* (if @reverse-scroll-drag? 0 2)
-                                                             x-displacement))]
-                                   (.preventDefault e)
-                                   (aset node "scrollLeft" new-scroll-left)
-                                   ;; if you drag more than 3px, disable the cell clickability
-                                   (when (and (> (Math/abs x-displacement) 3)
-                                              (not @cell-click-disabled?))
-                                     (reset! cell-click-disabled? true)))))))
+                             ;; seems to prevent cell text selection when scrolling
+                             (.preventDefault e)
+                             ;; if you drag more than 3px, disable the cell & product name clickability
+                             (when (and (not @cell-click-disabled?)
+                                        (> (Math/abs (- @mouse-x @x-at-mousedown)) 3))
+                               (reset! cell-click-disabled? true))
+                             ;; useful for determining if right or left edge scrolling is needed
+                             (reset! last-mouse-delta (- @mouse-x @last-mouse-x))
+                             (when-not (zero? @last-mouse-delta)
+                               (if (pos? @last-mouse-delta)
+                                 (reset! drag-direction-intention "right")
+                                 (reset! drag-direction-intention "left")))
+                             ;; scrolling
+                             (when-not @reordering-product
+                               (let [neg-disp (* -1 (- (.-pageX e) @last-mouse-x))]
+                                 (swap! scroll-x + neg-disp)
+                                 (reset! scroll-v (* neg-disp scroll-a-factor))))
+                             (reset! last-mouse-x @mouse-x)))
+               
                mouseup (fn [e]
+                         (reset! mouse-x (.-pageX e))
                          (when @mousedown?
                            (reset! mousedown? false)
-                           (reset! reverse-scroll-drag? false)
-                           (if @reordering-product
+                           (reset! last-mouse-delta 0)
+                           (when @reordering-product
                              (do (.remove (.-classList @reordering-col-node) "reordering")
-                                 (reset! reordering-product nil))
-                             (.remove (.-classList node) "dragging"))))]
+                                 (reset! reordering-product nil)
+                                 (rf/dispatch [:b/store-round-products-order round-id])))
+                           (.remove (.-classList node) "dragging")))
+
+               _ (reset! component-exists? true)
+               anim-loop-fn (fn anim-loop ; TODO make sure this isn't being created multiple times without being destroyed
+                              [timestamp]
+                              ;; override scroll velocity if reordering
+                              (when (and @reordering-product
+                                         (= @drag-direction-intention "right")
+                                         (not (neg? @last-mouse-delta))
+                                         (> (- @mouse-x
+                                               (.-offsetLeft node))
+                                            (- (.-clientWidth node)
+                                               col-width)))
+                                (reset! scroll-v scroll-speed-reordering))
+                              (when (and @reordering-product
+                                         (= @drag-direction-intention "left")
+                                         (not (pos? @last-mouse-delta))
+                                         (< (- @mouse-x
+                                               (.-offsetLeft node))
+                                            col-width))
+                                (reset! scroll-v (* -1 scroll-speed-reordering)))
+                              ;; apply scroll velocity to scroll position
+                              (swap! scroll-x + @scroll-v)
+                              ;; right-side boundary
+                              (when (> @scroll-x scroll-x-max)
+                                (reset! scroll-v 0)
+                                (reset! scroll-x scroll-x-max))
+                              ;; left-side boundary
+                              (when (< @scroll-x 0)
+                                (reset! scroll-v 0)
+                                (reset! scroll-x 0))
+                              ;; apply position updates
+                              (aset node "scrollLeft" (Math/floor @scroll-x))
+                              (when @reordering-product
+                                (reset! curr-reordering-pos-x (- (+ (- @mouse-x
+                                                                       (.-offsetLeft node))
+                                                                    (.-scrollLeft node))
+                                                                 @drag-handle-offset))
+                                (update-sort-pos))
+                              ;; apply friction
+                              (when-not @reordering-product
+                                (swap! scroll-v * @scroll-k))
+                              ;; zero out weak velocity
+                              (if (< (Math/abs @scroll-v) 0.000001)
+                                (reset! scroll-v 0))
+
+                              (when @component-exists?
+                                (js/requestAnimationFrame anim-loop)))
+               _ (js/requestAnimationFrame anim-loop-fn)]
            (.addEventListener node "mousedown" mousedown)
            (.addEventListener node "mousemove" mousemove)
            (.addEventListener node "mouseup" mouseup)
            (.addEventListener node "mouseleave" mouseup)
-           (.addEventListener node "scroll" scroll)
            (.addEventListener js/window "scroll" window-scroll)
            (update-draggability this)))
 
@@ -687,7 +763,7 @@
 
        :component-will-unmount
        (fn [this]
-         #_         (reset! products-order& [])
+         (reset! component-exists? false)
          (when @window-scroll-fn-ref
            (.removeEventListener js/window "scroll" @window-scroll-fn-ref)))})))
 
@@ -757,12 +833,9 @@
       req-prompt-text])])
 
 (defn sort-round-products
-  [round-product] ; if result is nil, then sort it in-between winner and disqualified
-  (sort-by (juxt #(if-let [r (:result %)]
-                    (->> r
-                         (- 0.5)
-                         (* 100000))
-                    (:sort % 1))
+  [round-product]
+  (sort-by (juxt #(- 1 (or (:result %) 0.5))
+                 #(:sort % 1)
                  (comp :pname :product))
            < round-product))
 

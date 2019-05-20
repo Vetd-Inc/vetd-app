@@ -165,7 +165,7 @@
     [:title (str "Vetd | "
                  (if (admin-session? cookies)
                    "ADMIN"
-                   "B2B Software Buying Platform"))]
+                   "Business Software Buying Platform"))]
     [:meta {:http-equiv "Content-Type"
             :content "text/html; charset=UTF-8"}]
     [:meta {:name "viewport"
