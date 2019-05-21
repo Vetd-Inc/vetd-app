@@ -50,7 +50,10 @@
 
                  [buddy/buddy-hashers "1.3.0"]
 
-                 [expound "0.7.2"]]
+                 [expound "0.7.2"]
+
+                 [image-resizer "0.1.10"]
+                 [net.mikera/imagez "0.12.0"]]
 
   :repl-options {:timeout 120000}
   

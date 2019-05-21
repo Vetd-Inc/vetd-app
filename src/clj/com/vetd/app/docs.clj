@@ -10,19 +10,28 @@
 
 #_ (def handle-doc-creation nil)
 (defmulti handle-doc-creation (fn [{:keys [dtype]} handler-args] (keyword dtype)))
-
 (defmethod handle-doc-creation :default [_ _])
-
 (def ^:dynamic *docs-created* nil)
+
+#_ (def handle-doc-update nil)
+(defmulti handle-doc-update (fn [{:keys [dtype]} & [handler-args]] (keyword dtype)))
+(defmethod handle-doc-update :default [_ _])
+(def ^:dynamic *docs-updated* nil)
 
 (defmacro with-doc-handling
   [handler-args & body]
   `(let [dc&# (atom #{})
-         r# (binding [*docs-created* dc&#]
+         du&# (atom #{})
+         r# (binding [*docs-created* dc&#
+                      *docs-updated* du&#]
               (do ~@body))
-         dc# @dc&#]
-     (future (doseq [d# dc#]
-               (handle-doc-creation d# ~handler-args)))
+         dc# @dc&#
+         du# @du&#]
+     (future
+       (doseq [d# dc#]
+         (handle-doc-creation d# ~handler-args))
+       (doseq [d# du#]
+         (handle-doc-update d# ~handler-args)))
      r#))
 
 (defn proc-tree
@@ -453,26 +462,34 @@
                                      (-> k old-responses first)
                                      (-> k new-responses first)))))
 
+(defn update-doc* [d]
+  (try
+    (db/update-any! d :docs)
+    (when *docs-updated*
+      (swap! *docs-updated* conj d))    
+    (catch Exception e
+      (log/error e))))
+
 (defn update-doc-from-form-doc
   [{:keys [id doc-id doc-title responses from-org from-user to-org to-user
            doc-descr doc-notes doc-dtype doc-dsubtype product]
     :as form-doc}]
-  (db/update-any!
-   {:id doc-id
-    :title doc-title
-    :dtype doc-dtype
-    :dsubtype doc-dsubtype
-    :subject (:id product)
-    :descr doc-descr
-    :notes doc-notes
-    :form_id id
-    ;; fields below are reveresed intentionally
-    :from_org_id (:id to-org)
-    :from_user_id (:id to-user)
-    :to_org_id (:id from-org)
-    :to_user_id (:id from-user)}
-   :docs)
-  (update-responses-from-form-doc form-doc))
+  (with-doc-handling form-doc
+    (update-doc*
+     {:id doc-id
+      :title doc-title
+      :dtype doc-dtype
+      :dsubtype doc-dsubtype
+      :subject (:id product)
+      :descr doc-descr
+      :notes doc-notes
+      :form_id id
+      ;; fields below are reveresed intentionally
+      :from_org_id (:id to-org)
+      :from_user_id (:id to-user)
+      :to_org_id (:id from-org)
+      :to_user_id (:id from-user)})
+    (update-responses-from-form-doc form-doc)))
 
 (defn create-blank-form-template-prompt
   [form-template-id]
@@ -794,7 +811,7 @@
                         (-> item
                             ha/walk-clj-kw->sql-field
                             (select-keys [:doc_id :user_id :id :user_id :resp_id])
-                            (db/update-any! :docs))
+                            update-doc*)
                         [:children (-> item
                                        :id
                                        get-child-responses

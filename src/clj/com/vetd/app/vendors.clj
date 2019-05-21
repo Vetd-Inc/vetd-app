@@ -3,7 +3,13 @@
             [com.vetd.app.common :as com]
             [com.vetd.app.util :as ut]
             [com.vetd.app.docs :as docs]
-            [taoensso.timbre :as log]))
+            [com.vetd.app.hasura :as ha]
+            [taoensso.timbre :as log]
+            [clj-http.client :as http]
+            [mikera.image.core :as mimg]
+            [image-resizer.resize :as rzimg]))
+
+
 
 (defn insert-product
   [{:keys [vendor-id pname short-desc long-desc logo url]}]
@@ -77,3 +83,23 @@
 (defmethod com/handle-ws-inbound :v/delete-product
   [{:keys [product-id]} ws-id sub-fn]
   (delete-product product-id))
+
+1216149702684
+
+(defmethod docs/handle-doc-update :product-profile
+  [{:keys [id]} & _]
+  (when-let [logo (some-> [[:docs {:id id #_1216149702684}  ;; TODO replace id
+                            [[:response-prompts {:prompt-term "product/logo"}
+                              [[:fields [:sval]]]]]]]
+                          ha/sync-query
+                          :docs
+                          first
+                          :response-prompts
+                          first
+                          :fields
+                          first
+                          :sval)]
+    (def logo1 logo)))
+
+
+(http )

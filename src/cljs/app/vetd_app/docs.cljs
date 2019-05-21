@@ -154,8 +154,9 @@
      [ui/input {:value @value&
                 :on-change (fn [this]
                              (reset! value& (-> this .-target .-value)))
-                :attrs {:data-response-field-id response-id
-                        :data-prompt-field-id prompt-field-id}}]]))
+                :attrs {:data-prompt-field (str prompt-field)
+                        :data-response-field-id (str "[" response-id "]")
+                        :data-prompt-field-id (str "[" prompt-field-id "]")}}]]))
 
 (defn c-prompt-field-textarea
   [{:keys [fname ftype fsubtype list? response] :as prompt-field}]
