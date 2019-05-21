@@ -172,7 +172,7 @@
     (fn []
       [:<>
        [:h3 "VetdRound Initiation Form"]
-       [:p "Let us now a little more about who will be using this product and what features you are looking for. Then, we'll gather quotes for you to compare right away."]
+       [:p "Let us know a little more about who will be using this product and what features you are looking for. Then, we'll gather quotes for you to compare right away."]
        [:> ui/Form {:as "div"
                     :class "round-initiation-form"}
         [:> ui/FormTextArea
@@ -782,24 +782,74 @@
          (when @window-scroll-fn-ref
            (.removeEventListener js/window "scroll" @window-scroll-fn-ref)))})))
 
+(defn c-explainer-modal
+  [modal-showing?&]
+  [:> ui/Modal {:open @modal-showing?&
+                :on-close #(reset! modal-showing?& false)
+                :dimmer "inverted"
+                :closeOnDimmerClick true
+                :closeOnEscape true
+                :closeIcon true} 
+   [:> ui/ModalHeader "How VetdRounds Work"]
+   [:> ui/ModalContent
+    [:div.explainer-section
+     [:h3 "Keep Track"]
+     [:div.explainer-item
+      [:h4 "Approve or Disapprove every response "
+       [:> ui/Icon {:name "thumbs up outline"}]
+       [:> ui/Icon {:name "thumbs down outline"}]]
+      "Approve or Disapprove the responses you receive to keep track of which products best meet your needs."]]
+    [:div.explainer-section
+     [:h3.teal "Learn More"]
+     [:div.explainer-item
+      [:h4 "Ask Questions "
+       [:> ui/Icon {:name "chat outline"}]]
+      "Ask vendors follow-up questions about their responses."]
+     [:div.explainer-item
+      [:h4 
+       "Add a Topic "
+       [:> ui/Icon {:name "plus"}]]
+      "Request that all vendors respond to a new requirement / use case."]]
+    [:div.explainer-section
+     [:h3.blue "Make a Decision"]
+     [:div.explainer-item
+      [:h4 
+       "Disqualify Products "
+       [:> ui/Icon {:name "ban"}]]
+      "Mark products as unsatisfactory and hide them on the grid. Don't worry, you can change your mind later!"]
+     [:div.explainer-item
+      [:h4 
+       "Set Up a Call "
+       [:> ui/Icon {:name "call"}]]
+      "(Optional) Have Vetd set up a phone call with your top choices."]
+     [:div.explainer-item
+      [:h4 
+       "Declare a Winner "
+       [:> ui/Icon {:name "check"}]]
+      "Let the vendor know that you have made a final decision."]]]])
+
 (defn c-round
   "Component to display Round details."
-  [{:keys [id status title products] :as round}
-   req-form-template
-   round-product]
-  [:<>
-   [:> ui/Segment {:id "round-title-container"
-                   :class (str "detail-container " (when (> (count title) 50) "long"))}
-    [:h1.title title]]
-   [:> ui/Segment {:id "round-status-container"
-                   :class "detail-container"}
-    [bc/c-round-status status]]
-   (condp contains? status
-     #{"initiation"} [:> ui/Segment {:class "detail-container"
-                                     :style {:margin-left 20}}
-                      [c-round-initiation round]]
-     #{"in-progress"
-       "complete"} [c-round-grid round req-form-template round-product])])
+  [round req-form-template round-product]
+  (let [modal-showing?& (r/atom false)]
+    (fn [{:keys [id status title products] :as round}
+         req-form-template
+         round-product]
+      [:<>
+       [:> ui/Segment {:id "round-title-container"
+                       :class (str "detail-container " (when (> (count title) 50) "long"))}
+        [:h1.round-title title]
+        [:a {:on-click #(reset! modal-showing?& true)}
+         [:> ui/Icon {:name "question circle"}]
+         "How VetdRounds Work"]
+        [c-explainer-modal modal-showing?&]
+        [bc/c-round-status status]]
+       (condp contains? status
+         #{"initiation"} [:> ui/Segment {:class "detail-container"
+                                         :style {:margin-left 20}}
+                          [c-round-initiation round]]
+         #{"in-progress"
+           "complete"} [c-round-grid round req-form-template round-product])])))
 
 (defn c-add-requirement-button
   [{:keys [id] :as round}]
@@ -914,7 +964,7 @@
              [:div {:style {:padding "0 15px"}}
               [bc/c-back-button {:on-click #(rf/dispatch [:b/nav-rounds])}
                "All VetdRounds"]]
-             [:div {:style {:height 186}}] ; spacer
+             [:div {:style {:height 211}}] ; spacer
              (when (and (#{"in-progress" "complete"} status)
                         (seq sorted-round-products))
                [:<>
