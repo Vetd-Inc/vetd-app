@@ -580,6 +580,7 @@
                mouse-x (atom nil) ; current mouse pos x
                last-mouse-x (atom nil)
                last-mouse-delta (atom 0)
+               drag-scrolling? (atom false)
                drag-direction-intention (atom nil)
                ;; distance that user mousedown'd from left side of column being dragged
                drag-handle-offset (atom nil)
@@ -631,6 +632,8 @@
                                         (or (.contains class-list "round-product") ; top portion of column
                                             (.contains class-list "name") ; the product name
                                             (empty? (array-seq class-list))))) ; the column node itself
+               part-of-scrollbar? (fn [y]
+                                    (> (- y (.-offsetTop node)) (.-clientHeight node)))
                reordering-col-node (atom nil)
                
                mousedown (fn [e]
@@ -653,8 +656,10 @@
                                  (reset! reordering-product (js/parseInt (.getAttribute col "data-product-id")))
                                  (.add (.-classList @reordering-col-node) "reordering"))))
                            ;; Scrolling
-                           (do (reset! last-mouse-x (.-pageX e))
-                               (.add (.-classList node) "dragging")))
+                           (when-not (part-of-scrollbar? (.-pageY e))
+                             (do (reset! drag-scrolling? true)
+                                 (.add (.-classList node) "dragging")))
+                           (reset! last-mouse-x (.-pageX e)))
                ;; based on the (physical) position of the column being dragged,
                ;; update the sort pos if needed
                update-sort-pos (fn []
@@ -701,7 +706,15 @@
                              (do (.remove (.-classList @reordering-col-node) "reordering")
                                  (reset! reordering-product nil)
                                  (rf/dispatch [:b/store-round-products-order round-id])))
+                           (reset! drag-scrolling? false)
                            (.remove (.-classList node) "dragging")))
+
+               last-scroll-x (atom 0)
+               scroll (fn [e]
+                        (when-not @drag-scrolling?
+                          (when (> (Math/abs (- (.-scrollLeft node) @scroll-x)) 0.99999)
+                            (reset! scroll-v 0)
+                            (reset! scroll-x (.-scrollLeft node)))))
 
                _ (reset! component-exists? true)
                anim-loop-fn (fn anim-loop ; TODO make sure this isn't being created multiple times without being destroyed
@@ -733,7 +746,8 @@
                                 (reset! scroll-v 0)
                                 (reset! scroll-x 0))
                               ;; apply position updates
-                              (aset node "scrollLeft" (Math/floor @scroll-x))
+                              (when @drag-scrolling?
+                                (aset node "scrollLeft" (Math/floor @scroll-x)))
                               (when @reordering-product
                                 (reset! curr-reordering-pos-x (- (+ (- @mouse-x
                                                                        (.-offsetLeft node))
@@ -754,6 +768,7 @@
            (.addEventListener node "mousemove" mousemove)
            (.addEventListener node "mouseup" mouseup)
            (.addEventListener node "mouseleave" mouseup)
+           (.addEventListener node "scroll" scroll)
            (.addEventListener js/window "scroll" window-scroll)
            (update-draggability this)))
 
