@@ -713,6 +713,7 @@
                scroll (fn [e]
                         (when-not @drag-scrolling?
                           (when (> (Math/abs (- (.-scrollLeft node) @scroll-x)) 0.99999)
+                            (reset! scroll-v 0)
                             (reset! scroll-x (.-scrollLeft node)))))
 
                _ (reset! component-exists? true)
@@ -745,7 +746,8 @@
                                 (reset! scroll-v 0)
                                 (reset! scroll-x 0))
                               ;; apply position updates
-                              (aset node "scrollLeft" (Math/floor @scroll-x))
+                              (when @drag-scrolling?
+                                (aset node "scrollLeft" (Math/floor @scroll-x)))
                               (when @reordering-product
                                 (reset! curr-reordering-pos-x (- (+ (- @mouse-x
                                                                        (.-offsetLeft node))
