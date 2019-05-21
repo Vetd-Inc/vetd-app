@@ -630,6 +630,21 @@ $cell-height: 201px;
   }
 }
 
+.how-vetd-works {
+  min-height: 0 !important;
+  padding: 25px !important;
+
+  h2 {
+    font-weight: 300;
+    margin-bottom: 15px;
+    text-align: center;
+  }
+
+  h3 {
+    padding-bottom: 5px;
+  }
+}
+
 .explainer-section {
   margin-top: 40px;
 

@@ -300,32 +300,48 @@
          (for [v (:orgs prods)]
            ^{:key (:id v)}
            [c-product-search-results v])]
-        (when (> (count @search-query) 2)
-          [:> ui/Segment {:placeholder true}
-           [:> ui/Header {:icon true}
-            [:> ui/Icon {:name "search"}]
-            "We could not find any matching products or categories."]
-           [:> ui/SegmentInline
-            [:> ui/Input {:label {:icon "asterisk"}
-                          :labelPosition "left corner"
-                          :placeholder "Product / Category . . ."
-                          :style {:position "relative"
-                                  :top 1
-                                  :width 240
-                                  :margin-right 15}
-                          :onChange (fn [_ this]
-                                      (reset! prod-cat-suggestion (.-value this)))}]
-            #_[:> ui/Select {:compact true
-                             :options [{:text "Product"
-                                        :value "product"
-                                        :key "product"}
-                                       {:text "Category"
-                                        :value "category"
-                                        :key "category"}]
-                             :defaultValue "product"}]
-            [:> ui/Button {:color "blue"
-                           :onClick #(rf/dispatch [:b/req-new-prod-cat @prod-cat-suggestion])}
-             "Request It"]]])))))
+        (if (= (count @search-query) 0)
+          [:> ui/Segment {:placeholder true
+                          :class "how-vetd-works"}
+           [:h2 "How Vetd Works . . ."]
+           [:> ui/Grid {:columns "equal"
+                        :style {:margin-top 4}}
+            [:> ui/GridRow
+             [:> ui/GridColumn
+              [:h3 "Products & Categories"]
+              "Search for products or product categories to find products that meet your needs."]
+             [:> ui/GridColumn
+              [:h3 "Preposals"]
+              "Review Preposals (personalized pricing estimate and product pitch) you have received from vendors. Don't have any Preposals yet? Request one by searching above or simply forward vendor emails to forward@vetd.com."]
+             [:> ui/GridColumn
+              [:h3 "VetdRounds"]
+              "Compare similar products side-by-side based on your unique requirements, and make an informed buying decision in a fraction of the time."]]]]
+          (when (> (count @search-query) 2)
+            [:> ui/Segment {:placeholder true}
+             [:> ui/Header {:icon true}
+              [:> ui/Icon {:name "search"}]
+              "We could not find any matching products or categories."]
+             [:> ui/SegmentInline
+              [:> ui/Input {:label {:icon "asterisk"}
+                            :labelPosition "left corner"
+                            :placeholder "Product / Category . . ."
+                            :style {:position "relative"
+                                    :top 1
+                                    :width 240
+                                    :margin-right 15}
+                            :onChange (fn [_ this]
+                                        (reset! prod-cat-suggestion (.-value this)))}]
+              #_[:> ui/Select {:compact true
+                               :options [{:text "Product"
+                                          :value "product"
+                                          :key "product"}
+                                         {:text "Category"
+                                          :value "category"
+                                          :key "category"}]
+                               :defaultValue "product"}]
+              [:> ui/Button {:color "blue"
+                             :onClick #(rf/dispatch [:b/req-new-prod-cat @prod-cat-suggestion])}
+               "Request It"]]]))))))
 
 (defn c-page []
   (let [search-query& (rf/subscribe [:search-term])]
