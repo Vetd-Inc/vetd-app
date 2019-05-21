@@ -195,7 +195,6 @@ Round URLs (if any):
                     "Preposal Request
 Buyer (Org): '%s'
 Buyer User: '%s'
-
 Product: '%s'"
                     (-> from-org-id auth/select-org-by-id :oname) ; buyer org name
                     (-> from-user-id auth/select-user-by-id :uname) ; buyer user name
@@ -203,36 +202,56 @@ Product: '%s'"
 
 (defn set-round-product-result [round-id product-id result reason]
   "Set the result of a product in a round (0 - disqualified, 1 - winner)."
-  (do (let [id (->> [[:round-product {:round-id round-id
-                                      :product-id product-id
-                                      :deleted nil}
-                      [:id]]]
-                    ha/sync-query
-                    :round-product
-                    first
-                    :id)]
-        (when id
-          (db/update-any! {:id id
-                           :result result
-                           :reason reason}
-                          :round_product)))
-      (when (= 1 result) ; declaring a winner
-        (let [rps (->> [[:round-product {:round-id round-id
-                                         :result nil
-                                         :deleted nil}
-                         [:id]]]
-                       ha/sync-query
-                       :round-product)]
-          ;; disqualify any live products in the round
-          (doseq [{:keys [id]} rps]
-            (db/update-any! {:id id
-                             :result 0
-                             :reason "A different product was declared winner."}
-                            :round_product))
-          ;; update round status
-          (db/update-any! {:id round-id
-                           :status "complete"}
-                          :rounds)))))
+  (do  (when (= 1 result)
+         (try (let [{:keys [idstr buyer products]} (-> [[:rounds {:id round-id}
+                                                         [:idstr
+                                                          [:buyer [:oname]]
+                                                          [:products {:id product-id}
+                                                           [:pname]]]]]
+                                                       ha/sync-query
+                                                       vals
+                                                       ffirst)]
+                (com/sns-publish :ui-misc
+                                 "Round Winner Declared"
+                                 (format
+                                  "Round Winner Declared
+Buyer: '%s'
+Product: '%s'
+Round URL: https://app.vetd.com/b/rounds/%s"
+                                  (:oname buyer)
+                                  (-> products first :pname)
+                                  idstr)))
+              (catch Exception e
+                (log/error e))))
+       (when-let [id (->> [[:round-product {:round-id round-id
+                                            :product-id product-id
+                                            :deleted nil}
+                            [:id]]]
+                          ha/sync-query
+                          :round-product
+                          first
+                          :id)]
+         (db/update-any! {:id id
+                          :result result
+                          :reason reason}
+                         :round_product))
+       (when (= 1 result)               ; declaring a winner
+         (let [rps (->> [[:round-product {:round-id round-id
+                                          :result nil
+                                          :deleted nil}
+                          [:id]]]
+                        ha/sync-query
+                        :round-product)]
+           ;; disqualify any live products in the round
+           (doseq [{:keys [id]} rps]
+             (db/update-any! {:id id
+                              :result 0
+                              :reason "A different product was declared winner."}
+                             :round_product))
+           ;; update round status
+           (db/update-any! {:id round-id
+                            :status "complete"}
+                           :rounds)))))
 
 (defn add-requirement-to-round
   [round-id requirement-text]
