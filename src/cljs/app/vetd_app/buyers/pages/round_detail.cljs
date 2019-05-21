@@ -837,7 +837,7 @@
   (sort-by (juxt #(- 1 (or (:result %) 0.5))
                  #(:sort % 1)
                  (comp :pname :product))
-           < round-product))
+           compare round-product))
 
 (defn c-page []
   (let [org-id& (rf/subscribe [:org-id])
