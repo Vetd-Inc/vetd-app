@@ -3,6 +3,7 @@
             [com.vetd.app.common :as com]
             [com.vetd.app.util :as ut]
             [com.vetd.app.hasura :as ha]
+            [clojure.string :as st]
             [buddy.hashers :as bhsh]
             [taoensso.timbre :as log]
             [honeysql.core :as hs]))
@@ -52,7 +53,7 @@
 
 (defn select-user-by-email
   [email & fields]
-  (-> [[:users {:email email}
+  (-> [[:users {:email (st/lower-case email)}
         (or (not-empty fields)
             [:id :uname :pwd])]]
       ha/sync-query
@@ -75,7 +76,7 @@
                     {:id id
                      :idstr idstr
                      :uname uname
-                     :email email
+                     :email (st/lower-case email)
                      :pwd (bhsh/derive pwd)})
         first)))
 
