@@ -839,9 +839,12 @@
        [:> ui/Segment {:id "round-title-container"
                        :class (str "detail-container " (when (> (count title) 50) "long"))}
         [:h1.round-title title]
-        [:a {:on-click #(reset! modal-showing?& true)}
-         [:> ui/Icon {:name "question circle"}]
-         "How VetdRounds Work"]
+        [:> ui/TransitionGroup {:animation "fade down"
+                                :duration 500}
+         (when-not (= status "initiation")
+           [:a {:on-click #(reset! modal-showing?& true)}
+            [:> ui/Icon {:name "question circle"}]
+            "How VetdRounds Work"])]
         [c-explainer-modal modal-showing?&]
         [bc/c-round-status status]]
        (condp contains? status

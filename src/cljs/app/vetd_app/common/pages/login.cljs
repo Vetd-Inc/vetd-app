@@ -52,8 +52,11 @@
                    :org-id org-id)
         :local-store {:session-token session-token}
         :cookies {:admin-token (when admin? [session-token {:max-age 60 :path "/"}])}
-        :analytics/identify {:user-id (:id user)}
-        :analytics/group {:group-id org-id}
+        :analytics/identify {:user-id (:id user)
+                             :traits {:name (:uname user)
+                                      :email (:email user)}}
+        :analytics/group {:group-id org-id
+                          :traits {:name (-> memberships first :org :oname)}}
         :dispatch-later [{:ms 100 :dispatch [:nav-home]}
                          ;; to prevent the login form from flashing briefly
                          {:ms 200 :dispatch [:hide-login-loading]}]})
