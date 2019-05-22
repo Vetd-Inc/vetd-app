@@ -55,7 +55,7 @@
   [email & fields]
   (-> [[:users {:email (st/lower-case email)}
         (or (not-empty fields)
-            [:id :uname :pwd])]]
+            [:id :uname :email])]]
       ha/sync-query
       vals
       ffirst))
@@ -64,7 +64,7 @@
   [id & fields]
   (-> [[:users {:id id}
         (or (not-empty fields)
-            [:id :uname :created])]]
+            [:id :uname :email])]]
       ha/sync-query
       vals
       ffirst))
@@ -80,18 +80,12 @@
                      :pwd (bhsh/derive pwd)})
         first)))
 
-
-
-
-#_(insert-select-user "John Test" "jtest@gmail.com" "hello")
-
 (defn valid-creds?
+  "If valid email / password combination, return that user map."
   [email pwd]
-  (when-let [{pwd-hsh :pwd :as user} (select-user-by-email email)]
+  (when-let [{pwd-hsh :pwd :as user} (select-user-by-email email :id :uname :email :pwd)]
     (when (bhsh/check pwd pwd-hsh)
       user)))
-
-#_ (valid-creds? "pass@word.com" "ppp")
 
 (defn select-memb-by-ids
   [user-id org-id]
