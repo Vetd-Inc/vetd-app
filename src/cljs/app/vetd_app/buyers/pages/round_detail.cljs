@@ -289,14 +289,14 @@
     (fn [round product won? disqualified?]
       (if-not disqualified?
         [:> ui/Popup
-         {:position "top left"
+         {:position "top right"
           :on "click"
           :open @popup-open?
           :onOpen #(reset! popup-open? true)
           :onClose #(reset! popup-open? false)
           :content (r/as-element
                     (let [reason (atom "")]
-                      [:> ui/Form {:style {:width 450}}
+                      [:> ui/Form {:style {:width 350}}
                        [:> ui/FormField
                         [:> ui/Input
                          {:placeholder "Enter reason..."
