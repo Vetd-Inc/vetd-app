@@ -839,7 +839,6 @@
        [:> ui/Segment {:id "round-title-container"
                        :class (str "detail-container " (when (> (count title) 50) "long"))}
         [:h1.round-title title]
-        
         [:> ui/TransitionGroup {:animation "fade down"
                                 :duration 500}
          (when-not (= status "initiation")
