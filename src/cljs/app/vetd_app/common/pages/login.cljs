@@ -54,6 +54,7 @@
         :cookies {:admin-token (when admin? [session-token {:max-age 60 :path "/"}])}
         :analytics/identify {:user-id (:id user)
                              :traits {:name (:uname user)
+                                      :displayName (:uname user)
                                       :email (:email user)}}
         :analytics/group {:group-id org-id
                           :traits {:name (-> memberships first :org :oname)}}
