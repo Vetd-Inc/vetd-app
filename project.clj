@@ -15,9 +15,10 @@
                  [district0x/graphql-query "1.0.5"]
                  [district0x/district-graphql-utils "1.0.5"]
 
-                 [com.cognitect.aws/api "0.8.273"]
-                 [com.cognitect.aws/endpoints "1.1.11.507"]
-                 [com.cognitect.aws/sns "697.2.391.0"]
+                 [com.cognitect.aws/api "0.8.305"]
+                 [com.cognitect.aws/endpoints "1.1.11.553"]
+                 [com.cognitect.aws/sns "718.2.444.0"]
+                 [com.cognitect.aws/s3 "718.2.457.0"]                 
 
                  [cheshire "5.8.0"]
                  [clj-http "3.9.1"]

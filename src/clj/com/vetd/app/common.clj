@@ -9,11 +9,17 @@
             [cognitect.aws.client.api :as aws]
             [cognitect.aws.credentials :as aws-creds]
             [taoensso.timbre :as log]
+            [buddy.hashers :as bhsh]
             clojure.pprint))
 
 (defonce shutdown-ch (a/chan))
 
 (defonce supress-sns? (atom false))
+
+(defn md5-hex [s]
+  (-> s
+      buddy.core.hash/md5
+      buddy.core.codecs/bytes->hex))
 
 #_ (def handle-ws-inbound nil)
 (defmulti handle-ws-inbound
@@ -38,9 +44,20 @@
    {:access-key-id "AKIAIJN3D74NBHJIAARQ"
     :secret-access-key "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"}))
 
+(def aws-creds-provider-s3-writer
+  (aws-creds/basic-credentials-provider
+   ;; TODO cycle creds and keep in env
+   {:access-key-id "AKIAJPZBKHS4C6DB2YOQ"
+    :secret-access-key "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"}))
+
+
 (def sns-client (aws/client {:api :sns
                              :region "us-east-1"
                              :credentials-provider aws-creds-provider}))
+
+(def s3-client (aws/client {:api :s3
+                             :region "us-east-1"
+                             :credentials-provider aws-creds-provider-s3-writer}))
 
 (def topic->arn
   {:ui-misc "arn:aws:sns:us-east-1:744151627940:ui-misc"
@@ -64,3 +81,9 @@
           (clojure.pprint/pprint arg)
           {} ; to ensure ws return gets triggered
           ))))
+
+
+(defn s3-put [bucket-name file-name data]
+  (aws/invoke s3-client
+              {:op :PutObject :request {:Bucket bucket-name :Key file-name
+                                        :Body data}}))
