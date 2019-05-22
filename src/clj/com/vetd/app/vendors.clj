@@ -91,20 +91,25 @@
 
 
 (defn process-product-logo [prod-profile-doc-id]
-  (when-let [logo-url "http://crosspixel.net/wp-content/uploads/2018/05/CrossPixel-logo-notagline-300x68.png"
-             #_(some-> [[:docs {:id prod-profile-doc-id #_1216149702684}
-                         [[:response-prompts {:prompt-term "product/logo"}
-                           [[:fields [:sval]]]]]]]
-                       ha/sync-query
-                       :docs
-                       first
-                       :response-prompts
-                       first
-                       :fields
-                       first
-                       :sval)]
-    (let [baos (java.io.ByteArrayOutputStream.)
-          _ (ut/$- -> logo-url
+  (let [logo-url "http://crosspixel.net/wp-content/uploads/2018/05/CrossPixel-logo-notagline-300x68.png"
+        {:keys [subject] :as doc} (-> [[:docs {:id prod-profile-doc-id #_1216149702684}
+                                        [:subject
+                                         [:response-prompts {:prompt-term "product/logo"
+                                                             :ref-deleted nil
+                                                             :deleted nil}
+                                          [[:fields [:sval]]]]]]]
+                                      ha/sync-query
+                                      :docs
+                                      first)
+        logo-url (some-> doc
+                         :response-prompts
+                         first
+                         :fields
+                         first
+                         :sval)]
+    (if logo-url
+      (let [baos (java.io.ByteArrayOutputStream.)
+            _ (ut/$- -> logo-url
                      (http/get {:as :stream})
                      :body
                      mimg/load-image
@@ -112,13 +117,17 @@
                      (mimg/write baos "png")
                      #_(com/s3-put "vetd-logos"
                                    new-file-name))
-          ba (.toByteArray baos)
-          new-file-name (format "%s.png"
-                                (com/md5-hex ba))]
-      (com/s3-put "vetd-logos" new-file-name ba)
-      (println new-file-name))))
+            ba (.toByteArray baos)
+            new-file-name (format "%s.png"
+                                  (com/md5-hex ba))]
+        (com/s3-put "vetd-logos" new-file-name ba)
+        (db/update-any! {:id subject
+                         :logo new-file-name}
+                        :products)
+        (log/info (format "Product logo processed: '%s' '%s'" new-file-name subject)))
+      (log/error  (format "NO Product logo found in profile doc: '%s'" subject)))))
 
-#_(process-product-logo 1216149702684)
+#_(process-product-logo id1)
 
 (defmethod docs/handle-doc-update :product-profile
   [{:keys [id]} & _]
@@ -127,46 +136,9 @@
     (catch Exception e
       (log/error e))))
 
-#_(
-
-   (def resp1 (http/get "http://crosspixel.net/wp-content/uploads/2018/05/CrossPixel-logo-notagline-300x68.png"
-                        {:as :stream}))
-
-   (def img1 (-> resp1 :body slurp))
-
-
-   (def bi1
-     (mimg/load-image (:body (http/get "http://crosspixel.net/wp-content/uploads/2018/05/CrossPixel-logo-notagline-300x68.png"
-                                       {:as :stream}))))
-
-   (def img1' (mimg/resize bi1 150))
-
-   (def ni1 (mimg/new-image 150 150))
-
-   (mimg/height img1')
-
-
-
-   (let [rz ((rzimg/resize-fn 150 150 image-resizer.scale-methods/automatic) bi1)
-         h (mimg/height rz)
-         w (mimg/width rz)
-         x (/ (- 75 w) 2)
-         y (/ (- 75 h) 2)]
-     (println [w h x y])
-     (mimg/write rz "/opt/code/test1.png" "png"))
-
-
-   (-> bi1
-       ((rzimg/resize-fn 150 150 image-resizer.scale-methods/automatic))
-       ((pdimg/pad-fn 150))
-       ((crimg/crop-width-fn 150))
-       (mimg/write "/opt/code/test1.png" "png"))
-
-
-   (mimg/fill! ni1  0x000000)
-
-
-
-   (mimg/write img1' "/opt/code/test1.png" "png")
-   )
-
+(defmethod docs/handle-doc-creation :product-profile
+  [{:keys [id]} & _]
+  (try
+    (process-product-logo id)
+    (catch Exception e
+      (log/error e))))

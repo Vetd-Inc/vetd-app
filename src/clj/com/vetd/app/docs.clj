@@ -378,25 +378,26 @@
 
 (defn create-doc-from-form-doc
   [{:keys [id doc-title prompts from-org from-user to-org to-user
-           doc-descr doc-notes doc-dtype doc-dsubtype product]}]
-  (let [{doc-id :id} (insert-doc {:title doc-title
-                                  :dtype doc-dtype
-                                  :dsubtype doc-dsubtype
-                                  :subject (:id product)
-                                  :descr doc-descr
-                                  :notes doc-notes
-                                  :form-id id
-                                  ;; fields below are reveresed intentionally
-                                  :from-org-id (:id to-org)
-                                  :from-user-id (:id to-user)
-                                  :to-org-id (:id from-org)
-                                  :to-user-id (:id from-user)})]
-    (doseq [{prompt-id :id :keys [response fields]} prompts]
-      (create-attached-doc-response doc-id
-                                    {:org-id (:id to-org)
-                                     :user-id (:id to-user)
-                                     :prompt-id prompt-id
-                                     :fields fields}))))
+           doc-descr doc-notes doc-dtype doc-dsubtype product] :as form-doc}]
+  (with-doc-handling form-doc
+    (let [{doc-id :id} (insert-doc {:title doc-title
+                                    :dtype doc-dtype
+                                    :dsubtype doc-dsubtype
+                                    :subject (:id product)
+                                    :descr doc-descr
+                                    :notes doc-notes
+                                    :form-id id
+                                    ;; fields below are reveresed intentionally
+                                    :from-org-id (:id to-org)
+                                    :from-user-id (:id to-user)
+                                    :to-org-id (:id from-org)
+                                    :to-user-id (:id from-user)})]
+      (doseq [{prompt-id :id :keys [response fields]} prompts]
+        (create-attached-doc-response doc-id
+                                      {:org-id (:id to-org)
+                                       :user-id (:id to-user)
+                                       :prompt-id prompt-id
+                                       :fields fields})))))
 
 (defn- get-child-responses
   [doc-id]
