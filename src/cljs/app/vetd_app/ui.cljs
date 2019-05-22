@@ -91,6 +91,8 @@
 (def StepContent (component "Step" "Content"))
 (def StepTitle (component "Step" "Title"))
 (def StepDescription (component "Step" "Description"))
+(def Transition (component "Transition"))
+(def TransitionGroup (component "Transition" "Group"))
 
 ;; Accordion
 (def Accordion (component "Accordion"))
