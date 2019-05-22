@@ -131,8 +131,8 @@
                              (assoc form-doc
                                     :product
                                     doc-product))]
+             ^{:key (str "product" id)}
              [:div
-              ^{:key (str "product" id)}
               [c-product (assoc p
                                 :form-doc
                                 (or form-doc'

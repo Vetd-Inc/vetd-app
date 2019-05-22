@@ -8,7 +8,6 @@
             [taoensso.timbre :as log]
             [honeysql.core :as hs]))
 
-
 ;; this seems secure
 (defn mk-session-token []
   (let [base 1000000

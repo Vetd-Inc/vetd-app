@@ -124,6 +124,25 @@
         (log/info (format "Product logo processed: '%s' '%s'" new-file-name subject)))
       (log/error  (format "NO Product logo found in profile doc: '%s'" subject)))))
 
+(defn process-product-categories [prod-profile-doc-id]
+  (let [{:keys [subject] :as doc} (-> [[:docs {:id prod-profile-doc-id}
+                                        [:subject
+                                         [:response-prompts {:prompt-term "product/categories"
+                                                             :ref-deleted nil
+                                                             :deleted nil}
+                                          [[:fields [:sval]]]]]]]
+                                      ha/sync-query
+                                      :docs
+                                      first)
+        cats (some->> doc
+                          :response-prompts
+                          first
+                          :fields
+                          (map :sval))]
+    (if-not (empty? cats)
+      1
+      2)))
+
 (defmethod docs/handle-doc-update :product-profile
   [{:keys [id]} & _]
   (try
