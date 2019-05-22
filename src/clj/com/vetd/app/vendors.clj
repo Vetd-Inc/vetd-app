@@ -3,7 +3,16 @@
             [com.vetd.app.common :as com]
             [com.vetd.app.util :as ut]
             [com.vetd.app.docs :as docs]
-            [taoensso.timbre :as log]))
+            [com.vetd.app.hasura :as ha]
+            [taoensso.timbre :as log]
+            [clj-http.client :as http]
+            [mikera.image.core :as mimg]
+            [image-resizer.resize :as rzimg]
+            [image-resizer.pad :as pdimg]
+            [image-resizer.crop :as crimg]))
+
+
+
 
 (defn insert-product
   [{:keys [vendor-id pname short-desc long-desc logo url]}]
@@ -77,3 +86,54 @@
 (defmethod com/handle-ws-inbound :v/delete-product
   [{:keys [product-id]} ws-id sub-fn]
   (delete-product product-id))
+
+
+
+
+(defn process-product-logo [prod-profile-doc-id]
+  (let [{:keys [subject] :as doc} (-> [[:docs {:id prod-profile-doc-id}
+                                        [:subject
+                                         [:response-prompts {:prompt-term "product/logo"
+                                                             :ref-deleted nil
+                                                             :deleted nil}
+                                          [[:fields [:sval]]]]]]]
+                                      ha/sync-query
+                                      :docs
+                                      first)
+        logo-url (some-> doc
+                         :response-prompts
+                         first
+                         :fields
+                         first
+                         :sval)]
+    (if logo-url
+      (let [baos (java.io.ByteArrayOutputStream.)
+            _ (ut/$- -> logo-url
+                     (http/get {:as :stream})
+                     :body
+                     mimg/load-image
+                     ((rzimg/resize-fn 150 150 image-resizer.scale-methods/automatic))
+                     (mimg/write baos "png"))
+            ba (.toByteArray baos)
+            new-file-name (format "%s.png"
+                                  (com/md5-hex ba))]
+        (com/s3-put "vetd-logos" new-file-name ba)
+        (db/update-any! {:id subject
+                         :logo new-file-name}
+                        :products)
+        (log/info (format "Product logo processed: '%s' '%s'" new-file-name subject)))
+      (log/error  (format "NO Product logo found in profile doc: '%s'" subject)))))
+
+(defmethod docs/handle-doc-update :product-profile
+  [{:keys [id]} & _]
+  (try
+    (process-product-logo id)
+    (catch Exception e
+      (log/error e))))
+
+(defmethod docs/handle-doc-creation :product-profile
+  [{:keys [id]} & _]
+  (try
+    (process-product-logo id)
+    (catch Exception e
+      (log/error e))))
