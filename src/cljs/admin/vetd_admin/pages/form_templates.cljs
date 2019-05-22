@@ -112,8 +112,10 @@
 (defn on-change-fn
   [changes& changes-fn value&]
   (fn [_ this]
-    (reset! value& (.-value this))
-    (swap! changes& changes-fn)))
+    (let [new-val (or (.-value this)
+                      (.-checked this))]
+      (reset! value& new-val)
+      (swap! changes& changes-fn))))
 
 (defn c-prompt-field
   [{:keys [id fname descr ftype fsubtype list?] sort' :sort} changes&]
@@ -126,7 +128,7 @@
                            {:id id
                             :fname @fname&
                             :descr @descr&
-                            :list_qm @list?& ; HACK list_qm => list?
+                            :list_qm  (boolean @list?&) ; HACK list_qm => list?
                             :sort @sort-order&
                             :ftype (first @ftype-pair&)
                             :fsubtype (second @ftype-pair&)})
@@ -162,7 +164,7 @@
                         :onChange (mk-on-change-fn sort-order&)}]]
          [:> ui/FormField {:inline true}
           [:> ui/Label {:style {:width "200px"}} "List?"]
-          [:> ui/Checkbox {:defaultValue @list?&
+          [:> ui/Checkbox {:defaultChecked @list?&
                            :spellCheck false
                            :fluid true                            
                            :onChange (mk-on-change-fn list?&)}]]]
