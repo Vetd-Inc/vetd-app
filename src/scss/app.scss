@@ -616,19 +616,68 @@ $cell-height: 201px;
 #round-title-container {
   margin-left: 20px;
   
-  .title {
+  .round-title {
     margin-top: 0;
     font-size: 28px;
     line-height: 36px;
   }
 
   &.long {
-    .title {
+    .round-title {
       font-size: 16px;
       line-height: 36px;
     }
   }
 }
+
+.how-vetd-works {
+  min-height: 0 !important;
+  padding: 25px !important;
+
+  h2 {
+    font-weight: 300;
+    margin-bottom: 15px;
+    text-align: center;
+  }
+
+  h3 {
+    padding-bottom: 5px;
+  }
+}
+
+.explainer-section {
+  margin-top: 40px;
+
+  &:first-of-type {
+    margin-top: 0px;
+  }
+
+  h3 {
+    font-size: 24px;
+    font-weight: 300;
+  }
+  h3.teal {
+    color: $teal;
+  }
+  h3.blue {
+    color: $blue;
+  }
+  
+  .explainer-item {
+    margin-top: 20px;
+
+    &:first-of-type {
+      margin-top: 0px;
+    }
+
+    h4 {
+      padding-bottom: 5px;
+      margin-bottom: 0;
+    }
+  }
+}
+
+
 #round-status-container {
   margin-left: 20px;
   margin-bottom: 0;
