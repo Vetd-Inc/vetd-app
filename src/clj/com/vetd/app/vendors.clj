@@ -91,8 +91,7 @@
 
 
 (defn process-product-logo [prod-profile-doc-id]
-  (let [logo-url "http://crosspixel.net/wp-content/uploads/2018/05/CrossPixel-logo-notagline-300x68.png"
-        {:keys [subject] :as doc} (-> [[:docs {:id prod-profile-doc-id #_1216149702684}
+  (let [{:keys [subject] :as doc} (-> [[:docs {:id prod-profile-doc-id}
                                         [:subject
                                          [:response-prompts {:prompt-term "product/logo"
                                                              :ref-deleted nil
@@ -114,9 +113,7 @@
                      :body
                      mimg/load-image
                      ((rzimg/resize-fn 150 150 image-resizer.scale-methods/automatic))
-                     (mimg/write baos "png")
-                     #_(com/s3-put "vetd-logos"
-                                   new-file-name))
+                     (mimg/write baos "png"))
             ba (.toByteArray baos)
             new-file-name (format "%s.png"
                                   (com/md5-hex ba))]
@@ -126,8 +123,6 @@
                         :products)
         (log/info (format "Product logo processed: '%s' '%s'" new-file-name subject)))
       (log/error  (format "NO Product logo found in profile doc: '%s'" subject)))))
-
-#_(process-product-logo id1)
 
 (defmethod docs/handle-doc-update :product-profile
   [{:keys [id]} & _]
