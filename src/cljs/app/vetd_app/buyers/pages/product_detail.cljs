@@ -51,7 +51,7 @@
                         :return {:handler :b/setup-call-return}
                         :product-id product-id
                         :buyer-id (util/db->current-org-id db)}}
-    :analytics/track {:event "Setup Call"
+    :analytics/track {:event "Set Up Call"
                       :props {:category "Product"
                               :label product-name}}}))
 
@@ -59,8 +59,8 @@
  :b/setup-call-return
  (constantly
   {:toast {:type "success"
-           :title "Setup a Call"
-           :message "We'll setup a call for you soon."}}))
+           :title "Set Up a Call"
+           :message "We'll set up a call for you soon."}}))
 
 (rf/reg-event-fx
  :b/ask-a-question
