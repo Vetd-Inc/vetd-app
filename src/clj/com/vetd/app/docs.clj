@@ -224,6 +224,27 @@
                      :resp_id resp-id})
         first)))
 
+(defn insert-response-field*
+  [resp-id {:keys [prompt-field-id idx sval nval dval jval response ftype fsubtype]}]
+  (let [[id idstr] (ut/mk-id&str)]
+    (->> (merge {:id id
+                 :idstr idstr
+                 :created (ut/now-ts)
+                 :updated (ut/now-ts)
+                 :deleted nil
+                 :pf_id prompt-field-id
+                 :idx idx
+                 :sval sval
+                 :nval nval
+                 :dval dval
+                 :jval jval                 
+                 :resp_id resp-id}
+                ;; TODO support multiple response fields (for where list? = true)
+                (when-let [v (-> response first :state)]
+                  (convert-field-val v ftype fsubtype)))
+         (db/insert! :resp_fields)
+         first)))
+
 (defn insert-response-field
   [resp-id {:keys [prompt-field-id idx sval nval dval jval response ftype fsubtype]}]
   (let [[id idstr] (ut/mk-id&str)]
@@ -437,7 +458,7 @@
               new-fields' (group-by :fname new-fields)
               resp-ids (keys new-fields')]
           (when (->> resp-ids
-                     (map #(response-fields-eq? (-> % old-fields' first)
+                     (map #(response-fields-eq? (-> % old-fields' first) ;; TODO support lists!
                                                 (-> % new-fields' first)))
                      (some false?))
             (update-deleted :doc_resp ref-id)
@@ -667,11 +688,12 @@
             :forms
             first)))))
 
+;; TODO support list?=true / multiple values per field
 (defn fields->proc-tree
   [resp-fields fields]
   (let [fields-by-fname (group-by :fname fields)]
     (vec (for [[k value] resp-fields]
-           (let [{:keys [fname ftype fsubtype id]} (-> k name fields-by-fname first)]
+           (let [{:keys [fname ftype fsubtype id]} (-> k name fields-by-fname first)] 
              {:item (merge {:fname fname
                              :ftype ftype
                              :fsubtype fsubtype
@@ -700,23 +722,20 @@
   (if-let [{:keys [id ftype fsubtype prompts]} (doc->appliable--find-form d)]
     {:handler-args d
      :item (merge (select-keys d ;; TODO hard-coded fields sucks -- Bill
-                                [:title :dtype :descr :notes :from-org-id
-                                 :from-user-id :to-org-id :to-user-id
-                                 :dtype :dsubtype :form-id :subject])
+                               [:title :dtype :descr :notes :from-org-id
+                                :from-user-id :to-org-id :to-user-id
+                                :dtype :dsubtype :form-id :subject])
                   {:form-id id
                    :dtype ftype
-                    :dsubtype fsubtype}
-                   (when update-doc-id
-                     {:id update-doc-id}))
+                   :dsubtype fsubtype}
+                  (when update-doc-id
+                    {:id update-doc-id}))
      :children (response-prompts->proc-tree data
-                                                 prompts)}
+                                            prompts)}
     (throw (Exception. (str "Couldn't find form by querying with: "
                             {:ftype dtype
                              :fsubtype dsubtype
                              :doc-id update-doc-id})))))
-
-
-
 
 (defn create-doc [d]
   (->> d

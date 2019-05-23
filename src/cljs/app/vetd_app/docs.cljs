@@ -90,7 +90,7 @@
 
 (defn walk-deref-ratoms
   [frm]
-  (clojure.walk/postwalk
+  (clojure.walk/prewalk
    (fn [f]
      (if (instance? reagent.ratom/RAtom f)
        @f
@@ -101,7 +101,6 @@
  :save-form-doc
  (fn [{:keys [db]} [_ form-doc]]
    (let [fd (walk-deref-ratoms form-doc)]
-     (def fd1 fd)
      {:ws-send {:payload {:cmd :save-form-doc
                           :return nil
                           :form-doc fd}}})))
@@ -129,7 +128,8 @@
                               [{}]))]
     (assoc prompt-field
            :response
-           resp-fields)))
+           ;; TODO sort resp-fields by idx??
+           (r/atom resp-fields))))
 
 (defn mk-form-doc-prompt-state
   [responses {:keys [id] :as prompt}]
@@ -159,7 +159,7 @@
 (defn c-prompt-field-default
   [{:keys [fname ftype fsubtype response] :as prompt-field}]
   (let [value& (some-> response first :state)
-        {response-id :id prompt-field-id :pf-id} (first response)]
+        {response-field-id :id prompt-field-id :pf-id} (first response)]
     [:> ui/FormField
      (when-not (= fname "value")
        [:label fname])
@@ -167,7 +167,7 @@
                 :on-change (fn [this]
                              (reset! value& (-> this .-target .-value)))
                 :attrs {:data-prompt-field (str prompt-field)
-                        :data-response-field-id (str "[" response-id "]")
+                        :data-response-field-id (str "[" response-field-id "]")
                         :data-prompt-field-id (str "[" prompt-field-id "]")}}]]))
 
 (defn c-prompt-field-textarea
@@ -221,25 +221,35 @@
 (defn c-prompt-field-list
   [c-prompt-field-fn {:keys [fname ftype fsubtype response] :as prompt-field}]
   [:div "LIST"
-   (for [response-field response]
-     ^{:key (str "resp-field" (:id response-field))}
-     [:div
+   (for [{:keys [id] :as response-field} @response]
+     ^{:key (str "resp-field" id)}
+     [:> ui/FormGroup
       [c-prompt-field-fn (assoc prompt-field
                                 :response [response-field])]
-      [:> ui/Button {:color "blue"
-	          :on-click (fn [& _] true)}
-       "remove"]])])
+      [:> ui/Button {:color "red"
+	             :on-click (fn [& _]
+                                 (swap! response
+                                        (partial remove #(-> % :id (= id)))))
+                     :icon true}
+       [:> ui/Icon {:name "remove"}]]])
+   [:> ui/Button {:color "green"
+	          :on-click (fn [& _]
+                              (swap! response conj {:id (gensym "new-resp-field")
+                                                    :state (r/atom "")}))
+                  :icon true}
+    [:> ui/Icon {:name "add"}]]])
 
 (defn c-prompt-field [{:keys [idstr ftype fsubtype list?] :as field}]
   (let [c-prompt-field-fn (hooks/c-prompt-field idstr [ftype fsubtype] ftype :default)]
     (if list?
       (c-prompt-field-list c-prompt-field-fn field)
-      [c-prompt-field-fn field])))
+      [c-prompt-field-fn (update field
+                                 :response deref)])))
 
 (defn c-prompt-default
   [{:keys [prompt descr fields]}]
-  [:<>
-   [:div {:style {:margin-bottom 5}}
+  [:div {:style {:margin "10px 0 40px 0"}}
+   [:div {:style {:margin-bottom "5px"}}
     prompt
     (when descr
       [:> ui/Popup {:trigger (r/as-element [:> ui/Icon {:name "info circle"}])
@@ -247,7 +257,7 @@
        descr])]
    (for [{:keys [idstr ftype fsubtype] :as f} fields]
      ^{:key (str "field" (:id f))}
-     (c-prompt-field f)
+     [c-prompt-field f]
      #_[(hooks/c-prompt-field idstr [ftype fsubtype] ftype :default)
       f])])
 
