@@ -114,7 +114,7 @@
    {:keys [oname] :as vendor}
    props]
   [:> ui/Popup
-   {:content (str "Let us setup a call for you with " oname
+   {:content (str "Let us set up a call for you with " oname
                   " to discuss " pname ".")
     :header "Set Up a Call"
     :position "bottom left"

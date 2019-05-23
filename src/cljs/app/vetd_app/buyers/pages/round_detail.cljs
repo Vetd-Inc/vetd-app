@@ -53,11 +53,12 @@
 
 (rf/reg-event-fx
  :b/round.declare-winner
- (fn [{:keys [db]} [_ round-id product-id]]
+ (fn [{:keys [db]} [_ round-id product-id reason]]
    {:ws-send {:payload {:cmd :b/round.declare-result
                         :round-id round-id
                         :product-id product-id
                         :result 1
+                        :reason reason
                         :buyer-id (util/db->current-org-id db)}}
     :confetti nil
     :analytics/track {:event "Declare Winner"
@@ -255,81 +256,123 @@
     [c-round-initiation-form id]))
 
 (defn c-declare-winner-button
-  [round product won? disqualified?]
-  [:> ui/Popup
-   {:content (if won? "Declared Winner" "Declare Winner")
-    :position "bottom left"
-    :trigger (r/as-element
-              [:> ui/Button
-               {:icon (if won? true "checkmark")
-                :color (if won? "white" "lightblue")
-                :onClick #(rf/dispatch [:b/round.declare-winner (:id round) (:id product)])
-                :size "mini"
-                :disabled (or won? disqualified?)}
-               (when won?
-                 [:<> [:> ui/Icon {:name "checkmark"}] " Winner"])])}])
+  [round product won?]
+  (let [popup-open? (r/atom false)
+        context-ref (r/atom nil)
+        reason (atom "")]
+    (fn [round product won?]
+      (if-not won?
+        [:<>
+         [:> ui/Popup
+          {:position "top right"
+           :on "click"
+           :open @popup-open?
+           :on-close #(reset! popup-open? false)
+           :context @context-ref
+           :content (r/as-element
+                     [:> ui/Form {:style {:width 325}}
+                      [:h4 {:style {:margin-bottom 7}}
+                       "Declare Winner of VetdRound"]
+                      [:p {:style {:margin-top 0}}
+                       "We will put you in touch with " (:oname (:vendor product)) " as soon as possible."]
+                      [:> ui/FormField
+                       [:label "Why did you pick " (:pname product) "?"]
+                       [:> ui/Input
+                        {:placeholder "Enter a reason for your future reference..."
+                         :on-change (fn [_ this]
+                                      (reset! reason (.-value this)))}]
+                       [:> ui/Button
+                        {:color "vetd-gradient"
+                         :fluid true
+                         :style {:margin-top 7}
+                         :on-click #(do (reset! popup-open? false)
+                                        (rf/dispatch [:b/round.declare-winner
+                                                      (:id round)
+                                                      (:id product)
+                                                      @reason]))}
+                        "Declare Winner"]]])}]
+         [:> ui/Popup
+          {:content "Declare Winner"
+           :position "bottom center"
+           :context @context-ref
+           :trigger (r/as-element
+                     [:> ui/Button
+                      {:icon "checkmark"
+                       :color "lightblue"
+                       :ref (fn [this] (reset! context-ref (r/dom-node this)))
+                       :on-click #(swap! popup-open? not)
+                       :size "mini"}])}]]
+
+        [:> ui/Popup
+         {:content "Declared Winner"
+          :position "bottom center"
+          :trigger (r/as-element
+                    [:> ui/Button
+                     {:icon true
+                      :color "white"
+                      :size "mini"
+                      :disabled true}
+                     [:<> [:> ui/Icon {:name "checkmark"}] " Winner"]])}]))))
+
 
 (defn c-setup-call-button
-  [round product vendor won? disqualified?]
+  [round product vendor won?]
   [:> ui/Popup
    {:content (str "Set up call with " (:oname vendor))
-    :position "bottom left"
+    :position "bottom center"
     :trigger (r/as-element
               [:> ui/Button
                {:icon "call"
                 :color (if won? "white" "lightteal")
                 :onClick #(rf/dispatch [:b/setup-call (:id product) (:pname product)])
-                :size "mini"
-                :disabled disqualified?}])}])
+                :size "mini"}])}])
 
 (defn c-disqualify-button
-  [round product won? disqualified?]
+  [round product disqualified?]
   (let [popup-open? (r/atom false)
-        context-ref (r/atom nil)]
-    (fn [round product won? disqualified?]
+        context-ref (r/atom nil)
+        reason (atom "")]
+    (fn [round product disqualified?]
       (if-not disqualified?
-        [:> ui/Popup
-         {:position "top right"
-          :on "click"
-          :open @popup-open?
-          :content (r/as-element
-                    (let [reason (atom "")]
-                      [:> ui/Form {:style {:width 350}}
-                       [:> ui/FormField
-                        [:> ui/Input
-                         {:placeholder "Enter reason..."
-                          :on-change (fn [_ this]
-                                       (reset! reason (.-value this)))
-                          :action (r/as-element
-                                   [:> ui/Button
-                                    {:color "teal"
-                                     :on-click #(do (reset! popup-open? false)
-                                                    (rf/dispatch [:b/round.disqualify
-                                                                  (:id round)
-                                                                  (:id product)
-                                                                  @reason]))}
-                                    "Disqualify"])}]]]))
-          :context @context-ref
-          :trigger (r/as-element
-                    [:> ui/Popup
-                     {:content "Disqualify"
-                      :position "bottom center"
-                      :context @context-ref
-                      :trigger (r/as-element
-                                [:> ui/Button {:icon "ban"
-                                               :basic true
-                                               :ref (fn [this] (reset! context-ref (r/dom-node this)))
-                                               :size "mini"
-                                               :disabled won?
-                                               :on-click #(swap! popup-open? not)}])}])}]
+        [:<>
+         [:> ui/Popup
+          {:position "top right"
+           :on "click"
+           :open @popup-open?
+           :on-close #(reset! popup-open? false)
+           :context @context-ref
+           :content (r/as-element
+                     [:> ui/Form {:style {:width 400}}
+                      [:> ui/FormField
+                       [:> ui/Input
+                        {:placeholder "Enter reason..."
+                         :on-change (fn [_ this]
+                                      (reset! reason (.-value this)))
+                         :action (r/as-element
+                                  [:> ui/Button
+                                   {:color "teal"
+                                    :on-click #(do (reset! popup-open? false)
+                                                   (rf/dispatch [:b/round.disqualify
+                                                                 (:id round)
+                                                                 (:id product)
+                                                                 @reason]))}
+                                   "Disqualify"])}]]])}]
+         [:> ui/Popup
+          {:content "Disqualify"
+           :position "bottom center"
+           :context @context-ref
+           :trigger (r/as-element
+                     [:> ui/Button {:icon "ban"
+                                    :basic true
+                                    :ref (fn [this] (reset! context-ref (r/dom-node this)))
+                                    :size "mini"
+                                    :on-click #(swap! popup-open? not)}])}]]
         [:> ui/Popup
          {:content "Undo Disqualify"
           :position "bottom center"
-          :context @context-ref
           :trigger (r/as-element
                     [:> ui/Button {:icon "undo"
                                    :basic true
-                                   :ref (fn [this] (reset! context-ref (r/dom-node this)))
                                    :on-click #(rf/dispatch [:b/round.undo-disqualify (:id round) (:id product)])
                                    :size "mini"}])}]))))
 
@@ -464,11 +507,11 @@
                                        [:b/nav-product-detail product-idstr])))}
               pname]
              (when-not disqualified?
-               [c-declare-winner-button round product won? disqualified?])
+               [c-declare-winner-button round product won?])
              (when-not disqualified?
-               [c-setup-call-button round product vendor won? disqualified?])
+               [c-setup-call-button round product vendor won?])
              (when-not won?
-               [c-disqualify-button round product won? disqualified?])])]
+               [c-disqualify-button round product disqualified?])])]
          (for [req prompts
                :let [{req-prompt-id :id
                       req-prompt-text :prompt} req
