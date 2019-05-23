@@ -157,8 +157,7 @@
                               responses')))))
 
 (defn c-prompt-field-default
-  [{:keys [fname ftype fsubtype list? response] :as prompt-field}]
-  ;; TODO support multiple response fields (for where list? = true)
+  [{:keys [fname ftype fsubtype response] :as prompt-field}]
   (let [value& (some-> response first :state)
         {response-id :id prompt-field-id :pf-id} (first response)]
     [:> ui/FormField
@@ -218,6 +217,25 @@
                         :data-response-field-id response-id
                         :data-prompt-field-id prompt-field-id}]])))
 
+
+(defn c-prompt-field-list
+  [c-prompt-field-fn {:keys [fname ftype fsubtype response] :as prompt-field}]
+  [:div "LIST"
+   (for [response-field response]
+     ^{:key (str "resp-field" (:id response-field))}
+     [:div
+      [c-prompt-field-fn (assoc prompt-field
+                                :response [response-field])]
+      [:> ui/Button {:color "blue"
+	          :on-click (fn [& _] true)}
+       "remove"]])])
+
+(defn c-prompt-field [{:keys [idstr ftype fsubtype list?] :as field}]
+  (let [c-prompt-field-fn (hooks/c-prompt-field idstr [ftype fsubtype] ftype :default)]
+    (if list?
+      (c-prompt-field-list c-prompt-field-fn field)
+      [c-prompt-field-fn field])))
+
 (defn c-prompt-default
   [{:keys [prompt descr fields]}]
   [:<>
@@ -229,7 +247,8 @@
        descr])]
    (for [{:keys [idstr ftype fsubtype] :as f} fields]
      ^{:key (str "field" (:id f))}
-     [(hooks/c-prompt-field idstr [ftype fsubtype] ftype :default)
+     (c-prompt-field f)
+     #_[(hooks/c-prompt-field idstr [ftype fsubtype] ftype :default)
       f])])
 
 (defn prep-form-doc
