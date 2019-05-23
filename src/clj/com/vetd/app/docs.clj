@@ -225,7 +225,10 @@
         first)))
 
 (defn insert-response-field*
-  [resp-id {:keys [prompt-field-id idx sval nval dval jval response ftype fsubtype]}]
+  [resp-id
+   {:keys [prompt-field-id sval nval dval jval ftype fsubtype]}
+   idx
+   {:keys [state]}]
   (let [[id idstr] (ut/mk-id&str)]
     (->> (merge {:id id
                  :idstr idstr
@@ -240,31 +243,20 @@
                  :jval jval                 
                  :resp_id resp-id}
                 ;; TODO support multiple response fields (for where list? = true)
-                (when-let [v (-> response first :state)]
-                  (convert-field-val v ftype fsubtype)))
+                (when state
+                  (convert-field-val state ftype fsubtype)))
          (db/insert! :resp_fields)
          first)))
 
 (defn insert-response-field
-  [resp-id {:keys [prompt-field-id idx sval nval dval jval response ftype fsubtype]}]
-  (let [[id idstr] (ut/mk-id&str)]
-    (->> (merge {:id id
-                 :idstr idstr
-                 :created (ut/now-ts)
-                 :updated (ut/now-ts)
-                 :deleted nil
-                 :pf_id prompt-field-id
-                 :idx idx
-                 :sval sval
-                 :nval nval
-                 :dval dval
-                 :jval jval                 
-                 :resp_id resp-id}
-                ;; TODO support multiple response fields (for where list? = true)
-                (when-let [v (-> response first :state)]
-                  (convert-field-val v ftype fsubtype)))
-         (db/insert! :resp_fields)
-         first)))
+  [resp-id {:keys [response] :as resp-field}]
+  (->> response
+       (map-indexed (fn [idx rf-val]
+                      (insert-response-field* resp-id
+                                              resp-field
+                                              idx
+                                              rf-val)))
+       doall))
 
 (defn infer-field-type-kw
   [{:keys [sval nval dval jval]}]
@@ -288,7 +280,7 @@
 
 (defn insert-response-fields
   [resp-id response-fields]
-  (doseq [rf (expand-response-fields response-fields)]
+  (doseq [rf [response-fields] #_ (expand-response-fields response-fields)]
     (insert-response-field resp-id rf)))
 
 (defn insert-default-prompt-field
@@ -427,7 +419,8 @@
               [:responses
                {:ref-deleted nil}
                [:id :ref-id :prompt-id
-                [:fields {:deleted nil}
+                [:fields {:deleted nil
+                          :_order_by {:idx :asc}}
                  [:sval :nval :dval :jval
                   [:prompt-field [:fname]]]]]]]]]
            ha/sync-query
@@ -435,6 +428,7 @@
            first
            :responses))
 
+#_
 (defn response-fields-eq?
   [old-field {:keys [response ftype]}]
   (let [{:keys [state]} (first response)]
@@ -449,6 +443,20 @@
              state)
       "j" (= (:jval old-field)
              state))))
+(defn response-fields-eq?
+  [old-field {:keys [response ftype]}]
+  (let [state (mapv :state response)]
+    (case ftype
+      "s" (= (mapv :sval old-field)
+             state)
+      "n" (= (mapv :nval old-field)
+             (ut/->long state))
+      "d" (= (mapv (comp str :dval) old-field) ;; HACK
+             state)
+      "e" (= (mapv :sval old-field)
+             state)
+      "j" (= (mapv :jval old-field)
+             state))))
 
 (defn update-response-from-form-doc
   [doc-id {old-fields :fields :keys [ref-id]} {prompt-id :id new-fields :fields :keys [response]}] 
@@ -458,7 +466,7 @@
               new-fields' (group-by :fname new-fields)
               resp-ids (keys new-fields')]
           (when (->> resp-ids
-                     (map #(response-fields-eq? (-> % old-fields' first) ;; TODO support lists!
+                     (map #(response-fields-eq? (-> % old-fields') ;; TODO support lists!
                                                 (-> % new-fields' first)))
                      (some false?))
             (update-deleted :doc_resp ref-id)

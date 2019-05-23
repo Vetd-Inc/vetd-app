@@ -220,7 +220,7 @@
 
 (defn c-prompt-field-list
   [c-prompt-field-fn {:keys [fname ftype fsubtype response] :as prompt-field}]
-  [:div "LIST"
+  [:div
    (for [{:keys [id] :as response-field} @response]
      ^{:key (str "resp-field" id)}
      [:> ui/FormGroup
@@ -257,9 +257,7 @@
        descr])]
    (for [{:keys [idstr ftype fsubtype] :as f} fields]
      ^{:key (str "field" (:id f))}
-     [c-prompt-field f]
-     #_[(hooks/c-prompt-field idstr [ftype fsubtype] ftype :default)
-      f])])
+     [c-prompt-field f])])
 
 (defn prep-form-doc
   [{:keys [id ftype fsubtype title product to-org to-user from-org from-user doc-id doc-title prompts] :as form-doc}]
