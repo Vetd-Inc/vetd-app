@@ -38,7 +38,7 @@
                  [re-frisk "0.4.5"]
                  
                  [re-com/re-com "2.1.0"]
-                 [cljsjs/semantic-ui-react "0.84.0-0"]
+                 [cljsjs/semantic-ui-react "0.87.1-0"]
                  [cljsjs/toastr "2.1.2-1"]
                  [clj-commons/secretary "1.2.4"]
                  [venantius/accountant "0.2.4"]
