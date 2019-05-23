@@ -82,7 +82,10 @@
     :text "Enum - Price Per"}
    {:key :e-yes-no
     :value [:e :e-yes-no]
-    :text "Enum - Yes/No"}])
+    :text "Enum - Yes/No"}
+   {:key :d-category
+    :value [:d :d-category]
+    :text "Dynamic - Category"}])
 
 (defn c-ftype-dropdown [state&]
   [:> ui/Dropdown {:defaultValue @state&

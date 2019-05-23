@@ -22,6 +22,27 @@
                  :value value
                  :text label})))))
 
+(rf/reg-sub
+ :docs/dynamic
+ (fn [[_ fsubtype]]
+   (let [q
+         (case fsubtype
+           "d-category" [[:categories {:deleted nil}
+                          [:id :cname]]])]
+     (rf/subscribe [:gql/q {:queries q}])))
+ (fn [r [_ fsubtype]]
+   (case fsubtype
+     "d-category" (->> r
+                       :categories
+                       (map (fn [{:keys [id cname]}]
+                               {:key id
+                                :value id
+                                :text cname}))
+                       (sort-by :text)
+                       vec))))
+
+@(rf/subscribe [:docs/dynamic "d-category"])
+
 (defn get-value-by-term
   [response-prompts term & [field val-type]]
   (let [term-str (util/kw->str term)]
@@ -217,6 +238,25 @@
                         :data-response-field-id response-id
                         :data-prompt-field-id prompt-field-id}]])))
 
+(defn c-prompt-field-dynamic
+  [{:keys [fname fsubtype response] :as prompt-field}]
+  ;; TODO support multiple response fields (for where list? = true)
+  (let [value& (some-> response first :state)
+        opts& (rf/subscribe [:docs/dynamic fsubtype])
+        {response-id :id prompt-field-id :pf-id} (first response)]
+    (fn [{:keys [fname fsubtype response] :as prompt-field}]
+      [:> ui/FormField
+       (when-not (= fname "value")
+         [:label fname])
+       [:> ui/Dropdown {:value @value&
+                        :onChange #(reset! value& (.-value %2))
+                        ;; :placeholder "Select Product"
+                        :selection true
+                        :search true
+                        :options @opts&
+                        :data-response-field-id response-id
+                        :data-prompt-field-id prompt-field-id}]])))
+
 
 (defn c-prompt-field-list
   [c-prompt-field-fn {:keys [fname ftype fsubtype response] :as prompt-field}]
@@ -311,7 +351,8 @@
                   {:default #'c-prompt-field-default
                    ["s" "multi"] #'c-prompt-field-textarea
                    ["n" "int"] #'c-prompt-field-int
-                   "e" #'c-prompt-field-enum})
+                   "e" #'c-prompt-field-enum
+                   "d" #'c-prompt-field-dynamic})
 
 
 ;; "data" can have term->field->value's

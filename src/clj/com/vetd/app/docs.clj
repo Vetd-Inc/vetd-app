@@ -428,21 +428,6 @@
            first
            :responses))
 
-#_
-(defn response-fields-eq?
-  [old-field {:keys [response ftype]}]
-  (let [{:keys [state]} (first response)]
-    (case ftype
-      "s" (= (:sval old-field)
-             state)
-      "n" (= (:nval old-field)
-             (ut/->long state))
-      "d" (= (str (:dval old-field)) ;; HACK
-             state)
-      "e" (= (:sval old-field)
-             state)
-      "j" (= (:jval old-field)
-             state))))
 (defn response-fields-eq?
   [old-field {:keys [response ftype]}]
   (let [state (mapv :state response)]
