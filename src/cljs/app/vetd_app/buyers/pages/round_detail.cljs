@@ -408,14 +408,11 @@
                            :style {:color "#aaa"}}])}])
 
 (defn c-cell-modal
-  [round-id
-   modal-showing?&
-   modal-response&]
+  [round-id modal-showing?& modal-response&]
   (let [modal-message& (r/atom "")]
-    (fn [round-id
-         modal-showing?&
-         modal-response&]
-      (let [{:keys [req-prompt-id req-prompt-text product-id pname
+    (fn [round-id modal-showing?& modal-response&]
+      (let [{:keys [req-prompt-id req-prompt-text
+                    product-id pname
                     resp-id resp-text resp-rating]
              :as modal-response} @modal-response&]
         [:> ui/Modal {:open @modal-showing?&
@@ -446,23 +443,23 @@
             (util/parse-md resp-text)
             "Waiting for vendor response.")]
          [:> ui/ModalActions
-          [:> ui/Form
+          [:> ui/Form {:as "div"
+                       :style {:padding-bottom "1rem"}}
            [:> ui/FormField
             [:> ui/TextArea {:placeholder "Ask a follow-up question..."
                              :autoFocus true
                              :spellCheck true
                              :onChange (fn [_ this]
-                                         (reset! modal-message& (.-value this)))}]]
-           [:> ui/Button {:onClick #(reset! modal-showing?& false)
-                          :color "grey"}
-            "Cancel"]
-           [:> ui/Button
-            {:onClick #(do (rf/dispatch
-                            [:b/round.ask-a-question
-                             product-id pname @modal-message& round-id req-prompt-text])
-                           (reset! modal-showing?& false))
-             :color "blue"}
-            "Submit Question"]]]]))))
+                                         (reset! modal-message& (.-value this)))}]]]
+          [:> ui/Button {:onClick #(reset! modal-showing?& false)}
+           "Cancel"]
+          [:> ui/Button
+           {:onClick #(do (rf/dispatch
+                           [:b/round.ask-a-question
+                            product-id pname @modal-message& round-id req-prompt-text])
+                          (reset! modal-showing?& false))
+            :color "blue"}
+           "Submit Question"]]]))))
 
 (rf/reg-sub
  :loading?
