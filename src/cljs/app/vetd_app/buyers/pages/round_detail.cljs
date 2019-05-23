@@ -292,8 +292,6 @@
          {:position "top right"
           :on "click"
           :open @popup-open?
-          :onOpen #(reset! popup-open? true)
-          :onClose #(reset! popup-open? false)
           :content (r/as-element
                     (let [reason (atom "")]
                       [:> ui/Form {:style {:width 350}}
