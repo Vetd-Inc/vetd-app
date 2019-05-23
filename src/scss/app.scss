@@ -588,11 +588,31 @@ $cell-height: 201px;
 }
 
 .requirement.segment.ui {
+
+  /*
+display: flex;
+    border-bottom-right-radius: 0;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    height: 201px;
+    padding: 14px 14px 14px 14px;
+    margin-top: 2px !important;
+    margin-bottom: 0px !important;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: left;
+    background: #4ec2c4 !important;
+    color: #fff;
+    box-shadow: none !important;
+    border-top-right-radius: 0;
+    margin-right: -7px;
+ */
+
+  
   display: flex;
   flex-direction: column;
-  
   align-items: flex-start;
-  
   justify-content: center;
   height: $cell-height;
   padding: 14px 14px 14px 14px;
