@@ -146,7 +146,7 @@
 (defmethod docs/handle-doc-update :product-profile
   [{:keys [id]} & _]
   (try
-    (process-product-logo id)
+    (process-product-logo id) ;; TODO only if logo url changed???
     (catch Exception e
       (log/error e))))
 

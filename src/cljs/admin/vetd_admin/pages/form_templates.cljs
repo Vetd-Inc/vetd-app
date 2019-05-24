@@ -83,9 +83,9 @@
    {:key :e-yes-no
     :value [:e :e-yes-no]
     :text "Enum - Yes/No"}
-   {:key :d-category
-    :value [:d :d-category]
-    :text "Dynamic - Category"}])
+   {:key :i-category
+    :value [:i :i-category]
+    :text "Entity - Category"}])
 
 (defn c-ftype-dropdown [state&]
   [:> ui/Dropdown {:defaultValue @state&

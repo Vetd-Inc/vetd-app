@@ -23,25 +23,25 @@
                  :text label})))))
 
 (rf/reg-sub
- :docs/dynamic
+ :docs/entities
  (fn [[_ fsubtype]]
    (let [q
          (case fsubtype
-           "d-category" [[:categories {:deleted nil}
+           "i-category" [[:categories {:deleted nil}
                           [:id :cname]]])]
      (rf/subscribe [:gql/q {:queries q}])))
  (fn [r [_ fsubtype]]
    (case fsubtype
-     "d-category" (->> r
+     "i-category" (->> r
                        :categories
                        (map (fn [{:keys [id cname]}]
-                               {:key id
+                               {;:key id
                                 :value id
                                 :text cname}))
                        (sort-by :text)
                        vec))))
 
-@(rf/subscribe [:docs/dynamic "d-category"])
+#_@(rf/subscribe [:docs/entities "i-category"])
 
 (defn get-value-by-term
   [response-prompts term & [field val-type]]
@@ -125,18 +125,6 @@
      {:ws-send {:payload {:cmd :save-form-doc
                           :return nil
                           :form-doc fd}}})))
-
-
-;; TODO support multiple response fields (for where list? = true)
-#_(defn mk-form-doc-prompt-field-state
-  [fields {:keys [id] :as prompt-field}]
-  (let [{:keys [sval nval dval jval] :as resp-field} (some-> id fields first)
-        resp-field' (merge resp-field
-                           {:state (r/atom (or dval nval sval jval
-                                               ""))})]
-    (assoc prompt-field
-           :response
-           [resp-field'])))
 
 
 (defn mk-form-doc-prompt-field-state
@@ -238,21 +226,31 @@
                         :data-response-field-id response-id
                         :data-prompt-field-id prompt-field-id}]])))
 
-(defn c-prompt-field-dynamic
+
+(defn c-prompt-field-entity
   [{:keys [fname fsubtype response] :as prompt-field}]
   ;; TODO support multiple response fields (for where list? = true)
-  (let [value& (some-> response first :state)
-        opts& (rf/subscribe [:docs/dynamic fsubtype])
+  (let [state& (some-> response first :state)
+        _ (when-not (map? @state&) (reset! state& {:id nil :text ""})) ;; HACK
+        opts& (rf/subscribe [:docs/entities fsubtype])
         {response-id :id prompt-field-id :pf-id} (first response)]
     (fn [{:keys [fname fsubtype response] :as prompt-field}]
       [:> ui/FormField
        (when-not (= fname "value")
          [:label fname])
-       [:> ui/Dropdown {:value @value&
-                        :onChange #(reset! value& (.-value %2))
-                        ;; :placeholder "Select Product"
+       [:> ui/Dropdown {:value (:id @state&)
+                        :onChange
+                        #(reset! state& {:id (.-value %2)
+                                         :text
+                                         (ui/get-text-from-opt-by-value (.-options %2)
+                                                                        (.-value %2))})
+                        :onSearchChange #(swap! state&
+                                                assoc :text (.-searchQuery %2))
                         :selection true
                         :search true
+                        :searchQuery (:text @state&)
+                        :selectOnNavigation false
+                        :text (:text @state&)
                         :options @opts&
                         :data-response-field-id response-id
                         :data-prompt-field-id prompt-field-id}]])))
@@ -352,7 +350,7 @@
                    ["s" "multi"] #'c-prompt-field-textarea
                    ["n" "int"] #'c-prompt-field-int
                    "e" #'c-prompt-field-enum
-                   "d" #'c-prompt-field-dynamic})
+                   "i" #'c-prompt-field-entity})
 
 
 ;; "data" can have term->field->value's

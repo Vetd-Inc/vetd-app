@@ -58,6 +58,10 @@
          :nval nil
          :dval nil
          :jval v}
+    "i" {:sval nil
+         :nval nil
+         :dval nil
+         :jval v}
     "d" (throw (Exception. "TODO convert-field-val does not support dates"))))
 
 (defn insert-form
