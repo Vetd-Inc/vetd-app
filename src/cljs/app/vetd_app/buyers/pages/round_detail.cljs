@@ -903,7 +903,11 @@
 
 (defn c-add-requirement-button
   [{:keys [id] :as round}]
-  (let [popup-open? (r/atom false)]
+  (let [popup-open? (r/atom false)
+        get-requirements-class-list #(-> (.getElementsByClassName js/document "requirements")
+                                         array-seq
+                                         first
+                                         .-classList)]
     (fn []
       [:> ui/Popup
        {:position "top left"
@@ -933,13 +937,19 @@
                   [:> ui/Button {:color "teal"
                                  :fluid true
                                  :icon true
-                                 :labelPosition "left"}
+                                 :labelPosition "left"
+                                 :on-mouse-over #(.add (get-requirements-class-list) "highlight-requirements")
+                                 :on-mouse-leave #(.remove (get-requirements-class-list) "highlight-requirements")}
                    "Add Topic"
                    [:> ui/Icon {:name "plus"}]])}])))
 
 (defn c-add-product-button
   [{:keys [id] :as round}]
-  (let [popup-open? (r/atom false)]
+  (let [popup-open? (r/atom false)
+        get-round-grid-class-list #(-> (.getElementsByClassName js/document "round-grid")
+                                       array-seq
+                                       first
+                                       .-classList)]
     (fn []
       [:> ui/Popup
        {:position "top left"
@@ -968,13 +978,15 @@
                   [:> ui/Button {:color "blue"
                                  :fluid true
                                  :icon true
-                                 :labelPosition "left"}
+                                 :labelPosition "left"
+                                 :on-mouse-over #(.add (get-round-grid-class-list) "highlight-products")
+                                 :on-mouse-leave #(.remove (get-round-grid-class-list) "highlight-products")}
                    "Add Product"
                    [:> ui/Icon {:name "plus"}]])}])))
 
 (defn c-requirements
   [{:keys [prompts] :as req-form-template}]
-  [:div
+  [:div.requirements
    (for [req prompts
          :let [{req-prompt-id :id
                 req-prompt-text :prompt} req]]
@@ -1050,7 +1062,6 @@
              [:div {:style {:padding "0 15px"}}
               [bc/c-back-button {:on-click #(rf/dispatch [:b/nav-rounds])}
                "All VetdRounds"]]
-             
              (when (and (#{"in-progress" "complete"} status)
                         (seq sorted-round-products))
                [:<>
@@ -1058,7 +1069,9 @@
                   (if has-a-winner?
                     [:div {:style {:height 161}}] ; spacer
                     [:<>
-                     [:> ui/Segment
+                     [:> ui/Segment {:style {:position "sticky"
+                                             :top 0
+                                             :z-index 5}}
                       [c-add-requirement-button round]
                       [c-add-product-button round]]
                      [:div {:style {:text-align "center"}}

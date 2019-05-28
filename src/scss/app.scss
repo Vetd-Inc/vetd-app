@@ -420,9 +420,11 @@ $cell-height: 201px;
         font-weight: 600 !important;
         line-height: 23px !important;
         color: #444 !important;
+        transition: color 0.5s 0s linear;
 
         &:hover {
           color: #888 !important;
+          transition: none;
         }
       }
 
@@ -562,8 +564,16 @@ $cell-height: 201px;
   // &:hover .column:not(:hover) {
   //   opacity: 0.6;
   // }
+
+  &.highlight-products {
+    .round-product .name {
+      color: $blue !important;
+      transition: none;
+    }
+  }
 }
 
+// Approve & Disapprove action buttons
 .response-approved {
   .approve.ui.button {
     opacity: 1 !important;
@@ -586,50 +596,32 @@ $cell-height: 201px;
   background: transparent;
   font-weight: 600;
 }
-
-.requirement.segment.ui {
-
-  /*
-display: flex;
-    border-bottom-right-radius: 0;
+.requirements {
+  .requirement.segment.ui {
+    display: flex;
     flex-direction: column;
     align-items: flex-start;
     justify-content: center;
-    height: 201px;
+    height: $cell-height;
     padding: 14px 14px 14px 14px;
     margin-top: 2px !important;
     margin-bottom: 0px !important;
     font-size: 14px;
     font-weight: 600;
     text-align: left;
-    background: #4ec2c4 !important;
-    color: #fff;
+    background: transparent !important;
     box-shadow: none !important;
-    border-top-right-radius: 0;
-    margin-right: -7px;
- */
+    color: #444;
+    transition: color 0.5s 0s linear;
+    
+    &:first-of-type {
+      margin-top: 14px !important;
+    }
+  }
 
-  
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-  height: $cell-height;
-  padding: 14px 14px 14px 14px;
-  margin-top: 2px !important;
-  margin-bottom: 0px !important;
-  font-size: 14px;
-  font-weight: 600;
-  
-  // text-align: center;
-  text-align: left;
-  
-  background: transparent !important;
-  box-shadow: none !important;
-
-  &:first-of-type {
-    margin-top: 14px !important;
-    // margin-bottom: 0px !important;    
+  &.highlight-requirements .requirement.segment.ui {
+    color: #4ec2c4;
+    transition: none;
   }
 }
 
