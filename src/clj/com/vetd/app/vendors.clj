@@ -76,7 +76,8 @@
                        set
                        (clojure.data/diff current))]
     (when-not (empty? del)
-      (db/update-deleted-where [:and
+      (db/update-deleted-where :product_categories
+                               [:and
                                 [:= :prod_id id]
                                 [:= :cat_id del]]))  
     (doseq [c add]
