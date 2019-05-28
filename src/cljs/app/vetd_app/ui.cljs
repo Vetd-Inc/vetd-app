@@ -154,3 +154,12 @@
  :toast ; todo: assumes "success"
  (fn [{:keys [type title message]}]
    (js/toastr.success message title)))
+
+
+(defn get-text-from-opt-by-value
+  "For use with ui/Dropdown"
+  [opts value]
+  (->> (js->clj opts :keywordize-keys true)
+       (filter #(-> :value % (= value)))
+       first
+       :text))

@@ -86,7 +86,7 @@
                                   :url
                                   :created
                                   :updated
-                                  [:categories [:id]]
+                                  [:categories {:ref-deleted nil} [:id]]
                                   [:form-docs {:ftype "product-profile"}
                                    [:id :title :ftype :fsubtype
                                     :doc-id :doc-title
@@ -98,9 +98,12 @@
                                                 :_order_by {:sort :asc}}
                                        [:id :idstr :fname :ftype
                                         :fsubtype :list? :sort]]]]
-                                    [:responses {:ref-deleted nil}
+                                    [:responses {:deleted nil
+                                                 :ref-deleted nil}
                                      [:id :prompt-id :notes
-                                      [:fields [:id :pf-id :idx :sval :nval :dval :jval]]]]]]]]]}])
+                                      [:fields {:deleted nil
+                                                :_order_by {:idx :asc}}
+                                       [:id :pf-id :idx :sval :nval :dval :jval]]]]]]]]]}])
         prod-prof-form& (rf/subscribe [:gql/q
                                        {:queries
                                         [[:forms {:ftype "product-profile"
@@ -131,8 +134,8 @@
                              (assoc form-doc
                                     :product
                                     doc-product))]
+             ^{:key (str "product" id)}
              [:div
-              ^{:key (str "product" id)}
               [c-product (assoc p
                                 :form-doc
                                 (or form-doc'
