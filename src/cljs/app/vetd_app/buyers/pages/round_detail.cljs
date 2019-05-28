@@ -52,6 +52,20 @@
                               :label round-id}}}))
 
 (rf/reg-event-fx
+ :b/round.add-product
+ (fn [{:keys [db]} [_ round-id product-id-or-name]]
+   {:ws-send {:payload (merge {:cmd :b/round.add-product
+                               :round-id round-id
+                               :buyer-id (util/db->current-org-id db)}
+                              (when (number? product-id-or-name)
+                                {:product-id product-id-or-name})
+                              (when (string? product-id-or-name)
+                                {:product-name product-id-or-name}))}
+    :analytics/track {:event "Add Product"
+                      :props {:category "Round"
+                              :label round-id}}}))
+
+(rf/reg-event-fx
  :b/round.declare-winner
  (fn [{:keys [db]} [_ round-id product-id reason]]
    {:ws-send {:payload {:cmd :b/round.declare-result
@@ -159,12 +173,6 @@
 (defn get-requirements-options []
   (util/as-dropdown-options [;; "Subscription Billing" "Free Trial"
                              ]))
-
-(defn get-products-options []
-  (util/as-dropdown-options ["Some Product 1"
-                             "Some Product 2"
-                             "Another Product"
-                             "Something Else Product"]))
 
 (defn c-round-initiation-form
   [round-id]
@@ -943,6 +951,35 @@
                    "Add Topic"
                    [:> ui/Icon {:name "plus"}]])}])))
 
+(defn c-add-product-form
+  [round-id popup-open?&]
+  (let [new-product (atom "")
+        products->choices (fn [products]
+                            (for [{:keys [id pname]} products]
+                              {:key id
+                               :text pname
+                               :value id}))
+        products& (rf/subscribe [:gql/q
+                                 {:queries
+                                  [[:products {:_limit 100}
+                                    [:id :pname]]]}])]
+    [:> ui/Form {:style {:width 350}}
+     [:> ui/Dropdown {:style {:width "100%"}
+                      :options (if (= :loading @products&)
+                                 []
+                                 (-> @products& :products products->choices))
+                      :placeholder "Search products..."
+                      :search true
+                      :selection true
+                      :multiple false
+                      :selectOnBlur false
+                      :allowAdditions true
+                      :additionLabel "Hit 'Enter' to Add "
+                      :onChange (fn [_ this]
+                                  (reset! popup-open?& false)
+                                  (rf/dispatch
+                                   [:b/round.add-product round-id (.-value this)]))}]]))
+
 (defn c-add-product-button
   [{:keys [id] :as round}]
   (let [popup-open? (r/atom false)
@@ -957,23 +994,7 @@
         :open @popup-open?
         :onOpen #(reset! popup-open? true)
         :onClose #(reset! popup-open? false)
-        :content (r/as-element
-                  (let [new-product (atom "")
-                        products-options (r/atom (get-products-options))]
-                    [:> ui/Form {:style {:width 350}}
-                     [:> ui/Dropdown {:style {:width "100%"}
-                                      :options @products-options
-                                      :placeholder "Search products..."
-                                      :search true
-                                      :selection true
-                                      :multiple false
-                                      :selectOnBlur false
-                                      :allowAdditions false
-                                      :additionLabel "Hit 'Enter' to Add "
-                                      :onChange (fn [_ this]
-                                                  (reset! popup-open? false)
-                                                  (rf/dispatch
-                                                   [:b/round.add-product id (.-value this)]))}]]))
+        :content (r/as-element [c-add-product-form id popup-open?])
         :trigger (r/as-element
                   [:> ui/Button {:color "blue"
                                  :fluid true
