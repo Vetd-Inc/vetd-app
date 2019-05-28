@@ -183,9 +183,12 @@
                                                   :_limit 1
                                                   :doc-deleted nil}
                                       [:id 
-                                       [:response-prompts {:ref-deleted nil}
+                                       [:response-prompts {:deleted nil
+                                                           :ref-deleted nil}
                                         [:id :prompt-id :prompt-prompt :prompt-term
                                          [:response-prompt-fields
+                                          {:deleted nil
+                                           :ref-deleted nil}
                                           [:id :prompt-field-fname :idx
                                            :sval :nval :dval]]]]]]
                                      [:vendor
@@ -205,7 +208,8 @@
                                      [:rounds {:buyer-id @org-id&
                                                :deleted nil}
                                       [:id :idstr :created :status]]
-                                     [:categories [:id :idstr :cname]]]]]}])]
+                                     [:categories {:ref-deleted nil}
+                                      [:id :idstr :cname]]]]]}])]
     (fn []
       [:div.container-with-sidebar
        [:div.sidebar

@@ -79,7 +79,7 @@
       (db/update-deleted-where :product_categories
                                [:and
                                 [:= :prod_id id]
-                                [:= :cat_id del]]))  
+                                [:in :cat_id (vec del)]]))  
     (doseq [c add]
       (insert-product-category id c))))
 

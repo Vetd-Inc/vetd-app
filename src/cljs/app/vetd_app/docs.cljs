@@ -254,7 +254,6 @@
                         :data-response-field-id response-id
                         :data-prompt-field-id prompt-field-id}]])))
 
-
 (defn c-prompt-field-list
   [c-prompt-field-fn {:keys [fname ftype fsubtype response] :as prompt-field}]
   [:div

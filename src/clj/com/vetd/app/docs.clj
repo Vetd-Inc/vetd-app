@@ -445,8 +445,8 @@
              state)
       "e" (= (mapv :sval old-field)
              state)
-      "j" (= (mapv :jval old-field)
-             state))))
+      ("i" "j") (= (mapv :jval old-field)
+                   state))))
 
 (defn update-response-from-form-doc
   [doc-id {old-fields :fields :keys [ref-id]} {prompt-id :id new-fields :fields :keys [response]}] 
