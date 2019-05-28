@@ -177,8 +177,6 @@
         (replace-product-categories {:id subject
                                      :categories cats'})))))
 
-#_(clojure.pprint/pprint  $s/*)
-
 (defmethod docs/handle-doc-update :product-profile
   [{:keys [id]} & _]
   (try

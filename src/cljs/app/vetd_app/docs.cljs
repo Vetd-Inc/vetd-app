@@ -41,8 +41,6 @@
                        (sort-by :text)
                        vec))))
 
-#_@(rf/subscribe [:docs/entities "i-category"])
-
 (defn get-value-by-term
   [response-prompts term & [field val-type]]
   (let [term-str (util/kw->str term)]

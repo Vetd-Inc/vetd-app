@@ -284,7 +284,7 @@
 
 (defn insert-response-fields
   [resp-id response-fields]
-  (doseq [rf [response-fields] #_ (expand-response-fields response-fields)]
+  (doseq [rf [response-fields]]
     (insert-response-field resp-id rf)))
 
 (defn insert-default-prompt-field
@@ -456,7 +456,7 @@
               new-fields' (group-by :fname new-fields)
               resp-ids (keys new-fields')]
           (when (->> resp-ids
-                     (map #(response-fields-eq? (-> % old-fields') ;; TODO support lists!
+                     (map #(response-fields-eq? (-> % old-fields')
                                                 (-> % new-fields' first)))
                      (some false?))
             (update-deleted :doc_resp ref-id)
