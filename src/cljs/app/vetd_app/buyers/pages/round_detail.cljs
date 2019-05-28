@@ -946,39 +946,68 @@
                                  :fluid true
                                  :icon true
                                  :labelPosition "left"
-                                 :on-mouse-over #(.add (get-requirements-class-list) "highlight-requirements")
+                                 :on-mouse-over #(when-not @popup-open?
+                                                   (.add (get-requirements-class-list) "highlight-requirements"))
                                  :on-mouse-leave #(.remove (get-requirements-class-list) "highlight-requirements")}
-                   "Add Topic"
+                   "Add Topics"
                    [:> ui/Icon {:name "plus"}]])}])))
 
 (defn c-add-product-form
   [round-id popup-open?&]
-  (let [new-product (atom "")
+  (let [js-add-products-value& (atom [])
+        search-query& (r/atom "")
+        last-products-loaded& (r/atom [])
         products->choices (fn [products]
                             (for [{:keys [id pname]} products]
                               {:key id
                                :text pname
-                               :value id}))
-        products& (rf/subscribe [:gql/q
-                                 {:queries
-                                  [[:products {:_limit 100}
-                                    [:id :pname]]]}])]
-    [:> ui/Form {:style {:width 350}}
-     [:> ui/Dropdown {:style {:width "100%"}
-                      :options (if (= :loading @products&)
-                                 []
-                                 (-> @products& :products products->choices))
-                      :placeholder "Search products..."
-                      :search true
-                      :selection true
-                      :multiple false
-                      :selectOnBlur false
-                      :allowAdditions true
-                      :additionLabel "Hit 'Enter' to Add "
-                      :onChange (fn [_ this]
-                                  (reset! popup-open?& false)
-                                  (rf/dispatch
-                                   [:b/round.add-product round-id (.-value this)]))}]]))
+                               :value id}))]
+    (fn [round-id popup-open?&]
+      (let [_ (println (->> @js-add-products-value&
+                            js->clj
+                            (map str)))
+            products& (rf/subscribe [:gql/q
+                                     {:queries ; use gql variables instead of string creation?
+                                      [[:products {:_where
+                                                   {:_or [{:pname {:_ilike (str "%" @search-query& "%")}}
+                                                          {:id {:_in (->> @js-add-products-value&
+                                                                          js->clj
+                                                                          (map str))}}]}
+                                                   :_limit 50
+                                                   :_order_by {:pname :asc}}
+                                        [:id :pname]]]}])
+            _ (when (and (not= :loading @products&)
+                         (not= @last-products-loaded& @products&))
+                (println "WAS RESET!")
+                (reset! last-products-loaded& @products&))]
+        [:> ui/Form {:style {:width 500
+                             :display "flex"}}
+         [:> ui/Dropdown {:style {:flex 1
+                                  :border-top-right-radius 0
+                                  :border-bottom-right-radius 0}
+                          :loading (= :loading @products&)
+                          :options (-> @last-products-loaded& :products products->choices)
+                          :placeholder "Search products..."
+                          :search true
+                          :selection true
+                          :multiple true
+                          :selectOnBlur false
+                          :allowAdditions true
+                          :selectOnNavigation true
+                          :additionLabel "Hit 'Enter' to Add "
+                          :onSearchChange (fn [_ this]
+                                            (reset! search-query& (.-searchQuery this)))
+                          :onChange (fn [_ this]
+                                      (reset! js-add-products-value& (.-value this)))}]
+         [:> ui/Button
+          {:style {:border-top-left-radius 0
+                   :border-bottom-left-radius 0}
+           :color "blue"
+           :disabled (empty? @js-add-products-value&)
+           :on-click #(do (reset! popup-open?& false)
+                          (.log js/console "do add products: " @js-add-products-value&)
+                          (rf/dispatch [:b/round.add-product round-id (js->clj @js-add-products-value&)]))}
+          "Add"]]))))
 
 (defn c-add-product-button
   [{:keys [id] :as round}]
@@ -989,20 +1018,23 @@
                                        .-classList)]
     (fn []
       [:> ui/Popup
-       {:position "top left"
+       {:position "bottom left"
         :on "click"
         :open @popup-open?
         :onOpen #(reset! popup-open? true)
         :onClose #(reset! popup-open? false)
+        :hideOnScroll false
+        :flowing true
         :content (r/as-element [c-add-product-form id popup-open?])
         :trigger (r/as-element
                   [:> ui/Button {:color "blue"
                                  :fluid true
                                  :icon true
                                  :labelPosition "left"
-                                 :on-mouse-over #(.add (get-round-grid-class-list) "highlight-products")
+                                 :on-mouse-over #(when-not @popup-open?
+                                                   (.add (get-round-grid-class-list) "highlight-products"))
                                  :on-mouse-leave #(.remove (get-round-grid-class-list) "highlight-products")}
-                   "Add Product"
+                   "Add Products"
                    [:> ui/Icon {:name "plus"}]])}])))
 
 (defn c-requirements
