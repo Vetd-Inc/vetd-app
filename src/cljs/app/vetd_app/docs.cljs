@@ -126,7 +126,6 @@
                           :return nil
                           :form-doc fd}}})))
 
-
 (defn mk-form-doc-prompt-field-state
   [fields {:keys [id] :as prompt-field}]
   (let [resp-fields (mapv (fn [{:keys [sval nval dval jval] :as resp-field}]

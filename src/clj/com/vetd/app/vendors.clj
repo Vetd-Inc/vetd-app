@@ -30,6 +30,19 @@
                  :logo logo
                  :url url})))
 
+(defn insert-category
+  [category-name]
+  (let [[id idstr] (ut/mk-id&str)]
+    (->> {:id id
+          :idstr idstr
+          :created (ut/now-ts)
+          :updated (ut/now-ts)
+          :deleted nil
+          :cname category-name}
+         (db/insert! :categories)
+         first)))
+
+
 (defn update-product
   [{:keys [id pname ]}]
   (db/hs-exe! {:update :products
@@ -51,10 +64,23 @@
 
 (defn replace-product-categories
   [{:keys [id categories]}]
-  (db/hs-exe! {:delete-from :product_categories
-               :where [:= :prod_id id]})  
-  (doseq [c categories]
-    (insert-product-category id c)))
+  (let [current (->> [[:products {:id id #_272814714483}
+                       [[:categories [:id]]]]]
+                     ha/sync-query
+                     :products
+                     first
+                     :categories
+                     (map :id)
+                     set)
+        [del add] (->> categories
+                       set
+                       (clojure.data/diff current))]
+    (when-not (empty? del)
+      (db/update-deleted-where [:and
+                                [:= :prod_id id]
+                                [:= :cat_id del]]))  
+    (doseq [c add]
+      (insert-product-category id c))))
 
 (defn delete-product
   [prod-id]
@@ -124,28 +150,38 @@
         (log/info (format "Product logo processed: '%s' '%s'" new-file-name subject)))
       (log/error  (format "NO Product logo found in profile doc: '%s'" subject)))))
 
+
 (defn process-product-categories [prod-profile-doc-id]
   (let [{:keys [subject] :as doc} (-> [[:docs {:id prod-profile-doc-id}
                                         [:subject
                                          [:response-prompts {:prompt-term "product/categories"
                                                              :ref-deleted nil
                                                              :deleted nil}
-                                          [[:fields [:sval]]]]]]]
+                                          [[:fields [:jval]]]]]]]
                                       ha/sync-query
                                       :docs
                                       first)
         cats (some->> doc
-                          :response-prompts
-                          first
-                          :fields
-                          (map :sval))]
-    (if-not (empty? cats)
-      1
-      2)))
+                      :response-prompts
+                      first
+                      :fields
+                      (map :jval))]
+    (when subject
+      (let [cats' (map (fn [{:keys [id text]}]
+                         (or id
+                             (-> text
+                                  insert-category
+                                  :id)))
+                       cats)]
+        (replace-product-categories {:id subject
+                                     :categories cats'})))))
+
+#_(clojure.pprint/pprint  $s/*)
 
 (defmethod docs/handle-doc-update :product-profile
   [{:keys [id]} & _]
   (try
+    (process-product-categories id)
     (process-product-logo id) ;; TODO only if logo url changed???
     (catch Exception e
       (log/error e))))
@@ -153,6 +189,7 @@
 (defmethod docs/handle-doc-creation :product-profile
   [{:keys [id]} & _]
   (try
+    (process-product-categories id)    
     (process-product-logo id)
     (catch Exception e
       (log/error e))))

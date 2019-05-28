@@ -225,7 +225,8 @@
        dgql/graphql-query))
 
 (defn walk-result-sub-kw [field sub v]
-  (sql-field->clj-kw sub))
+  (or (sql-field->clj-kw sub)
+      sub))
 
 (declare walk-result-sub-val-pair)
 

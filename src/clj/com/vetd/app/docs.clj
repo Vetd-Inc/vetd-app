@@ -421,8 +421,9 @@
   (some->> [[:docs {:id doc-id}
              [:id
               [:responses
-               {:ref-deleted nil}
-               [:id :ref-id :prompt-id
+               {:deleted nil
+                :ref-deleted nil}
+               [:id :deleted :ref-id :prompt-id
                 [:fields {:deleted nil
                           :_order_by {:idx :asc}}
                  [:sval :nval :dval :jval
