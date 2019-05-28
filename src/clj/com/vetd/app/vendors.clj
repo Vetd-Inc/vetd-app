@@ -64,7 +64,7 @@
 
 (defn replace-product-categories
   [{:keys [id categories]}]
-  (let [current (->> [[:products {:id id #_272814714483}
+  (let [current (->> [[:products {:id id}
                        [[:categories [:id]]]]]
                      ha/sync-query
                      :products

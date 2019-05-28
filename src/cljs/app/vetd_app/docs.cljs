@@ -35,8 +35,7 @@
      "i-category" (->> r
                        :categories
                        (map (fn [{:keys [id cname]}]
-                               {;:key id
-                                :value id
+                               {:value id
                                 :text cname}))
                        (sort-by :text)
                        vec))))
