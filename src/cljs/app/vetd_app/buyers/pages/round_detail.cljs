@@ -954,7 +954,7 @@
 
 (defn c-add-product-form
   [round-id popup-open?&]
-  (let [js-add-products-value& (atom [])
+  (let [js-add-products-value& (r/atom [])
         search-query& (r/atom "")
         last-products-loaded& (r/atom [])
         products->choices (fn [products]
@@ -966,6 +966,7 @@
       (let [_ (println (->> @js-add-products-value&
                             js->clj
                             (map str)))
+            _ (println @search-query&)
             products& (rf/subscribe [:gql/q
                                      {:queries ; use gql variables instead of string creation?
                                       [[:products {:_where
@@ -973,9 +974,18 @@
                                                           {:id {:_in (->> @js-add-products-value&
                                                                           js->clj
                                                                           (map str))}}]}
-                                                   :_limit 50
+                                                   :_limit 5 ; 50
                                                    :_order_by {:pname :asc}}
                                         [:id :pname]]]}])
+            _ (cljs.pprint/pprint {:queries ; use gql variables instead of string creation?
+                                   [[:products {:_where
+                                                {:_or [{:pname {:_ilike (str "%" @search-query& "%")}}
+                                                       {:id {:_in (->> @js-add-products-value&
+                                                                       js->clj
+                                                                       (map str))}}]}
+                                                :_limit 5 ; 50
+                                                :_order_by {:pname :asc}}
+                                     [:id :pname]]]})
             _ (when (and (not= :loading @products&)
                          (not= @last-products-loaded& @products&))
                 (println "WAS RESET!")
