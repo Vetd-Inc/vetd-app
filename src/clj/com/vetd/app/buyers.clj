@@ -417,9 +417,20 @@ Round URL: https://app.vetd.com/b/rounds/%s"
 
 (defmethod com/handle-ws-inbound :b/round.add-products
   [{:keys [round-id product-ids product-names buyer-id]} ws-id sub-fn]
-  (doseq [product-id product-ids]
-    (rounds/invite-product-to-round product-id round-id))
-  (rounds/sync-round-vendor-req-forms round-id))
+  (when-not (empty? product-names)
+    (com/sns-publish
+     :ui-misc
+     "Nonexistent Product(s) Added to Round"
+     (str "Nonexistent Product(s) Added to Round\n\n"
+          "Round ID: " round-id
+          "\nNonexistent Product(s) Added: " (->> product-names
+                                                  (interpose ", ")
+                                                  (apply str)))))
+  (when-not (empty? product-ids)
+    (doseq [product-id product-ids]
+      (rounds/invite-product-to-round product-id round-id))
+    (rounds/sync-round-vendor-req-forms round-id))
+  {})
 
 (defmethod com/handle-ws-inbound :b/set-round-products-order
   [{:keys [product-ids user-id org-id round-id]} ws-id sub-fn]
