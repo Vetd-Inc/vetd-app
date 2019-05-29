@@ -958,17 +958,16 @@
                    [:> ui/Icon {:name "plus"}]])}])))
 
 (defn c-add-product-form
-  [round-id popup-open?&]
+  [round-id round-product popup-open?&]
   (let [value& (r/atom [])
-        ;; holds options from current search results + any currently selected values
-        options& (r/atom [])
+        options& (r/atom []) ; options from search results + current values
         search-query& (r/atom "")
         products->options (fn [products]
                             (for [{:keys [id pname]} products]
                               {:key id
                                :text pname
                                :value id}))]
-    (fn [round-id popup-open?&]
+    (fn [round-id round-product popup-open?&]
       (let [products& (rf/subscribe
                        [:gql/q
                         {:queries
@@ -976,20 +975,19 @@
                                       :_limit 50
                                       :_order_by {:pname :asc}}
                            [:id :pname]]]}])
+            product-ids-already-in-round (set (map (comp :id :product) round-product))
             _ (when-not (= :loading @products&)
-                (let [options (distinct
-                               (concat (-> @products& :products products->options) ; new options
-                                       ;; keep options of any selected values
-                                       ;; (this dumbly actually keeps everything, but that seems fine)
-                                       @options&))]
+                (let [options (->> @products&
+                                   :products
+                                   products->options ; now we have options from gql sub
+                                   ;; (this dumbly actually keeps everything, but that seems fine)
+                                   (concat @options&) ; keep options for the current values
+                                   distinct
+                                   (remove (comp (partial contains? product-ids-already-in-round) :value)))]
                   (when-not (= @options& options)
                     (reset! options& options))))]
-        [:> ui/Form {:style {:width 550
-                             :display "flex"}}
-         [:> ui/Dropdown {:style {:flex 1
-                                  :border-top-right-radius 0
-                                  :border-bottom-right-radius 0}
-                          :loading (= :loading @products&)
+        [:> ui/Form {:class "add-products-form"}
+         [:> ui/Dropdown {:loading (= :loading @products&)
                           :options @options&
                           :placeholder "Search products..."
                           :search true
@@ -1009,22 +1007,20 @@
                           :onSearchChange (fn [_ this] (reset! search-query& (.-searchQuery this)))
                           :onChange (fn [_ this] (reset! value& (.-value this)))}]
          [:> ui/Button
-          {:style {:border-top-left-radius 0
-                   :border-bottom-left-radius 0}
-           :color "blue"
+          {:color "blue"
            :disabled (empty? @value&)
            :on-click #(do (reset! popup-open?& false)
                           (rf/dispatch [:b/round.add-products round-id (js->clj @value&)]))}
           "Add"]]))))
 
 (defn c-add-product-button
-  [{:keys [id] :as round}]
+  [round]
   (let [popup-open? (r/atom false)
         get-round-grid-class-list #(-> (.getElementsByClassName js/document "round-grid")
                                        array-seq
                                        first
                                        .-classList)]
-    (fn []
+    (fn [{:keys [id round-product] :as round}]
       [:> ui/Popup
        {:position "bottom left"
         :on "click"
@@ -1033,7 +1029,7 @@
         :onClose #(reset! popup-open? false)
         :hideOnScroll false
         :flowing true
-        :content (r/as-element [c-add-product-form id popup-open?])
+        :content (r/as-element [c-add-product-form id round-product popup-open?])
         :trigger (r/as-element
                   [:> ui/Button {:color "blue"
                                  :fluid true

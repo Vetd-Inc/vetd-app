@@ -644,6 +644,23 @@ $cell-height: 201px;
   }
 }
 
+// form for adding products to a round
+.add-products-form {
+  width: 550px;
+  display: flex;
+
+  .dropdown {
+    flex: 1;
+    border-top-right-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+  }
+
+  .button {
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+  }
+}
+
 .how-vetd-works {
   min-height: 0 !important;
   padding: 25px !important;
