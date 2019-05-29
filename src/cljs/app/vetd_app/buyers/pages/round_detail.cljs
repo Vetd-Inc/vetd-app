@@ -870,6 +870,11 @@
        [:> ui/Icon {:name "plus"}]]
       "Request that all vendors respond to a new requirement / use case."]
      [:div.explainer-item
+      [:h4 
+       "Add a Product "
+       [:> ui/Icon {:name "plus"}]]
+      "Add specific products to your VetdRound, and we'll get them to respond to your topics."]
+     [:div.explainer-item
       [:h4 "Ask Questions "
        [:> ui/Icon {:name "chat outline"}]]
       "Ask vendors follow-up questions about their responses."]]
