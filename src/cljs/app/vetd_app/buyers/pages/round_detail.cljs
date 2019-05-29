@@ -1136,7 +1136,7 @@
                        [:> ui/Icon {:name "question circle"}]
                        "How VetdRounds Work"]]
                      [c-explainer-modal modal-showing?&]]))
-                [:div {:style {:height 61}}] ; spacer
+                [:div {:style {:height 64}}] ; spacer
                 [c-requirements req-form-template]])]
             [:div.inner-container [c-round round req-form-template sorted-round-products]]]))])))
 
