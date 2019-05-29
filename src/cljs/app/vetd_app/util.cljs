@@ -253,14 +253,6 @@
    (fn [i x] (with-meta x {:key i}))
    xs))
 
-(defn as-dropdown-options
-  "Given a coll of String options, return a coll maps that ui/Dropdown expects."
-  [options]
-  (map #(hash-map :key %
-                  :text %
-                  :value %)
-       options))
-
 ;;;; Base 31/36 idstr calculation
 (defn long-floor-div
   [a b]

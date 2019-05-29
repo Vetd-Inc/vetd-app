@@ -171,8 +171,8 @@
 
 ;; Components
 (defn get-requirements-options []
-  (util/as-dropdown-options [;; "Subscription Billing" "Free Trial"
-                             ]))
+  (ui/as-dropdown-options [;; "Subscription Billing" "Free Trial"
+                           ]))
 
 (defn c-round-initiation-form
   [round-id]
@@ -198,7 +198,7 @@
          [:> ui/FormField
           [:label "When do you need to decide by?"]
           [:> ui/Dropdown {:selection true
-                           :options (util/as-dropdown-options
+                           :options (ui/as-dropdown-options
                                      ["Within 2 Weeks" "Within 3 Weeks" "Within 1 Month"
                                       "Within 2 Months" "Within 6 Months" "Within 12 Months"])
                            :on-change (fn [_ this]
@@ -954,69 +954,61 @@
 
 (defn c-add-product-form
   [round-id popup-open?&]
-  (let [js-add-products-value& (r/atom [])
-        search-query& (r/atom "")
-        last-products-loaded& (r/atom [])
-        products->choices (fn [products]
+  (let [value& (r/atom []) ; TODO needs to be r/atom?
+        options& (r/atom []) ; holds options from current search results + any selected values
+        search-query& (r/atom "") ; TODO needs to be r/atom?
+        products->options (fn [products]
                             (for [{:keys [id pname]} products]
                               {:key id
                                :text pname
                                :value id}))]
     (fn [round-id popup-open?&]
-      (let [_ (println (->> @js-add-products-value&
-                            js->clj
-                            (map str)))
-            _ (println @search-query&)
-            products& (rf/subscribe [:gql/q
-                                     {:queries ; use gql variables instead of string creation?
-                                      [[:products {:_where
-                                                   {:_or [{:pname {:_ilike (str "%" @search-query& "%")}}
-                                                          {:id {:_in (->> @js-add-products-value&
-                                                                          js->clj
-                                                                          (map str))}}]}
-                                                   :_limit 5 ; 50
-                                                   :_order_by {:pname :asc}}
-                                        [:id :pname]]]}])
-            _ (cljs.pprint/pprint {:queries ; use gql variables instead of string creation?
-                                   [[:products {:_where
-                                                {:_or [{:pname {:_ilike (str "%" @search-query& "%")}}
-                                                       {:id {:_in (->> @js-add-products-value&
-                                                                       js->clj
-                                                                       (map str))}}]}
-                                                :_limit 5 ; 50
-                                                :_order_by {:pname :asc}}
-                                     [:id :pname]]]})
-            _ (when (and (not= :loading @products&)
-                         (not= @last-products-loaded& @products&))
-                (println "WAS RESET!")
-                (reset! last-products-loaded& @products&))]
-        [:> ui/Form {:style {:width 500
+      (let [products& (rf/subscribe
+                       [:gql/q
+                        {:queries
+                         [[:products {:_where {:pname {:_ilike (str "%" @search-query& "%")}}
+                                      :_limit 50
+                                      :_order_by {:pname :asc}}
+                           [:id :pname]]]}])
+            _ (when-not (= :loading @products&)
+                (let [options (distinct
+                               (concat (-> @products& :products products->options) ; new options
+                                       ;; keep options of any selected values
+                                       ;; (this dumbly keeps everything, but seems fine)
+                                       @options&))]
+                  (when-not (= @options& options)
+                    (reset! options& options))))]
+        [:> ui/Form {:style {:width 550
                              :display "flex"}}
          [:> ui/Dropdown {:style {:flex 1
                                   :border-top-right-radius 0
                                   :border-bottom-right-radius 0}
                           :loading (= :loading @products&)
-                          :options (-> @last-products-loaded& :products products->choices)
+                          :options @options&
                           :placeholder "Search products..."
                           :search true
                           :selection true
                           :multiple true
                           :selectOnBlur false
-                          :allowAdditions true
                           :selectOnNavigation true
+                          :allowAdditions true
                           :additionLabel "Hit 'Enter' to Add "
-                          :onSearchChange (fn [_ this]
-                                            (reset! search-query& (.-searchQuery this)))
-                          :onChange (fn [_ this]
-                                      (reset! js-add-products-value& (.-value this)))}]
+                          :onAddItem (fn [_ this]
+                                       (->> this
+                                            .-value
+                                            vector
+                                            ui/as-dropdown-options
+                                            (swap! options& concat)))
+                          :onSearchChange (fn [_ this] (reset! search-query& (.-searchQuery this)))
+                          :onChange (fn [_ this] (reset! value& (.-value this)))}]
          [:> ui/Button
           {:style {:border-top-left-radius 0
                    :border-bottom-left-radius 0}
            :color "blue"
-           :disabled (empty? @js-add-products-value&)
+           :disabled (empty? @value&)
            :on-click #(do (reset! popup-open?& false)
-                          (.log js/console "do add products: " @js-add-products-value&)
-                          (rf/dispatch [:b/round.add-product round-id (js->clj @js-add-products-value&)]))}
+                          (.log js/console "do add products: " @value&)
+                          (rf/dispatch [:b/round.add-product round-id (js->clj @value&)]))}
           "Add"]]))))
 
 (defn c-add-product-button

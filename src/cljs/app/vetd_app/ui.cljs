@@ -84,6 +84,23 @@
 (def Select (component "Select"))
 (def Dropdown (component "Dropdown"))
 
+;; Dropdown utilities
+(defn as-dropdown-options
+  "Given a coll of String options, return a coll maps that ui/Dropdown expects."
+  [options]
+  (map #(hash-map :key %
+                  :text %
+                  :value %)
+       options))
+
+(defn get-text-from-opt-by-value
+  "For use with ui/Dropdown"
+  [opts value]
+  (->> (js->clj opts :keywordize-keys true)
+       (filter #(-> :value % (= value)))
+       first
+       :text))
+
 ;; Misc
 (def Image (component "Image"))
 (def Step (component "Step"))
@@ -154,12 +171,3 @@
  :toast ; todo: assumes "success"
  (fn [{:keys [type title message]}]
    (js/toastr.success message title)))
-
-
-(defn get-text-from-opt-by-value
-  "For use with ui/Dropdown"
-  [opts value]
-  (->> (js->clj opts :keywordize-keys true)
-       (filter #(-> :value % (= value)))
-       first
-       :text))
