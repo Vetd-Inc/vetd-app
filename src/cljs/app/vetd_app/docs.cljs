@@ -22,6 +22,24 @@
                  :value value
                  :text label})))))
 
+(rf/reg-sub
+ :docs/entities
+ (fn [[_ fsubtype]]
+   (let [q
+         (case fsubtype
+           "i-category" [[:categories {:deleted nil}
+                          [:id :cname]]])]
+     (rf/subscribe [:gql/q {:queries q}])))
+ (fn [r [_ fsubtype]]
+   (case fsubtype
+     "i-category" (->> r
+                       :categories
+                       (map (fn [{:keys [id cname]}]
+                               {:value id
+                                :text cname}))
+                       (sort-by :text)
+                       vec))))
+
 (defn get-value-by-term
   [response-prompts term & [field val-type]]
   (let [term-str (util/kw->str term)]
@@ -90,7 +108,7 @@
 
 (defn walk-deref-ratoms
   [frm]
-  (clojure.walk/postwalk
+  (clojure.walk/prewalk
    (fn [f]
      (if (instance? reagent.ratom/RAtom f)
        @f
@@ -101,22 +119,22 @@
  :save-form-doc
  (fn [{:keys [db]} [_ form-doc]]
    (let [fd (walk-deref-ratoms form-doc)]
-     (def fd1 fd)
      {:ws-send {:payload {:cmd :save-form-doc
                           :return nil
                           :form-doc fd}}})))
 
-
-;; TODO support multiple response fields (for where list? = true)
 (defn mk-form-doc-prompt-field-state
   [fields {:keys [id] :as prompt-field}]
-  (let [{:keys [sval nval dval jval] :as resp-field} (some-> id fields first)
-        resp-field' (merge resp-field
-                           {:state (r/atom (or dval nval sval jval
-                                               ""))})]
+  (let [resp-fields (mapv (fn [{:keys [sval nval dval jval] :as resp-field}]
+                            (merge resp-field
+                                   {:state (r/atom (or dval nval sval jval
+                                                       ""))}))
+                          (or (not-empty (fields id))
+                              [{}]))]
     (assoc prompt-field
            :response
-           [resp-field'])))
+           ;; TODO sort resp-fields by idx??
+           (r/atom resp-fields))))
 
 (defn mk-form-doc-prompt-state
   [responses {:keys [id] :as prompt}]
@@ -144,10 +162,9 @@
                               responses')))))
 
 (defn c-prompt-field-default
-  [{:keys [fname ftype fsubtype list? response] :as prompt-field}]
-  ;; TODO support multiple response fields (for where list? = true)
+  [{:keys [fname ftype fsubtype response] :as prompt-field}]
   (let [value& (some-> response first :state)
-        {response-id :id prompt-field-id :pf-id} (first response)]
+        {response-field-id :id prompt-field-id :pf-id} (first response)]
     [:> ui/FormField
      (when-not (= fname "value")
        [:label fname])
@@ -155,7 +172,7 @@
                 :on-change (fn [this]
                              (reset! value& (-> this .-target .-value)))
                 :attrs {:data-prompt-field (str prompt-field)
-                        :data-response-field-id (str "[" response-id "]")
+                        :data-response-field-id (str "[" response-field-id "]")
                         :data-prompt-field-id (str "[" prompt-field-id "]")}}]]))
 
 (defn c-prompt-field-textarea
@@ -205,10 +222,67 @@
                         :data-response-field-id response-id
                         :data-prompt-field-id prompt-field-id}]])))
 
+
+(defn c-prompt-field-entity
+  [{:keys [fname fsubtype response] :as prompt-field}]
+  ;; TODO support multiple response fields (for where list? = true)
+  (let [state& (some-> response first :state)
+        _ (when-not (map? @state&) (reset! state& {:id nil :text ""})) ;; HACK
+        opts& (rf/subscribe [:docs/entities fsubtype])
+        {response-id :id prompt-field-id :pf-id} (first response)]
+    (fn [{:keys [fname fsubtype response] :as prompt-field}]
+      [:> ui/FormField
+       (when-not (= fname "value")
+         [:label fname])
+       [:> ui/Dropdown {:value (:id @state&)
+                        :onChange
+                        #(reset! state& {:id (.-value %2)
+                                         :text
+                                         (ui/get-text-from-opt-by-value (.-options %2)
+                                                                        (.-value %2))})
+                        :onSearchChange #(swap! state&
+                                                assoc :text (.-searchQuery %2))
+                        :selection true
+                        :search true
+                        :searchQuery (:text @state&)
+                        :selectOnNavigation false
+                        :text (:text @state&)
+                        :options @opts&
+                        :data-response-field-id response-id
+                        :data-prompt-field-id prompt-field-id}]])))
+
+(defn c-prompt-field-list
+  [c-prompt-field-fn {:keys [fname ftype fsubtype response] :as prompt-field}]
+  [:div
+   (for [{:keys [id] :as response-field} @response]
+     ^{:key (str "resp-field" id)}
+     [:> ui/FormGroup
+      [c-prompt-field-fn (assoc prompt-field
+                                :response [response-field])]
+      [:> ui/Button {:color "red"
+	             :on-click (fn [& _]
+                                 (swap! response
+                                        (partial remove #(-> % :id (= id)))))
+                     :icon true}
+       [:> ui/Icon {:name "remove"}]]])
+   [:> ui/Button {:color "green"
+	          :on-click (fn [& _]
+                              (swap! response conj {:id (gensym "new-resp-field")
+                                                    :state (r/atom "")}))
+                  :icon true}
+    [:> ui/Icon {:name "add"}]]])
+
+(defn c-prompt-field [{:keys [idstr ftype fsubtype list?] :as field}]
+  (let [c-prompt-field-fn (hooks/c-prompt-field idstr [ftype fsubtype] ftype :default)]
+    (if list?
+      (c-prompt-field-list c-prompt-field-fn field)
+      [c-prompt-field-fn (update field
+                                 :response deref)])))
+
 (defn c-prompt-default
   [{:keys [prompt descr fields]}]
-  [:<>
-   [:div {:style {:margin-bottom 5}}
+  [:div {:style {:margin "10px 0 40px 0"}}
+   [:div {:style {:margin-bottom "5px"}}
     prompt
     (when descr
       [:> ui/Popup {:trigger (r/as-element [:> ui/Icon {:name "info circle"}])
@@ -216,8 +290,7 @@
        descr])]
    (for [{:keys [idstr ftype fsubtype] :as f} fields]
      ^{:key (str "field" (:id f))}
-     [(hooks/c-prompt-field idstr [ftype fsubtype] ftype :default)
-      f])])
+     [c-prompt-field f])])
 
 (defn prep-form-doc
   [{:keys [id ftype fsubtype title product to-org to-user from-org from-user doc-id doc-title prompts] :as form-doc}]
@@ -271,7 +344,8 @@
                   {:default #'c-prompt-field-default
                    ["s" "multi"] #'c-prompt-field-textarea
                    ["n" "int"] #'c-prompt-field-int
-                   "e" #'c-prompt-field-enum})
+                   "e" #'c-prompt-field-enum
+                   "i" #'c-prompt-field-entity})
 
 
 ;; "data" can have term->field->value's

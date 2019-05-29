@@ -131,7 +131,8 @@
                                                  [:rounds {:buyer-id @org-id&
                                                            :deleted nil}
                                                   [:id :idstr :created :status]]
-                                                 [:categories [:id :idstr :cname]]]]
+                                                 [:categories {:ref-deleted nil}
+                                                  [:id :idstr :cname]]]]
                                       [:from-org [:id :oname]]
                                       [:from-user [:id :uname]]
                                       [:to-org [:id :oname]]
