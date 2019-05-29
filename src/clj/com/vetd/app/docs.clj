@@ -172,14 +172,15 @@
 
 (defn get-max-prompt-sort-by-form-template-id
   [form-template-id]
-  (->> [[:form-templates {:id form-template-id}
-         [[:prompts [:sort]]]]]
-       ha/sync-query
-       :form-templates
-       first
-       :prompts
-       (map :sort)
-       (apply max)))
+  (some->> [[:form-templates {:id form-template-id}
+             [[:prompts [:sort]]]]]
+           ha/sync-query
+           :form-templates
+           first
+           :prompts
+           (map :sort)
+           not-empty
+           (apply max)))
 
 (defn insert-form-template-prompt
   [form-template-id prompt-id & [sort']]
@@ -193,9 +194,10 @@
                      :form_template_id form-template-id
                      :prompt_id prompt-id
                      :sort (or sort'
-                               (-> form-template-id
-                                   get-max-prompt-sort-by-form-template-id
-                                   inc))})
+                               (some-> form-template-id
+                                       get-max-prompt-sort-by-form-template-id
+                                       inc)
+                               0)})
         first)))
 
 (defn insert-response
@@ -228,6 +230,7 @@
                      :resp_id resp-id})
         first)))
 
+;; TODO make less gross
 (defn insert-response-field*
   [resp-id
    {:keys [prompt-field-id sval nval dval jval ftype fsubtype]}
@@ -246,6 +249,8 @@
                  :dval dval
                  :jval jval                 
                  :resp_id resp-id}
+                (when idx
+                  {:idx idx})
                 ;; TODO support multiple response fields (for where list? = true)
                 (when state
                   (convert-field-val state ftype fsubtype)))
@@ -282,10 +287,14 @@
                    vals)
       [response-fields])))
 
+;; TODO make less gross
 (defn insert-response-fields
   [resp-id response-fields]
-  (doseq [rf [response-fields]]
-    (insert-response-field resp-id rf)))
+  (if (:response response-fields)
+    [(insert-response-field resp-id response-fields)]
+    (vec
+     (for [rf (expand-response-fields response-fields)]
+       (insert-response-field* resp-id rf nil nil)))))
 
 (defn insert-default-prompt-field
   [prompt-id {sort' :sort}]
