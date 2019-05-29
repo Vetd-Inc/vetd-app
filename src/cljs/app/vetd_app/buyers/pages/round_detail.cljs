@@ -56,14 +56,32 @@
  ;; "products" is a mixed coll of product id's (for adding products that exist),
  ;; and product names (for adding products that don't exist in our DB yet)
  (fn [{:keys [db]} [_ round-id products]]
-   {:ws-send {:payload {:cmd :b/round.add-products
-                        :round-id round-id
-                        :product-ids (filter number? products)
-                        :product-names (filter string? products)
-                        :buyer-id (util/db->current-org-id db)}}
-    :analytics/track {:event "Add Product"
-                      :props {:category "Round"
-                              :label round-id}}}))
+   (let [product-ids (filter number? products)
+         product-names (filter string? products)]
+     {:ws-send {:payload {:cmd :b/round.add-products
+                          :return {:handler :b/round.add-products-return
+                                   :product-ids product-ids
+                                   :product-names product-names}
+                          :round-id round-id
+                          :product-ids product-ids
+                          :product-names product-names
+                          :buyer-id (util/db->current-org-id db)}}
+      :analytics/track {:event "Add Product"
+                        :props {:category "Round"
+                                :label round-id}}})))
+
+(rf/reg-event-fx
+ :b/round.add-products-return
+ (fn [{:keys [db]} [_ _ {{:keys [product-ids product-names]} :return}]]
+   {:toast {:type "success"
+            :title (str "Product" (when (> (+ (count product-ids)
+                                              (count product-names))
+                                           1)
+                                    "s")
+                        " Added to VetdRound")
+            :message (when-not (empty? product-names)
+                       (str "We will get back to you shortly regarding adding: "
+                            (s/join ", " product-names)))}}))
 
 (rf/reg-event-fx
  :b/round.declare-winner
