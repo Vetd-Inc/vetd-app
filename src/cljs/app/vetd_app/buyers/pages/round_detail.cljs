@@ -624,13 +624,15 @@
         ;; keep a reference to the window-scroll fn (will be created on mount)
         ;; so we can remove the event listener upon unmount
         window-scroll-fn-ref (atom nil)
-        ;; really just affects which cursor displayed
+        ;; right-side scroll boundary
+        scroll-x-max (atom 0)
         update-draggability
         (fn [this]
           (let [node (r/dom-node this)]
+            (reset! scroll-x-max (- (.-scrollWidth node) (.-clientWidth node)))
             (if (> (.-scrollWidth node) (.-clientWidth node))
-              (.add (.-classList (r/dom-node this)) "draggable")
-              (.remove (.-classList (r/dom-node this)) "draggable"))))
+              (.add (.-classList node) "draggable")
+              (.remove (.-classList node) "draggable"))))
         products-order& (rf/subscribe [:round-products-order])]
     (with-meta c-round-grid*
       {:component-did-mount
@@ -658,8 +660,6 @@
                scroll-a-factor 1
                ;; when reordering near left or right edge of grid
                scroll-speed-reordering 7
-               ;; this should be updated on resize
-               scroll-x-max (- (.-scrollWidth node) (.-clientWidth node))
 
                ;; make header row 'sticky' upon vertical window scroll
                header-pickup-y (atom nil) ; nil when not in 'sticky mode'
@@ -801,9 +801,9 @@
                               ;; apply scroll velocity to scroll position
                               (swap! scroll-x + @scroll-v)
                               ;; right-side boundary
-                              (when (> @scroll-x scroll-x-max)
+                              (when (> @scroll-x @scroll-x-max)
                                 (reset! scroll-v 0)
-                                (reset! scroll-x scroll-x-max))
+                                (reset! scroll-x @scroll-x-max))
                               ;; left-side boundary
                               (when (< @scroll-x 0)
                                 (reset! scroll-v 0)
