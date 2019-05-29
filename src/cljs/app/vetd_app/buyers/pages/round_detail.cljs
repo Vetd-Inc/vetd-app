@@ -53,14 +53,14 @@
 
 (rf/reg-event-fx
  :b/round.add-product
- (fn [{:keys [db]} [_ round-id product-id-or-name]]
-   {:ws-send {:payload (merge {:cmd :b/round.add-product
-                               :round-id round-id
-                               :buyer-id (util/db->current-org-id db)}
-                              (when (number? product-id-or-name)
-                                {:product-id product-id-or-name})
-                              (when (string? product-id-or-name)
-                                {:product-name product-id-or-name}))}
+ ;; "products" is a mixed coll of product id's (for adding products that exist),
+ ;; and product names (for adding products that don't exist in our DB yet)
+ (fn [{:keys [db]} [_ round-id products]]
+   {:ws-send {:payload {:cmd :b/round.add-product
+                        :round-id round-id
+                        :buyer-id (util/db->current-org-id db)
+                        :product-ids (filter number? products)
+                        :product-names (filter string? products)}}
     :analytics/track {:event "Add Product"
                       :props {:category "Round"
                               :label round-id}}}))
@@ -959,9 +959,10 @@
 
 (defn c-add-product-form
   [round-id popup-open?&]
-  (let [value& (r/atom []) ; TODO needs to be r/atom?
-        options& (r/atom []) ; holds options from current search results + any selected values
-        search-query& (r/atom "") ; TODO needs to be r/atom?
+  (let [value& (atom [])
+        ;; holds options from current search results + any currently selected values
+        options& (r/atom [])
+        search-query& (r/atom "")
         products->options (fn [products]
                             (for [{:keys [id pname]} products]
                               {:key id
@@ -979,7 +980,7 @@
                 (let [options (distinct
                                (concat (-> @products& :products products->options) ; new options
                                        ;; keep options of any selected values
-                                       ;; (this dumbly keeps everything, but seems fine)
+                                       ;; (this dumbly actually keeps everything, but that seems fine)
                                        @options&))]
                   (when-not (= @options& options)
                     (reset! options& options))))]
@@ -1012,7 +1013,6 @@
            :color "blue"
            :disabled (empty? @value&)
            :on-click #(do (reset! popup-open?& false)
-                          (.log js/console "do add products: " @value&)
                           (rf/dispatch [:b/round.add-product round-id (js->clj @value&)]))}
           "Add"]]))))
 
