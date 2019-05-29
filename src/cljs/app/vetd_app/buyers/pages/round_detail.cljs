@@ -823,7 +823,6 @@
                               ;; zero out weak velocity
                               (if (< (Math/abs @scroll-v) 0.000001)
                                 (reset! scroll-v 0))
-
                               (when @component-exists?
                                 (js/requestAnimationFrame anim-loop)))
                _ (js/requestAnimationFrame anim-loop-fn)]
