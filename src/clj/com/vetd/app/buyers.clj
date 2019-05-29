@@ -415,6 +415,12 @@ Round URL: https://app.vetd.com/b/rounds/%s"
       (catch Throwable t
         (log/error t)))))
 
+(defmethod com/handle-ws-inbound :b/round.add-products
+  [{:keys [round-id product-ids product-names buyer-id]} ws-id sub-fn]
+  (doseq [product-id product-ids]
+    (rounds/invite-product-to-round product-id round-id))
+  (rounds/sync-round-vendor-req-forms round-id))
+
 (defmethod com/handle-ws-inbound :b/set-round-products-order
   [{:keys [product-ids user-id org-id round-id]} ws-id sub-fn]
   (set-round-products-order round-id product-ids))

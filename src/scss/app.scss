@@ -414,8 +414,11 @@ $cell-height: 201px;
       }
       
       .name {
-        display: block;
-        margin-bottom: 9px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        height: 45px;
+        margin-bottom: 0;
         font-size: 18px !important;
         font-weight: 600 !important;
         line-height: 23px !important;
@@ -434,7 +437,6 @@ $cell-height: 201px;
         .name {
           font-size: 14px !important;
           line-height: 16px !important;
-          margin-bottom: 7px !important;
         }
       }
     }

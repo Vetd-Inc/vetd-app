@@ -52,15 +52,15 @@
                               :label round-id}}}))
 
 (rf/reg-event-fx
- :b/round.add-product
+ :b/round.add-products
  ;; "products" is a mixed coll of product id's (for adding products that exist),
  ;; and product names (for adding products that don't exist in our DB yet)
  (fn [{:keys [db]} [_ round-id products]]
-   {:ws-send {:payload {:cmd :b/round.add-product
+   {:ws-send {:payload {:cmd :b/round.add-products
                         :round-id round-id
-                        :buyer-id (util/db->current-org-id db)
                         :product-ids (filter number? products)
-                        :product-names (filter string? products)}}
+                        :product-names (filter string? products)
+                        :buyer-id (util/db->current-org-id db)}}
     :analytics/track {:event "Add Product"
                       :props {:category "Round"
                               :label round-id}}}))
@@ -959,7 +959,7 @@
 
 (defn c-add-product-form
   [round-id popup-open?&]
-  (let [value& (atom [])
+  (let [value& (r/atom [])
         ;; holds options from current search results + any currently selected values
         options& (r/atom [])
         search-query& (r/atom "")
@@ -997,6 +997,7 @@
                           :multiple true
                           :selectOnBlur false
                           :selectOnNavigation true
+                          :closeOnChange true
                           :allowAdditions true
                           :additionLabel "Hit 'Enter' to Add "
                           :onAddItem (fn [_ this]
@@ -1013,7 +1014,7 @@
            :color "blue"
            :disabled (empty? @value&)
            :on-click #(do (reset! popup-open?& false)
-                          (rf/dispatch [:b/round.add-product round-id (js->clj @value&)]))}
+                          (rf/dispatch [:b/round.add-products round-id (js->clj @value&)]))}
           "Add"]]))))
 
 (defn c-add-product-button
