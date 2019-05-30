@@ -327,6 +327,9 @@ textarea {
     box-shadow: 0 -5px 30px 0 rgba(50,50,50,0.4);
   }
   .toast-success {
+    background-color: $blue;
+  }
+  .toast-info {
     background-color: $teal;
   }
   .toast-warning {
