@@ -168,6 +168,10 @@
                 :hideMethod "fadeOut"}))
 
 (rf/reg-fx
- :toast ; todo: assumes "success"
+ :toast
  (fn [{:keys [type title message]}]
-   (js/toastr.success message title)))
+   (case type
+     "success" (js/toastr.success message title)
+     "error" (js/toastr.error message title)
+     "info" (js/toastr.info message title)
+     "warning" (js/toastr.warning message title))))

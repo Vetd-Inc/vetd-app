@@ -319,17 +319,24 @@ textarea {
 }
 
 /* Toast Messages (toastr library) */
-#toast-container .toast-success {
-  background-color: $teal;
-  border-top-left-radius: 0;
-  border-top-right-radius: 0;
-  opacity: 1;
+#toast-container {
+  .toast {
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    opacity: 1;
+    box-shadow: 0 -5px 30px 0 rgba(50,50,50,0.4);
+  }
+  .toast-success {
+    background-color: $teal;
+  }
+  .toast-warning {
+    background-color: $yellow;
+  }
+  .toast-title,
+  .toast-message {
+    color: #fff;
+  }
 }
-#toast-container .toast-title,
-#toast-container .toast-message {
-  color: #fff;
-}
-
 
 /* login and signup form */
 .centerpiece {

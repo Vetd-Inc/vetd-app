@@ -73,15 +73,19 @@
 (rf/reg-event-fx
  :b/round.add-products-return
  (fn [{:keys [db]} [_ _ {{:keys [product-ids product-names]} :return}]]
-   {:toast {:type "success"
-            :title (str "Product" (when (> (+ (count product-ids)
-                                              (count product-names))
-                                           1)
-                                    "s")
-                        " Added to VetdRound")
-            :message (when-not (empty? product-names)
-                       (str "We will get back to you shortly regarding adding: "
-                            (s/join ", " product-names)))}}))
+   (let [multiple-products? (> (+ (count product-ids)
+                                  (count product-names))
+                               1)]
+     {:toast {:type (if (empty? product-names) "success" "warning")
+              :title (if (empty? product-names)
+                       (str "Product" (when multiple-products? "s")
+                            " Added to VetdRound")
+                       (if multiple-products?
+                         "Some Products Not Addded Yet"
+                         "Product Not Added Yet"))
+              :message (when-not (empty? product-names)
+                         (str "We will get back to you shortly regarding adding: "
+                              (s/join ", " product-names)))}})))
 
 (rf/reg-event-fx
  :b/round.declare-winner
