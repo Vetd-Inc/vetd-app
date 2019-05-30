@@ -319,17 +319,27 @@ textarea {
 }
 
 /* Toast Messages (toastr library) */
-#toast-container .toast-success {
-  background-color: $teal;
-  border-top-left-radius: 0;
-  border-top-right-radius: 0;
-  opacity: 1;
+#toast-container {
+  .toast {
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    opacity: 1;
+    box-shadow: 0 -5px 30px 0 rgba(50,50,50,0.4);
+  }
+  .toast-success {
+    background-color: $blue;
+  }
+  .toast-info {
+    background-color: $teal;
+  }
+  .toast-warning {
+    background-color: $yellow;
+  }
+  .toast-title,
+  .toast-message {
+    color: #fff;
+  }
 }
-#toast-container .toast-title,
-#toast-container .toast-message {
-  color: #fff;
-}
-
 
 /* login and signup form */
 .centerpiece {
@@ -414,15 +424,20 @@ $cell-height: 201px;
       }
       
       .name {
-        display: block;
-        margin-bottom: 9px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        height: 45px;
+        margin-bottom: 0;
         font-size: 18px !important;
         font-weight: 600 !important;
         line-height: 23px !important;
         color: #444 !important;
+        transition: color 0.5s 0s linear;
 
         &:hover {
           color: #888 !important;
+          transition: none;
         }
       }
 
@@ -432,7 +447,6 @@ $cell-height: 201px;
         .name {
           font-size: 14px !important;
           line-height: 16px !important;
-          margin-bottom: 7px !important;
         }
       }
     }
@@ -562,8 +576,16 @@ $cell-height: 201px;
   // &:hover .column:not(:hover) {
   //   opacity: 0.6;
   // }
+
+  &.highlight-products {
+    .round-product .name {
+      color: $blue !important;
+      transition: none;
+    }
+  }
 }
 
+// Approve & Disapprove action buttons
 .response-approved {
   .approve.ui.button {
     opacity: 1 !important;
@@ -586,30 +608,32 @@ $cell-height: 201px;
   background: transparent;
   font-weight: 600;
 }
+.requirements {
+  .requirement.segment.ui {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    height: $cell-height;
+    padding: 14px 14px 14px 14px;
+    margin-top: 2px !important;
+    margin-bottom: 0px !important;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: left;
+    background: transparent !important;
+    box-shadow: none !important;
+    color: #444;
+    transition: color 0.5s 0s linear;
+    
+    &:first-of-type {
+      margin-top: 14px !important;
+    }
+  }
 
-.requirement.segment.ui {
-  display: flex;
-  flex-direction: column;
-  
-  align-items: flex-start;
-  
-  justify-content: center;
-  height: $cell-height;
-  padding: 14px 14px 14px 14px;
-  margin-top: 2px !important;
-  margin-bottom: 0px !important;
-  font-size: 14px;
-  font-weight: 600;
-  
-  // text-align: center;
-  text-align: left;
-  
-  background: transparent !important;
-  box-shadow: none !important;
-
-  &:first-of-type {
-    margin-top: 14px !important;
-    // margin-bottom: 0px !important;    
+  &.highlight-requirements .requirement.segment.ui {
+    color: #4ec2c4;
+    transition: none;
   }
 }
 
@@ -618,15 +642,32 @@ $cell-height: 201px;
   
   .round-title {
     margin-top: 0;
-    font-size: 28px;
-    line-height: 36px;
+    font-size: 31px;
+    line-height: 39px;
   }
 
   &.long {
     .round-title {
       font-size: 16px;
-      line-height: 36px;
+      line-height: 39px;
     }
+  }
+}
+
+// form for adding products to a round
+.add-products-form {
+  width: 550px;
+  display: flex;
+
+  .dropdown {
+    flex: 1;
+    border-top-right-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+  }
+
+  .button {
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
   }
 }
 

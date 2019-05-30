@@ -43,18 +43,15 @@
 (rf/reg-event-fx
  :gql/data
  (fn [{:keys [db]} [_ {:keys [mtype payload]} {:keys [return] :as resp}]]
-   (def resp1 resp)
    (let [{:keys [sub-id]} return]
      (case mtype
        :data (if-let [ratom (@sub-id->ratom& sub-id)]
                (when-not (= payload @ratom)
                  (reset! ratom payload))
-               (do (def no-ratom1 resp)
-                   (println "NO GRAPHQL RATOM!")
+               (do (println "NO GRAPHQL RATOM!")
                    (println resp)))
-       :error (do (def err1 resp)
-                  (println "GRAPHQL ERROR!")
-                  (println err1))
+       :error (do (println "GRAPHQL ERROR!")
+                  (println resp))
        :complete :NO-OP))
    {}))
 

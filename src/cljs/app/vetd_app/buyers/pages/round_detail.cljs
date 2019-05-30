@@ -52,6 +52,42 @@
                               :label round-id}}}))
 
 (rf/reg-event-fx
+ :b/round.add-products
+ ;; "products" is a mixed coll of product id's (for adding products that exist),
+ ;; and product names (for adding products that don't exist in our DB yet)
+ (fn [{:keys [db]} [_ round-id products]]
+   (let [product-ids (filter number? products)
+         product-names (filter string? products)]
+     {:ws-send {:payload {:cmd :b/round.add-products
+                          :return {:handler :b/round.add-products-return
+                                   :product-ids product-ids
+                                   :product-names product-names}
+                          :round-id round-id
+                          :product-ids product-ids
+                          :product-names product-names
+                          :buyer-id (util/db->current-org-id db)}}
+      :analytics/track {:event "Add Product"
+                        :props {:category "Round"
+                                :label round-id}}})))
+
+(rf/reg-event-fx
+ :b/round.add-products-return
+ (fn [{:keys [db]} [_ _ {{:keys [product-ids product-names]} :return}]]
+   (let [multiple-products? (> (+ (count product-ids)
+                                  (count product-names))
+                               1)]
+     {:toast {:type (if (empty? product-names) "success" "warning")
+              :title (if (empty? product-names)
+                       (str "Product" (when multiple-products? "s")
+                            " Added to VetdRound")
+                       (if multiple-products?
+                         "Some Products Not Addded Yet"
+                         "Product Not Added Yet"))
+              :message (when-not (empty? product-names)
+                         (str "We will get back to you shortly regarding adding: "
+                              (s/join ", " product-names)))}})))
+
+(rf/reg-event-fx
  :b/round.declare-winner
  (fn [{:keys [db]} [_ round-id product-id reason]]
    {:ws-send {:payload {:cmd :b/round.declare-result
@@ -157,8 +193,8 @@
 
 ;; Components
 (defn get-requirements-options []
-  (util/as-dropdown-options [;; "Subscription Billing" "Free Trial"
-                             ]))
+  (ui/as-dropdown-options [;; "Subscription Billing" "Free Trial"
+                           ]))
 
 (defn c-round-initiation-form
   [round-id]
@@ -184,7 +220,7 @@
          [:> ui/FormField
           [:label "When do you need to decide by?"]
           [:> ui/Dropdown {:selection true
-                           :options (util/as-dropdown-options
+                           :options (ui/as-dropdown-options
                                      ["Within 2 Weeks" "Within 3 Weeks" "Within 1 Month"
                                       "Within 2 Months" "Within 6 Months" "Within 12 Months"])
                            :on-change (fn [_ this]
@@ -408,14 +444,11 @@
                            :style {:color "#aaa"}}])}])
 
 (defn c-cell-modal
-  [round-id
-   modal-showing?&
-   modal-response&]
+  [round-id modal-showing?& modal-response&]
   (let [modal-message& (r/atom "")]
-    (fn [round-id
-         modal-showing?&
-         modal-response&]
-      (let [{:keys [req-prompt-id req-prompt-text product-id pname
+    (fn [round-id modal-showing?& modal-response&]
+      (let [{:keys [req-prompt-id req-prompt-text
+                    product-id pname
                     resp-id resp-text resp-rating]
              :as modal-response} @modal-response&]
         [:> ui/Modal {:open @modal-showing?&
@@ -446,23 +479,51 @@
             (util/parse-md resp-text)
             "Waiting for vendor response.")]
          [:> ui/ModalActions
-          [:> ui/Form
+          [:> ui/Form {:as "div"
+                       :style {:padding-bottom "1rem"}}
            [:> ui/FormField
             [:> ui/TextArea {:placeholder "Ask a follow-up question..."
                              :autoFocus true
                              :spellCheck true
                              :onChange (fn [_ this]
-                                         (reset! modal-message& (.-value this)))}]]
-           [:> ui/Button {:onClick #(reset! modal-showing?& false)
-                          :color "grey"}
-            "Cancel"]
-           [:> ui/Button
-            {:onClick #(do (rf/dispatch
-                            [:b/round.ask-a-question
-                             product-id pname @modal-message& round-id req-prompt-text])
-                           (reset! modal-showing?& false))
-             :color "blue"}
-            "Submit Question"]]]]))))
+                                         (reset! modal-message& (.-value this)))}]]]
+          [:> ui/Button {:onClick #(reset! modal-showing?& false)}
+           "Cancel"]
+          [:> ui/Button
+           {:onClick #(do (rf/dispatch
+                           [:b/round.ask-a-question
+                            product-id pname @modal-message& round-id req-prompt-text])
+                          (reset! modal-showing?& false))
+            :color "blue"}
+           "Submit Question"]]]))))
+
+(defn c-cell-text
+  [resp-text round-status]
+  [:div.text
+   (if (not-empty resp-text)
+     (util/truncate-text resp-text 150)
+     (if (= round-status "complete")
+       [c-no-response]
+       [c-waiting-for-response]))])
+
+(defn c-cell-actions
+  [resp-id resp-rating]
+  (let [rating-approved 1
+        rating-disapproved 0]
+    [:div.actions
+     [c-action-button {:props {:class "action-button question"}
+                       :icon "chat outline" ; no on-click, just pass through to cell click
+                       :popup-text "Ask Question"}]
+     [c-action-button {:props {:class "action-button approve"}
+                       :on-click #(do (.stopPropagation %) ; stop propagation to cell click
+                                      (rf/dispatch [:b/round.rate-response resp-id rating-approved]))
+                       :icon "thumbs up outline"
+                       :popup-text (if (= rating-approved resp-rating) "Approved" "Approve")}]
+     [c-action-button {:props {:class "action-button disapprove"}
+                       :on-click #(do (.stopPropagation %) ; stop propagation to cell click
+                                      (rf/dispatch [:b/round.rate-response resp-id rating-disapproved]))
+                       :icon "thumbs down outline"
+                       :popup-text (if (= rating-disapproved resp-rating) "Disapproved" "Disapprove")}]]))
 
 (rf/reg-sub
  :loading?
@@ -541,25 +602,8 @@
                                                     :resp-id resp-id
                                                     :resp-text resp-text
                                                     :resp-rating resp-rating}))}
-            [:div.text (if (not-empty resp-text)
-                         (util/truncate-text resp-text 150)
-                         (if (= status "complete")
-                           [c-no-response]
-                           [c-waiting-for-response]))]
-            [:div.actions
-             [c-action-button {:props {:class "action-button question"}
-                               :icon "chat outline" ; on-click just pass through
-                               :popup-text "Ask Question"}]
-             [c-action-button {:props {:class "action-button approve"}
-                               :on-click #(do (.stopPropagation %)
-                                              (rf/dispatch [:b/round.rate-response resp-id 1]))
-                               :icon "thumbs up outline"
-                               :popup-text (if (= 1 resp-rating) "Approved" "Approve")}]
-             [c-action-button {:props {:class "action-button disapprove"}
-                               :on-click #(do (.stopPropagation %)
-                                              (rf/dispatch [:b/round.rate-response resp-id 0]))
-                               :icon "thumbs down outline"
-                               :popup-text (if (= 0 resp-rating) "Disapproved" "Disapprove")}]]])]))))
+            [c-cell-text resp-text status]
+            [c-cell-actions resp-id resp-rating]])]))))
 
 (defn c-round-grid*
   [round req-form-template round-product]
@@ -602,13 +646,15 @@
         ;; keep a reference to the window-scroll fn (will be created on mount)
         ;; so we can remove the event listener upon unmount
         window-scroll-fn-ref (atom nil)
-        ;; really just affects which cursor displayed
+        ;; right-side scroll boundary
+        scroll-x-max (atom 0)
         update-draggability
         (fn [this]
           (let [node (r/dom-node this)]
+            (reset! scroll-x-max (- (.-scrollWidth node) (.-clientWidth node)))
             (if (> (.-scrollWidth node) (.-clientWidth node))
-              (.add (.-classList (r/dom-node this)) "draggable")
-              (.remove (.-classList (r/dom-node this)) "draggable"))))
+              (.add (.-classList node) "draggable")
+              (.remove (.-classList node) "draggable"))))
         products-order& (rf/subscribe [:round-products-order])]
     (with-meta c-round-grid*
       {:component-did-mount
@@ -636,8 +682,6 @@
                scroll-a-factor 1
                ;; when reordering near left or right edge of grid
                scroll-speed-reordering 7
-               ;; this should be updated on resize
-               scroll-x-max (- (.-scrollWidth node) (.-clientWidth node))
 
                ;; make header row 'sticky' upon vertical window scroll
                header-pickup-y (atom nil) ; nil when not in 'sticky mode'
@@ -779,9 +823,9 @@
                               ;; apply scroll velocity to scroll position
                               (swap! scroll-x + @scroll-v)
                               ;; right-side boundary
-                              (when (> @scroll-x scroll-x-max)
+                              (when (> @scroll-x @scroll-x-max)
                                 (reset! scroll-v 0)
-                                (reset! scroll-x scroll-x-max))
+                                (reset! scroll-x @scroll-x-max))
                               ;; left-side boundary
                               (when (< @scroll-x 0)
                                 (reset! scroll-v 0)
@@ -801,7 +845,6 @@
                               ;; zero out weak velocity
                               (if (< (Math/abs @scroll-v) 0.000001)
                                 (reset! scroll-v 0))
-
                               (when @component-exists?
                                 (js/requestAnimationFrame anim-loop)))
                _ (js/requestAnimationFrame anim-loop-fn)]
@@ -843,14 +886,19 @@
     [:div.explainer-section
      [:h3.teal "Learn More"]
      [:div.explainer-item
-      [:h4 "Ask Questions "
-       [:> ui/Icon {:name "chat outline"}]]
-      "Ask vendors follow-up questions about their responses."]
-     [:div.explainer-item
       [:h4 
        "Add a Topic "
        [:> ui/Icon {:name "plus"}]]
-      "Request that all vendors respond to a new requirement / use case."]]
+      "Request that all vendors respond to a new requirement / use case."]
+     [:div.explainer-item
+      [:h4 
+       "Add a Product "
+       [:> ui/Icon {:name "plus"}]]
+      "Add specific products to your VetdRound, and we'll get them to respond to your topics."]
+     [:div.explainer-item
+      [:h4 "Ask Questions "
+       [:> ui/Icon {:name "chat outline"}]]
+      "Ask vendors follow-up questions about their responses."]]
     [:div.explainer-section
      [:h3.blue "Make a Decision"]
      [:div.explainer-item
@@ -872,32 +920,28 @@
 (defn c-round
   "Component to display Round details."
   [round req-form-template round-product]
-  (let [modal-showing?& (r/atom false)]
-    (fn [{:keys [id status title products] :as round}
-         req-form-template
-         round-product]
-      [:<>
-       [:> ui/Segment {:id "round-title-container"
-                       :class (str "detail-container " (when (> (count title) 50) "long"))}
-        [:h1.round-title title]
-        [:> ui/TransitionGroup {:animation "fade down"
-                                :duration 500}
-         (when-not (= status "initiation")
-           [:a {:on-click #(reset! modal-showing?& true)}
-            [:> ui/Icon {:name "question circle"}]
-            "How VetdRounds Work"])]
-        [c-explainer-modal modal-showing?&]
-        [bc/c-round-status status]]
-       (condp contains? status
-         #{"initiation"} [:> ui/Segment {:class "detail-container"
-                                         :style {:margin-left 20}}
-                          [c-round-initiation round]]
-         #{"in-progress"
-           "complete"} [c-round-grid round req-form-template round-product])])))
+  (fn [{:keys [id status title products] :as round}
+       req-form-template
+       round-product]
+    [:<>
+     [:> ui/Segment {:id "round-title-container"
+                     :class (str "detail-container " (when (> (count title) 50) "long"))}
+      [:h1.round-title title]
+      [bc/c-round-status status]]
+     (condp contains? status
+       #{"initiation"} [:> ui/Segment {:class "detail-container"
+                                       :style {:margin-left 20}}
+                        [c-round-initiation round]]
+       #{"in-progress"
+         "complete"} [c-round-grid round req-form-template round-product])]))
 
 (defn c-add-requirement-button
   [{:keys [id] :as round}]
-  (let [popup-open? (r/atom false)]
+  (let [popup-open? (r/atom false)
+        get-requirements-class-list #(-> (.getElementsByClassName js/document "requirements")
+                                         array-seq
+                                         first
+                                         .-classList)]
     (fn []
       [:> ui/Popup
        {:position "top left"
@@ -925,15 +969,102 @@
                                                    [:b/round.add-requirement id (.-value this)]))}]]))
         :trigger (r/as-element
                   [:> ui/Button {:color "teal"
-                                 :size "mini"
-                                 :icon "plus"
-                                 :style {:position "relative"
-                                         :top -4
-                                         :left 5}}])}])))
+                                 :fluid true
+                                 :icon true
+                                 :labelPosition "left"
+                                 :on-mouse-over #(when-not @popup-open?
+                                                   (.add (get-requirements-class-list) "highlight-requirements"))
+                                 :on-mouse-leave #(.remove (get-requirements-class-list) "highlight-requirements")}
+                   "Add Topics"
+                   [:> ui/Icon {:name "plus"}]])}])))
+
+(defn c-add-product-form
+  [round-id round-product popup-open?&]
+  (let [value& (r/atom [])
+        options& (r/atom []) ; options from search results + current values
+        search-query& (r/atom "")
+        products->options (fn [products]
+                            (for [{:keys [id pname]} products]
+                              {:key id
+                               :text pname
+                               :value id}))]
+    (fn [round-id round-product popup-open?&]
+      (let [products& (rf/subscribe
+                       [:gql/q
+                        {:queries
+                         [[:products {:_where {:pname {:_ilike (str "%" @search-query& "%")}}
+                                      :_limit 50
+                                      :_order_by {:pname :asc}}
+                           [:id :pname]]]}])
+            product-ids-already-in-round (set (map (comp :id :product) round-product))
+            _ (when-not (= :loading @products&)
+                (let [options (->> @products&
+                                   :products
+                                   products->options ; now we have options from gql sub
+                                   ;; (this dumbly actually keeps everything, but that seems fine)
+                                   (concat @options&) ; keep options for the current values
+                                   distinct
+                                   (remove (comp (partial contains? product-ids-already-in-round) :value)))]
+                  (when-not (= @options& options)
+                    (reset! options& options))))]
+        [:> ui/Form {:class "add-products-form"}
+         [:> ui/Dropdown {:loading (= :loading @products&)
+                          :options @options&
+                          :placeholder "Search products..."
+                          :search true
+                          :selection true
+                          :multiple true
+                          :selectOnBlur false
+                          :selectOnNavigation true
+                          :closeOnChange true
+                          :allowAdditions true
+                          :additionLabel "Hit 'Enter' to Add "
+                          :onAddItem (fn [_ this]
+                                       (->> this
+                                            .-value
+                                            vector
+                                            ui/as-dropdown-options
+                                            (swap! options& concat)))
+                          :onSearchChange (fn [_ this] (reset! search-query& (.-searchQuery this)))
+                          :onChange (fn [_ this] (reset! value& (.-value this)))}]
+         [:> ui/Button
+          {:color "blue"
+           :disabled (empty? @value&)
+           :on-click #(do (reset! popup-open?& false)
+                          (rf/dispatch [:b/round.add-products round-id (js->clj @value&)]))}
+          "Add"]]))))
+
+(defn c-add-product-button
+  [round]
+  (let [popup-open? (r/atom false)
+        get-round-grid-class-list #(-> (.getElementsByClassName js/document "round-grid")
+                                       array-seq
+                                       first
+                                       .-classList)]
+    (fn [{:keys [id round-product] :as round}]
+      [:> ui/Popup
+       {:position "bottom left"
+        :on "click"
+        :open @popup-open?
+        :onOpen #(reset! popup-open? true)
+        :onClose #(reset! popup-open? false)
+        :hideOnScroll false
+        :flowing true
+        :content (r/as-element [c-add-product-form id round-product popup-open?])
+        :trigger (r/as-element
+                  [:> ui/Button {:color "blue"
+                                 :fluid true
+                                 :icon true
+                                 :labelPosition "left"
+                                 :on-mouse-over #(when-not @popup-open?
+                                                   (.add (get-round-grid-class-list) "highlight-products"))
+                                 :on-mouse-leave #(.remove (get-round-grid-class-list) "highlight-products")}
+                   "Add Products"
+                   [:> ui/Icon {:name "plus"}]])}])))
 
 (defn c-requirements
   [{:keys [prompts] :as req-form-template}]
-  [:div
+  [:div.requirements
    (for [req prompts
          :let [{req-prompt-id :id
                 req-prompt-text :prompt} req]]
@@ -996,7 +1127,8 @@
                                            :prompt-term "round.response/rating"}
                                           [[:response-prompt-fields
                                             {:deleted nil}
-                                            [:nval]]]]]]]]]]]]]}])]
+                                            [:nval]]]]]]]]]]]]]}])
+        modal-showing?& (r/atom false)]
     (fn []
       [:div.container-with-sidebar.round-details
        (if (= :loading @rounds&)
@@ -1008,16 +1140,24 @@
              [:div {:style {:padding "0 15px"}}
               [bc/c-back-button {:on-click #(rf/dispatch [:b/nav-rounds])}
                "All VetdRounds"]]
-             [:div {:style {:height 211}}] ; spacer
              (when (and (#{"in-progress" "complete"} status)
                         (seq sorted-round-products))
                [:<>
-                [:div {:style {:padding "0 15px"}}
-                 (if (some (comp (partial = 1) :result) sorted-round-products)
-                   [:div {:style {:height 36}}]
-                   [:div {:class "requirements-heading"}
-                    "Topics "
-                    [c-add-requirement-button round]])]
+                (let [has-a-winner? (some (comp (partial = 1) :result) sorted-round-products)]
+                  (if has-a-winner?
+                    [:div {:style {:height 161}}] ; spacer
+                    [:<>
+                     [:> ui/Segment {:style {:position "sticky"
+                                             :top 0
+                                             :z-index 5}}
+                      [c-add-requirement-button round]
+                      [c-add-product-button round]]
+                     [:div {:style {:text-align "center"}}
+                      [:a {:on-click #(reset! modal-showing?& true)}
+                       [:> ui/Icon {:name "question circle"}]
+                       "How VetdRounds Work"]]
+                     [c-explainer-modal modal-showing?&]]))
+                [:div {:style {:height 64}}] ; spacer
                 [c-requirements req-form-template]])]
             [:div.inner-container [c-round round req-form-template sorted-round-products]]]))])))
 
