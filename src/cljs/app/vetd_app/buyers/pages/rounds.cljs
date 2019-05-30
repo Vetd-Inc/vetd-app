@@ -37,6 +37,25 @@
  (fn [{:keys [db]} [_ status]]
    {:db (update-in db [:rounds-filter :selected-statuses] disj status)}))
 
+(rf/reg-event-fx
+ :b/round.share
+ (fn [{:keys [db]} [_ round-id round-title email-addresses]]
+   {:ws-send {:payload {:cmd :b/round.add-products
+                        :return {:handler :b/round.share-return}
+                        :round-id round-id
+                        :round-title round-title
+                        :email-addresses email-addresses
+                        :buyer-id (util/db->current-org-id db)}}
+    :analytics/track {:event "Share"
+                      :props {:category "Round"
+                              :label round-id}}}))
+
+(rf/reg-event-fx
+ :b/round.share-return
+ (constantly
+  {:toast {:type "success"
+           :title "VetdRound Shared!"}}))
+
 ;;;; Subscriptions
 (rf/reg-sub
  :rounds-filter
@@ -49,21 +68,75 @@
  :selected-statuses)
 
 ;;;; Components
+(defn c-share-modal
+  [round-id& round-title& showing?&]
+  (let [email-addresses-options& (r/atom [])
+        email-addresses& (r/atom [])]
+    (fn [round-id& round-title& showing?&]
+      [:> ui/Modal {:open @showing?&
+                    :on-close #(reset! showing?& false)
+                    :size "tiny"
+                    :dimmer "inverted"
+                    :closeOnDimmerClick true
+                    :closeOnEscape true
+                    :closeIcon true} 
+       [:> ui/ModalHeader "Share VetdRound"]
+       [:> ui/ModalContent
+        [:p "Share \"" @round-title& "\" via Email"]
+        [:> ui/Form {:as "div"
+                     :style {:padding-bottom "1rem"}}
+         [:> ui/Dropdown {:style {:width "100%"}
+                          :options @email-addresses-options&
+                          :placeholder "Enter email addresses..."
+                          :search true
+                          :selection true
+                          :multiple true
+                          :selectOnBlur false
+                          :selectOnNavigation true
+                          :noResultsMessage "Type to add a new email address..."
+                          :allowAdditions true
+                          :additionLabel "Hit 'Enter' to Add "
+                          :onAddItem (fn [_ this]
+                                       (->> this
+                                            .-value
+                                            vector
+                                            ui/as-dropdown-options
+                                            (swap! email-addresses-options& concat)))
+                          :onChange (fn [_ this]
+                                      (reset! email-addresses& (.-value this)))}]]]
+       [:> ui/ModalActions
+        [:> ui/Button {:onClick #(reset! showing?& false)}
+         "Cancel"]
+        [:> ui/Button
+         {:onClick #(do (rf/dispatch [:b/round.share @round-id& @round-title& @email-addresses&])
+                        (reset! showing?& false))
+          :color "blue"
+          :disabled (empty? @email-addresses&)}
+         "Share"]]])))
+
 (defn c-round
-  [{:keys [id idstr status title products] :as round}]
+  [{:keys [id idstr status title products] :as round} share-modal-fn]
   (let [nav-click #(do (.stopPropagation %)
                        (rf/dispatch [:b/nav-round-detail idstr]))]
     [:> ui/Item {:onClick nav-click}
      [:> ui/ItemContent
       [:> ui/ItemHeader
        [:> ui/Button {:onClick nav-click
-                      :class "start-round-button"
                       :color "blue"
                       :icon true
                       :labelPosition "right"
                       :floated "right"}
         "View / Manage"
         [:> ui/Icon {:name "right arrow"}]]
+       [:> ui/Button {:onClick #(do (.stopPropagation %)
+                                    (share-modal-fn id title))
+                      :color "lightblue"
+                      :icon true
+                      :labelPosition "right"
+                      :floated "right"
+                      :style {:margin-right 5}}
+        "Share"
+        [:> ui/Icon {:name "share"}]]
        title
        [:div {:style {:margin-top 3
                       :font-weight 400}} 
@@ -105,7 +178,14 @@
                                                :deleted nil}
                                       [:id :idstr :created :status :title
                                        [:products {:ref-deleted nil}
-                                        [:pname]]]]]}])]
+                                        [:pname]]]]]}])
+            share-modal-round-id& (r/atom "")
+            share-modal-round-title& (r/atom "")
+            share-modal-showing?& (r/atom false)
+            share-modal-fn (fn [round-id round-title]
+                             (reset! share-modal-round-id& round-id)
+                             (reset! share-modal-round-title& round-title)
+                             (reset! share-modal-showing?& true))]
         (fn []
           (if (= :loading @rounds&)
             [cc/c-loader]
@@ -120,7 +200,8 @@
                                  (seq @selected-statuses&) (filter-rounds @selected-statuses&))]
                     (for [round rounds]
                       ^{:key (:id round)}
-                      [c-round round]))]]
+                      [c-round round share-modal-fn]))]
+                 [c-share-modal share-modal-round-id& share-modal-round-title& share-modal-showing?&]]
                 [:> ui/Grid
                  [:> ui/GridRow
                   [:> ui/GridColumn {:computer 2 :mobile 0}]
