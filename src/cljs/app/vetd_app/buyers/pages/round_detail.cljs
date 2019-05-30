@@ -1025,7 +1025,7 @@
                                             vector
                                             ui/as-dropdown-options
                                             (swap! options& concat)))
-                          :onSearchChange (fn [_ this] (reset! search-query& (.-searchQuery this)))
+                          :onSearchChange (fn [_ this] (reset! search-query& (aget this "searchQuery")))
                           :onChange (fn [_ this] (reset! value& (.-value this)))}]
          [:> ui/Button
           {:color "blue"
