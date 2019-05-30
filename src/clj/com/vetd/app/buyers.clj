@@ -256,20 +256,28 @@ Round URL: https://app.vetd.com/b/rounds/%s"
 
 (defn add-requirement-to-round
   [round-id requirement-text]
-  (let [req-form-template-id (->> [[:rounds {:id round-id
-                                             :deleted nil}
-                                    [:req-form-template-id]]]
-                                  ha/sync-query
-                                  :rounds
-                                  first
-                                  :req-form-template-id)
+  (let [{:keys [idstr buyer req-form-template-id]} (-> [[:rounds {:id round-id}
+                                                         [:idstr :req-form-template-id
+                                                          [:buyer [:oname]]]]]
+                                                       ha/sync-query
+                                                       vals
+                                                       ffirst)
         {:keys [id]} (-> requirement-text
                          docs/get-prompts-by-sval
                          first
                          (or (docs/create-round-req-prompt&fields requirement-text)))]
-    (docs/insert-form-template-prompt req-form-template-id
-                                      id)
-    (docs/merge-template-to-forms req-form-template-id)))
+    (docs/insert-form-template-prompt req-form-template-id id)
+    (docs/merge-template-to-forms req-form-template-id)
+    (com/sns-publish :ui-misc
+                     "New Topic Added to Round"
+                     (format
+                      "New Topic Added to Round
+Buyer: '%s'
+Topic: '%s'
+Round URL: https://app.vetd.com/b/rounds/%s"
+                      (:oname buyer)
+                      requirement-text
+                      idstr))))
 
 ;; TODO there could be multiple preposals/rounds per buyer-vendor pair
 
@@ -315,7 +323,8 @@ Round URL: https://app.vetd.com/b/rounds/%s"
 
 (defmethod com/handle-ws-inbound :b/round.add-requirement
   [{:keys [round-id requirement-text]} ws-id sub-fn]
-  (add-requirement-to-round round-id requirement-text))
+  (add-requirement-to-round round-id requirement-text)
+  {})
 
 (defmethod com/handle-ws-inbound :save-doc
   [{:keys [data ftype update-doc-id from-org-id] :as req} ws-id sub-fn]
