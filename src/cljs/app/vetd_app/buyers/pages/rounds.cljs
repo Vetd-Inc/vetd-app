@@ -40,7 +40,7 @@
 (rf/reg-event-fx
  :b/round.share
  (fn [{:keys [db]} [_ round-id round-title email-addresses]]
-   {:ws-send {:payload {:cmd :b/round.add-products
+   {:ws-send {:payload {:cmd :b/round.share
                         :return {:handler :b/round.share-return}
                         :round-id round-id
                         :round-title round-title
@@ -105,10 +105,16 @@
                           :onChange (fn [_ this]
                                       (reset! email-addresses& (.-value this)))}]]]
        [:> ui/ModalActions
-        [:> ui/Button {:onClick #(reset! showing?& false)}
+        [:> ui/Button {:onClick #(do (reset! round-id& nil)
+                                     (reset! round-title& nil)
+                                     (reset! email-addresses& [])
+                                     (reset! showing?& false))}
          "Cancel"]
         [:> ui/Button
          {:onClick #(do (rf/dispatch [:b/round.share @round-id& @round-title& @email-addresses&])
+                        (reset! round-id& nil)
+                        (reset! round-title& nil)
+                        (reset! email-addresses& [])
                         (reset! showing?& false))
           :color "blue"
           :disabled (empty? @email-addresses&)}
@@ -179,8 +185,8 @@
                                       [:id :idstr :created :status :title
                                        [:products {:ref-deleted nil}
                                         [:pname]]]]]}])
-            share-modal-round-id& (r/atom "")
-            share-modal-round-title& (r/atom "")
+            share-modal-round-id& (r/atom nil)
+            share-modal-round-title& (r/atom nil)
             share-modal-showing?& (r/atom false)
             share-modal-fn (fn [round-id round-title]
                              (reset! share-modal-round-id& round-id)
