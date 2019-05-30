@@ -6,7 +6,8 @@
             [com.vetd.app.common :as com]
             [com.vetd.app.util :as ut]
             [com.vetd.app.docs :as docs]
-            [taoensso.timbre :as log]))
+            [taoensso.timbre :as log]
+            [clojure.string :as s]))
 
 (defn product-id->name
   [product-id]
@@ -423,9 +424,7 @@ Round URL: https://app.vetd.com/b/rounds/%s"
      "Nonexistent Product(s) Added to Round"
      (str "Nonexistent Product(s) Added to Round\n\n"
           "Round ID: " round-id
-          "\nNonexistent Product(s) Added: " (->> product-names
-                                                  (interpose ", ")
-                                                  (apply str)))))
+          "\nNonexistent Product(s) Added: " (s/join ", " product-names))))
   (when-not (empty? product-ids)
     (doseq [product-id product-ids]
       (rounds/invite-product-to-round product-id round-id))
@@ -435,3 +434,15 @@ Round URL: https://app.vetd.com/b/rounds/%s"
 (defmethod com/handle-ws-inbound :b/set-round-products-order
   [{:keys [product-ids user-id org-id round-id]} ws-id sub-fn]
   (set-round-products-order round-id product-ids))
+
+(defmethod com/handle-ws-inbound :b/round.share
+  [{:keys [round-id round-title email-addresses buyer-id]} ws-id sub-fn]
+  (com/sns-publish
+   :ui-misc
+   "Share VetdRound"
+   (str "Share VetdRound"
+        "\n\nBuyer Name: " (-> buyer-id auth/select-org-by-id :oname)
+        "\nRound ID: " round-id
+        "\nRound Title: " round-title
+        "\nEmail Addresses: " (s/join ", " email-addresses)))
+  {})
