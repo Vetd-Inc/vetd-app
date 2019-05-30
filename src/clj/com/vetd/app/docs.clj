@@ -1,5 +1,6 @@
 (ns com.vetd.app.docs
-  (:require [com.vetd.app.db :as db]
+  (:require [com.vetd.app.common :as com]
+            [com.vetd.app.db :as db]
             [com.vetd.app.proc-tree :as ptree :refer [tree-assoc-fn]]
             [com.vetd.app.util :as ut]
             [com.vetd.app.hasura :as ha]
@@ -497,7 +498,7 @@
     (when *docs-updated*
       (swap! *docs-updated* conj d))    
     (catch Exception e
-      (log/error e))))
+      (com/log-error e))))
 
 (defn update-doc-from-form-doc
   [{:keys [id doc-id doc-title responses from-org from-user to-org to-user

@@ -85,7 +85,7 @@
 (def sql-field->clj-kw
   (try (mk-sql-field->clj-kw (get-all-field-names))
        (catch Throwable t
-         (log/error t)
+         (com/log-error t)
          {})))
 
 (def clj-kw->sql-field (clojure.set/map-invert sql-field->clj-kw))
@@ -296,7 +296,7 @@
                         1000))
     true
     (catch Exception e
-      (log/error e)
+      (com/log-error e)
       false)))
 
 (defn send-terminate []
@@ -321,7 +321,7 @@
   #_  (clojure.pprint/pprint data)
   (let [data' (json/parse-string data keyword)]
     (when-let [errors (-> data' :payload :errors)]
-      (log/error errors))
+      (com/log-error errors))
     (-> data'
         (assoc :pdata (-> data' :payload :data walk-result))
         handle-from-graphql)))
@@ -367,7 +367,7 @@
         (ws-send ws m))
       (count msgs))
     (catch Exception e
-      (log/error e)
+      (com/log-error e)
       false)))
 
 (defn add-to-queue [msg]
@@ -404,14 +404,14 @@
       send-queue))
 
 (defmethod handle-from-graphql :connection-error [data]
-  (log/error data))
+  (com/log-error data))
 
 (defmethod handle-from-graphql :data [{:keys [id pdata]}]
   (respond-to-client id {:mtype :data
                          :payload pdata}))
 
 (defmethod handle-from-graphql :error [{:keys [id pdata] :as resp}]
-  (log/error resp)
+  (com/log-error resp)
   (respond-to-client id {:mtype :error
                          :payload pdata}))
 
@@ -471,7 +471,7 @@
           walk-result #_process-result))
     (catch Exception e
       (def e1 e)
-      (log/error e (try (some-> e .getData :body slurp)
+      (com/log-error e (try (some-> e .getData :body slurp)
                         (catch Exception e2 "")))
       (throw e))))
 

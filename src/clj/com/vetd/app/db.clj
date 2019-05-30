@@ -1,5 +1,6 @@
 (ns com.vetd.app.db
   (:require [com.vetd.app.util :as ut]
+            [com.vetd.app.common :as com]
             [com.vetd.app.env :as env]
             [migratus.core :as mig]
             [clojure.java.jdbc :as j]
@@ -44,7 +45,7 @@
     (j/execute! (or db pg-db) cmd)
     (catch Exception e
       (clojure.pprint/pprint cmd)
-      (log/error e)
+      (com/log-error e)
       (throw e))))
 
 (defn hs-exe! [hsql & [db]]
@@ -65,7 +66,7 @@
       (catch Exception e
         (def e1 e)
         (clojure.pprint/pprint q)
-        (log/error e)
+        (com/log-error e)
         (if return-ex?
           (.getMessage e)
           (throw e))))))

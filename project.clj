@@ -48,6 +48,7 @@
                  [org.clojure/tools.reader "1.2.2"]
                  [com.taoensso/timbre "4.10.0"]
                  [com.fzakaria/slf4j-timbre "0.3.12"] ;; req'd by migratus
+                 [conormcd/clj-honeycomb "1.0.6.536"]
 
                  [buddy/buddy-hashers "1.3.0"]
 

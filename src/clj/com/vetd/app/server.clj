@@ -97,7 +97,7 @@
                                                  ws)))
                           (catch Throwable t
                             (def ka-t t)
-                            (log/error t))))
+                            (com/log-error t))))
                       (log/info "Stopped keep-alive thread.")
                       :done))))
     (log/info "Keep-alive thread already running.")))
@@ -118,12 +118,23 @@
   [ws ws-id data]
   (try
     (let [{:keys [cmd return] :as data'} (read-transit-string data)
+          _ (com/hc-send {:type "ws-inbound-handler:receive"
+                          :ws-id ws-id
+                          :cmd cmd
+                          :return return
+                          :data data'})
           resp-fn (partial #'ws-outbound-handler ws data')
           resp (com/handle-ws-inbound data' ws-id resp-fn)]
       (when (and return resp)
+        (com/hc-send {:type "ws-inbound-handler:respond"
+                      :ws-id ws-id
+                      :cmd cmd
+                      :return return
+                      :data data'
+                      :response resp})
         (resp-fn resp)))
     (catch Exception e
-      (log/error e))))
+      (com/log-error e))))
 
 (defn ws-on-closed
   [ws ws-id & args]
@@ -254,7 +265,7 @@
           (log/info "started http server on port 5080"))
       (log/info "server already running"))
     (catch Exception e
-      (log/error e "EXCEPTION while trying to start http server"))))
+      (com/log-error e "EXCEPTION while trying to start http server"))))
 
 (defn stop-server []
   (log/info "stopping http server...")
@@ -268,7 +279,7 @@
         svr)
       (log/info "There was no server to stop."))
     (catch Exception e
-      (log/error e "EXCEPTION while trying to stop http server"))))
+      (com/log-error e "EXCEPTION while trying to stop http server"))))
 
 #_ (stop-server)
 

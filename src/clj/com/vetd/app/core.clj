@@ -80,7 +80,7 @@
         (log/info "Could not resolve `nrepl.server/start-server`"))
       (log/info "nrepl server already running"))
     (catch Throwable t
-      (log/error t "EXCEPTION while trying to start nrepl server"))))
+      (com/log-error t "EXCEPTION while trying to start nrepl server"))))
 
 (defn try-stop-nrepl-server []
   (try
@@ -94,7 +94,7 @@
         (log/info "Could not resolve `nrepl.server/stop-server`"))
       (log/info "nrepl server is not running"))
     (catch Throwable t
-      (log/error t "EXCEPTION while trying to stop nrepl server"))))
+      (com/log-error t "EXCEPTION while trying to stop nrepl server"))))
 
 #_ (try-stop-nrepl-server)
 
@@ -105,7 +105,7 @@
     (.wait_for_close s)
     (log/info "Server closed.")
     (catch Throwable t
-      (log/error "Exception waiting for server to close." t))))
+      (com/log-error "Exception waiting for server to close." t))))
 
 (defn shutdown []
   (try
@@ -116,7 +116,7 @@
       (log/info "Completed `wait-to-exit`"))
     (try-stop-nrepl-server)
     (catch Throwable t
-      (log/error t))
+      (com/log-error t))
     (finally
       (log/info "Done shutdown hook"))))
 
@@ -132,15 +132,15 @@
     (mig/migrate {:store :database
                   :db env/pg-db})
     (catch Throwable t
-      (log/error t)))
+      (com/log-error t)))
   (log/set-level! :info)
   (try
     (svr/start-server)
     (catch Throwable t
-      (log/error t)))
+      (com/log-error t)))
   (try
     (try-start-nrepl-server)
     (catch Throwable t
-      (log/error t))))
+      (com/log-error t))))
 
 #_ (-main)

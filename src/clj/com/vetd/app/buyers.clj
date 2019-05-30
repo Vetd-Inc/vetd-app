@@ -223,7 +223,7 @@ Round URL: https://app.vetd.com/b/rounds/%s"
                                  (-> products first :pname)
                                  idstr)))
              (catch Exception e
-               (log/error e))))
+               (com/log-error e))))
       (when-let [id (->> [[:round-product {:round-id round-id
                                            :product-id product-id
                                            :deleted nil}
@@ -409,7 +409,7 @@ Round URL: https://app.vetd.com/b/rounds/%s"
   [{:keys [id]} {:keys [round-id]}]
   (let [{form-template-id :id} (try (docs/create-form-template-from-round-doc round-id id)
                                     (catch Throwable t
-                                      (log/error t)))]
+                                      (com/log-error t)))]
     
     ;; TODO invite pre-selected product, if there is one
     (try
@@ -419,11 +419,11 @@ Round URL: https://app.vetd.com/b/rounds/%s"
                        :status "in-progress"}
                       :rounds)
       (catch Throwable t
-        (log/error t)))
+        (com/log-error t)))
     (try
       (notify-round-init-form-completed id)
       (catch Throwable t
-        (log/error t)))))
+        (com/log-error t)))))
 
 (defmethod com/handle-ws-inbound :b/round.add-products
   [{:keys [round-id product-ids product-names buyer-id]} ws-id sub-fn]

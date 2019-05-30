@@ -149,7 +149,7 @@
                          :logo new-file-name}
                         :products)
         (log/info (format "Product logo processed: '%s' '%s'" new-file-name subject)))
-      (log/error  (format "NO Product logo found in profile doc: '%s'" subject)))))
+      (com/log-error  (format "NO Product logo found in profile doc: '%s'" subject)))))
 
 
 (defn process-product-categories [prod-profile-doc-id]
@@ -183,7 +183,7 @@
     (process-product-categories id)
     (process-product-logo id) ;; TODO only if logo url changed???
     (catch Exception e
-      (log/error e))))
+      (com/log-error e))))
 
 (defmethod docs/handle-doc-creation :product-profile
   [{:keys [id]} & _]
@@ -191,4 +191,4 @@
     (process-product-categories id)    
     (process-product-logo id)
     (catch Exception e
-      (log/error e))))
+      (com/log-error e))))

@@ -152,7 +152,7 @@
          :memb-created? memb-created?
          :memb memb}))
     (catch Throwable e
-      (log/error e))))
+      (com/log-error e))))
 
 (defn select-session-by-id
   [session-token]

@@ -10,6 +10,7 @@
             [cognitect.aws.credentials :as aws-creds]
             [taoensso.timbre :as log]
             [buddy.hashers :as bhsh]
+            [clj-honeycomb.core :as hnyc]
             clojure.pprint))
 
 (defonce shutdown-ch (a/chan))
@@ -87,3 +88,25 @@
   (aws/invoke s3-client
               {:op :PutObject :request {:Bucket bucket-name :Key file-name
                                         :Body data}}))
+
+
+(defn hc-send [v]
+  ;; TODO don't use supress-sns
+  (when-not @supress-sns?
+    (try
+      (when-not (hnyc/initialized?)
+        (hnyc/init {:data-set "app-prod"
+                    :write-key "fadb42b152f679a1575055e9678ac49a"}))
+      (hnyc/send v)
+      (catch Throwable e
+        (log/error e)))))
+
+
+(defn log-error [e & [arg]]
+  (hc-send {:type "error"
+            :ex e
+            :arg arg})
+  (if arg
+    (log/error e arg)    
+    (log/error e)))
+
