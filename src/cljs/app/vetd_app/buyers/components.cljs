@@ -365,3 +365,51 @@
       [c-display-field 5 "Number of Employees"
        (when (has-data? (v-fn :vendor/employee-count nil :nval))
          (util/decimal-format (v-fn :vendor/employee-count nil :nval)))]]]))
+
+(defn c-share-modal
+  [round-id round-title showing?&]
+  (let [email-addresses-options& (r/atom [])
+        email-addresses& (r/atom [])]
+    (fn [round-id round-title showing?&]
+      [:> ui/Modal {:open @showing?&
+                    :on-close #(reset! showing?& false)
+                    :size "tiny"
+                    :dimmer "inverted"
+                    :closeOnDimmerClick true
+                    :closeOnEscape true
+                    :closeIcon true} 
+       [:> ui/ModalHeader "Share VetdRound"]
+       [:> ui/ModalContent
+        [:p "Share \"" round-title "\" via Email"]
+        [:> ui/Form {:as "div"
+                     :style {:padding-bottom "1rem"}}
+         [:> ui/Dropdown {:style {:width "100%"}
+                          :options @email-addresses-options&
+                          :placeholder "Enter email addresses..."
+                          :search true
+                          :selection true
+                          :multiple true
+                          :selectOnBlur false
+                          :selectOnNavigation true
+                          :noResultsMessage "Type to add a new email address..."
+                          :allowAdditions true
+                          :additionLabel "Hit 'Enter' to Add "
+                          :onAddItem (fn [_ this]
+                                       (->> this
+                                            .-value
+                                            vector
+                                            ui/as-dropdown-options
+                                            (swap! email-addresses-options& concat)))
+                          :onChange (fn [_ this]
+                                      (reset! email-addresses& (.-value this)))}]]]
+       [:> ui/ModalActions
+        [:> ui/Button {:onClick #(do (reset! email-addresses& [])
+                                     (reset! showing?& false))}
+         "Cancel"]
+        [:> ui/Button
+         {:onClick #(do (rf/dispatch [:b/round.share round-id round-title @email-addresses&])
+                        (reset! email-addresses& [])
+                        (reset! showing?& false))
+          :color "blue"
+          :disabled (empty? @email-addresses&)}
+         "Share"]]])))

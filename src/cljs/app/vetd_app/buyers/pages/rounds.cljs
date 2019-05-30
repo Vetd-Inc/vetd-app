@@ -68,58 +68,6 @@
  :selected-statuses)
 
 ;;;; Components
-(defn c-share-modal
-  [round-id& round-title& showing?&]
-  (let [email-addresses-options& (r/atom [])
-        email-addresses& (r/atom [])]
-    (fn [round-id& round-title& showing?&]
-      [:> ui/Modal {:open @showing?&
-                    :on-close #(reset! showing?& false)
-                    :size "tiny"
-                    :dimmer "inverted"
-                    :closeOnDimmerClick true
-                    :closeOnEscape true
-                    :closeIcon true} 
-       [:> ui/ModalHeader "Share VetdRound"]
-       [:> ui/ModalContent
-        [:p "Share \"" @round-title& "\" via Email"]
-        [:> ui/Form {:as "div"
-                     :style {:padding-bottom "1rem"}}
-         [:> ui/Dropdown {:style {:width "100%"}
-                          :options @email-addresses-options&
-                          :placeholder "Enter email addresses..."
-                          :search true
-                          :selection true
-                          :multiple true
-                          :selectOnBlur false
-                          :selectOnNavigation true
-                          :noResultsMessage "Type to add a new email address..."
-                          :allowAdditions true
-                          :additionLabel "Hit 'Enter' to Add "
-                          :onAddItem (fn [_ this]
-                                       (->> this
-                                            .-value
-                                            vector
-                                            ui/as-dropdown-options
-                                            (swap! email-addresses-options& concat)))
-                          :onChange (fn [_ this]
-                                      (reset! email-addresses& (.-value this)))}]]]
-       [:> ui/ModalActions
-        [:> ui/Button {:onClick #(do (reset! round-id& nil)
-                                     (reset! round-title& nil)
-                                     (reset! email-addresses& [])
-                                     (reset! showing?& false))}
-         "Cancel"]
-        [:> ui/Button
-         {:onClick #(do (rf/dispatch [:b/round.share @round-id& @round-title& @email-addresses&])
-                        (reset! round-id& nil)
-                        (reset! round-title& nil)
-                        (reset! email-addresses& [])
-                        (reset! showing?& false))
-          :color "blue"
-          :disabled (empty? @email-addresses&)}
-         "Share"]]])))
-
 (defn c-round
   [{:keys [id idstr status title products] :as round} share-modal-fn]
   (let [nav-click #(do (.stopPropagation %)
@@ -207,7 +155,7 @@
                     (for [round rounds]
                       ^{:key (:id round)}
                       [c-round round share-modal-fn]))]
-                 [c-share-modal share-modal-round-id& share-modal-round-title& share-modal-showing?&]]
+                 [bc/c-share-modal @share-modal-round-id& @share-modal-round-title& share-modal-showing?&]]
                 [:> ui/Grid
                  [:> ui/GridRow
                   [:> ui/GridColumn {:computer 2 :mobile 0}]

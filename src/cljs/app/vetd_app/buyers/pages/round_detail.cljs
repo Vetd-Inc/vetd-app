@@ -920,20 +920,29 @@
 (defn c-round
   "Component to display Round details."
   [round req-form-template round-product]
-  (fn [{:keys [id status title products] :as round}
-       req-form-template
-       round-product]
-    [:<>
-     [:> ui/Segment {:id "round-title-container"
-                     :class (str "detail-container " (when (> (count title) 50) "long"))}
-      [:h1.round-title title]
-      [bc/c-round-status status]]
-     (condp contains? status
-       #{"initiation"} [:> ui/Segment {:class "detail-container"
-                                       :style {:margin-left 20}}
-                        [c-round-initiation round]]
-       #{"in-progress"
-         "complete"} [c-round-grid round req-form-template round-product])]))
+  (let [share-modal-showing?& (r/atom false)]
+    (fn [{:keys [id status title products] :as round}
+         req-form-template
+         round-product]
+      [:<>
+       [:> ui/Segment {:id "round-title-container"
+                       :class (str "detail-container " (when (> (count title) 50) "long"))}
+        [:h1.round-title title
+         [:> ui/Button {:onClick #(reset! share-modal-showing?& true)
+                        :color "lightblue"
+                        :icon true
+                        :labelPosition "right"
+                        :floated "right"}
+          "Share"
+          [:> ui/Icon {:name "share"}]]]
+        [bc/c-round-status status]]
+       (condp contains? status
+         #{"initiation"} [:> ui/Segment {:class "detail-container"
+                                         :style {:margin-left 20}}
+                          [c-round-initiation round]]
+         #{"in-progress"
+           "complete"} [c-round-grid round req-form-template round-product])
+       [bc/c-share-modal id title share-modal-showing?&]])))
 
 (defn c-add-requirement-button
   [{:keys [id] :as round}]
