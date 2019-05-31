@@ -372,6 +372,14 @@ textarea {
 $cell-width: 220px;
 $cell-height: 201px;
 
+.round-grid-top-scrollbar {
+  position: sticky;
+  top: 0px;
+  z-index: 1000;
+  margin-left: 20px !important;
+  overflow-x: scroll;
+  overflow-y: hidden;
+}
 .round-grid {
   position: relative;
   padding-top: 14px;
@@ -556,6 +564,8 @@ $cell-height: 201px;
     position: absolute;
     top: -98px;
     z-index: 999;
+    padding-top: 10px;
+    height: 94px;
     background: white;
     // experiementing with shadow effect on upward scroll
     // box-shadow: 0 2px 14px 0 rgba(50,50,50,0.1),

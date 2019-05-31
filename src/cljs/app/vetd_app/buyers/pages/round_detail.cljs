@@ -627,7 +627,10 @@
           (reset! last-default-products-order& default-products-order)
           (rf/dispatch [:b/set-round-products-order default-products-order])))
       (if (seq round-product)
-        [:<>
+        [:div.round-grid-container ; c-round-grid expects a certain order of children
+         [:div.round-grid-top-scrollbar 
+          [:div {:style {:width (* 234 (count round-product))
+                         :height 1}}]]
          [:div.round-grid {:style {:min-height (+ 46 84 (* 202 (-> req-form-template :prompts count)))}}
           [:div {:style {:min-width (* 234 (count round-product))}}
            (for [rp round-product]
@@ -646,11 +649,13 @@
         ;; keep a reference to the window-scroll fn (will be created on mount)
         ;; so we can remove the event listener upon unmount
         window-scroll-fn-ref (atom nil)
+        get-round-grid-node (fn [this] (-> this r/dom-node .-children array-seq second))
+        get-top-scrollbar-node (fn [this] (-> this r/dom-node .-children array-seq first))
         ;; right-side scroll boundary
         scroll-x-max (atom 0)
         update-draggability
         (fn [this]
-          (let [node (r/dom-node this)]
+          (let [node (get-round-grid-node this)]
             (reset! scroll-x-max (- (.-scrollWidth node) (.-clientWidth node)))
             (if (> (.-scrollWidth node) (.-clientWidth node))
               (.add (.-classList node) "draggable")
@@ -660,7 +665,8 @@
       {:component-did-mount
        (fn [this] ; make grid draggable (scrolling & reordering)
          (let [round-id (-> this r/props :id)
-               node (r/dom-node this)
+               node (get-round-grid-node this)
+               top-scrollbar-node (get-top-scrollbar-node this)
                col-width 234 ; includes any spacing to the right of each col
                mousedown? (atom false)
                x-at-mousedown (atom nil)
@@ -799,7 +805,14 @@
                         (when-not @drag-scrolling?
                           (when (> (Math/abs (- (.-scrollLeft node) @scroll-x)) 0.99999)
                             (reset! scroll-v 0)
-                            (reset! scroll-x (.-scrollLeft node)))))
+                            (reset! scroll-x (.-scrollLeft node))))
+                        (aset top-scrollbar-node "scrollLeft" (Math/floor @scroll-x)))
+               scroll-top-toolbar (fn [e]
+                                    (when-not @drag-scrolling?
+                                      (when (> (Math/abs (- (.-scrollLeft top-scrollbar-node) @scroll-x)) 0.99999)
+                                        (reset! scroll-v 0)
+                                        (reset! scroll-x (.-scrollLeft top-scrollbar-node))
+                                        (aset node "scrollLeft" (Math/floor @scroll-x)))))
 
                _ (reset! component-exists? true)
                anim-loop-fn (fn anim-loop ; TODO make sure this isn't being created multiple times without being destroyed
@@ -853,6 +866,7 @@
            (.addEventListener node "mouseup" mouseup)
            (.addEventListener node "mouseleave" mouseup)
            (.addEventListener node "scroll" scroll)
+           (.addEventListener top-scrollbar-node "scroll" scroll-top-toolbar)
            (.addEventListener js/window "scroll" window-scroll)
            (update-draggability this)))
 
