@@ -678,6 +678,8 @@
                ;; distance that user mousedown'd from left side of column being dragged
                drag-handle-offset (atom nil)
 
+               hovering-top-toolbar? (atom false)
+
                ;; think of this as the grid's scrollLeft
                scroll-x (atom 0)
                ;; scroll velocity (on x axis)
@@ -808,11 +810,12 @@
                             (reset! scroll-x (.-scrollLeft node))))
                         (aset top-scrollbar-node "scrollLeft" (Math/floor @scroll-x)))
                scroll-top-toolbar (fn [e]
-                                    (when-not @drag-scrolling?
-                                      (when (> (Math/abs (- (.-scrollLeft top-scrollbar-node) @scroll-x)) 0.99999)
-                                        (reset! scroll-v 0)
-                                        (reset! scroll-x (.-scrollLeft top-scrollbar-node))
-                                        (aset node "scrollLeft" (Math/floor @scroll-x)))))
+                                    (when @hovering-top-toolbar?
+                                      (when-not @drag-scrolling?
+                                        (when (> (Math/abs (- (.-scrollLeft top-scrollbar-node) @scroll-x)) 0.99999)
+                                          (reset! scroll-v 0)
+                                          (reset! scroll-x (.-scrollLeft top-scrollbar-node))
+                                          (aset node "scrollLeft" (Math/floor @scroll-x))))))
 
                _ (reset! component-exists? true)
                anim-loop-fn (fn anim-loop ; TODO make sure this isn't being created multiple times without being destroyed
@@ -866,6 +869,8 @@
            (.addEventListener node "mouseup" mouseup)
            (.addEventListener node "mouseleave" mouseup)
            (.addEventListener node "scroll" scroll)
+           (.addEventListener top-scrollbar-node "mouseover" #(reset! hovering-top-toolbar? true))
+           (.addEventListener top-scrollbar-node "mouseleave" #(reset! hovering-top-toolbar? false))
            (.addEventListener top-scrollbar-node "scroll" scroll-top-toolbar)
            (.addEventListener js/window "scroll" window-scroll)
            (update-draggability this)))
