@@ -6,7 +6,7 @@
 
 (defn container [body]
   [:> ui/Container {:class "main-container"}
-   [cf/c-top-nav [{:text "Preposals"
+   [cf/c-top-nav [{:text "PrePosals"
                    :pages #{:v/preposals}
                    :event [:v/nav-preposals]}
                   {:text "Products"

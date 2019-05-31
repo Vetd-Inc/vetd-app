@@ -253,7 +253,7 @@
        [:<>
         (v-fn :product/price-range)
         [:br]
-        "Request a Preposal to get a personalized estimate."])]
+        "Request a PrePosal to get a personalized estimate."])]
     [c-display-field 6 "Model" (v-fn :product/pricing-model) :has-markdown? true]
     [c-display-field 5 "Free Trial"
      (when (has-data? (v-fn :product/free-trial?))

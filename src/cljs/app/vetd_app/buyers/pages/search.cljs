@@ -106,7 +106,7 @@
  :b/create-preposal-req-return
  (fn [_ [_ _ {{:keys [product vendor]} :return}]]
    {:toast {:type "success"
-            :title "Preposal Requested"
+            :title "PrePosal Requested"
             :message "We'll be in touch with next steps."}
     :analytics/track {:event "Request"
                       :props {:category "Preposals"
@@ -177,12 +177,12 @@
              (when p-e-details
                (str "Price Estimate: " p-e-details))))
          (if requested-preposal?
-           "Preposal Requested"
+           "PrePosal Requested"
            [:<>
             "Pricing Unavailable "
             [:a.teal {:onClick #(do (.stopPropagation %)
                                     (rf/dispatch [:b/create-preposal-req product vendor]))}
-             "Request a Preposal"]]))]
+             "Request a PrePosal"]]))]
       [:> ui/ItemDescription
        (util/truncate-text (or  (docs/get-field-value-from-response-prompt
                                  product-profile-responses
@@ -312,8 +312,8 @@
               [:h3 "Products & Categories"]
               "Search for products or product categories to find products that meet your needs."]
              [:> ui/GridColumn
-              [:h3 "Preposals"]
-              "Review Preposals (personalized pricing estimate and product pitch) you have received from vendors. Don't have any Preposals yet? Request one by searching above or simply forward vendor emails to forward@vetd.com."]
+              [:h3 "PrePosals"]
+              "Review PrePosals (personalized pricing estimate and product pitch) you have received from vendors. Don't have any PrePosals yet? Request one by searching above or simply forward vendor emails to forward@vetd.com."]
              [:> ui/GridColumn
               [:h3 "VetdRounds"]
               "Compare similar products side-by-side based on your unique requirements, and make an informed buying decision in a fraction of the time."]]]]

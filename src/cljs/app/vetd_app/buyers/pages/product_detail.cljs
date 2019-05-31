@@ -94,7 +94,7 @@
   (if (not-empty forms) ; already requested preposal
     [:> ui/Popup
      {:content "We will be in touch with next steps."
-      :header "Preposal Requested!"
+      :header "PrePosal Requested!"
       :position "bottom left"
       :trigger (r/as-element
                 [:> ui/Label {:color "teal"
@@ -102,11 +102,11 @@
                               :basic true
                               :style {:display "block"
                                       :text-align "center"}}
-                 "Preposal Requested"])}]
+                 "PrePosal Requested"])}]
     [:> ui/Popup
      {:content (str "Get a pricing estimate, personalized pitch, and more from "
                     (:oname vendor) ".")
-      :header "What is a Preposal?"
+      :header "What is a PrePosal?"
       :position "bottom left"
       :trigger (r/as-element
                 [:> ui/Button {:onClick #(rf/dispatch [:b/create-preposal-req product vendor])
@@ -114,7 +114,7 @@
                                :fluid true
                                :icon true
                                :labelPosition "left"}
-                 "Request Preposal"
+                 "Request PrePosal"
                  [:> ui/Icon {:name "wpforms"}]])}]))
 
 (defn c-product-header-segment
@@ -137,11 +137,11 @@
       (or (util/parse-md (v-fn :product/description))
           [:p "No description available."])
       [:br]
-      [:h3.display-field-key "Preposal Pitch"]
-      [:p "Request a Preposal to get a personalized pitch."]
+      [:h3.display-field-key "PrePosal Pitch"]
+      [:p "Request a PrePosal to get a personalized pitch."]
       [:br]
-      [:h3.display-field-key "Preposal Pricing Estimate"]
-      "Request a Preposal to get a personalized estimate."]
+      [:h3.display-field-key "PrePosal Pricing Estimate"]
+      "Request a PrePosal to get a personalized estimate."]
      [:> ui/GridColumn {:width 4}
       (when-let [website-url (v-fn :product/website)]
         [:<>

@@ -191,9 +191,9 @@ Round URLs (if any):
 (defn send-prep-req
   [{:keys [to-org-id to-user-id from-org-id from-user-id prod-id] :as prep-req}]
   (com/sns-publish :ui-misc
-                   "Preposal Request"
+                   "PrePosal Request"
                    (format
-                    "Preposal Request
+                    "PrePosal Request
 Buyer (Org): '%s'
 Buyer User: '%s'
 Product: '%s'"
