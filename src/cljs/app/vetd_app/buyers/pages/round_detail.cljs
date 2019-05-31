@@ -606,7 +606,7 @@
             [c-cell-actions resp-id resp-rating]])]))))
 
 (defn c-round-grid*
-  [round req-form-template round-product]
+  [round req-form-template round-product show-top-scrollbar?]
   (let [;; The response currently in the modal.
         ;; E.g., {:req-prompt-id 123
         ;;        :req-prompt-text "Something"
@@ -621,14 +621,14 @@
                         (reset! modal-response& response)
                         (reset! modal-showing?& true))
         last-default-products-order& (atom [])]
-    (fn [round req-form-template round-product]
+    (fn [round req-form-template round-product show-top-scrollbar?]
       (let [default-products-order (vec (map (comp :id :product) round-product))]
         (when (not= @last-default-products-order& default-products-order)
           (reset! last-default-products-order& default-products-order)
           (rf/dispatch [:b/set-round-products-order default-products-order])))
       (if (seq round-product)
         [:div.round-grid-container ; c-round-grid expects a certain order of children
-         [:div.round-grid-top-scrollbar 
+         [:div.round-grid-top-scrollbar {:style {:display (if show-top-scrollbar? "block" "none")}}
           [:div {:style {:width (* 234 (count round-product))
                          :height 1}}]]
          [:div.round-grid {:style {:min-height (+ 46 84 (* 202 (-> req-form-template :prompts count)))}}
@@ -678,7 +678,7 @@
                ;; distance that user mousedown'd from left side of column being dragged
                drag-handle-offset (atom nil)
 
-               hovering-top-toolbar? (atom false)
+               hovering-top-scrollbar? (atom false)
 
                ;; think of this as the grid's scrollLeft
                scroll-x (atom 0)
@@ -809,8 +809,8 @@
                             (reset! scroll-v 0)
                             (reset! scroll-x (.-scrollLeft node))))
                         (aset top-scrollbar-node "scrollLeft" (Math/floor @scroll-x)))
-               scroll-top-toolbar (fn [e]
-                                    (when @hovering-top-toolbar?
+               scroll-top-scrollbar (fn [e]
+                                    (when @hovering-top-scrollbar?
                                       (when-not @drag-scrolling?
                                         (when (> (Math/abs (- (.-scrollLeft top-scrollbar-node) @scroll-x)) 0.99999)
                                           (reset! scroll-v 0)
@@ -869,9 +869,9 @@
            (.addEventListener node "mouseup" mouseup)
            (.addEventListener node "mouseleave" mouseup)
            (.addEventListener node "scroll" scroll)
-           (.addEventListener top-scrollbar-node "mouseover" #(reset! hovering-top-toolbar? true))
-           (.addEventListener top-scrollbar-node "mouseleave" #(reset! hovering-top-toolbar? false))
-           (.addEventListener top-scrollbar-node "scroll" scroll-top-toolbar)
+           (.addEventListener top-scrollbar-node "mouseover" #(reset! hovering-top-scrollbar? true))
+           (.addEventListener top-scrollbar-node "mouseleave" #(reset! hovering-top-scrollbar? false))
+           (.addEventListener top-scrollbar-node "scroll" scroll-top-scrollbar)
            (.addEventListener js/window "scroll" window-scroll)
            (update-draggability this)))
 
@@ -938,11 +938,12 @@
 
 (defn c-round
   "Component to display Round details."
-  [round req-form-template round-product]
+  [round req-form-template round-product show-top-scrollbar?]
   (let [share-modal-showing?& (r/atom false)]
     (fn [{:keys [id status title products] :as round}
          req-form-template
-         round-product]
+         round-product
+         show-top-scrollbar?]
       [:<>
        [:> ui/Segment {:id "round-title-container"
                        :class (str "detail-container " (when (> (count title) 50) "long"))}
@@ -960,7 +961,7 @@
                                          :style {:margin-left 20}}
                           [c-round-initiation round]]
          #{"in-progress"
-           "complete"} [c-round-grid round req-form-template round-product])
+           "complete"} [c-round-grid round req-form-template round-product show-top-scrollbar?])
        [bc/c-share-modal id title share-modal-showing?&]])))
 
 (defn c-add-requirement-button
@@ -1162,7 +1163,8 @@
        (if (= :loading @rounds&)
          [cc/c-loader]
          (let [{:keys [status req-form-template round-product] :as round} (-> @rounds& :rounds first)
-               sorted-round-products (sort-round-products round-product)]
+               sorted-round-products (sort-round-products round-product)
+               show-top-scrollbar? (> (count sorted-round-products) 3)]
            [:<> ; sidebar margins (and detail container margins) are customized on this page
             [:div.sidebar {:style {:margin-right 0}}
              [:div {:style {:padding "0 15px"}}
@@ -1185,7 +1187,7 @@
                        [:> ui/Icon {:name "question circle"}]
                        "How VetdRounds Work"]]
                      [c-explainer-modal modal-showing?&]]))
-                [:div {:style {:height 64}}] ; spacer
+                [:div {:style {:height (+ 64 (when show-top-scrollbar? 11))}}] ; spacer
                 [c-requirements req-form-template]])]
-            [:div.inner-container [c-round round req-form-template sorted-round-products]]]))])))
+            [:div.inner-container [c-round round req-form-template sorted-round-products show-top-scrollbar?]]]))])))
 
