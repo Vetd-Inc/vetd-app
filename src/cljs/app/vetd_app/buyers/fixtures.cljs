@@ -9,7 +9,7 @@
    [cf/c-top-nav [{:text "Products & Categories"
                    :pages #{:b/search :b/product-detail}
                    :event [:b/nav-search]}
-                  {:text "Preposals"
+                  {:text "PrePosals"
                    :pages #{:b/preposals :b/preposal-detail}
                    :event [:b/nav-preposals]}
                   {:text "VetdRounds"

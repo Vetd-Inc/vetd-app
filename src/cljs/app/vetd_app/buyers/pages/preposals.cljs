@@ -181,10 +181,10 @@
                    [:> ui/Segment {:placeholder true}
                     [:> ui/Header {:icon true}
                      [:> ui/Icon {:name "wpforms"}]
-                     "You don't have any Preposals."]
+                     "You don't have any PrePosals."]
                     [:div {:style {:text-align "center"
                                    :margin-top 10}}
-                     "To get started, request a Preposal from the "
+                     "To get started, request a PrePosal from the "
                      [:a {:style {:cursor "pointer"}
                           :onClick #(rf/dispatch [:b/nav-search])}
                       "Products & Categories"]

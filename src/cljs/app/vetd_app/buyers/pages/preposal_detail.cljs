@@ -53,10 +53,10 @@
         (or (util/parse-md (product-v-fn :product/description))
             [:p "No description available."])
         [:br]
-        [:h3.display-field-key "Preposal Pitch"]
+        [:h3.display-field-key "PrePosal Pitch"]
         (util/parse-md pitch)
         [:br]
-        [:h3.display-field-key "Preposal Pricing Estimate"]
+        [:h3.display-field-key "PrePosal Pricing Estimate"]
         (if pricing-estimate-value
           [:<>
            (util/currency-format pricing-estimate-value) " / " pricing-estimate-unit
@@ -147,7 +147,7 @@
        [:div.sidebar
         [:div {:style {:padding "0 15px"}}
          [bc/c-back-button {:on-click #(rf/dispatch [:b/nav-preposals])}
-          "All Preposals"]]
+          "All PrePosals"]]
         (when-not (= :loading @preps&)
           (let [{:keys [product]} (-> @preps& :docs first)]
             (when (empty? (:rounds product))

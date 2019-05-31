@@ -71,5 +71,5 @@
                                                 :to-user-id @user-id&
                                                 :prod-id @sel-prod-id&}])
                       :color "blue"}
-        "Request Preposal"]])))
+        "Request PrePosal"]])))
 
