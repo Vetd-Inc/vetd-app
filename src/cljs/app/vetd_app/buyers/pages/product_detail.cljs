@@ -143,16 +143,18 @@
       [:h3.display-field-key "PrePosal Pricing Estimate"]
       "Request a PrePosal to get a personalized estimate."]
      [:> ui/GridColumn {:width 4}
-      (when-let [website-url (v-fn :product/website)]
-        [:<>
-         [bc/c-external-link website-url "Product Website"]
-         [:br]
-         [:br]])
-      (when-let [demo-url (v-fn :product/demo)]
-        [:<>
-         [bc/c-external-link demo-url "Watch Demo Video"]
-         [:br]
-         [:br]])]]]])
+      (let [website-url (v-fn :product/website)]
+        (when (bc/has-data? website-url)
+          [:<>
+           [bc/c-external-link website-url "Product Website"]
+           [:br]
+           [:br]]))
+      (let [demo-url (v-fn :product/demo)]
+        (when (bc/has-data? demo-url)
+          [:<>
+           [bc/c-external-link demo-url "Watch Demo Video"]
+           [:br]
+           [:br]]))]]]])
 
 (defn c-product
   "Component to display Product details."
