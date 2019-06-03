@@ -688,8 +688,8 @@
           (let [node (get-round-grid-node this)]
             (reset! scroll-x-max (- (.-scrollWidth node) (.-clientWidth node)))
             (if (> (.-scrollWidth node) (.-clientWidth node))
-              (.add (.-classList node) "draggable")
-              (.remove (.-classList node) "draggable"))))
+              (util/add-class node "draggable")
+              (util/remove-class node "draggable"))))
         products-order& (rf/subscribe [:round-products-order])]
     (with-meta c-round-grid*
       {:component-did-mount
@@ -723,7 +723,7 @@
 
                ;; make header row 'sticky' upon vertical window scroll
                header-pickup-y (atom nil) ; nil when not in 'sticky mode'
-               all-header-nodes #(array-seq (.getElementsByClassName js/document "round-product"))
+               all-header-nodes #(util/nodes-by-class "round-product")
                ;; this needs to be called when we leave 'sticky mode'
                zero-out-header-scroll (fn []
                                         (doseq [header-node (all-header-nodes)]
@@ -738,23 +738,22 @@
                                     (if @header-pickup-y
                                       (if (< window-scroll-y @header-pickup-y)
                                         (do (reset! header-pickup-y nil)
-                                            (.remove (.-classList node) "fixed")
+                                            (util/remove-class node "fixed")
                                             (zero-out-header-scroll))
                                         (doseq [header-node (all-header-nodes)]
                                           (aset (.-style header-node) "transform"
                                                 (str "translateY(" (- window-scroll-y node-offset-top) "px)"))))
                                       (when (> window-scroll-y node-offset-top)
                                         (reset! header-pickup-y node-offset-top)
-                                        (.add (.-classList node) "fixed")))))))
+                                        (util/add-class node "fixed")))))))
                ;; keep a reference to the window-scroll function (for listener removal)
                _ (reset! window-scroll-fn-ref window-scroll)
 
                ;; is a given dom node considered a handle for beginning a column drag (for reorder)?
                part-of-drag-handle? (fn [dom-node]
-                                      (let [class-list (.-classList dom-node)]
-                                        (or (.contains class-list "round-product") ; top portion of column
-                                            (.contains class-list "name") ; the product name
-                                            (empty? (array-seq class-list))))) ; the column node itself
+                                      (or (util/contains-class? dom-node "round-product") ; top portion of column
+                                          (util/contains-class? dom-node "name") ; the product name
+                                          (empty? (array-seq (.-classList dom-node))))) ; the column node itself
                part-of-scrollbar? (fn [y]
                                     (> (- y (.-offsetTop node)) (.-clientHeight node)))
                reordering-col-node (atom nil)
@@ -777,11 +776,11 @@
                                                                col-left))
                                  ;; remember the id of the product we are currently reordering
                                  (reset! reordering-product (js/parseInt (.getAttribute col "data-product-id")))
-                                 (.add (.-classList @reordering-col-node) "reordering"))))
+                                 (util/add-class @reordering-col-node "reordering"))))
                            ;; Scrolling
                            (when-not (part-of-scrollbar? (.-pageY e))
                              (do (reset! drag-scrolling? true)
-                                 (.add (.-classList node) "dragging")))
+                                 (util/add-class node "dragging")))
                            (reset! last-mouse-x (.-pageX e)))
                ;; based on the (physical) position of the column being dragged,
                ;; update the sort pos if needed
@@ -826,11 +825,11 @@
                            (reset! mousedown? false)
                            (reset! last-mouse-delta 0)
                            (when @reordering-product
-                             (do (.remove (.-classList @reordering-col-node) "reordering")
+                             (do (util/remove-class @reordering-col-node "reordering")
                                  (reset! reordering-product nil)
                                  (rf/dispatch [:b/store-round-products-order round-id])))
                            (reset! drag-scrolling? false)
-                           (.remove (.-classList node) "dragging")))
+                           (util/remove-class node "dragging")))
 
                last-scroll-x (atom 0)
                scroll (fn [e]
@@ -995,13 +994,10 @@
        [bc/c-share-modal id title share-modal-showing?&]])))
 
 (defn c-add-requirement-button
-  [{:keys [id] :as round}]
+  [round]
   (let [popup-open? (r/atom false)
-        get-requirements-class-list #(-> (.getElementsByClassName js/document "requirements")
-                                         array-seq
-                                         first
-                                         .-classList)]
-    (fn []
+        get-requirements-node #(util/first-node-by-class "requirements")]
+    (fn [{:keys [id] :as round}]
       [:> ui/Popup
        {:position "top left"
         :on "click"
@@ -1017,8 +1013,10 @@
                                       :placeholder "Enter topic..."
                                       :search true
                                       :selection true
-                                      :multiple false
+                                      :multiple true
                                       :selectOnBlur false
+                                      :selectOnNavigation true
+                                      :closeOnChange true
                                       :allowAdditions true
                                       :additionLabel "Hit 'Enter' to Add "
                                       :noResultsMessage "Type to add a new topic..."
@@ -1032,8 +1030,8 @@
                                  :icon true
                                  :labelPosition "left"
                                  :on-mouse-over #(when-not @popup-open?
-                                                   (.add (get-requirements-class-list) "highlight-requirements"))
-                                 :on-mouse-leave #(.remove (get-requirements-class-list) "highlight-requirements")}
+                                                   (util/add-class (get-requirements-node) "highlight-requirements"))
+                                 :on-mouse-leave #(util/remove-class (get-requirements-node) "highlight-requirements")}
                    "Add Topics"
                    [:> ui/Icon {:name "plus"}]])}])))
 
@@ -1096,10 +1094,7 @@
 (defn c-add-product-button
   [round]
   (let [popup-open? (r/atom false)
-        get-round-grid-class-list #(-> (.getElementsByClassName js/document "round-grid")
-                                       array-seq
-                                       first
-                                       .-classList)]
+        get-round-grid-node #(util/first-node-by-class "round-grid")]
     (fn [{:keys [id round-product] :as round}]
       [:> ui/Popup
        {:position "bottom left"
@@ -1116,8 +1111,8 @@
                                  :icon true
                                  :labelPosition "left"
                                  :on-mouse-over #(when-not @popup-open?
-                                                   (.add (get-round-grid-class-list) "highlight-products"))
-                                 :on-mouse-leave #(.remove (get-round-grid-class-list) "highlight-products")}
+                                                   (util/add-class (get-round-grid-node) "highlight-products"))
+                                 :on-mouse-leave #(util/remove-class (get-round-grid-node) "highlight-products")}
                    "Add Products"
                    [:> ui/Icon {:name "plus"}]])}])))
 
