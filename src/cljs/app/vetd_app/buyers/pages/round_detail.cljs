@@ -193,8 +193,38 @@
 
 ;; Components
 (defn get-requirements-options []
-  (ui/as-dropdown-options [;; "Subscription Billing" "Free Trial"
-                           ]))
+  (ui/as-dropdown-options
+   ["Pricing Estimate"
+
+    "Pricing Model"
+    "Free Trial"
+    "Payment Options"
+    "Minimum Contract Length"
+    "Cancellation Process"
+
+    "Company Funding Status"
+    "Company Headquarters"
+    "Company Year Founded"
+    "Number of Employees at Company"
+
+    "How long does it take to onboard?"
+    "Onboarding Process"
+    "How involved do we need to be in the onboarding process?"
+
+    "What is our point of contact after signing?"
+    "How often will we have meetings after signing?"
+
+    "Data Reporting and Statistics"
+    "What KPIs do you provide?"
+    "Integrations with other services"
+    "Describe your Data Security"
+
+    "Example Current Clients"
+    "Number of Current Clients"
+    "Case Studies of Current Clients"
+    "Key Differences from Competitors"
+    "What is your Product Roadmap?"
+    ]))
 
 (defn c-round-initiation-form
   [round-id]
@@ -810,12 +840,12 @@
                             (reset! scroll-x (.-scrollLeft node))))
                         (aset top-scrollbar-node "scrollLeft" (Math/floor @scroll-x)))
                scroll-top-scrollbar (fn [e]
-                                    (when @hovering-top-scrollbar?
-                                      (when-not @drag-scrolling?
-                                        (when (> (Math/abs (- (.-scrollLeft top-scrollbar-node) @scroll-x)) 0.99999)
-                                          (reset! scroll-v 0)
-                                          (reset! scroll-x (.-scrollLeft top-scrollbar-node))
-                                          (aset node "scrollLeft" (Math/floor @scroll-x))))))
+                                      (when @hovering-top-scrollbar?
+                                        (when-not @drag-scrolling?
+                                          (when (> (Math/abs (- (.-scrollLeft top-scrollbar-node) @scroll-x)) 0.99999)
+                                            (reset! scroll-v 0)
+                                            (reset! scroll-x (.-scrollLeft top-scrollbar-node))
+                                            (aset node "scrollLeft" (Math/floor @scroll-x))))))
 
                _ (reset! component-exists? true)
                anim-loop-fn (fn anim-loop ; TODO make sure this isn't being created multiple times without being destroyed
@@ -946,7 +976,7 @@
          show-top-scrollbar?]
       [:<>
        [:> ui/Segment {:id "round-title-container"
-                       :class (str "detail-container " (when (> (count title) 50) "long"))}
+                       :class (str "detail-container " (when (> (count title) 40) "long"))}
         [:h1.round-title title
          [:> ui/Button {:onClick #(reset! share-modal-showing?& true)
                         :color "lightblue"
