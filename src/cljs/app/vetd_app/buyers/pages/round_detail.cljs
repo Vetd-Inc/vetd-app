@@ -44,12 +44,23 @@
  :b/round.add-requirements
  (fn [{:keys [db]} [_ round-id requirements]]
    {:ws-send {:payload {:cmd :b/round.add-requirements
+                        :return {:handler :b/round.add-requirements-return
+                                 :requirements requirements}
                         :round-id round-id
                         :requirements requirements
                         :buyer-id (util/db->current-org-id db)}}
     :analytics/track {:event "Add Requirements"
                       :props {:category "Round"
                               :label round-id}}}))
+
+(rf/reg-event-fx
+ :b/round.add-requirements-return
+ (fn [{:keys [db]} [_ _ {{:keys [requirements]} :return}]]
+   (let [multiple-requirements? (> (count requirements) 1)]
+     {:toast {:type "success"
+              :title (str "Topic" (when multiple-requirements? "s")
+                          " Added to VetdRound")
+              :message "We will request responses from every vendor in the VetdRound."}})))
 
 (rf/reg-event-fx
  :b/round.add-products
@@ -996,9 +1007,11 @@
 (defn c-add-requirement-form
   [round-id popup-open?&]
   (let [value& (r/atom [])
-        options& (r/atom (get-requirements-options))] ; TODO remove requirements that have already been added to the round
+        ;; TODO remove requirements that have already been added to the round.
+        ;; they are already ignored on the backend, but shouldn't even be shown to user.
+        options& (r/atom (get-requirements-options))]
     (fn [round-id popup-open?&]
-      [:> ui/Form {:class "add-products-form"} ; TODO change class name
+      [:> ui/Form {:class "popup-dropdown-form"}
        [:> ui/Dropdown {:style {:width "100%"}
                         :options @options&
                         :placeholder "Enter topic..."
@@ -1079,7 +1092,7 @@
                                    (remove (comp (partial contains? product-ids-already-in-round) :value)))]
                   (when-not (= @options& options)
                     (reset! options& options))))]
-        [:> ui/Form {:class "add-products-form"}
+        [:> ui/Form {:class "popup-dropdown-form"}
          [:> ui/Dropdown {:loading (= :loading @products&)
                           :options @options&
                           :placeholder "Search products..."
