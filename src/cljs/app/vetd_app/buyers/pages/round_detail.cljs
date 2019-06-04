@@ -1011,7 +1011,8 @@
         ;; they are already ignored on the backend, but shouldn't even be shown to user.
         options& (r/atom (get-requirements-options))]
     (fn [round-id popup-open?&]
-      [:> ui/Form {:class "popup-dropdown-form"}
+      [:> ui/Form {:as "div"
+                   :class "popup-dropdown-form"}
        [:> ui/Dropdown {:style {:width "100%"}
                         :options @options&
                         :placeholder "Enter topic..."
@@ -1092,7 +1093,8 @@
                                    (remove (comp (partial contains? product-ids-already-in-round) :value)))]
                   (when-not (= @options& options)
                     (reset! options& options))))]
-        [:> ui/Form {:class "popup-dropdown-form"}
+        [:> ui/Form {:as "div"
+                     :class "popup-dropdown-form"}
          [:> ui/Dropdown {:loading (= :loading @products&)
                           :options @options&
                           :placeholder "Search products..."
