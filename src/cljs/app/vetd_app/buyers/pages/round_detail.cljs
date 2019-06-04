@@ -259,7 +259,7 @@
           [:a {:on-click #(reset! topics-modal-showing?& true)
                :style {:float "right"}}
            [:> ui/Icon {:name "question circle"}]
-           "More About Topics"]]
+           "Learn more about topics"]]
          [:> ui/Dropdown {:value @requirements
                           :options @requirements-options
                           :placeholder "Add topics..."
@@ -288,21 +288,21 @@
                            :on-change (fn [_ this]
                                         (reset! start-using (.-value this)))}]]
          [:> ui/FormField
-          [:label "What is your annual budget?"]
+          [:label "How many users?"]
+          [:> ui/Input {:labelPosition "right"}
+           [:input {:type "number"
+                    :on-change #(reset! num-users (-> % .-target .-value))}]
+           [:> ui/Label {:basic true} "users"]]]
+         [:> ui/FormField
+          [:label "What is your annual budget? (optional)"]
           [:> ui/Input {:labelPosition "right"}
            [:> ui/Label {:basic true} "$"]
            [:input {:type "number"
                     :style {:width 0} ; idk why 0 width works, but it does
                     :on-change #(reset! budget (-> % .-target .-value))}]
-           [:> ui/Label {:basic true} " per year"]]]
-         [:> ui/FormField
-          [:label "How many users?"]
-          [:> ui/Input {:labelPosition "right"}
-           [:input {:type "number"
-                    :on-change #(reset! num-users (-> % .-target .-value))}]
-           [:> ui/Label {:basic true} "users"]]]]
+           [:> ui/Label {:basic true} " per year"]]]]
         [:> ui/FormTextArea
-         {:label "Is there any additional information you would like to provide?"
+         {:label "Is there any additional information you would like to provide? (optional)"
           :on-change (fn [e this]
                        (reset! goal (.-value this)))}]
         #_[:> ui/FormField
@@ -340,7 +340,7 @@
         [:> ui/ModalHeader "What is a Topic?"]
         [:> ui/ModalContent
          [:div.explainer-section
-          "Topics can be any factor, feature, or use case that you would like to have vendors directly respond to. Choose existing Topics or create new Topics that will help you narrow the field of products, making your decision easier."
+          "Topics can be any factor, feature, use case, or question that you would like to have vendors directly respond to. Choose existing Topics or create new Topics that will help you narrow the field of products, making your decision easier."
           [:br]
           [:br]
           [:div.explainer-item
