@@ -40,30 +40,138 @@
    text
    [:> ui/Icon {:name icon}]])
 
-;; note: there is another type of start-round button in category search results
+(defn c-declare-winner-button
+  [round product won?]
+  (let [popup-open? (r/atom false)
+        context-ref (r/atom nil)
+        reason (atom "")]
+    (fn [round product won?]
+      (if-not won?
+        [:<>
+         [:> ui/Popup
+          {:position "top right"
+           :on "click"
+           :open @popup-open?
+           :on-close #(reset! popup-open? false)
+           :context @context-ref
+           :content (r/as-element
+                     [:> ui/Form {:style {:width 325}}
+                      [:h4 {:style {:margin-bottom 7}}
+                       "Declare Winner of VetdRound"]
+                      [:p {:style {:margin-top 0}}
+                       "We will put you in touch with " (:oname (:vendor product)) " as soon as possible."]
+                      [:> ui/FormField
+                       [:label "Why did you pick " (:pname product) "?"]
+                       [:> ui/Input
+                        {:placeholder "Enter a reason for your future reference..."
+                         :on-change (fn [_ this]
+                                      (reset! reason (.-value this)))}]
+                       [:> ui/Button
+                        {:color "vetd-gradient"
+                         :fluid true
+                         :style {:margin-top 7}
+                         :on-click #(do (reset! popup-open? false)
+                                        (rf/dispatch [:b/round.declare-winner
+                                                      (:id round)
+                                                      (:id product)
+                                                      @reason]))}
+                        "Declare Winner"]]])}]
+         [:> ui/Popup
+          {:content "Declare Winner"
+           :position "bottom center"
+           :context @context-ref
+           :trigger (r/as-element
+                     [:> ui/Button
+                      {:icon "checkmark"
+                       :color "lightblue"
+                       :ref (fn [this] (reset! context-ref (r/dom-node this)))
+                       :on-click #(swap! popup-open? not)
+                       :size "mini"}])}]]
+
+        [:> ui/Popup
+         {:content "Declared Winner"
+          :position "bottom center"
+          :trigger (r/as-element
+                    [:> ui/Button
+                     {:icon true
+                      :color "white"
+                      :size "mini"
+                      :disabled true}
+                     [:<> [:> ui/Icon {:name "checkmark"}] " Winner"]])}]))))
+
+
+
 (defn c-start-round-button
-  [{:keys [etype eid ename props]}]
-  [:> ui/Popup
-   {:content (str "Find and compare similar products to \""
-                  ename "\" that meet your needs.")
-    :header "What is a VetdRound?"
-    :position "bottom left"
-    :trigger
-    (r/as-element
-     [:> ui/Button
-      (merge {:onClick #(do (.stopPropagation %)
-                            (rf/dispatch
-                             [:b/start-round
-                              (str "Products Similar to " ename)
-                              etype
-                              eid]))
-              :class "start-round-button"
-              :color "blue"
-              :icon true
-              :labelPosition "left"}
-             props)
-      "Start VetdRound"
-      [:> ui/Icon {:name "vetd-icon"}]])}])
+  [{:keys [etype eid ename props popup-props]}]
+  (let [popup-open?& (r/atom false)
+        context-ref& (r/atom nil)
+        default-title (case etype
+                        :product (str "Products Similar to " ename)
+                        :category (str (util/capitalize-words ename) " Products")
+                        :none "")
+        title& (atom default-title)
+        start-round-fn #(rf/dispatch [:b/start-round
+                                      @title&
+                                      (case etype
+                                        :none :category
+                                        etype)
+                                      eid])]
+    (fn []
+      [:<>
+       [:> ui/Popup
+        {:position "top left"
+         :on "click"
+         :open @popup-open?&
+         :on-close #(reset! popup-open?& false)
+         :context @context-ref&
+         :content (r/as-element
+                   [:> ui/Form {:style {:width 500}}
+                    [:h4 {:style {:margin-bottom 7}}
+                     "Create a VetdRound"]
+                    [:p {:style {:margin-top 0}}
+                     (case etype
+                       :product (str "Find and compare similar products to \""
+                                     ename "\" that meet your needs.")
+                       :category (str "Find and compare " (util/capitalize-words ename)
+                                      " products that meet your needs.")
+                       :none "Find and compare similar products that meet your needs.")]
+                    [:> ui/FormField
+                     [:label "Name"]
+                     [:> ui/Input
+                      {:placeholder "Enter a name for your VetdRound..."
+                       :default-value @title&
+                       :on-change (fn [_ this]
+                                    (reset! title& (.-value this)))
+                       :action (r/as-element
+                                [:> ui/Button
+                                 {:color "blue"
+                                  :on-click #(do (reset! popup-open?& false)
+                                                 (start-round-fn))}
+                                 "Create"])}]]])}]
+       [:> ui/Popup
+        (merge
+         {:content (case etype
+                     :product (str "Find and compare similar products to \""
+                                   ename "\" that meet your needs.")
+                     :category (str "Find and compare " (util/capitalize-words ename)
+                                    " products that meet your needs.")
+                     :none "Find and compare similar products that meet your needs.")
+          :header "What is a VetdRound?"
+          :position "bottom left"
+          :context @context-ref&
+          :trigger (r/as-element
+                    [:> ui/Button (merge {:on-click #(swap! popup-open?& not)
+                                          :color "blue"
+                                          :icon true
+                                          :labelPosition "left"
+                                          :ref (fn [this] (reset! context-ref& (r/dom-node this)))}
+                                         props)
+                     (case etype
+                       :product "Create VetdRound"
+                       :category (str "Create VetdRound for \"" ename "\"")
+                       :none "Create VetdRound")
+                     [:> ui/Icon {:name "vetd-icon"}]])}
+         popup-props)]])))
 
 (defn c-round-in-progress [{:keys [round-idstr props]}]
   [:> ui/Label (merge {:color "teal"
@@ -115,7 +223,7 @@
    props]
   [:> ui/Popup
    {:content (str "Let us set up a call for you with " oname
-                  " to discuss " pname ".")
+                  " to discuss \"" pname "\".")
     :header "Set Up a Call"
     :position "bottom left"
     :trigger (r/as-element
