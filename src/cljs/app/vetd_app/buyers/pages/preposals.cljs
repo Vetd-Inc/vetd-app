@@ -157,17 +157,18 @@
                                        (group-by :id))]
                    (when (not-empty categories)
                      [:div.sidebar
-                      [:h4 "Filter By Category"]
-                      (doall
-                       (for [[id v] categories]
-                         (let [category (first v)]
-                           ^{:key id} 
-                           [:> ui/Checkbox {:label (str (:cname category) " (" (count v) ")")
-                                            :checked (boolean (@selected-categories& id))
-                                            :onChange (fn [_ this]
-                                                        (if (.-checked this)
-                                                          (rf/dispatch [:b/preposals-filter.add-selected-category category])
-                                                          (rf/dispatch [:b/preposals-filter.remove-selected-category category])))}])))]))
+                      [:> ui/Segment
+                       [:h4 "Filter By Category"]
+                       (doall
+                        (for [[id v] categories]
+                          (let [category (first v)]
+                            ^{:key id} 
+                            [:> ui/Checkbox {:label (str (:cname category) " (" (count v) ")")
+                                             :checked (boolean (@selected-categories& id))
+                                             :onChange (fn [_ this]
+                                                         (if (.-checked this)
+                                                           (rf/dispatch [:b/preposals-filter.add-selected-category category])
+                                                           (rf/dispatch [:b/preposals-filter.remove-selected-category category])))}])))]]))
                  [:> ui/ItemGroup {:class "inner-container results"}  
                   (let [preposals (cond-> unfiltered-preposals
                                     (seq @selected-categories&) (filter-preposals @selected-categories&))]

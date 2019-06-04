@@ -136,7 +136,7 @@
                                       " products that meet your needs.")
                        :none "Find and compare similar products that meet your needs.")]
                     [:> ui/FormField
-                     [:label "Name"]
+                     [:label "Title"]
                      [:> ui/Input
                       {:placeholder "Enter a name for your VetdRound..."
                        :default-value @title&
