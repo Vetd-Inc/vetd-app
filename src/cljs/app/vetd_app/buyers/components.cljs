@@ -40,67 +40,6 @@
    text
    [:> ui/Icon {:name icon}]])
 
-(defn c-declare-winner-button
-  [round product won?]
-  (let [popup-open? (r/atom false)
-        context-ref (r/atom nil)
-        reason (atom "")]
-    (fn [round product won?]
-      (if-not won?
-        [:<>
-         [:> ui/Popup
-          {:position "top right"
-           :on "click"
-           :open @popup-open?
-           :on-close #(reset! popup-open? false)
-           :context @context-ref
-           :content (r/as-element
-                     [:> ui/Form {:style {:width 325}}
-                      [:h4 {:style {:margin-bottom 7}}
-                       "Declare Winner of VetdRound"]
-                      [:p {:style {:margin-top 0}}
-                       "We will put you in touch with " (:oname (:vendor product)) " as soon as possible."]
-                      [:> ui/FormField
-                       [:label "Why did you pick " (:pname product) "?"]
-                       [:> ui/Input
-                        {:placeholder "Enter a reason for your future reference..."
-                         :on-change (fn [_ this]
-                                      (reset! reason (.-value this)))}]
-                       [:> ui/Button
-                        {:color "vetd-gradient"
-                         :fluid true
-                         :style {:margin-top 7}
-                         :on-click #(do (reset! popup-open? false)
-                                        (rf/dispatch [:b/round.declare-winner
-                                                      (:id round)
-                                                      (:id product)
-                                                      @reason]))}
-                        "Declare Winner"]]])}]
-         [:> ui/Popup
-          {:content "Declare Winner"
-           :position "bottom center"
-           :context @context-ref
-           :trigger (r/as-element
-                     [:> ui/Button
-                      {:icon "checkmark"
-                       :color "lightblue"
-                       :ref (fn [this] (reset! context-ref (r/dom-node this)))
-                       :on-click #(swap! popup-open? not)
-                       :size "mini"}])}]]
-
-        [:> ui/Popup
-         {:content "Declared Winner"
-          :position "bottom center"
-          :trigger (r/as-element
-                    [:> ui/Button
-                     {:icon true
-                      :color "white"
-                      :size "mini"
-                      :disabled true}
-                     [:<> [:> ui/Icon {:name "checkmark"}] " Winner"]])}]))))
-
-
-
 (defn c-start-round-button
   [{:keys [etype eid ename props popup-props]}]
   (let [popup-open?& (r/atom false)
