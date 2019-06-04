@@ -225,12 +225,11 @@
     "What is our point of contact after signing?"
     "How often will we have meetings after signing?"
 
-    "Data Reporting and Statistics"
     "What KPIs do you provide?"
     "Integrations with other services"
     "Describe your Data Security"
 
-    "Example Current Clients"
+    "Who are some of your current clients?"
     "Number of Current Clients"
     "Case Studies of Current Clients"
     "Key Differences from Competitors"
@@ -246,17 +245,39 @@
         num-users (r/atom "")
         budget (r/atom "")
         requirements (r/atom [])
-        add-products-by-name (r/atom "")]
-    (fn []
+        add-products-by-name (r/atom "")
+        topics-modal-showing?& (r/atom false)]
+    (fn [round-id]
       [:<>
        [:h3 "VetdRound Initiation Form"]
        [:p "Let us know a little more about who will be using this product and what features you are looking for. Then, we'll gather quotes for you to compare right away."]
        [:> ui/Form {:as "div"
                     :class "round-initiation-form"}
-        [:> ui/FormTextArea
-         {:label "What are you hoping to accomplish with the product?"
-          :on-change (fn [e this]
-                       (reset! goal (.-value this)))}]
+        [:> ui/FormField
+         [:label
+          "What specific topics will help you make a decision?"
+          [:a {:on-click #(reset! topics-modal-showing?& true)
+               :style {:float "right"}}
+           [:> ui/Icon {:name "question circle"}]
+           "More About Topics"]]
+         [:> ui/Dropdown {:value @requirements
+                          :options @requirements-options
+                          :placeholder "Add topics..."
+                          :search true
+                          :selection true
+                          :multiple true
+                          :allowAdditions true
+                          :additionLabel "Hit 'Enter' to Add "
+                          :noResultsMessage "Type to add a new topic..."
+                          :onAddItem (fn [_ this]
+                                       (let [value (.-value this)]
+                                         (swap! requirements-options
+                                                conj
+                                                {:key value
+                                                 :text value
+                                                 :value value})))
+                          :onChange (fn [_ this]
+                                      (reset! requirements (.-value this)))}]]
         [:> ui/FormGroup {:widths "equal"}
          [:> ui/FormField
           [:label "When do you need to decide by?"]
@@ -280,26 +301,10 @@
            [:input {:type "number"
                     :on-change #(reset! num-users (-> % .-target .-value))}]
            [:> ui/Label {:basic true} "users"]]]]
-        [:> ui/FormField
-         [:label "What are your product requirements?"]
-         [:> ui/Dropdown {:value @requirements
-                          :options @requirements-options
-                          :placeholder "Add your requirements..."
-                          :search true
-                          :selection true
-                          :multiple true
-                          :allowAdditions true
-                          :additionLabel "Hit 'Enter' to Add "
-                          :noResultsMessage "Type to add a new requirement..."
-                          :onAddItem (fn [_ this]
-                                       (let [value (.-value this)]
-                                         (swap! requirements-options
-                                                conj
-                                                {:key value
-                                                 :text value
-                                                 :value value})))
-                          :onChange (fn [_ this]
-                                      (reset! requirements (.-value this)))}]]
+        [:> ui/FormTextArea
+         {:label "Is there any additional information you would like to provide?"
+          :on-change (fn [e this]
+                       (reset! goal (.-value this)))}]
         #_[:> ui/FormField
            [:label "Are there specific products you want to include?"]
            [:> ui/Dropdown {:multiple true
@@ -324,7 +329,37 @@
                :rounds/budget {:value @budget}
                :rounds/requirements {:value @requirements}
                :rounds/add-products-by-name {:value @add-products-by-name}}}])}
-         "Submit"]]])))
+         "Submit"]]
+       [:> ui/Modal {:open @topics-modal-showing?&
+                     :on-close #(reset! topics-modal-showing?& false)
+                     :size "tiny"
+                     :dimmer "inverted"
+                     :closeOnDimmerClick true
+                     :closeOnEscape true
+                     :closeIcon true}
+        [:> ui/ModalHeader "What is a Topic?"]
+        [:> ui/ModalContent
+         [:div.explainer-section
+          "Topics can be any factor, feature, or use case that you would like to have vendors directly respond to. Choose existing Topics or create new Topics that will help you narrow the field of products, making your decision easier."
+          [:br]
+          [:br]
+          [:div.explainer-item
+           [:h4 "Examples of Good Topics"]
+           [:ul {:style {:list-style "none"
+                         :margin 0
+                         :padding 0}}
+            [:li [:> ui/Icon {:name "check"}] " API that can pull customer service ratings data into XYZ Dashboard"]
+            [:li [:> ui/Icon {:name "check"}] " Onboarding in less than a week with our Marketing Manager"]
+            [:li [:> ui/Icon {:name "check"}] " Integrates with XYZ Chat"]
+            ]]
+          [:div.explainer-item
+           [:h4 "Examples of Bad Topics"]
+           [:ul {:style {:list-style "none"
+                         :margin 0
+                         :padding 0}}
+            [:li [:> ui/Icon {:name "x"}] " Has an API"]
+            [:li [:> ui/Icon {:name "x"}] " Easy to onboard"]
+            [:li [:> ui/Icon {:name "x"}] " Integration"]]]]]]])))
 
 (defn c-round-initiation
   [{:keys [id status title products init-doc] :as round}]
