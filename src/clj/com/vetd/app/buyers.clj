@@ -265,19 +265,21 @@ Round URL: https://app.vetd.com/b/rounds/%s"
         {:keys [id]} (-> requirement-text
                          docs/get-prompts-by-sval
                          first
-                         (or (docs/create-round-req-prompt&fields requirement-text)))]
-    (docs/insert-form-template-prompt req-form-template-id id)
-    (docs/merge-template-to-forms req-form-template-id)
-    (com/sns-publish :ui-misc
-                     "New Topic Added to Round"
-                     (format
-                      "New Topic Added to Round
+                         (or (docs/create-round-req-prompt&fields requirement-text)))
+        existing-prompts (docs/select-form-template-prompts-by-parent-id req-form-template-id)]
+    (when-not (some #(= id (:prompt-id %)) existing-prompts)
+      (docs/insert-form-template-prompt req-form-template-id id)
+      (docs/merge-template-to-forms req-form-template-id)
+      (com/sns-publish :ui-misc
+                       "New Topic Added to Round"
+                       (format
+                        "New Topic Added to Round
 Buyer: '%s'
 Topic: '%s'
 Round URL: https://app.vetd.com/b/rounds/%s"
-                      (:oname buyer)
-                      requirement-text
-                      idstr))))
+                        (:oname buyer)
+                        requirement-text
+                        idstr)))))
 
 ;; TODO there could be multiple preposals/rounds per buyer-vendor pair
 
@@ -321,9 +323,10 @@ Round URL: https://app.vetd.com/b/rounds/%s"
   [{:keys [product-id message round-id requirement-text buyer-id]} ws-id sub-fn]
   (send-ask-question-req product-id message round-id requirement-text buyer-id))
 
-(defmethod com/handle-ws-inbound :b/round.add-requirement
-  [{:keys [round-id requirement-text]} ws-id sub-fn]
-  (add-requirement-to-round round-id requirement-text)
+(defmethod com/handle-ws-inbound :b/round.add-requirements
+  [{:keys [round-id requirements]} ws-id sub-fn]
+  (doseq [requirement requirements]
+    (add-requirement-to-round round-id requirement))
   {})
 
 (defmethod com/handle-ws-inbound :save-doc

@@ -15,7 +15,7 @@
 ;; the current x position of a column being reordered
 (defonce curr-reordering-pos-x (r/atom nil))
 
-;; Events
+;;;; Events
 (rf/reg-event-fx
  :b/nav-round-detail
  (fn [_ [_ round-idstr]]
@@ -41,13 +41,13 @@
                               :label round-id}}}))
 
 (rf/reg-event-fx
- :b/round.add-requirement
- (fn [{:keys [db]} [_ round-id requirement-text]]
-   {:ws-send {:payload {:cmd :b/round.add-requirement
+ :b/round.add-requirements
+ (fn [{:keys [db]} [_ round-id requirements]]
+   {:ws-send {:payload {:cmd :b/round.add-requirements
                         :round-id round-id
-                        :requirement-text requirement-text
+                        :requirements requirements
                         :buyer-id (util/db->current-org-id db)}}
-    :analytics/track {:event "Add Requirement"
+    :analytics/track {:event "Add Requirements"
                       :props {:category "Round"
                               :label round-id}}}))
 
@@ -66,7 +66,7 @@
                           :product-ids product-ids
                           :product-names product-names
                           :buyer-id (util/db->current-org-id db)}}
-      :analytics/track {:event "Add Product"
+      :analytics/track {:event "Add Products"
                         :props {:category "Round"
                                 :label round-id}}})))
 
@@ -181,7 +181,7 @@
                         :user-id (-> db :user :id)
                         :org-id (util/db->current-org-id db)}}}))
 
-;; Subscriptions
+;;;; Subscriptions
 (rf/reg-sub
  :round-idstr
  :<- [:page-params] 
@@ -191,7 +191,7 @@
  :round-products-order
  (fn [{:keys [round-products-order]}] round-products-order))
 
-;; Components
+;;;; Components
 (defn get-requirements-options []
   (ui/as-dropdown-options
    ["Pricing Estimate"
@@ -993,6 +993,38 @@
            "complete"} [c-round-grid round req-form-template round-product show-top-scrollbar?])
        [bc/c-share-modal id title share-modal-showing?&]])))
 
+(defn c-add-requirement-form
+  [round-id popup-open?&]
+  (let [value& (r/atom [])
+        options& (r/atom (get-requirements-options))] ; TODO remove requirements that have already been added to the round
+    (fn [round-id popup-open?&]
+      [:> ui/Form {:class "add-products-form"} ; TODO change class name
+       [:> ui/Dropdown {:style {:width "100%"}
+                        :options @options&
+                        :placeholder "Enter topic..."
+                        :search true
+                        :selection true
+                        :multiple true
+                        :selectOnBlur false
+                        :selectOnNavigation true
+                        :closeOnChange false
+                        :allowAdditions true
+                        :additionLabel "Hit 'Enter' to Add "
+                        :noResultsMessage "Type to add a new topic..."
+                        :onAddItem (fn [_ this]
+                                     (->> this
+                                          .-value
+                                          vector
+                                          ui/as-dropdown-options
+                                          (swap! options& concat)))
+                        :onChange (fn [_ this] (reset! value& (.-value this)))}]
+       [:> ui/Button
+        {:color "teal"
+         :disabled (empty? @value&)
+         :on-click #(do (reset! popup-open?& false)
+                        (rf/dispatch [:b/round.add-requirements round-id (js->clj @value&)]))}
+        "Add"]])))
+
 (defn c-add-requirement-button
   [round]
   (let [popup-open? (r/atom false)
@@ -1004,26 +1036,9 @@
         :open @popup-open?
         :onOpen #(reset! popup-open? true)
         :onClose #(reset! popup-open? false)
-        :content (r/as-element
-                  (let [new-requirement (atom "")
-                        requirements-options (r/atom (get-requirements-options))]
-                    [:> ui/Form {:style {:width 350}}
-                     [:> ui/Dropdown {:style {:width "100%"}
-                                      :options @requirements-options
-                                      :placeholder "Enter topic..."
-                                      :search true
-                                      :selection true
-                                      :multiple true
-                                      :selectOnBlur false
-                                      :selectOnNavigation true
-                                      :closeOnChange true
-                                      :allowAdditions true
-                                      :additionLabel "Hit 'Enter' to Add "
-                                      :noResultsMessage "Type to add a new topic..."
-                                      :onChange (fn [_ this]
-                                                  (reset! popup-open? false)
-                                                  (rf/dispatch
-                                                   [:b/round.add-requirement id (.-value this)]))}]]))
+        :hideOnScroll false
+        :flowing true
+        :content (r/as-element [c-add-requirement-form id popup-open?])
         :trigger (r/as-element
                   [:> ui/Button {:color "teal"
                                  :fluid true
