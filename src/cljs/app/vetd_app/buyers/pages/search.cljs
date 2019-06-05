@@ -213,17 +213,10 @@
   [{:keys [cname id idstr rounds] :as cat}]
   [:div.category-search-result
    (if (empty? rounds)
-     [:> ui/Button {:on-click
-                    #(rf/dispatch
-                      [:b/start-round
-                       (str (util/capitalize-words cname) " Products")
-                       :category
-                       id])
-                    :color "blue"
-                    :icon true
-                    :labelPosition "right"}
-      (str "Start VetdRound for \"" cname "\"")
-      [:> ui/Icon {:name "right arrow"}]]
+     [bc/c-start-round-button {:etype :category
+                               :eid id
+                               :ename cname
+                               :popup-props {:position "bottom center"}}]
      [:> ui/Label {:color "teal"
                    :size "large"
                    :as "a"

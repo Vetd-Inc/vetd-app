@@ -295,8 +295,6 @@
          (map char)
          clojure.string/join)))
 
-
-
 (defn base31->num
   [s]
   (loop [[head & tail] (reverse s)
@@ -308,3 +306,26 @@
         (recur tail
                (inc idx)
                (+ r d))))))
+
+;;;; DOM
+(defn nodes-by-class
+  [class]
+  (-> js/document
+      (.getElementsByClassName class)
+      array-seq))
+
+(defn first-node-by-class
+  [class]
+  (first (nodes-by-class class)))
+
+(defn add-class
+  [node class]
+  (.add (.-classList node) class))
+
+(defn remove-class
+  [node class]
+  (.remove (.-classList node) class))
+
+(defn contains-class?
+  [node class]
+  (.contains (.-classList node) class))

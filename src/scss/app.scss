@@ -84,11 +84,11 @@ a.teal:hover {
     display: table;
   }
 }
-.sidebar > .checkbox {
+.sidebar .checkbox {
   display: block;
   margin-bottom: 7px;
 }
-.sidebar > .checkbox > label {
+.sidebar .checkbox > label {
   font-size: 12px;
   font-weight: 300;
 }
@@ -200,14 +200,6 @@ a.teal:hover {
   border: none;
 }
 
-/* to make segment look the same as item results */
-/* .segment { */
-/*   padding: 15px 12px !important; */
-/*   background: #fff !important; */
-/*   box-shadow: 0 1px 3px 0 rgba(0,0,0,0.08), 0 2px 14px 0 rgba(50,50,93,0.14) !important; */
-/*   border-radius: 8px !important; */
-/* } */
-
 
 /* Products & Categories page */
 .product-search {
@@ -223,7 +215,7 @@ a.teal:hover {
   padding: 15px !important;
   background: #fff !important;
   box-shadow: 0 2px 14px 0 rgba(50,50,50,0.1) !important;
-  border-radius: 8px !important;
+  border-radius: 4px !important;
   transition: transform .3s ease-out !important;
   cursor: pointer !important;
   /* HACK to fix bug that hides 'ribbon' labels */
@@ -292,10 +284,6 @@ i.icon.vetd-icon:before {
   background-repeat: no-repeat !important;
   height: 100%;
   filter: brightness(100);
-}
-.start-round-button:hover i.icon.vetd-icon:before {
-  // animation-timing-function: linear;
-  // animation: 1s infinite party;
 }
 
 
@@ -658,14 +646,14 @@ $cell-height: 201px;
 
   &.long {
     .round-title {
-      font-size: 16px;
+      font-size: 20px;
       line-height: 39px;
     }
   }
 }
 
-// form for adding products to a round
-.add-products-form {
+// when on grid, adding Topics or Products
+.popup-dropdown-form {
   width: 550px;
   display: flex;
 

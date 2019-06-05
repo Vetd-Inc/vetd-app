@@ -64,16 +64,18 @@
              (str " - " pricing-estimate-details))]
           pricing-estimate-details)]
        [:> ui/GridColumn {:width 4}
-        (when-let [website-url (product-v-fn :product/website)]
-          [:<>
-           [bc/c-external-link website-url "Product Website"]
-           [:br]
-           [:br]])
-        (when-let [demo-url (product-v-fn :product/demo)]
-          [:<>
-           [bc/c-external-link demo-url "Watch Demo Video"]
-           [:br]
-           [:br]])]]]]))
+        (let [website-url (product-v-fn :product/website)]
+          (when (bc/has-data? website-url)
+            [:<>
+             [bc/c-external-link website-url "Product Website"]
+             [:br]
+             [:br]]))
+        (let [demo-url (product-v-fn :product/demo)]
+          (when (bc/has-data? demo-url)
+            [:<>
+             [bc/c-external-link demo-url "Watch Demo Video"]
+             [:br]
+             [:br]]))]]]]))
 
 (defn c-preposal
   "Component to display Preposal details."

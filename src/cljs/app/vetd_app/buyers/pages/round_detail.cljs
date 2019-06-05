@@ -15,7 +15,7 @@
 ;; the current x position of a column being reordered
 (defonce curr-reordering-pos-x (r/atom nil))
 
-;; Events
+;;;; Events
 (rf/reg-event-fx
  :b/nav-round-detail
  (fn [_ [_ round-idstr]]
@@ -41,15 +41,26 @@
                               :label round-id}}}))
 
 (rf/reg-event-fx
- :b/round.add-requirement
- (fn [{:keys [db]} [_ round-id requirement-text]]
-   {:ws-send {:payload {:cmd :b/round.add-requirement
+ :b/round.add-requirements
+ (fn [{:keys [db]} [_ round-id requirements]]
+   {:ws-send {:payload {:cmd :b/round.add-requirements
+                        :return {:handler :b/round.add-requirements-return
+                                 :requirements requirements}
                         :round-id round-id
-                        :requirement-text requirement-text
+                        :requirements requirements
                         :buyer-id (util/db->current-org-id db)}}
-    :analytics/track {:event "Add Requirement"
+    :analytics/track {:event "Add Requirements"
                       :props {:category "Round"
                               :label round-id}}}))
+
+(rf/reg-event-fx
+ :b/round.add-requirements-return
+ (fn [{:keys [db]} [_ _ {{:keys [requirements]} :return}]]
+   (let [multiple-requirements? (> (count requirements) 1)]
+     {:toast {:type "success"
+              :title (str "Topic" (when multiple-requirements? "s")
+                          " Added to VetdRound")
+              :message "We will request responses from every vendor in the VetdRound."}})))
 
 (rf/reg-event-fx
  :b/round.add-products
@@ -66,7 +77,7 @@
                           :product-ids product-ids
                           :product-names product-names
                           :buyer-id (util/db->current-org-id db)}}
-      :analytics/track {:event "Add Product"
+      :analytics/track {:event "Add Products"
                         :props {:category "Round"
                                 :label round-id}}})))
 
@@ -181,7 +192,7 @@
                         :user-id (-> db :user :id)
                         :org-id (util/db->current-org-id db)}}}))
 
-;; Subscriptions
+;;;; Subscriptions
 (rf/reg-sub
  :round-idstr
  :<- [:page-params] 
@@ -191,10 +202,39 @@
  :round-products-order
  (fn [{:keys [round-products-order]}] round-products-order))
 
-;; Components
+;;;; Components
 (defn get-requirements-options []
-  (ui/as-dropdown-options [;; "Subscription Billing" "Free Trial"
-                           ]))
+  (ui/as-dropdown-options
+   ["Pricing Estimate"
+
+    "Pricing Model"
+    "Free Trial"
+    "Payment Options"
+    "Minimum Contract Length"
+    "Cancellation Process"
+
+    "Company Funding Status"
+    "Company Headquarters"
+    "Company Year Founded"
+    "Number of Employees at Company"
+
+    "How long does it take to onboard?"
+    "Onboarding Process"
+    "How involved do we need to be in the onboarding process?"
+
+    "What is our point of contact after signing?"
+    "How often will we have meetings after signing?"
+
+    "What KPIs do you provide?"
+    "Integrations with other services"
+    "Describe your Data Security"
+
+    "Who are some of your current clients?"
+    "Number of Current Clients"
+    "Case Studies of Current Clients"
+    "Key Differences from Competitors"
+    "What is your Product Roadmap?"
+    ]))
 
 (defn c-round-initiation-form
   [round-id]
@@ -205,17 +245,39 @@
         num-users (r/atom "")
         budget (r/atom "")
         requirements (r/atom [])
-        add-products-by-name (r/atom "")]
-    (fn []
+        add-products-by-name (r/atom "")
+        topics-modal-showing?& (r/atom false)]
+    (fn [round-id]
       [:<>
        [:h3 "VetdRound Initiation Form"]
        [:p "Let us know a little more about who will be using this product and what features you are looking for. Then, we'll gather quotes for you to compare right away."]
        [:> ui/Form {:as "div"
                     :class "round-initiation-form"}
-        [:> ui/FormTextArea
-         {:label "What are you hoping to accomplish with the product?"
-          :on-change (fn [e this]
-                       (reset! goal (.-value this)))}]
+        [:> ui/FormField
+         [:label
+          "What specific topics will help you make a decision?"
+          [:a {:on-click #(reset! topics-modal-showing?& true)
+               :style {:float "right"}}
+           [:> ui/Icon {:name "question circle"}]
+           "Learn more about topics"]]
+         [:> ui/Dropdown {:value @requirements
+                          :options @requirements-options
+                          :placeholder "Add topics..."
+                          :search true
+                          :selection true
+                          :multiple true
+                          :allowAdditions true
+                          :additionLabel "Hit 'Enter' to Add "
+                          :noResultsMessage "Type to add a new topic..."
+                          :onAddItem (fn [_ this]
+                                       (let [value (.-value this)]
+                                         (swap! requirements-options
+                                                conj
+                                                {:key value
+                                                 :text value
+                                                 :value value})))
+                          :onChange (fn [_ this]
+                                      (reset! requirements (.-value this)))}]]
         [:> ui/FormGroup {:widths "equal"}
          [:> ui/FormField
           [:label "When do you need to decide by?"]
@@ -226,39 +288,23 @@
                            :on-change (fn [_ this]
                                         (reset! start-using (.-value this)))}]]
          [:> ui/FormField
-          [:label "What is your annual budget?"]
+          [:label "How many users?"]
+          [:> ui/Input {:labelPosition "right"}
+           [:input {:type "number"
+                    :on-change #(reset! num-users (-> % .-target .-value))}]
+           [:> ui/Label {:basic true} "users"]]]
+         [:> ui/FormField
+          [:label "What is your annual budget? (optional)"]
           [:> ui/Input {:labelPosition "right"}
            [:> ui/Label {:basic true} "$"]
            [:input {:type "number"
                     :style {:width 0} ; idk why 0 width works, but it does
                     :on-change #(reset! budget (-> % .-target .-value))}]
-           [:> ui/Label {:basic true} " per year"]]]
-         [:> ui/FormField
-          [:label "How many users?"]
-          [:> ui/Input {:labelPosition "right"}
-           [:input {:type "number"
-                    :on-change #(reset! num-users (-> % .-target .-value))}]
-           [:> ui/Label {:basic true} "users"]]]]
-        [:> ui/FormField
-         [:label "What are your product requirements?"]
-         [:> ui/Dropdown {:value @requirements
-                          :options @requirements-options
-                          :placeholder "Add your requirements..."
-                          :search true
-                          :selection true
-                          :multiple true
-                          :allowAdditions true
-                          :additionLabel "Hit 'Enter' to Add "
-                          :noResultsMessage "Type to add a new requirement..."
-                          :onAddItem (fn [_ this]
-                                       (let [value (.-value this)]
-                                         (swap! requirements-options
-                                                conj
-                                                {:key value
-                                                 :text value
-                                                 :value value})))
-                          :onChange (fn [_ this]
-                                      (reset! requirements (.-value this)))}]]
+           [:> ui/Label {:basic true} " per year"]]]]
+        [:> ui/FormTextArea
+         {:label "Is there any additional information you would like to provide? (optional)"
+          :on-change (fn [e this]
+                       (reset! goal (.-value this)))}]
         #_[:> ui/FormField
            [:label "Are there specific products you want to include?"]
            [:> ui/Dropdown {:multiple true
@@ -283,7 +329,37 @@
                :rounds/budget {:value @budget}
                :rounds/requirements {:value @requirements}
                :rounds/add-products-by-name {:value @add-products-by-name}}}])}
-         "Submit"]]])))
+         "Submit"]]
+       [:> ui/Modal {:open @topics-modal-showing?&
+                     :on-close #(reset! topics-modal-showing?& false)
+                     :size "tiny"
+                     :dimmer "inverted"
+                     :closeOnDimmerClick true
+                     :closeOnEscape true
+                     :closeIcon true}
+        [:> ui/ModalHeader "What is a Topic?"]
+        [:> ui/ModalContent
+         [:div.explainer-section
+          "Topics can be any factor, feature, use case, or question that you would like to have vendors directly respond to. Choose existing Topics or create new Topics that will help you narrow the field of products, making your decision easier."
+          [:br]
+          [:br]
+          [:div.explainer-item
+           [:h4 "Examples of Good Topics"]
+           [:ul {:style {:list-style "none"
+                         :margin 0
+                         :padding 0}}
+            [:li [:> ui/Icon {:name "check"}] " API that can pull customer service ratings data into XYZ Dashboard"]
+            [:li [:> ui/Icon {:name "check"}] " Onboarding in less than a week with our Marketing Manager"]
+            [:li [:> ui/Icon {:name "check"}] " Integrates with XYZ Chat"]
+            ]]
+          [:div.explainer-item
+           [:h4 "Examples of Bad Topics"]
+           [:ul {:style {:list-style "none"
+                         :margin 0
+                         :padding 0}}
+            [:li [:> ui/Icon {:name "x"}] " Has an API"]
+            [:li [:> ui/Icon {:name "x"}] " Easy to onboard"]
+            [:li [:> ui/Icon {:name "x"}] " Integration"]]]]]]])))
 
 (defn c-round-initiation
   [{:keys [id status title products init-doc] :as round}]
@@ -631,7 +707,7 @@
          [:div.round-grid-top-scrollbar {:style {:display (if show-top-scrollbar? "block" "none")}}
           [:div {:style {:width (* 234 (count round-product))
                          :height 1}}]]
-         [:div.round-grid {:style {:min-height (+ 46 84 (* 202 (-> req-form-template :prompts count)))}}
+         [:div.round-grid {:style {:min-height (+ 46 84 (* 203 (-> req-form-template :prompts count)))}}
           [:div {:style {:min-width (* 234 (count round-product))}}
            (for [rp round-product]
              ^{:key (-> rp :product :id)}
@@ -658,8 +734,8 @@
           (let [node (get-round-grid-node this)]
             (reset! scroll-x-max (- (.-scrollWidth node) (.-clientWidth node)))
             (if (> (.-scrollWidth node) (.-clientWidth node))
-              (.add (.-classList node) "draggable")
-              (.remove (.-classList node) "draggable"))))
+              (util/add-class node "draggable")
+              (util/remove-class node "draggable"))))
         products-order& (rf/subscribe [:round-products-order])]
     (with-meta c-round-grid*
       {:component-did-mount
@@ -693,7 +769,7 @@
 
                ;; make header row 'sticky' upon vertical window scroll
                header-pickup-y (atom nil) ; nil when not in 'sticky mode'
-               all-header-nodes #(array-seq (.getElementsByClassName js/document "round-product"))
+               all-header-nodes #(util/nodes-by-class "round-product")
                ;; this needs to be called when we leave 'sticky mode'
                zero-out-header-scroll (fn []
                                         (doseq [header-node (all-header-nodes)]
@@ -708,23 +784,22 @@
                                     (if @header-pickup-y
                                       (if (< window-scroll-y @header-pickup-y)
                                         (do (reset! header-pickup-y nil)
-                                            (.remove (.-classList node) "fixed")
+                                            (util/remove-class node "fixed")
                                             (zero-out-header-scroll))
                                         (doseq [header-node (all-header-nodes)]
                                           (aset (.-style header-node) "transform"
                                                 (str "translateY(" (- window-scroll-y node-offset-top) "px)"))))
                                       (when (> window-scroll-y node-offset-top)
                                         (reset! header-pickup-y node-offset-top)
-                                        (.add (.-classList node) "fixed")))))))
+                                        (util/add-class node "fixed")))))))
                ;; keep a reference to the window-scroll function (for listener removal)
                _ (reset! window-scroll-fn-ref window-scroll)
 
                ;; is a given dom node considered a handle for beginning a column drag (for reorder)?
                part-of-drag-handle? (fn [dom-node]
-                                      (let [class-list (.-classList dom-node)]
-                                        (or (.contains class-list "round-product") ; top portion of column
-                                            (.contains class-list "name") ; the product name
-                                            (empty? (array-seq class-list))))) ; the column node itself
+                                      (or (util/contains-class? dom-node "round-product") ; top portion of column
+                                          (util/contains-class? dom-node "name") ; the product name
+                                          (empty? (array-seq (.-classList dom-node))))) ; the column node itself
                part-of-scrollbar? (fn [y]
                                     (> (- y (.-offsetTop node)) (.-clientHeight node)))
                reordering-col-node (atom nil)
@@ -747,11 +822,11 @@
                                                                col-left))
                                  ;; remember the id of the product we are currently reordering
                                  (reset! reordering-product (js/parseInt (.getAttribute col "data-product-id")))
-                                 (.add (.-classList @reordering-col-node) "reordering"))))
+                                 (util/add-class @reordering-col-node "reordering"))))
                            ;; Scrolling
                            (when-not (part-of-scrollbar? (.-pageY e))
                              (do (reset! drag-scrolling? true)
-                                 (.add (.-classList node) "dragging")))
+                                 (util/add-class node "dragging")))
                            (reset! last-mouse-x (.-pageX e)))
                ;; based on the (physical) position of the column being dragged,
                ;; update the sort pos if needed
@@ -796,11 +871,11 @@
                            (reset! mousedown? false)
                            (reset! last-mouse-delta 0)
                            (when @reordering-product
-                             (do (.remove (.-classList @reordering-col-node) "reordering")
+                             (do (util/remove-class @reordering-col-node "reordering")
                                  (reset! reordering-product nil)
                                  (rf/dispatch [:b/store-round-products-order round-id])))
                            (reset! drag-scrolling? false)
-                           (.remove (.-classList node) "dragging")))
+                           (util/remove-class node "dragging")))
 
                last-scroll-x (atom 0)
                scroll (fn [e]
@@ -810,12 +885,12 @@
                             (reset! scroll-x (.-scrollLeft node))))
                         (aset top-scrollbar-node "scrollLeft" (Math/floor @scroll-x)))
                scroll-top-scrollbar (fn [e]
-                                    (when @hovering-top-scrollbar?
-                                      (when-not @drag-scrolling?
-                                        (when (> (Math/abs (- (.-scrollLeft top-scrollbar-node) @scroll-x)) 0.99999)
-                                          (reset! scroll-v 0)
-                                          (reset! scroll-x (.-scrollLeft top-scrollbar-node))
-                                          (aset node "scrollLeft" (Math/floor @scroll-x))))))
+                                      (when @hovering-top-scrollbar?
+                                        (when-not @drag-scrolling?
+                                          (when (> (Math/abs (- (.-scrollLeft top-scrollbar-node) @scroll-x)) 0.99999)
+                                            (reset! scroll-v 0)
+                                            (reset! scroll-x (.-scrollLeft top-scrollbar-node))
+                                            (aset node "scrollLeft" (Math/floor @scroll-x))))))
 
                _ (reset! component-exists? true)
                anim-loop-fn (fn anim-loop ; TODO make sure this isn't being created multiple times without being destroyed
@@ -946,7 +1021,7 @@
          show-top-scrollbar?]
       [:<>
        [:> ui/Segment {:id "round-title-container"
-                       :class (str "detail-container " (when (> (count title) 50) "long"))}
+                       :class (str "detail-container " (when (> (count title) 40) "long"))}
         [:h1.round-title title
          [:> ui/Button {:onClick #(reset! share-modal-showing?& true)
                         :color "lightblue"
@@ -964,46 +1039,63 @@
            "complete"} [c-round-grid round req-form-template round-product show-top-scrollbar?])
        [bc/c-share-modal id title share-modal-showing?&]])))
 
+(defn c-add-requirement-form
+  [round-id popup-open?&]
+  (let [value& (r/atom [])
+        ;; TODO remove requirements that have already been added to the round.
+        ;; they are already ignored on the backend, but shouldn't even be shown to user.
+        options& (r/atom (get-requirements-options))]
+    (fn [round-id popup-open?&]
+      [:> ui/Form {:as "div"
+                   :class "popup-dropdown-form"}
+       [:> ui/Dropdown {:style {:width "100%"}
+                        :options @options&
+                        :placeholder "Enter topic..."
+                        :search true
+                        :selection true
+                        :multiple true
+                        :selectOnBlur false
+                        :selectOnNavigation true
+                        :closeOnChange false
+                        :allowAdditions true
+                        :additionLabel "Hit 'Enter' to Add "
+                        :noResultsMessage "Type to add a new topic..."
+                        :onAddItem (fn [_ this]
+                                     (->> this
+                                          .-value
+                                          vector
+                                          ui/as-dropdown-options
+                                          (swap! options& concat)))
+                        :onChange (fn [_ this] (reset! value& (.-value this)))}]
+       [:> ui/Button
+        {:color "teal"
+         :disabled (empty? @value&)
+         :on-click #(do (reset! popup-open?& false)
+                        (rf/dispatch [:b/round.add-requirements round-id (js->clj @value&)]))}
+        "Add"]])))
+
 (defn c-add-requirement-button
-  [{:keys [id] :as round}]
+  [round]
   (let [popup-open? (r/atom false)
-        get-requirements-class-list #(-> (.getElementsByClassName js/document "requirements")
-                                         array-seq
-                                         first
-                                         .-classList)]
-    (fn []
+        get-requirements-node #(util/first-node-by-class "requirements")]
+    (fn [{:keys [id] :as round}]
       [:> ui/Popup
        {:position "top left"
         :on "click"
         :open @popup-open?
         :onOpen #(reset! popup-open? true)
         :onClose #(reset! popup-open? false)
-        :content (r/as-element
-                  (let [new-requirement (atom "")
-                        requirements-options (r/atom (get-requirements-options))]
-                    [:> ui/Form {:style {:width 350}}
-                     [:> ui/Dropdown {:style {:width "100%"}
-                                      :options @requirements-options
-                                      :placeholder "Enter topic..."
-                                      :search true
-                                      :selection true
-                                      :multiple false
-                                      :selectOnBlur false
-                                      :allowAdditions true
-                                      :additionLabel "Hit 'Enter' to Add "
-                                      :noResultsMessage "Type to add a new topic..."
-                                      :onChange (fn [_ this]
-                                                  (reset! popup-open? false)
-                                                  (rf/dispatch
-                                                   [:b/round.add-requirement id (.-value this)]))}]]))
+        :hideOnScroll false
+        :flowing true
+        :content (r/as-element [c-add-requirement-form id popup-open?])
         :trigger (r/as-element
                   [:> ui/Button {:color "teal"
                                  :fluid true
                                  :icon true
                                  :labelPosition "left"
                                  :on-mouse-over #(when-not @popup-open?
-                                                   (.add (get-requirements-class-list) "highlight-requirements"))
-                                 :on-mouse-leave #(.remove (get-requirements-class-list) "highlight-requirements")}
+                                                   (util/add-class (get-requirements-node) "highlight-requirements"))
+                                 :on-mouse-leave #(util/remove-class (get-requirements-node) "highlight-requirements")}
                    "Add Topics"
                    [:> ui/Icon {:name "plus"}]])}])))
 
@@ -1036,7 +1128,8 @@
                                    (remove (comp (partial contains? product-ids-already-in-round) :value)))]
                   (when-not (= @options& options)
                     (reset! options& options))))]
-        [:> ui/Form {:class "add-products-form"}
+        [:> ui/Form {:as "div"
+                     :class "popup-dropdown-form"}
          [:> ui/Dropdown {:loading (= :loading @products&)
                           :options @options&
                           :placeholder "Search products..."
@@ -1066,10 +1159,7 @@
 (defn c-add-product-button
   [round]
   (let [popup-open? (r/atom false)
-        get-round-grid-class-list #(-> (.getElementsByClassName js/document "round-grid")
-                                       array-seq
-                                       first
-                                       .-classList)]
+        get-round-grid-node #(util/first-node-by-class "round-grid")]
     (fn [{:keys [id round-product] :as round}]
       [:> ui/Popup
        {:position "bottom left"
@@ -1086,8 +1176,8 @@
                                  :icon true
                                  :labelPosition "left"
                                  :on-mouse-over #(when-not @popup-open?
-                                                   (.add (get-round-grid-class-list) "highlight-products"))
-                                 :on-mouse-leave #(.remove (get-round-grid-class-list) "highlight-products")}
+                                                   (util/add-class (get-round-grid-node) "highlight-products"))
+                                 :on-mouse-leave #(util/remove-class (get-round-grid-node) "highlight-products")}
                    "Add Products"
                    [:> ui/Icon {:name "plus"}]])}])))
 

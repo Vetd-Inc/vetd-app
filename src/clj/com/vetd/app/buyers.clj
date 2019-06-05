@@ -255,29 +255,23 @@ Round URL: https://app.vetd.com/b/rounds/%s"
                           :rounds)))))
 
 (defn add-requirement-to-round
-  [round-id requirement-text]
-  (let [{:keys [idstr buyer req-form-template-id]} (-> [[:rounds {:id round-id}
-                                                         [:idstr :req-form-template-id
-                                                          [:buyer [:oname]]]]]
-                                                       ha/sync-query
-                                                       vals
-                                                       ffirst)
+  "Add requirement to round by Round ID or by the form template ID of requirements form template."
+  [requirement-text & [{:keys [round-id form-template-id]}]]
+  (let [req-form-template-id (or form-template-id
+                                 (-> [[:rounds {:id round-id}
+                                       [:req-form-template-id]]]
+                                     ha/sync-query
+                                     vals
+                                     ffirst
+                                     :req-form-template-id))
         {:keys [id]} (-> requirement-text
                          docs/get-prompts-by-sval
                          first
-                         (or (docs/create-round-req-prompt&fields requirement-text)))]
-    (docs/insert-form-template-prompt req-form-template-id id)
-    (docs/merge-template-to-forms req-form-template-id)
-    (com/sns-publish :ui-misc
-                     "New Topic Added to Round"
-                     (format
-                      "New Topic Added to Round
-Buyer: '%s'
-Topic: '%s'
-Round URL: https://app.vetd.com/b/rounds/%s"
-                      (:oname buyer)
-                      requirement-text
-                      idstr))))
+                         (or (docs/create-round-req-prompt&fields requirement-text)))
+        existing-prompts (docs/select-form-template-prompts-by-parent-id req-form-template-id)]
+    (when-not (some #(= id (:prompt-id %)) existing-prompts)
+      (docs/insert-form-template-prompt req-form-template-id id)
+      (docs/merge-template-to-forms req-form-template-id))))
 
 ;; TODO there could be multiple preposals/rounds per buyer-vendor pair
 
@@ -321,10 +315,27 @@ Round URL: https://app.vetd.com/b/rounds/%s"
   [{:keys [product-id message round-id requirement-text buyer-id]} ws-id sub-fn]
   (send-ask-question-req product-id message round-id requirement-text buyer-id))
 
-(defmethod com/handle-ws-inbound :b/round.add-requirement
-  [{:keys [round-id requirement-text]} ws-id sub-fn]
-  (add-requirement-to-round round-id requirement-text)
-  {})
+(defmethod com/handle-ws-inbound :b/round.add-requirements
+  [{:keys [round-id requirements]} ws-id sub-fn]
+  (let [{:keys [idstr buyer req-form-template-id]} (-> [[:rounds {:id round-id}
+                                                         [:idstr :req-form-template-id
+                                                          [:buyer [:oname]]]]]
+                                                       ha/sync-query
+                                                       vals
+                                                       ffirst)]
+    (doseq [requirement requirements]
+      (add-requirement-to-round requirement {:form-template-id req-form-template-id}))
+    (com/sns-publish :ui-misc
+                     "New Topics Added to Round"
+                     (format
+                      "New Topics Added to Round
+Buyer: '%s'
+Topics: '%s'
+Round URL: https://app.vetd.com/b/rounds/%s"
+                      (:oname buyer)
+                      (s/join ", " requirements)
+                      idstr))
+    {}))
 
 (defmethod com/handle-ws-inbound :save-doc
   [{:keys [data ftype update-doc-id from-org-id] :as req} ws-id sub-fn]
