@@ -1114,7 +1114,7 @@
                        [:gql/q
                         {:queries
                          [[:products {:_where {:pname {:_ilike (str "%" @search-query& "%")}}
-                                      :_limit 50
+                                      :_limit 100
                                       :_order_by {:pname :asc}}
                            [:id :pname]]]}])
             product-ids-already-in-round (set (map (comp :id :product) round-product))
