@@ -85,7 +85,8 @@
          [bc/c-start-round-button {:etype :product
                                    :eid (:id product)
                                    :ename (:pname product)
-                                   :props {:floated "right"}}])
+                                   :props {:floated "right"}
+                                   :popup-props {:position "bottom right"}}])
        [bc/c-categories product]
        (when (= "Yes" (docs/get-field-value-from-response-prompt
                        product-profile-responses "Do you offer a free trial?" "value" :sval))

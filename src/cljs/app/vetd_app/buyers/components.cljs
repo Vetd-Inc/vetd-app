@@ -58,35 +58,28 @@
     (fn []
       [:<>
        [:> ui/Popup
-        {:position "top left"
-         :on "click"
-         :open @popup-open?&
-         :on-close #(reset! popup-open?& false)
-         :context @context-ref&
-         :content (r/as-element
-                   [:> ui/Form {:style {:width 500}}
-                    [:h4 {:style {:margin-bottom 7}}
-                     "Create a VetdRound"]
-                    [:p {:style {:margin-top 0}}
-                     (case etype
-                       :product (str "Find and compare similar products to \""
-                                     ename "\" that meet your needs.")
-                       :category (str "Find and compare " (util/capitalize-words ename)
-                                      " products that meet your needs.")
-                       :none "Find and compare similar products that meet your needs.")]
-                    [:> ui/FormField
-                     [:label "Title"]
-                     [:> ui/Input
-                      {:placeholder "Enter a name for your VetdRound..."
-                       :default-value @title&
-                       :on-change (fn [_ this]
-                                    (reset! title& (.-value this)))
-                       :action (r/as-element
-                                [:> ui/Button
-                                 {:color "blue"
-                                  :on-click #(do (reset! popup-open?& false)
-                                                 (start-round-fn))}
-                                 "Create"])}]]])}]
+        (merge {:position "bottom left"
+                :on "click"
+                :open @popup-open?&
+                :on-close #(reset! popup-open?& false)
+                :on-click #(.stopPropagation %)
+                :context @context-ref&
+                :content (r/as-element
+                          [:> ui/Form {:style {:width 500}}
+                           [:> ui/FormField
+                            [:label "New VetdRound Title"]
+                            [:> ui/Input
+                             {:placeholder "Enter a name for your VetdRound..."
+                              :default-value @title&
+                              :on-change (fn [_ this]
+                                           (reset! title& (.-value this)))
+                              :action (r/as-element
+                                       [:> ui/Button
+                                        {:color "blue"
+                                         :on-click #(do (reset! popup-open?& false)
+                                                        (start-round-fn))}
+                                        "Create"])}]]])}
+               popup-props)]
        [:> ui/Popup
         (merge
          {:content (case etype
@@ -99,7 +92,8 @@
           :position "bottom left"
           :context @context-ref&
           :trigger (r/as-element
-                    [:> ui/Button (merge {:on-click #(swap! popup-open?& not)
+                    [:> ui/Button (merge {:on-click #(do (.stopPropagation %)
+                                                         (swap! popup-open?& not))
                                           :color "blue"
                                           :icon true
                                           :labelPosition "left"
