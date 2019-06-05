@@ -347,7 +347,11 @@
          [ui/input {:class "product-search borderless"
                     :value @search-query&
                     :size "big"
-                    :icon "search"
+                    :icon (r/as-element
+                           [:> ui/Icon
+                            {:name (if (not-empty @search-query&) "delete" "search")
+                             :link true
+                             :on-click #(rf/dispatch [:b/update-search-term ""])}])
                     :autoFocus true
                     :spellCheck false
                     :on-change #(rf/dispatch [:b/update-search-term (-> % .-target .-value)])
