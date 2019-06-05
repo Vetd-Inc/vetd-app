@@ -67,9 +67,9 @@
                 :content (r/as-element
                           [:> ui/Form {:style {:width 500}}
                            [:> ui/FormField
-                            [:label "New VetdRound Title"]
+                            [:label "Enter a name for your VetdRound:"]
                             [:> ui/Input
-                             {:placeholder "Enter a name for your VetdRound..."
+                             {:placeholder "E.g., Marketing Analytics Products"
                               :default-value @title&
                               :on-change (fn [_ this]
                                            (reset! title& (.-value this)))
@@ -110,8 +110,8 @@
   [:> ui/Label (merge {:color "teal"
                        :size "medium"
                        :as "a"
-                       :onClick #(do (.stopPropagation %)
-                                     (rf/dispatch [:b/nav-round-detail round-idstr]))}
+                       :on-click #(do (.stopPropagation %)
+                                      (rf/dispatch [:b/nav-round-detail round-idstr]))}
                       props)
    "Product In VetdRound"])
 

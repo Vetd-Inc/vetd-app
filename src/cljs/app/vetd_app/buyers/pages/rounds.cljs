@@ -168,11 +168,7 @@
                     [:> ui/Header {:icon true}
                      [:> ui/Icon {:name "vetd"}]
                      "You don't have any active VetdRounds."]
-                    [:div {:style {:text-align "center"
-                                   :margin-top 10}}
-                     "To start a new round, find a "
-                     [:a {:style {:cursor "pointer"}
-                          :onClick #(rf/dispatch [:b/nav-search])}
-                      "product or category"]
-                     " and click \"Start VetdRound\"."]]]
+                    [bc/c-start-round-button {:etype :none
+                                              :props {:fluid true
+                                                      :style {:margin-top 15}}}]]]
                   [:> ui/GridColumn {:computer 2 :mobile 0}]]]))))))))
