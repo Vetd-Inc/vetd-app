@@ -151,7 +151,7 @@
   (let [product-profile-responses (-> form-docs first :response-prompts)
         preposal-responses (-> docs first :responses)
         requested-preposal? (not-empty forms)]
-    [:> ui/Item {:onClick #(rf/dispatch (if preposal-responses
+    [:> ui/Item {:on-click #(rf/dispatch (if preposal-responses
                                           [:b/nav-preposal-detail (-> docs first :idstr)]
                                           [:b/nav-product-detail idstr]))}
      [:div.product-logo {:style {:background-image (str "url('https://s3.amazonaws.com/vetd-logos/" logo "')")}}]
