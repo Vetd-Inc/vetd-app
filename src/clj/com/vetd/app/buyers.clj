@@ -56,7 +56,6 @@
           wh' (if initials
                 [:or wh initials]
                 wh)]
-      (clojure.pprint/pprint [q wh'])
       (mapv :id
             (db/hs-query {:select [:id]
                           :from [:categories]
