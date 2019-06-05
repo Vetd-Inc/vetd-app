@@ -150,6 +150,77 @@
      [:> ui/StepTitle "Complete"]
      [:> ui/StepDescription "Final decision"]]]])
 
+(defn c-reject-preposal-button
+  [id rejected?]
+  (let [popup-open?& (r/atom false)
+        context-ref& (r/atom nil)
+        reason& (atom "")
+        options (ui/as-dropdown-options ["Outside our budget"
+                                         "Not relevant to our business"
+                                         "We already use a similar tool"])]
+    (fn [id rejected?]
+      (if-not rejected?
+        [:<>
+         [:> ui/Popup
+          {:position "top right"
+           :on "click"
+           :open @popup-open?&
+           :on-close #(reset! popup-open?& false)
+           :on-click #(.stopPropagation %)
+           :context @context-ref&
+           :content (r/as-element
+                     [:> ui/Form {:as "div"
+                                  :class "popup-dropdown-form"
+                                  :style {:width 400}}
+                      [:> ui/Dropdown {:options options
+                                       :placeholder "Enter reason..."
+                                       :search true
+                                       :selection true
+                                       :multiple false
+                                       :selectOnBlur false
+                                       :selectOnNavigation true
+                                       :closeOnChange true
+                                       :allowAdditions true
+                                       :additionLabel "Hit 'Enter' to Submit "
+                                       :onAddItem (fn [_ this]
+                                                    #_(->> this
+                                                           .-value
+                                                           vector
+                                                           ui/as-dropdown-options
+                                                           (swap! options& concat)))
+                                       :onChange (fn [_ this] (reset! reason& (.-value this)))}]
+                      [:> ui/Button
+                       {:color "red"
+                        :on-click #(do (reset! popup-open?& false)
+                                       #_(rf/dispatch [:b/round.disqualify
+                                                       (:id round)
+                                                       (:id product)
+                                                       @reason&]))}
+                       "Reject"]])}]
+         [:> ui/Popup
+          {:content "Reject PrePosal"
+           :position "bottom center"
+           :context @context-ref&
+           :trigger (r/as-element
+                     [:> ui/Icon {:on-click #(do (.stopPropagation %)
+                                                 (swap! popup-open?& not))
+                                  :color "black"
+                                  :link true
+                                  :name "close"
+                                  :size "large"
+                                  :style {:position "absolute"
+                                          :right 7}
+                                  :ref (fn [this] (reset! context-ref& (r/dom-node this)))}])}]]
+        [:> ui/Popup
+         {:content "Undo Disqualify"
+          :position "bottom center"
+          :trigger (r/as-element
+                    [:> ui/Button {:icon "undo"
+                                   :basic true
+                                   :floated "right"
+                                   ;; :on-click #(rf/dispatch [:b/round.undo-disqualify (:id round) (:id product)])
+                                   :size "mini"}])}]))))
+
 (defn c-setup-call-button
   [{:keys [id pname] :as product}
    {:keys [oname] :as vendor}

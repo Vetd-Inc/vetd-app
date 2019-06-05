@@ -462,7 +462,7 @@
                                       (reset! reason (.-value this)))
                          :action (r/as-element
                                   [:> ui/Button
-                                   {:color "teal"
+                                   {:color "red"
                                     :on-click #(do (reset! popup-open? false)
                                                    (rf/dispatch [:b/round.disqualify
                                                                  (:id round)
