@@ -8,6 +8,10 @@
             [re-frame.core :as rf]
             [re-com.core :as rc]))
 
+(def default-preposals-filter {:status #{}
+                               :features #{}
+                               :categories #{}})
+
 ;;;; Events
 (rf/reg-event-fx
  :b/nav-preposals
@@ -24,17 +28,17 @@
     :analytics/page {:name "Buyers Preposals"}}))
 
 (rf/reg-event-fx
- :b/preposals-filter.add-selected-category
+ :b/preposals-filter.add-category
  (fn [{:keys [db]} [_ category]]
-   {:db (update-in db [:preposals-filter :selected-categories] conj (:id category))
+   {:db (update-in db [:preposals-filter :categories] conj (:id category))
     :analytics/track {:event "Filter"
                       :props {:category "Preposals"
                               :label (str "Added Category: " (:cname category))}}}))
 
 (rf/reg-event-fx
- :b/preposals-filter.remove-selected-category
+ :b/preposals-filter.remove-category
  (fn [{:keys [db]} [_ category]]
-   {:db (update-in db [:preposals-filter :selected-categories] disj (:id category))}))
+   {:db (update-in db [:preposals-filter :categories] disj (:id category))}))
 
 ;;;; Subscriptions
 (rf/reg-sub
@@ -43,9 +47,14 @@
 
 ;; a set of Category ID's to allow through filter (if empty, let all categories through)
 (rf/reg-sub
- :preposals-filter/selected-categories
+ :preposals-filter/categories
  :<- [:preposals-filter]
- :selected-categories)
+ :categories)
+
+(rf/reg-sub
+ :preposals-filter/categories
+ :<- [:preposals-filter]
+ :categories)
 
 ;;;; Components
 (defn c-preposal
@@ -61,7 +70,15 @@
                                  (str "url('https://s3.amazonaws.com/vetd-logos/" (:logo product) "')")}}]
      [:> ui/ItemContent
       [:> ui/ItemHeader
-       (:pname product) " " [:small " by " (:oname from-org)]]
+       (:pname product) " " [:small " by " (:oname from-org)]
+       (when (empty? (:rounds product))
+         [bc/c-start-round-button {:etype :product
+                                   :eid (:id product)
+                                   :ename (:pname product)
+                                   :props {:floated "right"
+                                           :style {:position "absolute"
+                                                   :right 7}}
+                                   :popup-props {:position "bottom right"}}])]
       [:> ui/ItemMeta
        (if pricing-estimate-value
          [:span
@@ -81,12 +98,6 @@
                            175)]
       
       [:> ui/ItemExtra
-       (when (empty? (:rounds product))
-         [bc/c-start-round-button {:etype :product
-                                   :eid (:id product)
-                                   :ename (:pname product)
-                                   :props {:floated "right"}
-                                   :popup-props {:position "bottom right"}}])
        [bc/c-categories product]
        (when (= "Yes" (docs/get-field-value-from-response-prompt
                        product-profile-responses "Do you offer a free trial?" "value" :sval))
@@ -98,10 +109,10 @@
                                                 :marginLeft -14}}}])]))
 
 (defn filter-preposals
-  [preposals selected-categories]
+  [preposals categories]
   (->> (for [{:keys [product] :as preposal} preposals
              category (:categories product)]
-         (when (selected-categories (:id category))
+         (when (categories (:id category))
            preposal))
        (remove nil?)
        distinct))
@@ -109,7 +120,8 @@
 (defn c-page []
   (let [org-id& (rf/subscribe [:org-id])]
     (when @org-id&
-      (let [selected-categories& (rf/subscribe [:preposals-filter/selected-categories])
+      (let [filter-categories& (rf/subscribe [:preposals-filter/categories])
+            
             preps& (rf/subscribe [:gql/sub
                                   {:queries
                                    [[:docs {:dtype "preposal"
@@ -159,20 +171,44 @@
                    (when (not-empty categories)
                      [:div.sidebar
                       [:> ui/Segment
-                       [:h4 "Filter By Category"]
+                       [:h4 "Status"]
+                       [:> ui/Checkbox {:label "Live"
+                                        :checked true #_(boolean (@filter-categories& id))
+                                        :on-change (fn [_ this]
+                                                     (rf/dispatch [(if (.-checked this)
+                                                                     :b/preposals-filter.add-status
+                                                                     :b/preposals-filter.remove-status)
+                                                                   "live"]))}]
+                       [:> ui/Checkbox {:label "Rejected"
+                                        :checked false #_(boolean (@filter-categories& id))
+                                        :on-change (fn [_ this]
+                                                     (rf/dispatch [(if (.-checked this)
+                                                                     :b/preposals-filter.add-status
+                                                                     :b/preposals-filter.remove-status)
+                                                                   "rejected"]))}]
+                       [:h4 "Trial"]
+                       [:> ui/Checkbox {:label "Free Trial"
+                                        :checked false #_(boolean (@filter-categories& id))
+                                        :on-change (fn [_ this]
+                                                     (rf/dispatch [(if (.-checked this)
+                                                                     :b/preposals-filter.add-feature
+                                                                     :b/preposals-filter.remove-feature)
+                                                                   "Free Trial"]))}]
+                       [:h4 "Category"]
                        (doall
                         (for [[id v] categories]
                           (let [category (first v)]
                             ^{:key id} 
                             [:> ui/Checkbox {:label (str (:cname category) " (" (count v) ")")
-                                             :checked (boolean (@selected-categories& id))
-                                             :onChange (fn [_ this]
-                                                         (if (.-checked this)
-                                                           (rf/dispatch [:b/preposals-filter.add-selected-category category])
-                                                           (rf/dispatch [:b/preposals-filter.remove-selected-category category])))}])))]]))
+                                             :checked (boolean (@filter-categories& id))
+                                             :on-change (fn [_ this]
+                                                          (rf/dispatch [(if (.-checked this)
+                                                                          :b/preposals-filter.add-category
+                                                                          :b/preposals-filter.remove-category)
+                                                                        category]))}])))]]))
                  [:> ui/ItemGroup {:class "inner-container results"}  
                   (let [preposals (cond-> unfiltered-preposals
-                                    (seq @selected-categories&) (filter-preposals @selected-categories&))]
+                                    (seq @filter-categories&) (filter-preposals @filter-categories&))]
                     (for [preposal preposals]
                       ^{:key (:id preposal)}
                       [c-preposal preposal]))]]

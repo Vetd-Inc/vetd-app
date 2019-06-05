@@ -67,7 +67,7 @@
  :init-db
  (constantly
   {:search-term ""
-   :preposals-filter {:selected-categories #{}}
+   :preposals-filter p-bpreposals/default-preposals-filter
    :rounds-filter {:selected-statuses #{}}
    :loading? {:products #{}} ; entities (by ID) that are in a loading?=true state (for UI display)
    :round-products-order []}))
