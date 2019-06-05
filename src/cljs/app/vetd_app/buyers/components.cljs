@@ -169,34 +169,37 @@
            :on-click #(.stopPropagation %)
            :context @context-ref&
            :content (r/as-element
-                     [:> ui/Form {:as "div"
-                                  :class "popup-dropdown-form"
-                                  :style {:width 400}}
-                      [:> ui/Dropdown {:options options
-                                       :placeholder "Enter reason..."
-                                       :search true
-                                       :selection true
-                                       :multiple false
-                                       :selectOnBlur false
-                                       :selectOnNavigation true
-                                       :closeOnChange true
-                                       :allowAdditions true
-                                       :additionLabel "Hit 'Enter' to Submit "
-                                       :onAddItem (fn [_ this]
-                                                    #_(->> this
-                                                           .-value
-                                                           vector
-                                                           ui/as-dropdown-options
-                                                           (swap! options& concat)))
-                                       :onChange (fn [_ this] (reset! reason& (.-value this)))}]
-                      [:> ui/Button
-                       {:color "red"
-                        :on-click #(do (reset! popup-open?& false)
-                                       #_(rf/dispatch [:b/round.disqualify
-                                                       (:id round)
-                                                       (:id product)
-                                                       @reason&]))}
-                       "Reject"]])}]
+                     [:div
+                      [:p {:style {:margin-top 0}}
+                       "Vendor will be notified, but will not be permitted to reach out."]
+                      [:> ui/Form {:as "div"
+                                   :class "popup-dropdown-form"
+                                   :style {:width 450}}
+                       [:> ui/Dropdown {:options options
+                                        :placeholder "Enter reason..."
+                                        :search true
+                                        :selection true
+                                        :multiple false
+                                        :selectOnBlur false
+                                        :selectOnNavigation true
+                                        :closeOnChange true
+                                        :allowAdditions true
+                                        :additionLabel "Hit 'Enter' to Submit "
+                                        :onAddItem (fn [_ this]
+                                                     #_(->> this
+                                                            .-value
+                                                            vector
+                                                            ui/as-dropdown-options
+                                                            (swap! options& concat)))
+                                        :onChange (fn [_ this] (reset! reason& (.-value this)))}]
+                       [:> ui/Button
+                        {:color "red"
+                         :on-click #(do (reset! popup-open?& false)
+                                        #_(rf/dispatch [:b/round.disqualify
+                                                        (:id round)
+                                                        (:id product)
+                                                        @reason&]))}
+                        "Reject"]]])}]
          [:> ui/Popup
           {:content "Reject PrePosal"
            :position "bottom center"
