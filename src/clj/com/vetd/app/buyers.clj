@@ -256,7 +256,7 @@ Round URL: https://app.vetd.com/b/rounds/%s"
 
 (defn add-requirement-to-round
   "Add requirement to round by Round ID or by the form template ID of requirements form template."
-  [requirement-text & {:keys [round-id form-template-id]}]
+  [requirement-text & [{:keys [round-id form-template-id]}]]
   (let [req-form-template-id (or form-template-id
                                  (-> [[:rounds {:id round-id}
                                        [:req-form-template-id]]]
@@ -324,8 +324,7 @@ Round URL: https://app.vetd.com/b/rounds/%s"
                                                        vals
                                                        ffirst)]
     (doseq [requirement requirements]
-      (add-requirement-to-round requirement
-                                :form-template-id req-form-template-id))
+      (add-requirement-to-round requirement {:form-template-id req-form-template-id}))
     (com/sns-publish :ui-misc
                      "New Topics Added to Round"
                      (format
