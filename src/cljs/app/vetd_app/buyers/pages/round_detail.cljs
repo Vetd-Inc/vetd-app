@@ -250,7 +250,7 @@
     (fn [round-id]
       [:<>
        [:h3 "VetdRound Initiation Form"]
-       [:p "Let us know a little more about who will be using this product and what features you are looking for. Then, we'll gather quotes for you to compare right away."]
+       [:p "Let us know a little more about what features you are looking for and who will be using this product. Then, we'll gather quotes for you to compare right away."]
        [:> ui/Form {:as "div"
                     :class "round-initiation-form"}
         [:> ui/FormField
@@ -1114,7 +1114,7 @@
                        [:gql/q
                         {:queries
                          [[:products {:_where {:pname {:_ilike (str "%" @search-query& "%")}}
-                                      :_limit 50
+                                      :_limit 100
                                       :_order_by {:pname :asc}}
                            [:id :pname]]]}])
             product-ids-already-in-round (set (map (comp :id :product) round-product))

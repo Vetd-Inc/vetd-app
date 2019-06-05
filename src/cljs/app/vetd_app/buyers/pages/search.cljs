@@ -151,9 +151,9 @@
   (let [product-profile-responses (-> form-docs first :response-prompts)
         preposal-responses (-> docs first :responses)
         requested-preposal? (not-empty forms)]
-    [:> ui/Item {:onClick #(rf/dispatch (if preposal-responses
-                                          [:b/nav-preposal-detail (-> docs first :idstr)]
-                                          [:b/nav-product-detail idstr]))}
+    [:> ui/Item {:on-click #(rf/dispatch (if preposal-responses
+                                           [:b/nav-preposal-detail (-> docs first :idstr)]
+                                           [:b/nav-product-detail idstr]))}
      [:div.product-logo {:style {:background-image (str "url('https://s3.amazonaws.com/vetd-logos/" logo "')")}}]
      [:> ui/ItemContent
       [:> ui/ItemHeader
@@ -212,17 +212,17 @@
 (defn c-category-search-results
   [{:keys [cname id idstr rounds] :as cat}]
   [:div.category-search-result
-   (if (empty? rounds)
-     [bc/c-start-round-button {:etype :category
-                               :eid id
-                               :ename cname
-                               :popup-props {:position "bottom center"}}]
+   (if-let [round-idstr (some-> rounds first :idstr)]
      [:> ui/Label {:color "teal"
                    :size "large"
                    :as "a"
-                   :onClick #(do (.stopPropagation %)
-                                 (rf/dispatch [:b/nav-rounds]))}
-      "VetdRound In Progress for \"" cname "\""])])
+                   :on-click #(do (.stopPropagation %)
+                                  (rf/dispatch [:b/nav-round-detail round-idstr]))}
+      "VetdRound In Progress for \"" cname "\""]
+     [bc/c-start-round-button {:etype :category
+                               :eid id
+                               :ename cname
+                               :popup-props {:position "bottom center"}}])])
 
 (defn c-search-results
   [search-query]
@@ -277,7 +277,7 @@
                                         [:id :idstr :cname
                                          [:rounds {:buyer-id org-id
                                                    :deleted nil}
-                                          [:id :created :status]]]]]}])
+                                          [:id :idstr :created :status]]]]]}])
                      [])
         loading? (or @(rf/subscribe [:waiting-for-debounce?])
                      (= :loading prods)
