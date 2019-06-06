@@ -203,11 +203,11 @@
                                                 :marginLeft -14}}}])]))
 
 (defn c-product-search-results
-  [ps]
+  [products]
   [:> ui/ItemGroup {:class "results"}
-   (for [p ps]
-     ^{:key (:id p)}
-     [c-product-search-result p])])
+   (for [product products]
+     ^{:key (:id product)}
+     [c-product-search-result product])])
 
 (defn c-category-search-results
   [{:keys [cname id idstr rounds] :as cat}]
@@ -225,7 +225,6 @@
                                :popup-props {:position "bottom center"}}])])
 
 (defn sort-products-by-score [vendors]
-  (def v1 vendors)
   (when (sequential? vendors)
     (->> vendors
          (map (fn [{:keys [products] :as v}]
@@ -282,7 +281,7 @@
                                       [:categories {:ref-deleted nil}
                                        [:id :idstr :cname]]]]]]]}])
                 [])
-        prods' (sort-products-by-score (:orgs prods))
+        prods-sorted (sort-products-by-score (:orgs prods))
         categories (if (not-empty category-ids)
                      @(rf/subscribe [:gql/sub
                                      {:queries
@@ -304,9 +303,7 @@
           (for [c (:categories categories)]
             ^{:key (:id c)}
             [c-category-search-results c])]
-         (for [p prods']
-           ^{:key (:id p)}
-           [c-product-search-results [p]])]
+         [c-product-search-results prods-sorted]]
         (if (= (count @search-query) 0)
           [:> ui/Segment {:placeholder true
                           :class "how-vetd-works"}
