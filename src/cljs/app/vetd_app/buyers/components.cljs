@@ -155,9 +155,11 @@
   (let [popup-open?& (r/atom false)
         context-ref& (r/atom nil)
         reason& (atom "")
-        options (ui/as-dropdown-options ["Outside our budget"
-                                         "Not relevant to our business"
-                                         "We already use a similar tool"])]
+        options& (r/atom (ui/as-dropdown-options ["Outside our budget"
+                                                  "Not relevant to our business"
+                                                  "We already use a similar tool"]))
+        submit #((reset! popup-open?& false)
+                 (rf/dispatch [:b/preposals.reject id @reason&]))]
     (fn [id rejected?]
       (if-not rejected?
         [:<>
@@ -176,7 +178,7 @@
                       [:> ui/Form {:as "div"
                                    :class "popup-dropdown-form"
                                    :style {:width 450}}
-                       [:> ui/Dropdown {:options options
+                       [:> ui/Dropdown {:options @options&
                                         :placeholder "Enter reason..."
                                         :search true
                                         :selection true
@@ -185,21 +187,18 @@
                                         :selectOnNavigation true
                                         :closeOnChange true
                                         :allowAdditions true
-                                        :additionLabel "Hit 'Enter' to Submit "
+                                        :additionLabel "Hit 'Enter' to Reject as "
                                         :onAddItem (fn [_ this]
-                                                     #_(->> this
-                                                            .-value
-                                                            vector
-                                                            ui/as-dropdown-options
-                                                            (swap! options& concat)))
+                                                     (->> this
+                                                          .-value
+                                                          vector
+                                                          ui/as-dropdown-options
+                                                          (swap! options& concat))
+                                                     (submit))
                                         :onChange (fn [_ this] (reset! reason& (.-value this)))}]
                        [:> ui/Button
                         {:color "red"
-                         :on-click #(do (reset! popup-open?& false)
-                                        #_(rf/dispatch [:b/round.disqualify
-                                                        (:id round)
-                                                        (:id product)
-                                                        @reason&]))}
+                         :on-click submit}
                         "Reject"]]])}]
          [:> ui/Popup
           {:header "Reject PrePosal"
@@ -217,14 +216,17 @@
                                           :right 7}
                                   :ref (fn [this] (reset! context-ref& (r/dom-node this)))}])}]]
         [:> ui/Popup
-         {:content "Undo Disqualify"
-          :position "bottom center"
+         {:content "Undo PrePosal Rejection"
+          :position "bottom right"
           :trigger (r/as-element
-                    [:> ui/Button {:icon "undo"
-                                   :basic true
-                                   :floated "right"
-                                   ;; :on-click #(rf/dispatch [:b/round.undo-disqualify (:id round) (:id product)])
-                                   :size "mini"}])}]))))
+                    [:> ui/Icon {:on-click #(do (.stopPropagation %)
+                                                (rf/dispatch [:b/preposals.undo-reject id]))
+                                 :link true
+                                 :color "red"
+                                 :name "undo"
+                                 :size "large"
+                                 :style {:position "absolute"
+                                         :right 7}}])}]))))
 
 (defn c-setup-call-button
   [{:keys [id pname] :as product}

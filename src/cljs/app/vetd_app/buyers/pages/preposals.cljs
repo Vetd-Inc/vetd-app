@@ -40,6 +40,38 @@
  (fn [{:keys [db]} [_ category]]
    {:db (update-in db [:preposals-filter :categories] disj (:id category))}))
 
+(rf/reg-event-fx
+ :b/preposals.reject
+ (fn [{:keys [db]} [_ id reason]]
+   {:ws-send {:payload {:cmd :b/preposals.reject
+                        :return {:handler :b/preposals.reject-return
+                                 :id id}
+                        :id id
+                        :result 0
+                        :reason reason
+                        :buyer-id (util/db->current-org-id db)}}}))
+
+(rf/reg-event-fx
+ :b/preposals.reject-return
+ (fn [{:keys [db]} [_ _ {{:keys [id]} :return}]]
+   {:toast {:type "success"
+            :title "PrePosal Rejected"}
+    :analytics/track {:event "Reject"
+                      :props {:category "Preposal"
+                              :label id}}}))
+
+(rf/reg-event-fx
+ :b/preposals.undo-reject
+ (fn [{:keys [db]} [_ id]]
+   {:ws-send {:payload {:cmd :b/preposals.undo-reject
+                        :id id
+                        :result nil
+                        :reason nil
+                        :buyer-id (util/db->current-org-id db)}}
+    :analytics/track {:event "Undo Reject"
+                      :props {:category "Preposal"
+                              :label id}}}))
+
 ;;;; Subscriptions
 (rf/reg-sub
  :preposals-filter
@@ -63,7 +95,11 @@
   (let [pricing-estimate-value (docs/get-field-value responses "Pricing Estimate" "value" :nval)
         pricing-estimate-unit (docs/get-field-value responses "Pricing Estimate" "unit" :sval)
         pricing-estimate-details (docs/get-field-value responses "Pricing Estimate" "details" :sval)
-        product-profile-responses (-> product :form-docs first :response-prompts)]
+        product-profile-responses (-> product :form-docs first :response-prompts)
+
+        rejected? false
+
+        ]
     [:> ui/Item {:onClick #(rf/dispatch [:b/nav-preposal-detail idstr])}
      ;; TODO make config var 's3-base-url'
      [:div.product-logo {:style {:background-image
@@ -72,7 +108,7 @@
       [:> ui/ItemHeader
        (:pname product) " " [:small " by " (:oname from-org)]
        (when (empty? (:rounds product)) 
-         [bc/c-reject-preposal-button id false])]
+         [bc/c-reject-preposal-button id rejected?])]
       [:> ui/ItemMeta
        (if pricing-estimate-value
          [:span
@@ -91,7 +127,8 @@
                                 "No description available.")
                            175)]
       [:> ui/ItemExtra
-       (when (empty? (:rounds product))
+       (when (and (empty? (:rounds product))
+                  (not rejected?))
          [bc/c-start-round-button {:etype :product
                                    :eid (:id product)
                                    :ename (:pname product)

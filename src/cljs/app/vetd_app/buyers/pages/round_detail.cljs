@@ -143,6 +143,7 @@
                         :round-id round-id
                         :product-id product-id
                         :result nil
+                        :reason nil
                         :buyer-id (util/db->current-org-id db)}}
     :analytics/track {:event "Undo Disqualify Product"
                       :props {:category "Round"
