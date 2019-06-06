@@ -19,17 +19,22 @@
       :pname))
 
 (defn search-prods-vendors->ids
-  [q]
+  [q cat-ids]
   (if (not-empty q)
-    (let [ids (db/hs-query {:select [[:p.id :pid] [:o.id :vid]]
+    (let [ids (db/hs-query {:select [[:p.id :pid] [:o.id :vid]
+                                     [(honeysql.core/raw "coalesce(p.score, 1.0)") :nscore]]
                             :from [[:products :p]]
                             :join [[:orgs :o] [:= :o.id :p.vendor_id]]
+                            :left-join [[:product_categories :pc] [:= :p.id :pc.prod_id]]
                             :where [:and
                                     [:= :p.deleted nil]
                                     [:= :o.deleted nil]
                                     [:or
                                      [(keyword "~*") :p.pname (str ".*?\\m" q ".*")]
-                                     [(keyword "~*") :o.oname (str ".*?\\m" q ".*")]]]
+                                     [(keyword "~*") :o.oname (str ".*?\\m" q ".*")]
+                                     (when (not-empty cat-ids)
+                                       [:in :pc.cat_id cat-ids])]]
+                            :order-by [[:nscore :desc]]
                             :limit 30})
           pids (map :pid ids)
           vids (->> ids
@@ -43,13 +48,21 @@
 (defn search-category-ids
   [q]
   (if (not-empty q)
-    (mapv :id
-          (db/hs-query {:select [:id]
-                        :from [:categories]
-                        :where [:and
-                                [:= :deleted nil]
-                                [(keyword "~*") :cname (str ".*?" q ".*")]]
-                        :limit 5}))))
+    (let [initials (when (#{3 4} (count q))
+                     [(keyword "~*") :cname
+                      (apply str (for [c q]
+                                   (str "\\m" c ".*?")))])
+          wh [(keyword "~*") :cname (str ".*?\\m" q ".*")]
+          wh' (if initials
+                [:or wh initials]
+                wh)]
+      (mapv :id
+            (db/hs-query {:select [:id]
+                          :from [:categories]
+                          :where [:and
+                                  [:= :deleted nil]
+                                  wh']
+                          :limit 5})))))
 
 (defn select-rounds-by-ids
   [b-id v-ids]
@@ -285,10 +298,10 @@ Round URL: https://app.vetd.com/b/rounds/%s"
 ;; TODO use session-id to verify permissions!!!!!!!!!!!!!
 (defmethod com/handle-ws-inbound :b/search
   [{:keys [buyer-id query]} ws-id sub-fn]
-  (-> query
-      search-prods-vendors->ids
-      (assoc :category-ids
-             (search-category-ids query))))
+  (let [cat-ids (search-category-ids query)]
+    (ut/$- -> query
+           (search-prods-vendors->ids $ cat-ids)
+           (assoc :category-ids cat-ids))))
 
 ;; Start a round for either a Product or a Category
 ;; TODO record which user started round
