@@ -162,15 +162,16 @@
       (if-not rejected?
         [:<>
          [:> ui/Popup
-          {:position "top right"
+          {:position "bottom right"
            :on "click"
            :open @popup-open?&
            :on-close #(reset! popup-open?& false)
            :on-click #(.stopPropagation %)
            :context @context-ref&
+           :header "Reject PrePosal"
            :content (r/as-element
                      [:div
-                      [:p {:style {:margin-top 0}}
+                      [:p {:style {:margin-top 7}}
                        "Vendor will be notified, but will not be permitted to reach out."]
                       [:> ui/Form {:as "div"
                                    :class "popup-dropdown-form"
@@ -201,8 +202,9 @@
                                                         @reason&]))}
                         "Reject"]]])}]
          [:> ui/Popup
-          {:content "Reject PrePosal"
-           :position "bottom center"
+          {:header "Reject PrePosal"
+           :content "Reject if you aren't interested"
+           :position "bottom right"
            :context @context-ref&
            :trigger (r/as-element
                      [:> ui/Icon {:on-click #(do (.stopPropagation %)
