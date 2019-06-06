@@ -234,6 +234,12 @@ a.teal:hover {
     border-radius: 4px !important;
     transition: transform .3s ease-out !important;
     cursor: pointer !important;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
     /* HACK to fix bug that hides 'ribbon' labels */
     transform: translate(0) !important;
 
