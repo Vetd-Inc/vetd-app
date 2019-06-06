@@ -1298,7 +1298,15 @@
     [:alter-table {:schema :vetd
                    :name :round_product
                    :columns
-                   {:add {:sort [:integer]}}}]]])
+                   {:add {:sort [:integer]}}}]]
+
+   [[2019 6 6 00 00]
+    
+    [:alter-table {:schema :vetd
+                   :name :docs
+                   :columns
+                   {:add {:result [:integer]
+                          :reason [:text]}}}]]])
 
 #_(mig/mk-migration-files migrations
                           "migrations")
