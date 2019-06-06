@@ -77,7 +77,9 @@
                    :on-change on-change
                    :placeholder placeholder}
                   attrs)]
-   (when icon [:> Icon {:name icon}])])
+   (cond
+     (string? icon) [:> Icon {:name icon}]
+     (not (nil? icon)) icon)])
 
 (def TextArea (component "TextArea"))
 (def Checkbox (component "Checkbox"))

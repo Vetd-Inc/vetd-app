@@ -23,6 +23,11 @@ a.teal:hover {
   color: $teal-highlight !important;
 }
 
+.button {
+  &:active {
+    transform: scale(0.98);
+  }
+}
 
 .main-container {
   padding-top: 35px;
@@ -31,23 +36,32 @@ a.teal:hover {
 /* Top Navigation Menu */
 .top-nav {
   margin-bottom: 30px !important;
-}
-.top-nav > .item {
-  font-weight: 600 !important;
-}
-.top-nav > .logo {
-  margin-top: -20px !important;
-  padding: 0 55px 0 35px !important;
-  /* no hover bg change */
-  background: inherit !important;
-}
-.top-nav > .logo img {
-  height: 60px !important;
-  width: 140px !important;
-}
-.top-nav > .logo img:hover {
-  animation-timing-function: linear;
-  animation: 1s infinite party;
+
+  > .item {
+    font-weight: 600 !important;
+
+    &.page-link {
+      &:active { // mousedown on a top nav link to a page
+        transform: scale(0.98);
+      }
+    }
+  }
+  > .logo {
+    margin-top: -20px !important;
+    padding: 0 55px 0 35px !important;
+    /* no hover bg change */
+    background: inherit !important;
+
+    img {
+      height: 60px !important;
+      width: 140px !important;
+
+      &:hover {
+        animation-timing-function: linear;
+        animation: 1s infinite party;
+      }
+    }
+  }
 }
 @keyframes party {
   0% {
@@ -211,41 +225,52 @@ a.teal:hover {
  * used by: Preposals page
  *          Products & Categories page
  */
-.results > .item  {
-  padding: 15px !important;
-  background: #fff !important;
-  box-shadow: 0 2px 14px 0 rgba(50,50,50,0.1) !important;
-  border-radius: 4px !important;
-  transition: transform .3s ease-out !important;
-  cursor: pointer !important;
-  /* HACK to fix bug that hides 'ribbon' labels */
-  transform: translate(0) !important;
+.results {
+
+  > .item  {
+    padding: 15px !important;
+    background: #fff !important;
+    box-shadow: 0 2px 14px 0 rgba(50,50,50,0.1) !important;
+    border-radius: 4px !important;
+    transition: transform .3s ease-out !important;
+    cursor: pointer !important;
+    /* HACK to fix bug that hides 'ribbon' labels */
+    transform: translate(0) !important;
+
+    &:hover  {
+      transform: translate(0, -1px) !important;
+      box-shadow: 0 3px 21px 0 rgba(50,50,50,0.26) !important;
+      transition: all .05s ease-out !important;
+    }
+    &:active {
+      transform: translate(0, -1px) scale(0.99) !important;
+    }
+
+    > .product-logo {
+      min-width: 128px;
+      min-height: 128px;
+      max-width: 128px;
+      max-height: 128px;
+      margin-right: 15px;
+      background-size: contain;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+
+    > .content {
+      display: flex !important;
+      flex-direction: column !important;
+
+      > .description {
+        flex: 1 !important;
+      }
+      > .extra > .category-tag {
+        margin-top: 11px; /* todo: this is kind of hacky */
+      }
+    }
+  }
 }
-.results > .item:hover  {
-  transform: translate(0, -1px) !important;
-  box-shadow: 0 3px 21px 0 rgba(50,50,50,0.26) !important;
-  transition: all .05s ease-out !important;
-}
-.results > .item > .product-logo {
-  min-width: 128px;
-  min-height: 128px;
-  max-width: 128px;
-  max-height: 128px;
-  margin-right: 15px;
-  background-size: contain;
-  background-position: center;
-  background-repeat: no-repeat;
-}
-.results > .item > .content {
-  display: flex !important;
-  flex-direction: column !important;
-}
-.results > .item > .content > .description {
-  flex: 1 !important;
-}
-.results > .item > .content > .extra > .category-tag {
-  margin-top: 11px; /* todo: this is kind of hacky */
-}
+
 .free-trial-tag {
   margin-left: 15px !important;
 }
