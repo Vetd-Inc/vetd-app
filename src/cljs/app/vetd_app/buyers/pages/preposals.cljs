@@ -8,7 +8,7 @@
             [re-frame.core :as rf]
             [re-com.core :as rc]))
 
-(def default-preposals-filter {:status #{}
+(def default-preposals-filter {:status #{"live"}
                                :features #{}
                                :categories #{}})
 
@@ -28,17 +28,17 @@
     :analytics/page {:name "Buyers Preposals"}}))
 
 (rf/reg-event-fx
- :b/preposals-filter.add-category
- (fn [{:keys [db]} [_ category]]
-   {:db (update-in db [:preposals-filter :categories] conj (:id category))
+ :b/preposals-filter.add
+ (fn [{:keys [db]} [_ group value & [{:keys [event-label]}]]]
+   {:db (update-in db [:preposals-filter group] conj value)
     :analytics/track {:event "Filter"
                       :props {:category "Preposals"
-                              :label (str "Added Category: " (:cname category))}}}))
+                              :label event-label}}}))
 
 (rf/reg-event-fx
- :b/preposals-filter.remove-category
- (fn [{:keys [db]} [_ category]]
-   {:db (update-in db [:preposals-filter :categories] disj (:id category))}))
+ :b/preposals-filter.remove
+ (fn [{:keys [db]} [_ group value]]
+   {:db (update-in db [:preposals-filter group] disj value)}))
 
 (rf/reg-event-fx
  :b/preposals.reject
@@ -76,17 +76,6 @@
 (rf/reg-sub
  :preposals-filter
  :preposals-filter)
-
-;; a set of Category ID's to allow through filter (if empty, let all categories through)
-(rf/reg-sub
- :preposals-filter/categories
- :<- [:preposals-filter]
- :categories)
-
-(rf/reg-sub
- :preposals-filter/categories
- :<- [:preposals-filter]
- :categories)
 
 ;;;; Components
 (defn c-preposal
@@ -142,19 +131,30 @@
                                                 :marginLeft -14}}}])]))
 
 (defn filter-preposals
-  [preposals categories]
-  (->> (for [{:keys [product] :as preposal} preposals
-             category (:categories product)]
-         (when (categories (:id category))
-           preposal))
-       (remove nil?)
-       distinct))
+  "Filter map contains sets that define the included values for a certain group/trait.
+  An empty set makes all values included for a certain group."
+  [preposals filter-map]
+  (let [status (:status filter-map)
+        features (:features filter-map)
+        categories (:categories filter-map)]
+    (cond->> preposals
+      (not-empty status) (filter (fn [{:keys [result]}]
+                                   (or (and (status "live")
+                                            (= result nil))
+                                       (and (status "rejected")
+                                            (= result 0)))))
+      (not-empty features) identity ; TODO implement this filter
+      (not-empty categories) (#(->> (for [{:keys [product] :as preposal} %
+                                          category (:categories product)]
+                                      (when (categories (:id category))
+                                        preposal))
+                                    (remove nil?)
+                                    distinct)))))
 
 (defn c-page []
   (let [org-id& (rf/subscribe [:org-id])]
     (when @org-id&
-      (let [filter-categories& (rf/subscribe [:preposals-filter/categories])
-            
+      (let [filter& (rf/subscribe [:preposals-filter])
             preps& (rf/subscribe [:gql/sub
                                   {:queries
                                    [[:docs {:dtype "preposal"
@@ -196,52 +196,58 @@
             (let [unfiltered-preposals (:docs @preps&)]
               (if (seq unfiltered-preposals)
                 [:div.container-with-sidebar
-                 (let [categories (->> unfiltered-preposals
+                 (let [categories (->> unfiltered-preposals ; TODO remove categories based on prior filtering? (e.g., status)
                                        (map (comp :categories :product))
                                        flatten
                                        (map #(select-keys % [:id :cname]))
                                        (group-by :id))]
-                   (when (not-empty categories)
-                     [:div.sidebar
-                      [:> ui/Segment
-                       [:h4 "Status"]
-                       [:> ui/Checkbox {:label "Live"
-                                        :checked true #_(boolean (@filter-categories& id))
-                                        :on-change (fn [_ this]
-                                                     (rf/dispatch [(if (.-checked this)
-                                                                     :b/preposals-filter.add-status
-                                                                     :b/preposals-filter.remove-status)
-                                                                   "live"]))}]
-                       [:> ui/Checkbox {:label "Rejected"
-                                        :checked false #_(boolean (@filter-categories& id))
-                                        :on-change (fn [_ this]
-                                                     (rf/dispatch [(if (.-checked this)
-                                                                     :b/preposals-filter.add-status
-                                                                     :b/preposals-filter.remove-status)
-                                                                   "rejected"]))}]
-                       [:h4 "Trial"]
-                       [:> ui/Checkbox {:label "Free Trial"
-                                        :checked false #_(boolean (@filter-categories& id))
-                                        :on-change (fn [_ this]
-                                                     (rf/dispatch [(if (.-checked this)
-                                                                     :b/preposals-filter.add-feature
-                                                                     :b/preposals-filter.remove-feature)
-                                                                   "Free Trial"]))}]
-                       [:h4 "Category"]
-                       (doall
-                        (for [[id v] categories]
-                          (let [category (first v)]
-                            ^{:key id} 
-                            [:> ui/Checkbox {:label (str (:cname category) " (" (count v) ")")
-                                             :checked (boolean (@filter-categories& id))
-                                             :on-change (fn [_ this]
-                                                          (rf/dispatch [(if (.-checked this)
-                                                                          :b/preposals-filter.add-category
-                                                                          :b/preposals-filter.remove-category)
-                                                                        category]))}])))]]))
+                   
+                   [:div.sidebar
+                    [:> ui/Segment
+                     [:h4 "Status"]
+                     [:> ui/Checkbox {:label "Live"
+                                      :checked (-> @filter& :status (contains? "live") boolean)
+                                      :on-change (fn [_ this]
+                                                   (rf/dispatch [(if (.-checked this)
+                                                                   :b/preposals-filter.add
+                                                                   :b/preposals-filter.remove)
+                                                                 :status
+                                                                 "live"]))}]
+                     [:> ui/Checkbox {:label "Rejected"
+                                      :checked (-> @filter& :status (contains? "rejected") boolean)
+                                      :on-change (fn [_ this]
+                                                   (rf/dispatch [(if (.-checked this)
+                                                                   :b/preposals-filter.add
+                                                                   :b/preposals-filter.remove)
+                                                                 :status
+                                                                 "rejected"]))}]
+                     ;; [:h4 "Trial"]
+                     ;; [:> ui/Checkbox {:label "Free Trial"
+                     ;;                  :checked (-> @filter& :features (contains? "free-trial") boolean)
+                     ;;                  :on-change (fn [_ this]
+                     ;;                               (rf/dispatch [(if (.-checked this)
+                     ;;                                               :b/preposals-filter.add
+                     ;;                                               :b/preposals-filter.remove)
+                     ;;                                             :features
+                     ;;                                             "free-trial"]))}]
+                     (when (not-empty categories)
+                       [:<>
+                        [:h4 "Category"]
+                        (doall
+                         (for [[id v] categories]
+                           (let [category (first v)]
+                             ^{:key id} 
+                             [:> ui/Checkbox {:label (str (:cname category) " (" (count v) ")")
+                                              :checked (-> @filter& :categories (contains? id) boolean)
+                                              :on-change (fn [_ this]
+                                                           (rf/dispatch [(if (.-checked this)
+                                                                           :b/preposals-filter.add
+                                                                           :b/preposals-filter.remove)
+                                                                         :categories
+                                                                         id
+                                                                         {:event-label (str "Added Category: " (:cname category))}]))}])))])]])
                  [:> ui/ItemGroup {:class "inner-container results"}  
-                  (let [preposals (cond-> unfiltered-preposals
-                                    (seq @filter-categories&) (filter-preposals @filter-categories&))]
+                  (let [preposals (filter-preposals unfiltered-preposals @filter&)]
                     (for [preposal preposals]
                       ^{:key (:id preposal)}
                       [c-preposal preposal]))]]

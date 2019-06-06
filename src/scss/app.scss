@@ -112,6 +112,10 @@ a.teal:hover {
 .sidebar .segment {
   box-shadow: 0 2px 14px 0 rgba(50,50,50,0.1) !important;
   border: none !important;
+
+  h4 {
+    margin-bottom: 8px;
+  }
 }
 .sidebar .segment > .button:not(:first-of-type),
 .sidebar .segment > .label {
