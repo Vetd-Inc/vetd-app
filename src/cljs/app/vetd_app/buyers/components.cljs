@@ -158,8 +158,8 @@
         options& (r/atom (ui/as-dropdown-options ["Outside our budget"
                                                   "Not relevant to our business"
                                                   "We already use a similar tool"]))
-        submit #((reset! popup-open?& false)
-                 (rf/dispatch [:b/preposals.reject id @reason&]))]
+        submit #(do (reset! popup-open?& false)
+                    (rf/dispatch [:b/preposals.reject id @reason&]))]
     (fn [id rejected?]
       (if-not rejected?
         [:<>
