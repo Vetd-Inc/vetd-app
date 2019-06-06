@@ -147,7 +147,7 @@
 ;;;; Components
 (defn c-product-search-result
   [{:keys [id idstr pname short-desc logo categories
-           rounds form-docs forms docs] :as product} vendor]
+           rounds form-docs forms docs vendor] :as product} ]
   (let [product-profile-responses (-> form-docs first :response-prompts)
         preposal-responses (-> docs first :responses)
         requested-preposal? (not-empty forms)]
@@ -203,11 +203,11 @@
                                                 :marginLeft -14}}}])]))
 
 (defn c-product-search-results
-  [v]
+  [products]
   [:> ui/ItemGroup {:class "results"}
-   (for [p (:products v)]
-     ^{:key (:id p)}
-     [c-product-search-result p v])])
+   (for [product products]
+     ^{:key (:id product)}
+     [c-product-search-result product])])
 
 (defn c-category-search-results
   [{:keys [cname id idstr rounds] :as cat}]
@@ -224,6 +224,17 @@
                                :ename cname
                                :popup-props {:position "bottom center"}}])])
 
+(defn sort-products-by-score [vendors]
+  (when (sequential? vendors)
+    (->> vendors
+         (map (fn [{:keys [products] :as v}]
+                (let [v' (dissoc v :products)]
+                  (map #(assoc % :vendor v)
+                       products))))
+         flatten
+         (sort-by :score)
+         reverse)))
+
 (defn c-search-results
   [search-query]
   (let [org-id @(rf/subscribe [:org-id])
@@ -234,7 +245,7 @@
                                  [[:orgs {:id vendor-ids}
                                    [:id :oname :idstr :short-desc
                                     [:products {:id product-ids}
-                                     [:id :pname :idstr :logo
+                                     [:id :pname :idstr :logo :score
                                       [:form-docs {:ftype "product-profile"
                                                    :_order_by {:created :desc}
                                                    :_limit 1
@@ -270,6 +281,7 @@
                                       [:categories {:ref-deleted nil}
                                        [:id :idstr :cname]]]]]]]}])
                 [])
+        prods-sorted (sort-products-by-score (:orgs prods))
         categories (if (not-empty category-ids)
                      @(rf/subscribe [:gql/sub
                                      {:queries
@@ -291,9 +303,7 @@
           (for [c (:categories categories)]
             ^{:key (:id c)}
             [c-category-search-results c])]
-         (for [v (:orgs prods)]
-           ^{:key (:id v)}
-           [c-product-search-results v])]
+         [c-product-search-results prods-sorted]]
         (if (= (count @search-query) 0)
           [:> ui/Segment {:placeholder true
                           :class "how-vetd-works"}

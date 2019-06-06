@@ -139,6 +139,20 @@
       (clojure.pprint/with-pprint-dispatch clojure.pprint/code-dispatch
         (-> m (dissoc :name) clojure.pprint/pprint)))]})
 
+(defmethod mk-sql :raw-script
+  [[_ {name-kw :name :as m}]]
+  {:name-part (name name-kw)
+   :ext "sql"
+   :up (-> (str "migrations_scripts/" (name name-kw) ".up.sql")
+           io/resource
+           slurp
+           st/split-lines)
+   :down (-> (str "migrations_scripts/" (name name-kw) ".down.sql")
+             io/resource
+             slurp
+             st/split-lines)})
+
+
 (defmethod mk-sql :alter-table
   [[_ {:keys [schema columns pk] table :name}]]
   (let [{:keys [add]} columns
