@@ -43,7 +43,7 @@
 (rf/reg-event-fx
  :b/preposals.reject
  (fn [{:keys [db]} [_ id reason]]
-   {:ws-send {:payload {:cmd :b/preposals.reject
+   {:ws-send {:payload {:cmd :b/preposals.set-result
                         :return {:handler :b/preposals.reject-return
                                  :id id}
                         :id id
@@ -63,7 +63,7 @@
 (rf/reg-event-fx
  :b/preposals.undo-reject
  (fn [{:keys [db]} [_ id]]
-   {:ws-send {:payload {:cmd :b/preposals.undo-reject
+   {:ws-send {:payload {:cmd :b/preposals.set-result
                         :id id
                         :result nil
                         :reason nil
@@ -91,15 +91,12 @@
 ;;;; Components
 (defn c-preposal
   "Component to display Preposal as a list item."
-  [{:keys [id idstr product from-org responses]}]
+  [{:keys [id idstr result product from-org responses]}]
   (let [pricing-estimate-value (docs/get-field-value responses "Pricing Estimate" "value" :nval)
         pricing-estimate-unit (docs/get-field-value responses "Pricing Estimate" "unit" :sval)
         pricing-estimate-details (docs/get-field-value responses "Pricing Estimate" "details" :sval)
         product-profile-responses (-> product :form-docs first :response-prompts)
-
-        rejected? false
-
-        ]
+        rejected? (= 0 result)]
     [:> ui/Item {:onClick #(rf/dispatch [:b/nav-preposal-detail idstr])}
      ;; TODO make config var 's3-base-url'
      [:div.product-logo {:style {:background-image
@@ -164,7 +161,7 @@
                                             :to-org-id @org-id&
                                             :_order_by {:created :desc}
                                             :deleted nil}
-                                     [:id :idstr :title
+                                     [:id :idstr :title :result
                                       [:product [:id :pname :logo
                                                  [:form-docs {:doc-deleted nil
                                                               :ftype "product-profile"

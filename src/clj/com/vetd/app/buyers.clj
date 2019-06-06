@@ -302,8 +302,8 @@ Round URL: https://app.vetd.com/b/rounds/%s"
   (send-prep-req prep-req)
   (docs/create-preposal-req-form prep-req))
 
-;; Reject a Preposal
-(defmethod com/handle-ws-inbound :b/preposals.reject
+;; [Reject]/[Undo Reject] a Preposal
+(defmethod com/handle-ws-inbound :b/preposals.set-result
   [{:keys [id result reason buyer-id] :as req} ws-id sub-fn]
   (set-preposal-result id result reason)
   {})
