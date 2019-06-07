@@ -143,7 +143,12 @@
                                             (= result nil))
                                        (and (status "rejected")
                                             (= result 0)))))
-      (not-empty features) identity ; TODO implement this filter
+      (not-empty features) (filter (fn [{:keys [product]}]
+                                     (if (features "free-trial")
+                                       (= "Yes"
+                                          (some-> product :form-docs first :response-prompts
+                                                  (docs/get-value-by-term :product/free-trial?)))
+                                       true)))
       (not-empty categories) (#(->> (for [{:keys [product] :as preposal} %
                                           category (:categories product)]
                                       (when (categories (:id category))
@@ -220,15 +225,15 @@
                                                                    :b/preposals-filter.remove)
                                                                  :status
                                                                  "rejected"]))}]
-                     ;; [:h4 "Trial"]
-                     ;; [:> ui/Checkbox {:label "Free Trial"
-                     ;;                  :checked (-> @filter& :features (contains? "free-trial") boolean)
-                     ;;                  :on-change (fn [_ this]
-                     ;;                               (rf/dispatch [(if (.-checked this)
-                     ;;                                               :b/preposals-filter.add
-                     ;;                                               :b/preposals-filter.remove)
-                     ;;                                             :features
-                     ;;                                             "free-trial"]))}]
+                     [:h4 "Trial"]
+                     [:> ui/Checkbox {:label "Free Trial"
+                                      :checked (-> @filter& :features (contains? "free-trial") boolean)
+                                      :on-change (fn [_ this]
+                                                   (rf/dispatch [(if (.-checked this)
+                                                                   :b/preposals-filter.add
+                                                                   :b/preposals-filter.remove)
+                                                                 :features
+                                                                 "free-trial"]))}]
                      (when (not-empty categories)
                        [:<>
                         [:h4 "Category"]
