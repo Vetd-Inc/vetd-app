@@ -64,21 +64,25 @@
                 :on-close #(reset! popup-open?& false)
                 :on-click #(.stopPropagation %)
                 :context @context-ref&
+                :header "Create a New VetdRound"
                 :content (r/as-element
-                          [:> ui/Form {:style {:width 500}}
-                           [:> ui/FormField
-                            [:label "Enter a name for your VetdRound:"]
-                            [:> ui/Input
-                             {:placeholder "E.g., Marketing Analytics Products"
-                              :default-value @title&
-                              :on-change (fn [_ this]
-                                           (reset! title& (.-value this)))
-                              :action (r/as-element
-                                       [:> ui/Button
-                                        {:color "blue"
-                                         :on-click #(do (reset! popup-open?& false)
-                                                        (start-round-fn))}
-                                        "Create"])}]]])}
+                          [:div
+                           [:p {:style {:margin-top 7
+                                        :margin-bottom 7}}
+                            "Enter a name for your VetdRound:"]
+                           [:> ui/Form {:style {:width 500}}
+                            [:> ui/FormField
+                             [:> ui/Input
+                              {:placeholder "E.g., Marketing Analytics Products"
+                               :default-value @title&
+                               :on-change (fn [_ this]
+                                            (reset! title& (.-value this)))
+                               :action (r/as-element
+                                        [:> ui/Button
+                                         {:color "blue"
+                                          :on-click #(do (reset! popup-open?& false)
+                                                         (start-round-fn))}
+                                         "Create"])}]]]])}
                popup-props)]
        [:> ui/Popup
         (merge
@@ -217,14 +221,12 @@
                                     :style {:position "absolute"
                                             :right 7}
                                     :ref (fn [this] (reset! context-ref& (r/dom-node this)))}]
-                       [:> ui/Button {:on-click #(do (.stopPropagation %)
-                                                     (swap! popup-open?& not))
+                       [:> ui/Button {:on-click #(swap! popup-open?& not)
                                       :color "white"
                                       :fluid true
                                       :icon true
                                       :labelPosition "left"
                                       :ref (fn [this] (reset! context-ref& (r/dom-node this)))}
-                        
                         "Reject"
                         [:> ui/Icon {:name "close"}]]))}]]
         [:> ui/Popup
