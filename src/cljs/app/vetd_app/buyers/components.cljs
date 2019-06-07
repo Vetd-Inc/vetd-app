@@ -191,6 +191,7 @@
                                         :selectOnBlur false
                                         :selectOnNavigation true
                                         :closeOnChange true
+                                        :header "Enter a custom reason..."
                                         :allowAdditions true
                                         :additionLabel "Hit 'Enter' to Reject as "
                                         :onAddItem (fn [_ this]

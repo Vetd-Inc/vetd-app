@@ -267,6 +267,7 @@
                           :search true
                           :selection true
                           :multiple true
+                          :header "Enter a custom topic..."
                           :allowAdditions true
                           :additionLabel "Hit 'Enter' to Add "
                           :noResultsMessage "Type to add a new topic..."
@@ -1058,6 +1059,7 @@
                         :selectOnBlur false
                         :selectOnNavigation true
                         :closeOnChange false
+                        :header "Enter a custom topic..."
                         :allowAdditions true
                         :additionLabel "Hit 'Enter' to Add "
                         :noResultsMessage "Type to add a new topic..."
