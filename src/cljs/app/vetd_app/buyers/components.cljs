@@ -151,8 +151,9 @@
      [:> ui/StepDescription "Final decision"]]]])
 
 (defn c-reject-preposal-button
-  [id rejected?]
+  [id rejected? & [{:keys [icon?]}]]
   (let [popup-open?& (r/atom false)
+        popup-position (if icon? "bottom right" "bottom left")
         context-ref& (r/atom nil)
         reason& (atom "")
         options& (r/atom (ui/as-dropdown-options ["Outside our budget"
@@ -164,7 +165,7 @@
       (if-not rejected?
         [:<>
          [:> ui/Popup
-          {:position "bottom right"
+          {:position popup-position
            :on "click"
            :open @popup-open?&
            :on-close #(reset! popup-open?& false)
@@ -203,30 +204,49 @@
          [:> ui/Popup
           {:header "Reject PrePosal"
            :content "Reject if you aren't interested"
-           :position "bottom right"
+           :position popup-position
            :context @context-ref&
            :trigger (r/as-element
-                     [:> ui/Icon {:on-click #(do (.stopPropagation %)
-                                                 (swap! popup-open?& not))
-                                  :color "black"
-                                  :link true
-                                  :name "close"
-                                  :size "large"
-                                  :style {:position "absolute"
-                                          :right 7}
-                                  :ref (fn [this] (reset! context-ref& (r/dom-node this)))}])}]]
+                     (if icon?
+                       [:> ui/Icon {:on-click #(do (.stopPropagation %)
+                                                   (swap! popup-open?& not))
+                                    :color "black"
+                                    :link true
+                                    :name "close"
+                                    :size "large"
+                                    :style {:position "absolute"
+                                            :right 7}
+                                    :ref (fn [this] (reset! context-ref& (r/dom-node this)))}]
+                       [:> ui/Button {:on-click #(do (.stopPropagation %)
+                                                     (swap! popup-open?& not))
+                                      :color "white"
+                                      :fluid true
+                                      :icon true
+                                      :labelPosition "left"
+                                      :ref (fn [this] (reset! context-ref& (r/dom-node this)))}
+                        
+                        "Reject"
+                        [:> ui/Icon {:name "close"}]]))}]]
         [:> ui/Popup
          {:content "Undo PrePosal Rejection"
-          :position "bottom right"
+          :position popup-position
           :trigger (r/as-element
-                    [:> ui/Icon {:on-click #(do (.stopPropagation %)
-                                                (rf/dispatch [:b/preposals.undo-reject id]))
-                                 :link true
-                                 :color "red"
-                                 :name "undo"
-                                 :size "large"
-                                 :style {:position "absolute"
-                                         :right 7}}])}]))))
+                    (if icon?
+                      [:> ui/Icon {:on-click #(do (.stopPropagation %)
+                                                  (rf/dispatch [:b/preposals.undo-reject id]))
+                                   :link true
+                                   :color "red"
+                                   :name "undo"
+                                   :size "large"
+                                   :style {:position "absolute"
+                                           :right 7}}]
+                      [:> ui/Button {:on-click #(rf/dispatch [:b/preposals.undo-reject id])
+                                     :color "white"
+                                     :fluid true
+                                     :icon true
+                                     :labelPosition "left"}
+                       "Undo Reject"
+                       [:> ui/Icon {:name "undo"}]]))}]))))
 
 (defn c-setup-call-button
   [{:keys [id pname] :as product}

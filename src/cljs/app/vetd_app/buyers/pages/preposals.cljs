@@ -94,7 +94,7 @@
       [:> ui/ItemHeader
        (:pname product) " " [:small " by " (:oname from-org)]
        (when (empty? (:rounds product)) 
-         [bc/c-reject-preposal-button id rejected?])]
+         [bc/c-reject-preposal-button id rejected? {:icon? true}])]
       [:> ui/ItemMeta
        (if pricing-estimate-value
          [:span
@@ -166,7 +166,7 @@
                                             :to-org-id @org-id&
                                             :_order_by {:created :desc}
                                             :deleted nil}
-                                     [:id :idstr :title :result
+                                     [:id :idstr :title :result :reason
                                       [:product [:id :pname :logo
                                                  [:form-docs {:doc-deleted nil
                                                               :ftype "product-profile"
