@@ -167,11 +167,11 @@
                                                               :ftype "product-profile"
                                                               :_order_by {:created :desc}
                                                               :_limit 1}
-                                                  [:id 
-                                                   [:response-prompts {:prompt-prompt ["Describe your product or service"
-                                                                                       "Do you offer a free trial?"]
+                                                  [:id
+                                                   [:response-prompts {:prompt-term ["product/description"
+                                                                                     "product/free-trial?"]
                                                                        :ref_deleted nil}
-                                                    [:id :prompt-id :notes :prompt-prompt
+                                                    [:id :prompt-id :notes :prompt-prompt :prompt-term
                                                      [:response-prompt-fields
                                                       [:id :prompt-field-fname :idx :sval :nval :dval]]]]]]
                                                  [:rounds {:buyer-id @org-id&
@@ -201,7 +201,6 @@
                                        flatten
                                        (map #(select-keys % [:id :cname]))
                                        (group-by :id))]
-                   
                    [:div.sidebar
                     [:> ui/Segment
                      [:h4 "Status"]

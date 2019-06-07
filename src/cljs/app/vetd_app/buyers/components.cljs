@@ -377,7 +377,9 @@
     [c-display-field 5 "Free Trial"
      (when (has-data? (v-fn :product/free-trial?))
        (if (= "Yes" (v-fn :product/free-trial?))
-         (v-fn :product/free-trial-terms)
+         (if (has-data? (v-fn :product/free-trial-terms))
+           (v-fn :product/free-trial-terms)
+           "Yes")
          "No"))]]
    [:> ui/GridRow
     [c-display-field 5 "Payment Options" (v-fn :product/payment-options)]
