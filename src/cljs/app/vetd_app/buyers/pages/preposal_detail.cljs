@@ -106,7 +106,7 @@
                               {:queries
                                [[:docs {:dtype "preposal"
                                         :idstr @preposal-idstr&}
-                                 [:id :idstr :title
+                                 [:id :idstr :title :result :reason
                                   [:product
                                    [:id :pname :logo
                                     [:form-docs {:ftype "product-profile"
@@ -151,13 +151,15 @@
          [bc/c-back-button {:on-click #(rf/dispatch [:b/nav-preposals])}
           "All PrePosals"]]
         (when-not (= :loading @preps&)
-          (let [{:keys [product]} (-> @preps& :docs first)]
+          (let [{:keys [id result product]} (-> @preps& :docs first)
+                rejected? (= 0 result)]
             (when (empty? (:rounds product))
               [:> ui/Segment
                [bc/c-start-round-button {:etype :product
                                          :eid (:id product)
                                          :ename (:pname product)
                                          :props {:fluid true}}]
+               [bc/c-reject-preposal-button id rejected?]
                [bc/c-setup-call-button product (:vendor product)]
                [bc/c-ask-a-question-button product (:vendor product)]])))]
        [:div.inner-container

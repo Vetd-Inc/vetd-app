@@ -143,6 +143,7 @@
                         :round-id round-id
                         :product-id product-id
                         :result nil
+                        :reason nil
                         :buyer-id (util/db->current-org-id db)}}
     :analytics/track {:event "Undo Disqualify Product"
                       :props {:category "Round"
@@ -462,7 +463,7 @@
                                       (reset! reason (.-value this)))
                          :action (r/as-element
                                   [:> ui/Button
-                                   {:color "teal"
+                                   {:color "red"
                                     :on-click #(do (reset! popup-open? false)
                                                    (rf/dispatch [:b/round.disqualify
                                                                  (:id round)

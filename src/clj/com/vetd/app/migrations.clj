@@ -1299,7 +1299,7 @@
                    :name :round_product
                    :columns
                    {:add {:sort [:integer]}}}]]
-
+   
    [[2019 6 5 00 00]
 
     [:alter-table {:schema :vetd
@@ -1308,7 +1308,15 @@
                    {:add {:score [:numeric]}}}]
 
     [:raw-script {:schema :vetd
-                  :name :update-product-scores-2019-06-05}]]])
+                  :name :update-product-scores-2019-06-05}]]
+
+   [[2019 6 6 00 00]
+    
+    [:alter-table {:schema :vetd
+                   :name :docs
+                   :columns
+                   {:add {:result [:integer]
+                          :reason [:text]}}}]]])
 
 #_(mig/mk-migration-files migrations
                           "migrations")

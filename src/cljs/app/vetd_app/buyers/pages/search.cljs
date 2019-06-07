@@ -348,7 +348,8 @@
                "Request It"]]]))))))
 
 (defn c-page []
-  (let [search-query& (rf/subscribe [:search-term])]
+  (let [search-query& (rf/subscribe [:search-term])
+        search-input& (atom nil)]
     (fn []
       [:> ui/Grid
        [:> ui/GridRow
@@ -361,11 +362,13 @@
                            [:> ui/Icon
                             {:name (if (not-empty @search-query&) "delete" "search")
                              :link true
-                             :on-click #(rf/dispatch [:b/update-search-term ""])}])
+                             :on-click #(do (.focus @search-input&)
+                                            (rf/dispatch [:b/update-search-term ""]))}])
                     :autoFocus true
                     :spellCheck false
                     :on-change #(rf/dispatch [:b/update-search-term (-> % .-target .-value)])
-                    :placeholder "Search products & categories..."}]]
+                    :placeholder "Search products & categories..."
+                    :attrs {:ref #(reset! search-input& %)}}]]
         [:> ui/GridColumn {:computer 4 :mobile 0}]]
        [:> ui/GridRow
         [:> ui/GridColumn {:computer 2 :mobile 0}]

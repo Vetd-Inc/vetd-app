@@ -214,6 +214,13 @@ Product: '%s'"
                     (-> from-user-id auth/select-user-by-id :uname) ; buyer user name
                     (product-id->name prod-id)))) ; product name
 
+(defn set-preposal-result [id result reason]
+  "Set the result of a preposal (0 - rejected, nil - live)."
+  (db/update-any! {:id id
+                   :result result
+                   :reason reason}
+                  :docs))
+
 (defn set-round-product-result [round-id product-id result reason]
   "Set the result of a product in a round (0 - disqualified, 1 - winner)."
   (do (when (= 1 result)
@@ -249,7 +256,7 @@ Round URL: https://app.vetd.com/b/rounds/%s"
                          :result result
                          :reason reason}
                         :round_product))
-      (when (= 1 result) ; additional effects of declaring a winner
+      (when (= 1 result)    ; additional effects of declaring a winner
         (let [rps (->> [[:round-product {:round-id round-id
                                          :result nil
                                          :deleted nil}
@@ -302,11 +309,17 @@ Round URL: https://app.vetd.com/b/rounds/%s"
   [{:keys [buyer-id title etype eid]} ws-id sub-fn]
   (create-round buyer-id title eid etype))
 
-;; Request Preposal
+;; Request Preposal              TODO this can be refactored to something like :b/preposals.request
 (defmethod com/handle-ws-inbound :b/create-preposal-req
   [{:keys [prep-req]} ws-id sub-fn]
   (send-prep-req prep-req)
   (docs/create-preposal-req-form prep-req))
+
+;; [Reject]/[Undo Reject] a Preposal
+(defmethod com/handle-ws-inbound :b/preposals.set-result
+  [{:keys [id result reason buyer-id] :as req} ws-id sub-fn]
+  (set-preposal-result id result reason)
+  {})
 
 ;; Request an addition to our Products / Categories
 (defmethod com/handle-ws-inbound :b/req-new-prod-cat
