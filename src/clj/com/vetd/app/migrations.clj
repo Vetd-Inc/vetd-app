@@ -1316,9 +1316,7 @@
                    :name :docs
                    :columns
                    {:add {:result [:integer]
-                          :reason [:text]}}}]]
-
-   ])
+                          :reason [:text]}}}]]])
 
 #_(mig/mk-migration-files migrations
                           "migrations")
