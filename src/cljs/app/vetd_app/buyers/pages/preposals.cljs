@@ -195,8 +195,8 @@
             [cc/c-loader]
             (let [unfiltered-preposals (:docs @preps&)]
               (if (seq unfiltered-preposals)
-                [:div.container-with-sidebar
-                 (let [categories (->> unfiltered-preposals ; TODO remove categories based on prior filtering? (e.g., status)
+                [:div.container-with-sidebar ; only show categories of preposals that have been let past the status filter
+                 (let [categories (->> (filter-preposals unfiltered-preposals (select-keys @filter& [:status]))
                                        (map (comp :categories :product))
                                        flatten
                                        (map #(select-keys % [:id :cname]))
@@ -246,11 +246,24 @@
                                                                          :categories
                                                                          id
                                                                          {:event-label (str "Added Category: " (:cname category))}]))}])))])]])
-                 [:> ui/ItemGroup {:class "inner-container results"}  
+                 [:> ui/ItemGroup {:class "inner-container results"}
                   (let [preposals (filter-preposals unfiltered-preposals @filter&)]
-                    (for [preposal preposals]
-                      ^{:key (:id preposal)}
-                      [c-preposal preposal]))]]
+                    (if (seq preposals)
+                      (for [preposal preposals]
+                        ^{:key (:id preposal)}
+                        [c-preposal preposal])
+                      [:> ui/Segment {:placeholder true}
+                       [:> ui/Header {:icon true}
+                        [:> ui/Icon {:name "wpforms"}]
+                        "No PrePosals match your filter choices."]
+                       [:div {:style {:text-align "center"
+                                      :margin-top 10}}
+                        "To request a new PrePosal, search for "
+                        [:a {:style {:cursor "pointer"}
+                             :onClick #(rf/dispatch [:b/nav-search])}
+                         "Products & Categories."]
+                        [:br] [:br]
+                        "Or, simply forward any sales emails you receive to forward@vetd.com."]]))]]
                 [:> ui/Grid
                  [:> ui/GridRow
                   [:> ui/GridColumn {:computer 2 :mobile 0}]
