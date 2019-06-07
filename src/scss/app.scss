@@ -29,6 +29,17 @@ a.teal:hover {
   }
 }
 
+.ui.dropdown .menu > .header {
+  text-transform: none;
+  background-color: #4ec2c4;
+  padding: 11px 1.14285714rem 9px 1.14285714rem;
+  margin: 0;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: normal;
+  color: white;
+}
+
 .main-container {
   padding-top: 35px;
 }
