@@ -924,7 +924,7 @@
                                 (reset! scroll-v 0)
                                 (reset! scroll-x 0))
                               ;; apply position updates
-                              (when @drag-scrolling?
+                              (when @drag-scrolling? ; drag scrolling is not the same as reordering scrolling
                                 (aset node "scrollLeft" (Math/floor @scroll-x)))
                               (when @reordering-product
                                 (reset! curr-reordering-pos-x (- (+ (- @mouse-x
@@ -933,7 +933,8 @@
                                                                  @drag-handle-offset))
                                 (update-sort-pos))
                               ;; apply friction
-                              (when-not @reordering-product
+                              (if @reordering-product
+                                (swap! scroll-v * 0)
                                 (swap! scroll-v * @scroll-k))
                               ;; zero out weak velocity
                               (if (< (Math/abs @scroll-v) 0.000001)
