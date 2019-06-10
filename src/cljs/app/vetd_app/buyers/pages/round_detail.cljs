@@ -245,7 +245,7 @@
         start-using (r/atom "")
         num-users (r/atom "")
         budget (r/atom "")
-        requirements (r/atom [])
+        requirements (r/atom ["Pricing Estimate" "Pricing Model" "Free Trial"])
         add-products-by-name (r/atom "")
         topics-modal-showing?& (r/atom false)]
     (fn [round-id]
