@@ -43,7 +43,9 @@
      (when (not-empty rounds)
        [bc/c-round-in-progress {:round-idstr (-> rounds first :idstr)
                                 :props {:ribbon "left"}}])
-     [bc/c-categories product]
+     [:div {:style {:display "inline-block"
+                    :height 26}}
+      [bc/c-categories product]]
      (when (= "Yes" (product-v-fn :product/free-trial?))
        [bc/c-free-trial-tag])
      [:> ui/Grid {:columns "equal"
