@@ -472,9 +472,8 @@
       :info "A typical user of this product, in terms of company size, revenue, verticals, etc."]]
     [:> ui/GridRow
      [c-display-field 16 "Case Studies"
-      (when (has-data? (v-fn :product/case-studies))
-        [c-external-link (v-fn :product/case-studies)])
-      :has-markdown? true]]
+      (when (has-data? (v-fn :product/case-studies "Links to Case Studies"))
+        [c-external-link (v-fn :product/case-studies "Links to Case Studies")])]]
     [:> ui/GridRow
      [c-display-field 6 "Number of Current Clients"
       (when (has-data? (v-fn :product/num-clients nil :nval))
