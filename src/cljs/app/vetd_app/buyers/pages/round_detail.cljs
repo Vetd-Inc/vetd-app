@@ -370,11 +370,11 @@
     [c-round-initiation-form id]))
 
 (defn c-declare-winner-button
-  [round product won?]
+  [round product won? reason]
   (let [popup-open? (r/atom false)
         context-ref (r/atom nil)
-        reason (atom "")]
-    (fn [round product won?]
+        new-reason (atom "")]
+    (fn [round product won? reason]
       (if-not won?
         [:<>
          [:> ui/Popup
@@ -394,7 +394,7 @@
                        [:> ui/Input
                         {:placeholder "Enter a reason for your future reference..."
                          :on-change (fn [_ this]
-                                      (reset! reason (.-value this)))}]
+                                      (reset! new-reason (.-value this)))}]
                        [:> ui/Button
                         {:color "vetd-gradient"
                          :fluid true
@@ -403,7 +403,7 @@
                                         (rf/dispatch [:b/round.declare-winner
                                                       (:id round)
                                                       (:id product)
-                                                      @reason]))}
+                                                      @new-reason]))}
                         "Declare Winner"]]])}]
          [:> ui/Popup
           {:content "Declare Winner"
@@ -418,14 +418,15 @@
                        :size "mini"}])}]]
 
         [:> ui/Popup
-         {:content "Declared Winner"
+         {:header "Declared Winner"
+          :content reason
           :position "bottom center"
           :trigger (r/as-element
                     [:> ui/Button
                      {:icon true
                       :color "white"
                       :size "mini"
-                      :disabled true}
+                      :style {:cursor "default"}}
                      [:<> [:> ui/Icon {:name "checkmark"}] " Winner"]])}]))))
 
 
@@ -442,11 +443,11 @@
                 :size "mini"}])}])
 
 (defn c-disqualify-button
-  [round product disqualified?]
+  [round product disqualified? reason]
   (let [popup-open? (r/atom false)
         context-ref (r/atom nil)
-        reason (atom "")]
-    (fn [round product disqualified?]
+        new-reason (atom "")]
+    (fn [round product disqualified? reason]
       (if-not disqualified?
         [:<>
          [:> ui/Popup
@@ -461,7 +462,7 @@
                        [:> ui/Input
                         {:placeholder "Enter reason..."
                          :on-change (fn [_ this]
-                                      (reset! reason (.-value this)))
+                                      (reset! new-reason (.-value this)))
                          :action (r/as-element
                                   [:> ui/Button
                                    {:color "red"
@@ -469,7 +470,7 @@
                                                    (rf/dispatch [:b/round.disqualify
                                                                  (:id round)
                                                                  (:id product)
-                                                                 @reason]))}
+                                                                 @new-reason]))}
                                    "Disqualify"])}]]])}]
          [:> ui/Popup
           {:content "Disqualify"
@@ -482,7 +483,11 @@
                                     :size "mini"
                                     :on-click #(swap! popup-open? not)}])}]]
         [:> ui/Popup
-         {:content "Undo Disqualify"
+         {:header "Product Disqualified"
+          :content (r/as-element
+                    [:div (when (bc/has-data? reason)
+                            [:<> reason [:br] [:br]])
+                     "Click to undo disqualification."])
           :position "bottom center"
           :trigger (r/as-element
                     [:> ui/Button {:icon "undo"
@@ -623,7 +628,8 @@
              preposals :docs
              :as product} (:product rp)
             rp-result (:result rp)
-            [won? disqualified?] ((juxt (partial = 1) zero?) rp-result)]
+            [won? disqualified?] ((juxt (partial = 1) zero?) rp-result)
+            reason (:reason rp)]
         [:div.column {:class (str (when won? " winner")
                                   (when disqualified? " disqualified"))
                       :data-product-id product-id
@@ -646,11 +652,11 @@
                                        [:b/nav-product-detail product-idstr])))}
               pname]
              (when-not disqualified?
-               [c-declare-winner-button round product won?])
+               [c-declare-winner-button round product won? reason])
              (when-not disqualified?
                [c-setup-call-button round product vendor won?])
              (when-not won?
-               [c-disqualify-button round product disqualified?])])]
+               [c-disqualify-button round product disqualified? reason])])]
          (for [req prompts
                :let [{req-prompt-id :id
                       req-prompt-text :prompt} req
