@@ -35,4 +35,7 @@
                            :active false
                            :on-click #(rf/dispatch [:logout])}]]]))))
 
-(defn container [body] body)
+(defn container [body]
+  [:<>
+   body
+   [:div {:style {:height 100}}]])
