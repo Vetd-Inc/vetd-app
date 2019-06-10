@@ -384,13 +384,14 @@ textarea {
 }
 .centerpiece .logo {
   display: block;
-  width: 210px;
+  width: 210px; // defining the width & height to avoid
+  height: 89px; // jarring rerendering of layout flow on load
   margin: 0 auto 40px auto;
   /* logo design is weighted a little right */
   position: relative;
   left: -5px;
+  animation: 2s party;
 }
-
 
 /* Round Initiation Form */
 .ui.form.round-initiation-form {

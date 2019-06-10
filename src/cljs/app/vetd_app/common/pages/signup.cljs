@@ -120,4 +120,7 @@
                                                                :org-url @org-url
                                                                :org-type (name @signup-org-type&)
                                                                :pwd @pwd}]])}
-         "Sign Up"]]])))
+         "Sign Up"]
+        [:br] [:br]
+        [:a {:on-click #(rf/dispatch [:nav-login])}
+         "Already have an account? Log in."]]])))
