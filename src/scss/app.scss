@@ -564,6 +564,10 @@ $cell-height: 201px;
       flex-direction: column;
       justify-content: center;
       text-align: center;
+      overflow-wrap: break-word;
+      word-wrap: break-word;
+      -ms-word-break: break-all;
+      word-break: break-word;
     }
     
     .actions {
