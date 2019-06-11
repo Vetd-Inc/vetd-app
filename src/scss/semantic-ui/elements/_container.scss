@@ -50,9 +50,6 @@
     width: auto !important;
   }
 
-  .round-grid, .round-grid-top-scrollbar {
-    width: auto !important;
-  }
 }
 
 /* Tablet */
@@ -72,11 +69,7 @@
     width: calc( 723px  +  5rem ) !important;
   }
 
-  .round-grid, .round-grid-top-scrollbar {
-    width: 723px - ($sidebar-width + $segment-padding * 2);
-    margin-left: auto !important;
-    margin-right: auto !important;
-  }
+  
 }
 
 /* Small Monitor */
@@ -96,11 +89,7 @@
     width: calc( 933px  +  5rem ) !important;
   }
 
-  .round-grid, .round-grid-top-scrollbar {
-    width: 933px - ($sidebar-width + $segment-padding * 2);
-    margin-left: auto !important;
-    margin-right: auto !important;
-  }
+  
 }
 
 /* Large Monitor */
@@ -120,12 +109,7 @@
     width: calc( 1127px  +  5rem ) !important;
   }
 
-  .round-grid, .round-grid-top-scrollbar {
-    // width: 1127px - ($sidebar-width + $sidebar-margin-right + $segment-padding * 2);
-    width: 1127px - ($sidebar-width + $segment-padding * 2);
-    margin-left: auto !important;
-    margin-right: auto !important;
-  }
+  
 }
 
 

@@ -584,7 +584,7 @@
   [resp-text round-status]
   [:div.text
    (if (not-empty resp-text)
-     (util/truncate-text resp-text 150)
+     (util/truncate-text resp-text 130)
      (if (= round-status "complete")
        [c-no-response]
        [c-waiting-for-response]))])
@@ -686,6 +686,7 @@
                                                     :resp-id resp-id
                                                     :resp-text resp-text
                                                     :resp-rating resp-rating}))}
+            [:div.topic req-prompt-text]
             [c-cell-text resp-text status]
             [c-cell-actions resp-id resp-rating]])]))))
 
@@ -1022,12 +1023,13 @@
 
 (defn c-round
   "Component to display Round details."
-  [round req-form-template round-product show-top-scrollbar?]
+  [round req-form-template round-product show-top-scrollbar? explainer-modal-showing?&]
   (let [share-modal-showing?& (r/atom false)]
     (fn [{:keys [id status title products] :as round}
          req-form-template
          round-product
-         show-top-scrollbar?]
+         show-top-scrollbar?
+         explainer-modal-showing?&]
       [:<>
        [:> ui/Segment {:id "round-title-container"
                        :class (str "detail-container " (when (> (count title) 40) "long"))}
@@ -1039,13 +1041,17 @@
                         :floated "right"}
           "Share"
           [:> ui/Icon {:name "share"}]]]
+        [:a {:on-click #(reset! explainer-modal-showing?& true)}
+         [:> ui/Icon {:name "question circle"}]
+         "How VetdRounds Work"]
         [bc/c-round-status status]]
        (condp contains? status
          #{"initiation"} [:> ui/Segment {:class "detail-container"
                                          :style {:margin-left 20}}
                           [c-round-initiation round]]
          #{"in-progress"
-           "complete"} [c-round-grid round req-form-template round-product show-top-scrollbar?])
+           "complete"} [:span] #_[c-round-grid round req-form-template round-product show-top-scrollbar?]
+         )
        [bc/c-share-modal id title share-modal-showing?&]])))
 
 (defn c-add-requirement-form
@@ -1257,37 +1263,35 @@
                                           [[:response-prompt-fields
                                             {:deleted nil}
                                             [:nval]]]]]]]]]]]]]}])
-        modal-showing?& (r/atom false)]
+        explainer-modal-showing?& (r/atom false)]
     (fn []
-      [:div.container-with-sidebar.round-details
-       (if (= :loading @rounds&)
-         [cc/c-loader]
-         (let [{:keys [status req-form-template round-product] :as round} (-> @rounds& :rounds first)
-               sorted-round-products (sort-round-products round-product)
-               show-top-scrollbar? (> (count sorted-round-products) 3)]
-           [:<> ; sidebar margins (and detail container margins) are customized on this page
-            [:div.sidebar {:style {:margin-right 0}}
-             [:div {:style {:padding "0 15px"}}
-              [bc/c-back-button {:on-click #(rf/dispatch [:b/nav-rounds])}
-               "All VetdRounds"]]
-             (when (and (#{"in-progress" "complete"} status)
-                        (seq sorted-round-products))
-               [:<>
-                (let [has-a-winner? (some (comp (partial = 1) :result) sorted-round-products)]
-                  (if has-a-winner?
-                    [:div {:style {:height 161}}] ; spacer
-                    [:<>
-                     [:> ui/Segment {:style {:position "sticky"
-                                             :top 0
-                                             :z-index 5}}
-                      [c-add-requirement-button round]
-                      [c-add-product-button round]]
-                     [:div {:style {:text-align "center"}}
-                      [:a {:on-click #(reset! modal-showing?& true)}
-                       [:> ui/Icon {:name "question circle"}]
-                       "How VetdRounds Work"]]
-                     [c-explainer-modal modal-showing?&]]))
-                [:div {:style {:height (+ 64 (when show-top-scrollbar? 11))}}] ; spacer
-                [c-requirements req-form-template]])]
-            [:div.inner-container [c-round round req-form-template sorted-round-products show-top-scrollbar?]]]))])))
+      (if (= :loading @rounds&)
+        [cc/c-loader]
+        (let [{:keys [status req-form-template round-product] :as round} (-> @rounds& :rounds first)
+              sorted-round-products (sort-round-products round-product)
+              show-top-scrollbar? (> (count sorted-round-products) 3)]
+          [:<>
+           [:> ui/Container {:class "main-container"}
+            [:div.container-with-sidebar.round-details
+             [:<> ; sidebar margins (and detail container margins) are customized on this page
+              [:div.sidebar {:style {:margin-right 0}}
+               [:div {:style {:padding "0 15px"}}
+                [bc/c-back-button {:on-click #(rf/dispatch [:b/nav-rounds])}
+                 "All VetdRounds"]]
+               (when (and (#{"in-progress" "complete"} status)
+                          (seq sorted-round-products))
+                 (when-not (some (comp (partial = 1) :result) sorted-round-products) ; has a winner
+                   [:<>
+                    [:> ui/Segment {:style {:position "sticky"
+                                            :top 0
+                                            :z-index 5}}
+                     [c-add-requirement-button round]
+                     [c-add-product-button round]]
+                    [c-explainer-modal explainer-modal-showing?&]]))]
+              [:div.inner-container [c-round round req-form-template sorted-round-products show-top-scrollbar? explainer-modal-showing?&]]
+              ]]]
+
+           [c-round-grid round req-form-template sorted-round-products show-top-scrollbar?]
+           
+           ])))))
 

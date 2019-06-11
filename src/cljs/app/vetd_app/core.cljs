@@ -55,7 +55,7 @@
                    :b/preposal-detail #'b-fix/container
                    :b/product-detail #'b-fix/container
                    :b/rounds #'b-fix/container
-                   :b/round-detail #'b-fix/container
+                   :b/round-detail #'b-fix/appendable-container
                    :v/preposals #'v-fix/container
                    :v/products #'v-fix/container
                    :v/profile #'v-fix/container
