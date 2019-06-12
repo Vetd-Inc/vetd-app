@@ -234,7 +234,7 @@ a.teal:hover {
 .round-details .round-status {
   box-shadow: 0 0px 1px 0 rgba(50, 50, 50, 0.7) !important;
   border: none;
-  margin-top: 5px;
+  margin-top: 7px;
 }
 
 
@@ -425,6 +425,11 @@ textarea {
 $cell-width: 220px;
 $cell-height: 201px;
 
+.round-grid-container {
+  width: 1128px;
+  margin: 0 auto;
+}
+
 .round-grid-top-scrollbar {
   position: sticky;
   top: 0px;
@@ -434,7 +439,7 @@ $cell-height: 201px;
 
   &::-webkit-scrollbar-track {
     background: #f5f4f5;
-    border-radius: 0px;
+    border-radius: 4px;
   }
   &::-webkit-scrollbar-thumb {
     background: #ebeceb;
@@ -457,7 +462,7 @@ $cell-height: 201px;
 
   &::-webkit-scrollbar-track {
     background: #f5f4f5;
-    border-radius: 0px;
+    border-radius: 4px;
   }
   &::-webkit-scrollbar-thumb {
     background: #ebeceb;
@@ -466,7 +471,7 @@ $cell-height: 201px;
   &::-webkit-scrollbar-thumb:hover {
     background: #dbdcdb;
   }
-  
+
   .column {
     position: absolute;
     left: 0px;
@@ -581,14 +586,13 @@ $cell-height: 201px;
     transform: scale(0.98);
 
     .topic {
-      // position: absolute;
-      // top: 0px;
-      // left: 0px;
       width: 100%;
       padding: 4px 0px;
       text-align: center;
       background: rgba(0,0,0,0.04);
       font-size: 13px;
+      color: #444;
+      transition: color 0.5s 0s linear;
     }
     
     .text {
@@ -686,6 +690,12 @@ $cell-height: 201px;
       transition: none;
     }
   }
+  &.highlight-topics {
+    .topic {
+      color: #4ec2c4;
+      transition: none;
+    }
+  }
 }
 
 // Approve & Disapprove action buttons
@@ -704,48 +714,12 @@ $cell-height: 201px;
   }
 }
 
-
-.requirements-heading {
-  text-align: left;
-  font-size: 24px;
-  background: transparent;
-  font-weight: 600;
-}
-.requirements {
-  .requirement.segment.ui {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    justify-content: center;
-    height: $cell-height;
-    padding: 14px 14px 14px 14px;
-    margin-top: 2px !important;
-    margin-bottom: 0px !important;
-    font-size: 14px;
-    font-weight: 600;
-    text-align: left;
-    background: transparent !important;
-    box-shadow: none !important;
-    color: #444;
-    transition: color 0.5s 0s linear;
-    
-    &:first-of-type {
-      margin-top: 14px !important;
-    }
-  }
-
-  &.highlight-requirements .requirement.segment.ui {
-    color: #4ec2c4;
-    transition: none;
-  }
-}
-
 #round-title-container {
   margin-left: 20px;
   
   .round-title {
     margin-top: 0;
-    margin-bottom: 5px;
+    margin-bottom: 3px;
     font-size: 31px;
     line-height: 39px;
   }

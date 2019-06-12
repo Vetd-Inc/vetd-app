@@ -717,7 +717,8 @@
           [:div {:style {:width (* 234 (count round-product))
                          :height 1}}]]
          [:div.round-grid {:style {:min-height (+ 122 (* 203 (-> req-form-template :prompts count)))}}
-          [:div {:style {:min-width (* 234 (count round-product))}}
+          [:div {:style {:min-width (- (* 234 (count round-product))
+                                       14)}}
            (for [rp round-product]
              ^{:key (-> rp :product :id)}
              [c-column round req-form-template rp show-modal-fn])]]
@@ -1044,6 +1045,7 @@
         [:a {:on-click #(reset! explainer-modal-showing?& true)}
          [:> ui/Icon {:name "question circle"}]
          "How VetdRounds Work"]
+        [c-explainer-modal explainer-modal-showing?&]
         [bc/c-round-status status]]
        (condp contains? status
          #{"initiation"} [:> ui/Segment {:class "detail-container"
@@ -1093,7 +1095,7 @@
 (defn c-add-requirement-button
   [round]
   (let [popup-open? (r/atom false)
-        get-requirements-node #(util/first-node-by-class "requirements")]
+        get-round-grid-node #(util/first-node-by-class "round-grid")]
     (fn [{:keys [id] :as round}]
       [:> ui/Popup
        {:position "top left"
@@ -1110,8 +1112,8 @@
                                  :icon true
                                  :labelPosition "left"
                                  :on-mouse-over #(when-not @popup-open?
-                                                   (util/add-class (get-requirements-node) "highlight-requirements"))
-                                 :on-mouse-leave #(util/remove-class (get-requirements-node) "highlight-requirements")}
+                                                   (util/add-class (get-round-grid-node) "highlight-topics"))
+                                 :on-mouse-leave #(util/remove-class (get-round-grid-node) "highlight-topics")}
                    "Add Topics"
                    [:> ui/Icon {:name "plus"}]])}])))
 
@@ -1197,16 +1199,6 @@
                    "Add Products"
                    [:> ui/Icon {:name "plus"}]])}])))
 
-(defn c-requirements
-  [{:keys [prompts] :as req-form-template}]
-  [:div.requirements
-   (for [req prompts
-         :let [{req-prompt-id :id
-                req-prompt-text :prompt} req]]
-     ^{:key (str req-prompt-id)}
-     [:> ui/Segment {:class "requirement"}
-      req-prompt-text])])
-
 (defn sort-round-products
   [round-product]
   (sort-by (juxt #(- 1 (or (:result %) 0.5))
@@ -1269,7 +1261,7 @@
         [cc/c-loader]
         (let [{:keys [status req-form-template round-product] :as round} (-> @rounds& :rounds first)
               sorted-round-products (sort-round-products round-product)
-              show-top-scrollbar? (> (count sorted-round-products) 3)]
+              show-top-scrollbar? (> (count sorted-round-products) 4)]
           [:<>
            [:> ui/Container {:class "main-container"
                              :style {:padding-top 0}}
@@ -1283,16 +1275,11 @@
                           (seq sorted-round-products))
                  (when-not (some (comp (partial = 1) :result) sorted-round-products) ; has a winner
                    [:<>
-                    [:> ui/Segment {:style {:position "sticky"
-                                            :top 0
-                                            :z-index 5}}
+                    [:> ui/Segment
                      [c-add-requirement-button round]
-                     [c-add-product-button round]]
-                    [c-explainer-modal explainer-modal-showing?&]]))]
-              [:div.inner-container [c-round round req-form-template sorted-round-products show-top-scrollbar? explainer-modal-showing?&]]
-              ]]]
-
-           [c-round-grid round req-form-template sorted-round-products show-top-scrollbar?]
-           
-           ])))))
+                     [c-add-product-button round]]]))]
+              [:div.inner-container [c-round round req-form-template sorted-round-products show-top-scrollbar? explainer-modal-showing?&]]]]]
+           (when (and (#{"in-progress" "complete"} status)
+                      (seq sorted-round-products))
+             [c-round-grid round req-form-template sorted-round-products show-top-scrollbar?])])))))
 
