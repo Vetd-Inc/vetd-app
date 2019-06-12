@@ -584,7 +584,7 @@
   [resp-text round-status]
   [:div.text
    (if (not-empty resp-text)
-     (util/truncate-text resp-text 130)
+     (util/truncate-text resp-text 120)
      (if (= round-status "complete")
        [c-no-response]
        [c-waiting-for-response]))])
