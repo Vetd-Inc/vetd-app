@@ -234,6 +234,7 @@ a.teal:hover {
 .round-details .round-status {
   box-shadow: 0 0px 1px 0 rgba(50, 50, 50, 0.7) !important;
   border: none;
+  margin-top: 7px;
 }
 
 
@@ -424,18 +425,33 @@ textarea {
 $cell-width: 220px;
 $cell-height: 201px;
 
+.round-grid-container {
+  width: 1128px;
+  margin: 0 auto;
+}
+
 .round-grid-top-scrollbar {
   position: sticky;
   top: 0px;
   z-index: 1000;
-  margin-left: 20px !important;
   overflow-x: scroll;
   overflow-y: hidden;
+
+  &::-webkit-scrollbar-track {
+    background: #f5f4f5;
+    border-radius: 4px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: #ebeceb;
+    border-radius: 4px;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: #dbdcdb;
+  }
 }
 .round-grid {
   position: relative;
   padding-top: 14px;
-  margin-left: 20px !important;
   display: flex;
   flex-wrap: nowrap; // unnecessary?
   overflow-x: auto;
@@ -443,7 +459,19 @@ $cell-height: 201px;
   box-sizing: border-box;
   // since the header row is in fixed position, this keeps them from overflowing
   clip-path: inset(-100px 0px 0px 0px);
-  
+
+  &::-webkit-scrollbar-track {
+    background: #f5f4f5;
+    border-radius: 4px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: #ebeceb;
+    border-radius: 4px;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: #dbdcdb;
+  }
+
   .column {
     position: absolute;
     left: 0px;
@@ -543,7 +571,7 @@ $cell-height: 201px;
   .cell {
     position: relative;
     height: $cell-height;
-    padding: 14px;
+    
     margin: 0 0 2px 0;
     display: flex;
     flex-direction: column;
@@ -556,18 +584,32 @@ $cell-height: 201px;
     font-weight: 400;
     transition: transform .05s ease-out;
     transform: scale(0.98);
+
+    .topic {
+      width: 100%;
+      padding: 4px 0px;
+      text-align: center;
+      background: rgba(0,0,0,0.04);
+      font-size: 13px;
+      color: #444;
+      transition: color 0.5s 0s linear;
+    }
     
     .text {
-      padding-top: 14px;
+      padding: 7px;
       flex: 1;
       display: flex;
       flex-direction: column;
       justify-content: center;
       text-align: center;
+      overflow-wrap: break-word;
+      word-wrap: break-word;
+      -ms-word-break: break-all;
+      word-break: break-word;
     }
     
     .actions {
-      margin-top: 10px;
+      padding-bottom: 14px;
 
       .action-button {
         opacity: 0.3;
@@ -648,6 +690,12 @@ $cell-height: 201px;
       transition: none;
     }
   }
+  &.highlight-topics {
+    .topic {
+      color: #4ec2c4;
+      transition: none;
+    }
+  }
 }
 
 // Approve & Disapprove action buttons
@@ -666,47 +714,12 @@ $cell-height: 201px;
   }
 }
 
-
-.requirements-heading {
-  text-align: left;
-  font-size: 24px;
-  background: transparent;
-  font-weight: 600;
-}
-.requirements {
-  .requirement.segment.ui {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    justify-content: center;
-    height: $cell-height;
-    padding: 14px 14px 14px 14px;
-    margin-top: 2px !important;
-    margin-bottom: 0px !important;
-    font-size: 14px;
-    font-weight: 600;
-    text-align: left;
-    background: transparent !important;
-    box-shadow: none !important;
-    color: #444;
-    transition: color 0.5s 0s linear;
-    
-    &:first-of-type {
-      margin-top: 14px !important;
-    }
-  }
-
-  &.highlight-requirements .requirement.segment.ui {
-    color: #4ec2c4;
-    transition: none;
-  }
-}
-
 #round-title-container {
   margin-left: 20px;
   
   .round-title {
     margin-top: 0;
+    margin-bottom: 3px;
     font-size: 31px;
     line-height: 39px;
   }

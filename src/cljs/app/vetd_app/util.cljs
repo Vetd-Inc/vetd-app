@@ -231,7 +231,7 @@
 (defn truncate-text
   "Truncates text, adding ellipsis."
   [string length]
-  (str (subs string 0 length)
+  (str (s/trim (subs string 0 length))
        (when (> (count string) length)
          "...")))
 
