@@ -108,13 +108,15 @@
   (reset! keep-alive-thread nil))
 
 (defn ws-outbound-handler
-  [ws ws-id {:keys [cmd return] :as req} data]
+  [ws ws-id {:keys [cmd return] :as req} counter& req-ts data]
   (com/hc-send {:type "ws-outbound-handler:respond"
                 :ws-id ws-id
                 :cmd cmd
                 :return return
                 :request req
-                :response data})
+                :response data
+                :resp-idx (swap! @counter& inc)
+                :latency-ms (- (ut/now) req-ts)})
   (respond-transit {:cmd cmd
                     :return return
                     :response data}
@@ -129,7 +131,12 @@
                           :cmd cmd
                           :return return
                           :request data'})
-          resp-fn (partial #'ws-outbound-handler ws ws-id data')
+          resp-fn (partial #'ws-outbound-handler
+                           ws
+                           ws-id
+                           data'
+                           (atom 0)
+                           (ut/now))
           resp (com/handle-ws-inbound data' ws-id resp-fn)]
       (when (and return resp)
         (resp-fn resp)))
