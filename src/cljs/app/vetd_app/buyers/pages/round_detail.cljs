@@ -716,7 +716,11 @@
          [:div.round-grid-top-scrollbar {:style {:display (if show-top-scrollbar? "block" "none")}}
           [:div {:style {:width (* 234 (count round-product))
                          :height 1}}]]
-         [:div.round-grid {:style {:min-height (+ 122 (* 203 (-> req-form-template :prompts count)))}}
+         [:div.round-grid {:style {:min-height (-> req-form-template
+                                                   :prompts
+                                                   count
+                                                   (* 203)
+                                                   (+ 122))}}
           [:div {:style {:min-width (- (* 234 (count round-product))
                                        14)}}
            (for [rp round-product]
