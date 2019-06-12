@@ -108,7 +108,13 @@
   (reset! keep-alive-thread nil))
 
 (defn ws-outbound-handler
-  [ws {:keys [cmd return] :as req} data]
+  [ws ws-id {:keys [cmd return] :as req} data]
+  (com/hc-send {:type "ws-outbound-handler:respond"
+                :ws-id ws-id
+                :cmd cmd
+                :return return
+                :request req
+                :response data})
   (respond-transit {:cmd cmd
                     :return return
                     :response data}
@@ -122,16 +128,10 @@
                           :ws-id ws-id
                           :cmd cmd
                           :return return
-                          :data data'})
-          resp-fn (partial #'ws-outbound-handler ws data')
+                          :request data'})
+          resp-fn (partial #'ws-outbound-handler ws ws-id data')
           resp (com/handle-ws-inbound data' ws-id resp-fn)]
       (when (and return resp)
-        (com/hc-send {:type "ws-inbound-handler:respond"
-                      :ws-id ws-id
-                      :cmd cmd
-                      :return return
-                      :data data'
-                      :response resp})
         (resp-fn resp)))
     (catch Exception e
       (com/log-error e))))

@@ -97,7 +97,9 @@
       (when-not (hnyc/initialized?)
         (hnyc/init {:data-set "app-prod"
                     :write-key "fadb42b152f679a1575055e9678ac49a"}))
-      (hnyc/send v)
+      (-> v
+          (dissoc :pwd :session-token)
+          hnyc/send)
       (catch Throwable e
         (log/error e)))))
 
