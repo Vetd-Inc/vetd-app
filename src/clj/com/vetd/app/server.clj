@@ -115,7 +115,7 @@
                 :return return
                 :request req
                 :response data
-                :resp-idx (swap! @counter& inc)
+                :resp-idx (swap! counter& inc)
                 :latency-ms (- (ut/now) req-ts)})
   (respond-transit {:cmd cmd
                     :return return
