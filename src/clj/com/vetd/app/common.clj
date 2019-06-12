@@ -89,6 +89,13 @@
               {:op :PutObject :request {:Bucket bucket-name :Key file-name
                                         :Body data}}))
 
+(defn walk-dissoc [frm ks]
+  (clojure.walk/prewalk
+   (fn [v]
+     (if (map? v)
+       (apply dissoc v ks)
+       v))
+   frm))
 
 (defn hc-send [v]
   ;; TODO don't use supress-sns
@@ -98,7 +105,7 @@
         (hnyc/init {:data-set "app-prod"
                     :write-key "fadb42b152f679a1575055e9678ac49a"}))
       (-> v
-          (dissoc :pwd :session-token)
+          (walk-dissoc [:pwd :session-token])
           hnyc/send)
       (catch Throwable e
         (log/error e)))))
