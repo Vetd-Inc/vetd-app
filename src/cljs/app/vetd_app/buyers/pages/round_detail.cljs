@@ -670,10 +670,15 @@
                                          :response-prompt-fields
                                          first
                                          :nval)
-                     resp (docs/get-response-field-by-prompt-id response-prompts req-prompt-id)
-                     {id :id
-                      resp-id :resp-id
-                      resp-text :sval} resp]]
+                     
+                     resps (docs/get-response-fields-by-prompt-id response-prompts req-prompt-id)
+                     resp-id (-> resps first :resp-id)
+                     resp-text (->> resps
+                                    (map (fn [r]
+                                           (or (:sval r)
+                                               (:nval r)
+                                               (:dval r))))
+                                    (apply str))]]
            ^{:key (str req-prompt-id "-" product-id)}
            [:div.cell {:class (str (when (= 1 resp-rating) "response-approved ")
                                    (when (= 0 resp-rating) "response-disapproved "))

@@ -35,8 +35,8 @@
      "i-category" (->> r
                        :categories
                        (map (fn [{:keys [id cname]}]
-                               {:value id
-                                :text cname}))
+                              {:value id
+                               :text cname}))
                        (sort-by :text)
                        vec))))
 
@@ -71,13 +71,16 @@
        (filter #(-> % :prompt-id (= prompt-id)))
        first))
 
-(defn get-response-field-by-prompt-id
-  "A little more info than get-value-by-prompt-id."
-  [response-prompts prompt-id & [field]]
+(defn get-response-fields-by-prompt-id
+  [response-prompts prompt-id]
   (->> response-prompts
        (filter #(-> % :prompt-id (= prompt-id)))
        first
-       :response-prompt-fields
+       :response-prompt-fields))
+
+(defn get-response-field-by-prompt-id
+  [response-prompts prompt-id & [field]]
+  (->> (get-response-fields-by-prompt-id response-prompts prompt-id)
        (filter #(-> %
                     :prompt-field-fname
                     (= (or field "value"))))
@@ -260,13 +263,13 @@
       [c-prompt-field-fn (assoc prompt-field
                                 :response [response-field])]
       [:> ui/Button {:color "red"
-	             :on-click (fn [& _]
+	                   :on-click (fn [& _]
                                  (swap! response
                                         (partial remove #(-> % :id (= id)))))
                      :icon true}
        [:> ui/Icon {:name "remove"}]]])
    [:> ui/Button {:color "green"
-	          :on-click (fn [& _]
+	                :on-click (fn [& _]
                               (swap! response conj {:id (gensym "new-resp-field")
                                                     :state (r/atom "")}))
                   :icon true}
