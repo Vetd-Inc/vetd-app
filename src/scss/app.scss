@@ -234,6 +234,7 @@ a.teal:hover {
 .round-details .round-status {
   box-shadow: 0 0px 1px 0 rgba(50, 50, 50, 0.7) !important;
   border: none;
+  margin-top: 5px;
 }
 
 
@@ -430,6 +431,18 @@ $cell-height: 201px;
   z-index: 1000;
   overflow-x: scroll;
   overflow-y: hidden;
+
+  &::-webkit-scrollbar-track {
+    background: #f5f4f5;
+    border-radius: 0px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: #ebeceb;
+    border-radius: 4px;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: #dbdcdb;
+  }
 }
 .round-grid {
   position: relative;
@@ -441,6 +454,18 @@ $cell-height: 201px;
   box-sizing: border-box;
   // since the header row is in fixed position, this keeps them from overflowing
   clip-path: inset(-100px 0px 0px 0px);
+
+  &::-webkit-scrollbar-track {
+    background: #f5f4f5;
+    border-radius: 0px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: #ebeceb;
+    border-radius: 4px;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: #dbdcdb;
+  }
   
   .column {
     position: absolute;
@@ -720,7 +745,7 @@ $cell-height: 201px;
   
   .round-title {
     margin-top: 0;
-    margin-bottom: 0;
+    margin-bottom: 5px;
     font-size: 31px;
     line-height: 39px;
   }

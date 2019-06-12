@@ -716,7 +716,7 @@
          [:div.round-grid-top-scrollbar {:style {:display (if show-top-scrollbar? "block" "none")}}
           [:div {:style {:width (* 234 (count round-product))
                          :height 1}}]]
-         [:div.round-grid {:style {:min-height (+ 46 84 (* 203 (-> req-form-template :prompts count)))}}
+         [:div.round-grid {:style {:min-height (+ 122 (* 203 (-> req-form-template :prompts count)))}}
           [:div {:style {:min-width (* 234 (count round-product))}}
            (for [rp round-product]
              ^{:key (-> rp :product :id)}
@@ -1271,7 +1271,8 @@
               sorted-round-products (sort-round-products round-product)
               show-top-scrollbar? (> (count sorted-round-products) 3)]
           [:<>
-           [:> ui/Container {:class "main-container"}
+           [:> ui/Container {:class "main-container"
+                             :style {:padding-top 0}}
             [:div.container-with-sidebar.round-details
              [:<> ; sidebar margins (and detail container margins) are customized on this page
               [:div.sidebar {:style {:margin-right 0}}
