@@ -263,13 +263,13 @@
       [c-prompt-field-fn (assoc prompt-field
                                 :response [response-field])]
       [:> ui/Button {:color "red"
-	                   :on-click (fn [& _]
-                                 (swap! response
-                                        (partial remove #(-> % :id (= id)))))
+                     :on-click (fn [& _]
+                                  (swap! response
+                                         (partial remove #(-> % :id (= id)))))
                      :icon true}
        [:> ui/Icon {:name "remove"}]]])
    [:> ui/Button {:color "green"
-	                :on-click (fn [& _]
+                  :on-click (fn [& _]
                               (swap! response conj {:id (gensym "new-resp-field")
                                                     :state (r/atom "")}))
                   :icon true}
