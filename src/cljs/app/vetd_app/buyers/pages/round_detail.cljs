@@ -95,7 +95,7 @@
                          "Some Products Not Addded Yet"
                          "Product Not Added Yet"))
               :message (when-not (empty? product-names)
-                         (str "We will get back to you shortly regarding adding: "
+                         (str "We don't recognize the following products but will look into adding them soon: "
                               (s/join ", " product-names)))}})))
 
 (rf/reg-event-fx
