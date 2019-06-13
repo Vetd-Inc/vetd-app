@@ -31,6 +31,30 @@
   (let [now (ut/now)]
     (- now (mod now (* 1000 60 5)))))
 
+(def ws-on-close-fns& (atom {}))
+
+(defn reg-ws-on-close-fn'
+  [ws-on-close-fns ws-id k f]
+  (assoc-in ws-on-close-fns
+            [ws-id k] f))
+
+(defn reg-ws-on-close-fn [ws-id k f]
+  (swap! ws-on-close-fns& reg-ws-on-close-fn' ws-id k f))
+
+(defn unreg-ws-on-close-fn'
+  [ws-on-close-fns ws-id k]
+  (or (try
+        (update ws-on-close-fns
+                ws-id
+                dissoc k)
+        (catch Exception e
+          (com/log-error e)))
+      ws-on-close-fns))
+
+(defn unreg-ws-on-close-fn [ws-id k]
+  (swap! ws-on-close-fns& unreg-ws-on-close-fn' ws-id k))
+
+
 (defn uri->content-type
   [uri]
   (or (-> uri
@@ -90,13 +114,11 @@
                         (try
                           (Thread/sleep 30000)
                           (doseq [ws @ws-conns]
-                            (do (def ws1 ws)
-                                (respond-transit {:cmd :keep-alive
-                                                  :return nil
-                                                  :response nil}
-                                                 ws)))
+                            (respond-transit {:cmd :keep-alive
+                                              :return nil
+                                              :response nil}
+                                             ws))
                           (catch Throwable t
-                            (def ka-t t)
                             (com/log-error t))))
                       (log/info "Stopped keep-alive thread.")
                       :done))))
@@ -145,16 +167,17 @@
 
 (defn ws-on-closed
   [ws ws-id & args]
-  #_  (println "ws-on-closed")
-  #_  (clojure.pprint/pprint args)
+  (doseq [f (-> (@ws-on-close-fns& ws-id) vals)]
+    (try
+      (f)
+      (catch Throwable t
+        (com/log-error t))))
   (swap! ws-conns disj ws)
-  #_  (db/unsubscribe-ws-conn ws-id)
+  (swap! ws-on-close-fns& dissoc ws-id)
   true)
 
 (defn ws-handler
   [req]
-  #_  (println "ws-handler:")
-  #_  (clojure.pprint/pprint req)
   (let [ws @(ah/websocket-connection req)
         ws-id (str (gensym "ws"))]
     (swap! ws-conns conj ws)

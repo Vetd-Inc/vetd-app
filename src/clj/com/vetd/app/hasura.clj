@@ -1,5 +1,6 @@
 (ns com.vetd.app.hasura
   (:require [com.vetd.app.common :as com]
+            [com.vetd.app.server :as svr]
             [com.vetd.app.util :as ut]
             [com.vetd.app.env :as env]
             [com.vetd.app.db :as db]
@@ -420,15 +421,12 @@
   (respond-to-client id {:mtype :complete
                          :payload pdata}))
 
-;; TODO do something smarter than timeout, like trigger when ws closes
-(defn delayed-unsub [qual-sub-id]
-  (a/go (a/alt! (a/timeout (* 1000 60 4)) :timeout
-                com/shutdown-ch :shutdown)
-        (when (@sub-id->resp-fn& qual-sub-id)
-          (try-send @cn&
-                    {:type (gql-msg-types-kw->str :stop)
-                     :id qual-sub-id})
-          (unregister-sub-id qual-sub-id))))
+(defn unsub [qual-sub-id]
+  (when (@sub-id->resp-fn& qual-sub-id)
+    (try-send @cn&
+              {:type (gql-msg-types-kw->str :stop)
+               :id qual-sub-id})
+    (unregister-sub-id qual-sub-id)))
 
 ;; ws from client
 (defmethod com/handle-ws-inbound :graphql
@@ -439,7 +437,9 @@
     (if-not stop
       (do
         (register-sub-id qual-sub-id resp-fn)
-        (delayed-unsub qual-sub-id)
+        (svr/reg-ws-on-close-fn ws-id
+                                qual-sub-id
+                                (partial unsub qual-sub-id))
         (try-send @cn&
                   {:type :start
                    :id qual-sub-id
@@ -449,6 +449,7 @@
                                               "query")
                                             (->gql-str query))}}))
       (do
+        (svr/unreg-ws-on-close-fn ws-id qual-sub-id)
         (unregister-sub-id qual-sub-id)
         (try-send @cn&
                   {:type (gql-msg-types-kw->str :stop)

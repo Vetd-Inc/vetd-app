@@ -110,7 +110,7 @@
 (defn shutdown []
   (try
     (log/info "Starting shutdown hook")
-    (a/close! (com/shutdown-ch))
+    (a/close! com/shutdown-ch)
     (when-let [svr (svr/stop-server)]
       (wait-to-exit svr)
       (log/info "Completed `wait-to-exit`"))

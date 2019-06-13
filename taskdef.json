@@ -78,13 +78,13 @@
       "disableNetworking": null,
       "interactive": null,
       "healthCheck": {
-        "retries": 2,
+        "retries": 6,
           "command": [
-              "CMD-SHELL", "exit 0"
+              "CMD-SHELL", "curl -sf http://localhost:5080"
         ],
         "timeout": 60,
-        "interval": 300,
-        "startPeriod": 300
+        "interval": 20,
+        "startPeriod": 60
       },
       "essential": true,
       "links": null,
@@ -182,6 +182,6 @@
   ],
   "networkMode": "awsvpc",
   "cpu": "1024",
-  "revision": 169,
+  "revision": 222,
   "volumes": []
 }
