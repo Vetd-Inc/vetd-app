@@ -1047,7 +1047,8 @@
                         :floated "right"}
           "Share"
           [:> ui/Icon {:name "share"}]]]
-        (when (seq round-product)
+        (when (and (#{"in-progress" "complete"} status)
+                   (seq round-product))
           [:<>
            [:a {:on-click #(reset! explainer-modal-showing?& true)
                 :style {:font-size 13}}
@@ -1055,7 +1056,8 @@
             "How VetdRounds Work"]
            [c-explainer-modal explainer-modal-showing?&]])
         [bc/c-round-status status]
-        (when (empty? round-product)
+        (when (and (#{"in-progress" "complete"} status)
+                   (empty? round-product))
           [:<>
            [:> ui/Header "Your VetdRound is in progress!"]
            [:p
@@ -1287,7 +1289,7 @@
                [:div {:style {:padding "0 15px"}}
                 [bc/c-back-button {:on-click #(rf/dispatch [:b/nav-rounds])}
                  "All VetdRounds"]]
-               (when (and (#{"in-progress" "complete"} status))
+               (when (#{"in-progress" "complete"} status)
                  (when-not (some (comp (partial = 1) :result) sorted-round-products) ; has a winner
                    [:<>
                     [:> ui/Segment
