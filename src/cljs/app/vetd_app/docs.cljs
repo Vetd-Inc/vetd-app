@@ -221,7 +221,10 @@
                         :onChange #(reset! value& (.-value %2))
                         ;; :placeholder "Select Product"
                         :selection true
-                        :options @enum-vals
+                        :options (cons {:key "nil"
+                                        :text " - - - "
+                                        :value nil}
+                                       @enum-vals)
                         :data-response-field-id response-id
                         :data-prompt-field-id prompt-field-id}]])))
 
@@ -264,8 +267,8 @@
                                 :response [response-field])]
       [:> ui/Button {:color "red"
                      :on-click (fn [& _]
-                                  (swap! response
-                                         (partial remove #(-> % :id (= id)))))
+                                 (swap! response
+                                        (partial remove #(-> % :id (= id)))))
                      :icon true}
        [:> ui/Icon {:name "remove"}]]])
    [:> ui/Button {:color "green"
