@@ -1,6 +1,5 @@
 (ns com.vetd.app.hasura
   (:require [com.vetd.app.common :as com]
-            [com.vetd.app.server :as svr]
             [com.vetd.app.util :as ut]
             [com.vetd.app.env :as env]
             [com.vetd.app.db :as db]
@@ -437,7 +436,7 @@
     (if-not stop
       (do
         (register-sub-id qual-sub-id resp-fn)
-        (svr/reg-ws-on-close-fn ws-id
+        (com/reg-ws-on-close-fn ws-id
                                 qual-sub-id
                                 (partial unsub qual-sub-id))
         (try-send @cn&
@@ -449,7 +448,7 @@
                                               "query")
                                             (->gql-str query))}}))
       (do
-        (svr/unreg-ws-on-close-fn ws-id qual-sub-id)
+        (com/unreg-ws-on-close-fn ws-id qual-sub-id)
         (unregister-sub-id qual-sub-id)
         (try-send @cn&
                   {:type (gql-msg-types-kw->str :stop)

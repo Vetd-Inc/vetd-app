@@ -31,30 +31,6 @@
   (let [now (ut/now)]
     (- now (mod now (* 1000 60 5)))))
 
-(def ws-on-close-fns& (atom {}))
-
-(defn reg-ws-on-close-fn'
-  [ws-on-close-fns ws-id k f]
-  (assoc-in ws-on-close-fns
-            [ws-id k] f))
-
-(defn reg-ws-on-close-fn [ws-id k f]
-  (swap! ws-on-close-fns& reg-ws-on-close-fn' ws-id k f))
-
-(defn unreg-ws-on-close-fn'
-  [ws-on-close-fns ws-id k]
-  (or (try
-        (update ws-on-close-fns
-                ws-id
-                dissoc k)
-        (catch Exception e
-          (com/log-error e)))
-      ws-on-close-fns))
-
-(defn unreg-ws-on-close-fn [ws-id k]
-  (swap! ws-on-close-fns& unreg-ws-on-close-fn' ws-id k))
-
-
 (defn uri->content-type
   [uri]
   (or (-> uri
@@ -167,13 +143,13 @@
 
 (defn ws-on-closed
   [ws ws-id & args]
-  (doseq [f (-> (@ws-on-close-fns& ws-id) vals)]
+  (doseq [f (-> (@com/ws-on-close-fns& ws-id) vals)]
     (try
       (f)
       (catch Throwable t
         (com/log-error t))))
   (swap! ws-conns disj ws)
-  (swap! ws-on-close-fns& dissoc ws-id)
+  (swap! com/ws-on-close-fns& dissoc ws-id)
   true)
 
 (defn ws-handler

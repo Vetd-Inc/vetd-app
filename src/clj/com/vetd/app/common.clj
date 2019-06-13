@@ -17,6 +17,8 @@
 
 (defonce supress-sns? (atom false))
 
+(def ws-on-close-fns& (atom {}))
+
 (defn md5-hex [s]
   (-> s
       buddy.core.hash/md5
@@ -119,3 +121,25 @@
     (log/error e arg)    
     (log/error e)))
 
+
+
+(defn reg-ws-on-close-fn'
+  [ws-on-close-fns ws-id k f]
+  (assoc-in ws-on-close-fns
+            [ws-id k] f))
+
+(defn reg-ws-on-close-fn [ws-id k f]
+  (swap! ws-on-close-fns& reg-ws-on-close-fn' ws-id k f))
+
+(defn unreg-ws-on-close-fn'
+  [ws-on-close-fns ws-id k]
+  (or (try
+        (update ws-on-close-fns
+                ws-id
+                dissoc k)
+        (catch Exception e
+          (log-error e)))
+      ws-on-close-fns))
+
+(defn unreg-ws-on-close-fn [ws-id k]
+  (swap! ws-on-close-fns& unreg-ws-on-close-fn' ws-id k))
