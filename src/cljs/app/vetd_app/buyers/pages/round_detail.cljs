@@ -716,28 +716,21 @@
         (when (not= @last-default-products-order& default-products-order)
           (reset! last-default-products-order& default-products-order)
           (rf/dispatch [:b/set-round-products-order default-products-order])))
-      (if (seq round-product)
-        [:div.round-grid-container ; c-round-grid expects a certain order of children
-         [:div.round-grid-top-scrollbar {:style {:display (if show-top-scrollbar? "block" "none")}}
-          [:div {:style {:width (* 234 (count round-product))
-                         :height 1}}]]
-         [:div.round-grid {:style {:min-height (-> req-form-template
-                                                   :prompts
-                                                   count
-                                                   (* 203)
-                                                   (+ 122))}}
-          [:div {:style {:min-width (- (* 234 (count round-product))
-                                       14)}}
-           (for [rp round-product]
-             ^{:key (-> rp :product :id)}
-             [c-column round req-form-template rp show-modal-fn])]]
-         [c-cell-modal (:id round) modal-showing?& modal-response&]]
-        ;; no products in round yet
-        [:> ui/Segment {:class "detail-container"
-                        :style {:margin-left 20}}
-         [:p [:em "Your requirements have been submitted."]]
-         [:p (str "We are gathering information for you to review "
-                  "from all relevant vendors. Check back soon for updates.")]]))))
+      [:div.round-grid-container ; c-round-grid expects a certain order of children
+       [:div.round-grid-top-scrollbar {:style {:display (if show-top-scrollbar? "block" "none")}}
+        [:div {:style {:width (* 234 (count round-product))
+                       :height 1}}]]
+       [:div.round-grid {:style {:min-height (-> req-form-template
+                                                 :prompts
+                                                 count
+                                                 (* 203)
+                                                 (+ 122))}}
+        [:div {:style {:min-width (- (* 234 (count round-product))
+                                     14)}}
+         (for [rp round-product]
+           ^{:key (-> rp :product :id)}
+           [c-column round req-form-template rp show-modal-fn])]]
+       [c-cell-modal (:id round) modal-showing?& modal-response&]])))
 
 (def c-round-grid
   (let [component-exists? (atom true)
@@ -1051,11 +1044,19 @@
                         :floated "right"}
           "Share"
           [:> ui/Icon {:name "share"}]]]
-        [:a {:on-click #(reset! explainer-modal-showing?& true)}
-         [:> ui/Icon {:name "question circle"}]
-         "How VetdRounds Work"]
-        [c-explainer-modal explainer-modal-showing?&]
-        [bc/c-round-status status]]
+        (when (seq round-product)
+          [:<>
+           [:a {:on-click #(reset! explainer-modal-showing?& true)
+                :style {:font-size 13}}
+            [:> ui/Icon {:name "question circle"}]
+            "How VetdRounds Work"]
+           [c-explainer-modal explainer-modal-showing?&]])
+        [bc/c-round-status status]
+        (when (empty? round-product)
+          [:<>
+           [:> ui/Header "Your requirements have been submitted."]
+           [:p (str "We are gathering information for you to review "
+                    "from all relevant vendors. Check back soon for updates.")]])]
        (condp contains? status
          #{"initiation"} [:> ui/Segment {:class "detail-container"
                                          :style {:margin-left 20}}
