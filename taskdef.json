@@ -182,6 +182,6 @@
   ],
   "networkMode": "awsvpc",
   "cpu": "1024",
-  "revision": 222,
+  "revision": 223,
   "volumes": []
 }
