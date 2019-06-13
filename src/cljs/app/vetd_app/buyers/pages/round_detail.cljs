@@ -657,43 +657,45 @@
                [c-setup-call-button round product vendor won?])
              (when-not won?
                [c-disqualify-button round product disqualified? reason])])]
-         (for [req prompts
-               :let [{req-prompt-id :id
-                      req-prompt-text :prompt} req
-                     response-prompts (-> rp :vendor-response-form-docs first :response-prompts)
-                     response-prompt (docs/get-response-prompt-by-prompt-id
-                                      response-prompts
-                                      req-prompt-id)
-                     resp-rating (some-> response-prompt
-                                         :subject-of-response-prompt
-                                         first
-                                         :response-prompt-fields
-                                         first
-                                         :nval)
-                     
-                     resps (docs/get-response-fields-by-prompt-id response-prompts req-prompt-id)
-                     resp-id (-> resps first :resp-id)
-                     resp-text (->> resps
-                                    (map (fn [r]
-                                           (or (:sval r)
-                                               (:nval r)
-                                               (:dval r))))
-                                    (apply str))]]
-           ^{:key (str req-prompt-id "-" product-id)}
-           [:div.cell {:class (str (when (= 1 resp-rating) "response-approved ")
-                                   (when (= 0 resp-rating) "response-disapproved "))
-                       :on-mouse-down #(reset! cell-click-disabled? false)
-                       :on-click #(when-not @cell-click-disabled?
-                                    (show-modal-fn {:req-prompt-id req-prompt-id
-                                                    :req-prompt-text req-prompt-text
-                                                    :product-id product-id
-                                                    :pname pname
-                                                    :resp-id resp-id
-                                                    :resp-text resp-text
-                                                    :resp-rating resp-rating}))}
-            [:div.topic req-prompt-text]
-            [c-cell-text resp-text status]
-            [c-cell-actions resp-id resp-rating]])]))))
+         (if (seq prompts)
+           (for [req prompts
+                 :let [{req-prompt-id :id
+                        req-prompt-text :prompt} req
+                       response-prompts (-> rp :vendor-response-form-docs first :response-prompts)
+                       response-prompt (docs/get-response-prompt-by-prompt-id
+                                        response-prompts
+                                        req-prompt-id)
+                       resp-rating (some-> response-prompt
+                                           :subject-of-response-prompt
+                                           first
+                                           :response-prompt-fields
+                                           first
+                                           :nval)
+                       
+                       resps (docs/get-response-fields-by-prompt-id response-prompts req-prompt-id)
+                       resp-id (-> resps first :resp-id)
+                       resp-text (->> resps
+                                      (map (fn [r]
+                                             (or (:sval r)
+                                                 (:nval r)
+                                                 (:dval r))))
+                                      (apply str))]]
+             ^{:key (str req-prompt-id "-" product-id)}
+             [:div.cell {:class (str (when (= 1 resp-rating) "response-approved ")
+                                     (when (= 0 resp-rating) "response-disapproved "))
+                         :on-mouse-down #(reset! cell-click-disabled? false)
+                         :on-click #(when-not @cell-click-disabled?
+                                      (show-modal-fn {:req-prompt-id req-prompt-id
+                                                      :req-prompt-text req-prompt-text
+                                                      :product-id product-id
+                                                      :pname pname
+                                                      :resp-id resp-id
+                                                      :resp-text resp-text
+                                                      :resp-rating resp-rating}))}
+              [:div.topic req-prompt-text]
+              [c-cell-text resp-text status]
+              [c-cell-actions resp-id resp-rating]])
+           [:div.cell [c-cell-text "Click \"Add Topics\" to learn more about this product." status]])]))))
 
 (defn c-round-grid*
   [round req-form-template round-product show-top-scrollbar?]
@@ -716,28 +718,22 @@
         (when (not= @last-default-products-order& default-products-order)
           (reset! last-default-products-order& default-products-order)
           (rf/dispatch [:b/set-round-products-order default-products-order])))
-      (if (seq round-product)
-        [:div.round-grid-container ; c-round-grid expects a certain order of children
-         [:div.round-grid-top-scrollbar {:style {:display (if show-top-scrollbar? "block" "none")}}
-          [:div {:style {:width (* 234 (count round-product))
-                         :height 1}}]]
-         [:div.round-grid {:style {:min-height (-> req-form-template
-                                                   :prompts
-                                                   count
-                                                   (* 203)
-                                                   (+ 122))}}
-          [:div {:style {:min-width (- (* 234 (count round-product))
-                                       14)}}
-           (for [rp round-product]
-             ^{:key (-> rp :product :id)}
-             [c-column round req-form-template rp show-modal-fn])]]
-         [c-cell-modal (:id round) modal-showing?& modal-response&]]
-        ;; no products in round yet
-        [:> ui/Segment {:class "detail-container"
-                        :style {:margin-left 20}}
-         [:p [:em "Your requirements have been submitted."]]
-         [:p (str "We are gathering information for you to review "
-                  "from all relevant vendors. Check back soon for updates.")]]))))
+      [:div.round-grid-container ; c-round-grid expects a certain order of children
+       [:div.round-grid-top-scrollbar {:style {:display (if show-top-scrollbar? "block" "none")}}
+        [:div {:style {:width (* 234 (count round-product))
+                       :height 1}}]]
+       [:div.round-grid {:style {:min-height (-> req-form-template
+                                                 :prompts
+                                                 count
+                                                 (* 203)
+                                                 (+ 122)
+                                                 (max (+ 122 (* 1 203))))}}
+        [:div {:style {:min-width (- (* 234 (count round-product))
+                                     14)}}
+         (for [rp round-product]
+           ^{:key (-> rp :product :id)}
+           [c-column round req-form-template rp show-modal-fn])]]
+       [c-cell-modal (:id round) modal-showing?& modal-response&]])))
 
 (def c-round-grid
   (let [component-exists? (atom true)
@@ -1051,11 +1047,22 @@
                         :floated "right"}
           "Share"
           [:> ui/Icon {:name "share"}]]]
-        [:a {:on-click #(reset! explainer-modal-showing?& true)}
-         [:> ui/Icon {:name "question circle"}]
-         "How VetdRounds Work"]
-        [c-explainer-modal explainer-modal-showing?&]
-        [bc/c-round-status status]]
+        (when (seq round-product)
+          [:<>
+           [:a {:on-click #(reset! explainer-modal-showing?& true)
+                :style {:font-size 13}}
+            [:> ui/Icon {:name "question circle"}]
+            "How VetdRounds Work"]
+           [c-explainer-modal explainer-modal-showing?&]])
+        [bc/c-round-status status]
+        (when (empty? round-product)
+          [:<>
+           [:> ui/Header "Your VetdRound is in progress!"]
+           [:p
+            [:em "We will provide responses to your selected topics from top vendors shortly. "]
+            [:br][:br]
+            "If there are specific products you would like to have Vetd evaluate, feel free "
+            "to add them by clicking the Add Products button."]])]
        (condp contains? status
          #{"initiation"} [:> ui/Segment {:class "detail-container"
                                          :style {:margin-left 20}}
@@ -1280,8 +1287,7 @@
                [:div {:style {:padding "0 15px"}}
                 [bc/c-back-button {:on-click #(rf/dispatch [:b/nav-rounds])}
                  "All VetdRounds"]]
-               (when (and (#{"in-progress" "complete"} status)
-                          (seq sorted-round-products))
+               (when (and (#{"in-progress" "complete"} status))
                  (when-not (some (comp (partial = 1) :result) sorted-round-products) ; has a winner
                    [:<>
                     [:> ui/Segment
