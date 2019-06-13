@@ -464,12 +464,21 @@ Round URL: https://app.vetd.com/b/rounds/%s"
 
 (defmethod com/handle-ws-inbound :b/round.add-products
   [{:keys [round-id product-ids product-names buyer-id]} ws-id sub-fn]
+  (when-not (empty? product-ids)
+    (com/sns-publish
+     :ui-misc
+     "Product(s) Added to Round"
+     (str "Product(s) Added to Round\n\n"
+          "Round ID: " round-id
+          "\nRound Link: https://app.vetd.com/b/rounds/" (ut/base31->str round-id)
+          "\nProduct(s) Added: " (s/join ", " product-ids))))
   (when-not (empty? product-names)
     (com/sns-publish
      :ui-misc
      "Nonexistent Product(s) Added to Round"
      (str "Nonexistent Product(s) Added to Round\n\n"
           "Round ID: " round-id
+          "\nRound Link: https://app.vetd.com/b/rounds/" (ut/base31->str round-id)
           "\nNonexistent Product(s) Added: " (s/join ", " product-names))))
   (when-not (empty? product-ids)
     (doseq [product-id product-ids]
@@ -489,6 +498,7 @@ Round URL: https://app.vetd.com/b/rounds/%s"
    (str "Share VetdRound"
         "\n\nBuyer Name: " (-> buyer-id auth/select-org-by-id :oname)
         "\nRound ID: " round-id
+        "\nRound Link: https://app.vetd.com/b/rounds/" (ut/base31->str round-id)
         "\nRound Title: " round-title
         "\nEmail Addresses: " (s/join ", " email-addresses)))
   {})
