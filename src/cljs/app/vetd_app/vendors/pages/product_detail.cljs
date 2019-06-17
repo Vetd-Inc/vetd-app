@@ -3,14 +3,17 @@
             [vetd-app.util :as util]
             [vetd-app.docs :as docs]
             [reagent.core :as r]
-            [re-frame.core :as rf]
-            [re-com.core :as rc]))
+            [re-frame.core :as rf]))
 
 (rf/reg-event-fx
  :v/nav-product-detail
  (fn [{:keys [db]} [_ product-id]]
    (let [product-idstr (util/base31->str product-id)]
-     {:nav {:path (str "/v/products/" product-idstr)}})))
+     {:nav {:path (str "/v/products/" product-idstr)}
+      :analytics/track {:event "Navigate"
+                        :props {:category "Navigation"
+                                :label "Vendors Product Detail"
+                                :product-idstr product-idstr}}})))
 
 (rf/reg-event-fx
  :v/route-product-detail
@@ -18,10 +21,8 @@
    {:db (assoc db
                :page :v/product-detail
                :page-params {:product-idstr product-idstr})
-    :analytics/track {:event "Navigate"
-                      :props {:category "Navigation"
-                              :label "Vendor Product"
-                              :product-idstr product-idstr}}}))
+    :analytics/page {:name "Vendors Product Detail"
+                     :props {:product-idstr product-idstr}}}))
 
 (rf/reg-event-fx
  :v/save-product
@@ -33,11 +34,6 @@
  (fn [{:keys [db]} [_ product-id]]
    {:ws-send {:payload {:cmd :v/delete-product
                         :product-id product-id}}}))
-
-(rf/reg-sub
- :product-idstr
- :<- [:page-params] 
- (fn [{:keys [product-idstr]}] product-idstr))
 
 (defn c-product
   [{:keys [id pname form-doc created updated]}]
@@ -51,10 +47,11 @@
                             :border "solid 1px #666666"}}
         [:> ui/FormField
          "Product Name"
-         [:> ui/Input {:defaultValue @pname&
-                       :placeholder "Product Name"
-                       :spellCheck false
-                       :onChange (fn [_ this] (reset! pname& (.-value this)))}]]
+         [ui/input {:value (or @pname& pname) ;; necessary for some reason??
+                    :placeholder "Product Name"
+                    :spellCheck false
+                    :on-change (fn [this]
+                                 (reset! pname& (-> this .-target .-value)))}]]
         [:div "created: " created]
         [:div "updated: " updated]       
         [docs/c-form-maybe-doc
@@ -79,8 +76,9 @@
         prods& (rf/subscribe [:gql/sub
                               {:queries
                                [[:products {:idstr @product-idstr&
+                                            :deleted nil
                                             :_order_by {:created :desc}
-                                            :deleted nil}
+                                            :_limit 1}
                                  [:id
                                   :pname
                                   :short-desc
@@ -127,16 +125,19 @@
                                :forms
                                first )]
         [:div
-         (for [{:keys [id form-docs] :as p} (:products @prods&)]
-           (let [{:keys [doc-product] :as form-doc} (first form-docs)
-                 form-doc' (when form-doc
-                             (assoc form-doc
-                                    :product
-                                    doc-product))]
-             ^{:key (str "product" id)}
-             [:div
-              [c-product (assoc p
-                                :form-doc
-                                (or form-doc'
-                                    (assoc prod-prof-form
-                                           :product {:id id})))]]))]))))
+         (let [{:keys [id form-docs] :as p} (-> @prods& :products first)
+               {:keys [doc-product] :as form-doc} (first form-docs)
+               form-doc' (when form-doc
+                           (assoc form-doc
+                                  :product
+                                  doc-product))]
+           (def p1 p)
+           [:div
+            [c-product (assoc p
+                              :form-doc
+                              (or form-doc'
+                                  (assoc prod-prof-form
+                                         :product {:id id})))]])]))))
+
+#_
+(cljs.pprint/pprint p1)
