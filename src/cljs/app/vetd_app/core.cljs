@@ -18,6 +18,7 @@
             [vetd-app.vendors.fixtures :as v-fix]
             [vetd-app.vendors.pages.preposals :as p-vpreposals]
             [vetd-app.vendors.pages.products :as p-vprods]
+            [vetd-app.vendors.pages.product-detail :as p-vprod-detail]
             [vetd-app.vendors.pages.profile :as p-vprofile]
             [vetd-app.vendors.pages.rounds :as p-vrounds]
             [vetd-app.vendors.pages.round-product-detail :as p-vround-product-detail]
@@ -43,6 +44,7 @@
                    :b/round-detail #'p-bround-detail/c-page
                    :v/preposals #'p-vpreposals/c-page
                    :v/products #'p-vprods/c-page
+                   :v/product-detail #'p-vprod-detail/c-page
                    :v/profile #'p-vprofile/c-page
                    :v/rounds #'p-vrounds/c-page
                    :v/round-product-detail #'p-vround-product-detail/c-page})
@@ -58,6 +60,7 @@
                    :b/round-detail #'b-fix/appendable-container
                    :v/preposals #'v-fix/container
                    :v/products #'v-fix/container
+                   :v/product-detail #'v-fix/container
                    :v/profile #'v-fix/container
                    :v/rounds #'v-fix/container
                    :v/round-product-detail #'v-fix/container})
@@ -182,6 +185,9 @@
 
 (sec/defroute vendors-products "/v/products" [query-params]
   (rf/dispatch [:v/route-products query-params]))
+
+(sec/defroute vendors-product-detail "/v/products/:idstr" [idstr]
+  (rf/dispatch [:v/route-product-detail idstr]))
 
 (sec/defroute vendors-profile "/v/profile" [query-params]
   (rf/dispatch [:v/route-profile query-params]))
