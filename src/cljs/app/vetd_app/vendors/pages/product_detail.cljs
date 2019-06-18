@@ -131,13 +131,9 @@
                            (assoc form-doc
                                   :product
                                   doc-product))]
-           (def p1 p)
            [:div
             [c-product (assoc p
                               :form-doc
                               (or form-doc'
                                   (assoc prod-prof-form
                                          :product {:id id})))]])]))))
-
-#_
-(cljs.pprint/pprint p1)
