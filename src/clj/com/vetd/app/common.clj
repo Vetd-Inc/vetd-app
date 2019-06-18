@@ -13,7 +13,8 @@
             [clj-honeycomb.core :as hnyc]
             clojure.pprint))
 
-(defonce shutdown-ch (a/chan))
+;; TODO this should be a channel (so timeout is available), but I don't feel like it right now -- Bill
+(defonce shutdown-signal (atom false))
 
 (defonce supress-sns? (atom false))
 
@@ -143,3 +144,16 @@
 
 (defn unreg-ws-on-close-fn [ws-id k]
   (swap! ws-on-close-fns& unreg-ws-on-close-fn' ws-id k))
+
+(defn force-all-ws-on-close-fns []
+  (try
+    (let [ws-on-close-fns @ws-on-close-fns&]
+      (log/info (format "Forcing close on %d ws-on-close-fns"
+                        (count @ws-on-close-fns&)))
+      (->> ws-on-close-fns
+           vals
+           (pmap #(%))
+           doall)
+      (log/info "DONE Forcing close on ws-on-close-fns"))
+    (catch Throwable e
+      (log-error e))))

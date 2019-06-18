@@ -28,6 +28,15 @@
 #_ (def sub-id->resp-fn& (atom {}))
 (defonce sub-id->resp-fn& (atom {}))
 
+(defonce sub-count-monitor
+  (future
+    (log/info "Starting sub-count-monitor")
+    (while (not @com/shutdown-signal)
+      (com/hc-send {:hasura-sub-count (count @sub-id->resp-fn&)})
+      (Thread/sleep 5000))
+    (log/info "Stopped sub-count-monitor")))
+
+
 ;; https://github.com/apollographql/subscriptions-transport-ws/blob/faa219cff7b6f9873cae59b490da46684d7bea19/src/message-types.ts
 
 (def gql-msg-types-kw->str
@@ -464,15 +473,13 @@
                                   {:query (->gql-str {:queries queries})})})
                 :body
                 slurp)]
-      (def r1 r)
       (-> r
           (json/parse-string keyword)
           :data
           walk-result #_process-result))
     (catch Exception e
-      (def e1 e)
       (com/log-error e (try (some-> e .getData :body slurp)
-                        (catch Exception e2 "")))
+                            (catch Exception e2 "")))
       (throw e))))
 
 #_(send-terminate)
