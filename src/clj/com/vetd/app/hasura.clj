@@ -28,14 +28,20 @@
 #_ (def sub-id->resp-fn& (atom {}))
 (defonce sub-id->resp-fn& (atom {}))
 
-(defonce sub-count-monitor
-  (future
-    (log/info "Starting sub-count-monitor")
-    (while (not @com/shutdown-signal)
-      (com/hc-send {:hasura-sub-count (count @sub-id->resp-fn&)})
-      (Thread/sleep 5000))
-    (log/info "Stopped sub-count-monitor")))
+(defonce sub-count-monitor (atom nil))
 
+(defn start-sub-count-monitor-thread []
+  (when (and env/prod?
+             (nil? @sub-count-monitor))
+    (reset! sub-count-monitor
+            (future
+              (log/info "Starting sub-count-monitor")
+              (while (not @com/shutdown-signal)
+                (com/hc-send {:hasura-sub-count (count @sub-id->resp-fn&)})
+                (Thread/sleep 5000))
+              (log/info "Stopped sub-count-monitor")))))
+
+(start-sub-count-monitor-thread) ;; TODO calling this here is gross -- Bill
 
 ;; https://github.com/apollographql/subscriptions-transport-ws/blob/faa219cff7b6f9873cae59b490da46684d7bea19/src/message-types.ts
 
