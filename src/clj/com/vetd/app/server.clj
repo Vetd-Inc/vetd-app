@@ -64,6 +64,8 @@
     (t/write tw v)
     (.toByteArray baos)))
 
+
+
 (defn respond-transit
   [data ws]
   (ms/try-put! ws
@@ -113,6 +115,7 @@
                 :return return
                 :request req
                 :response data
+                :response-size (-> data ->transit count)
                 :resp-idx (swap! counter& inc)
                 :latency-ms (- (ut/now) req-ts)})
   (respond-transit {:cmd cmd
