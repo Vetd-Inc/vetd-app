@@ -189,6 +189,7 @@
      [:textarea {:value @value&
                  :on-change (fn [this]
                               (reset! value& (-> this .-target .-value)))
+                 :data-prompt-field (str prompt-field)
                  :data-response-field-id response-id
                  :data-prompt-field-id prompt-field-id}]]))
 
@@ -204,6 +205,7 @@
                 :on-change (fn [this]
                              (reset! value& (-> this .-target .-value)))
                 :attrs {:type "number"
+                        :data-prompt-field (str prompt-field)
                         :data-response-field-id response-id
                         :data-prompt-field-id prompt-field-id}}]]))
 
@@ -225,6 +227,7 @@
                                         :text " - - - "
                                         :value nil}
                                        @enum-vals)
+                        :data-prompt-field (str prompt-field)
                         :data-response-field-id response-id
                         :data-prompt-field-id prompt-field-id}]])))
 
@@ -238,6 +241,9 @@
         {response-id :id prompt-field-id :pf-id} (first response)]
     (fn [{:keys [fname fsubtype response] :as prompt-field}]
       [:> ui/FormField
+       [:span {:data-prompt-field (str prompt-field)
+               :data-response-field-id response-id
+               :data-prompt-field-id prompt-field-id}]
        (when-not (= fname "value")
          [:label fname])
        [:> ui/Dropdown {:value (:id @state&)
@@ -253,9 +259,7 @@
                         :searchQuery (:text @state&)
                         :selectOnNavigation false
                         :text (:text @state&)
-                        :options @opts&
-                        :data-response-field-id response-id
-                        :data-prompt-field-id prompt-field-id}]])))
+                        :options @opts&}]])))
 
 (defn c-prompt-field-list
   [c-prompt-field-fn {:keys [fname ftype fsubtype response] :as prompt-field}]

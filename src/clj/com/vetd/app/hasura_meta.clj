@@ -263,8 +263,8 @@
            :cols [:id :subject]
            :rel :one-many}
 
-          {:tables [:vetd :responses
-                    :vetd :response_prompt]
+          {:tables [:vetd :response_prompt
+                    :vetd :responses]
            :fields [:subject-response-prompt]
            :cols [:subject :id]
            :rel :many-one}
