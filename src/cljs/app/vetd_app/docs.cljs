@@ -126,6 +126,21 @@
                           :return nil
                           :form-doc fd}}})))
 
+(rf/reg-event-fx
+ :remove-prompt&response
+ (fn [{:keys [db]} [_ prompt-id response-id form-id doc-id]]
+   {:ws-send (remove nil?
+                     [(when (and prompt-id form-id)
+                         {:payload {:cmd :v/remove-prompt-from-form
+                                    :return nil
+                                    :prompt-id prompt-id
+                                    :form-id form-id}})
+                      (when (and response-id doc-id)
+                        {:payload {:cmd :v/remove-response-from-doc
+                                   :return nil
+                                   :response-id response-id
+                                   :doc-id doc-id}})])}))
+
 (defn mk-form-doc-prompt-field-state
   [fields {:keys [id] :as prompt-field}]
   (let [resp-fields (mapv (fn [{:keys [sval nval dval jval] :as resp-field}]
@@ -290,14 +305,18 @@
                                  :response deref)])))
 
 (defn c-prompt-default
-  [{:keys [prompt descr fields]}]
+  [{:keys [id prompt descr fields response] :as p} form-id doc-id]
   [:div {:style {:margin "10px 0 40px 0"}}
    [:div {:style {:margin-bottom "5px"}}
-    prompt
+    [:span {:style {:padding-right "10px"}} prompt]
     (when descr
-      [:> ui/Popup {:trigger (r/as-element [:> ui/Icon {:name "info circle"}])
+      [:> ui/Popup {:trigger (r/as-element [:> ui/Icon {:name "info circle"
+                                                        :style {:padding-right "30px"}}])
                     :wide true}
-       descr])]
+       descr])
+    [:a
+     {:on-click #(rf/dispatch [:remove-prompt&response id (:id response) form-id doc-id ])}
+     "remove"]]
    (for [{:keys [idstr ftype fsubtype] :as f} fields]
      ^{:key (str "field" (:id f))}
      [c-prompt-field f])])
@@ -339,7 +358,7 @@
 	           [:div.user-name (:uname from-user)])
 	         (for [p (sort-by :sort prompts)]
 	           ^{:key (str "prompt" (:id p))}
-	           [(hooks/c-prompt :default) p])
+	           [(hooks/c-prompt :default) p id doc-id])
 	         (when show-submit
 	           [:> ui/Button {:color "blue"
 	                          :fluid true
