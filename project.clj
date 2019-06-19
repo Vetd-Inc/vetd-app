@@ -70,13 +70,25 @@
 
   :plugins [[lein-cljsbuild "1.1.7"]
             [lein-environ "1.1.0"]
-            [lein-jsass "0.2.1"]]
+            [lein-jsass "0.2.1"]
+            [lein-npm "0.6.2"]]
   
   :figwheel {:css-dirs ["resources/public/assets/css/"]}
 
   :jsass {:source "src/scss"
           :target "resources/public/assets/css"}
 
+  :npm {:devDependencies [[karma "4.1.0"]
+                          [karma-cljs-test "0.1.0"]
+                          [karma-chrome-launcher "0.2.2"]
+                          [karma-junit-reporter "1.2.0"]
+                          [puppeteer "1.17.0"]]}
+
+  :aliases
+  {"karma-once" ["do" "clean," "cljsbuild" "once" "karma,"]
+   "karma-auto" ["do" "clean," "cljsbuild" "auto" "karma,"]}
+
+  ;; need to add ? "resources/public/karma"
   :clean-targets
   ^{:protect false} [:target-path
                      [:cljsbuild :builds :app :compiler :output-dir]
@@ -150,7 +162,9 @@
                                  [pjstadig/humane-test-output "0.8.3"]
                                  [prone "1.6.0"]
                                  [ring/ring-devel "1.6.3"]
-                                 [ring/ring-mock "0.3.2"]]
+                                 [ring/ring-mock "0.3.2"]
+                                 [day8.re-frame/test "0.1.5"]
+                                 [karma-reporter "1.0.1"]]
                   :plugins      [[com.jakemccrary/lein-test-refresh "0.23.0"]
                                  [lein-doo "0.1.10"]
                                  [lein-figwheel "0.5.18"]]
@@ -168,7 +182,15 @@
                       :optimizations :none
                       :pretty-print true
                       :closure-defines {"re_frame.trace.trace_enabled_QMARK_" true}
-                      :preloads [devtools.preload day8.re-frame-10x.preload]}}]}
+                      :preloads [devtools.preload day8.re-frame-10x.preload]}}
+                    {:id "karma"
+                     :source-paths ["test/cljs" "test/cljs/app" "src/cljs/admin" "src/cljs/app"]
+                     :compiler     {:output-to     "resources/public/karma/test.js"
+                                    :source-map    "resources/public/karma/test.js.map"
+                                    :output-dir    "resources/public/karma/test"
+                                    :optimizations :whitespace
+                                    :main          "runner"
+                                    :pretty-print  true}}]}
                   :doo {:build "test"}
                   :source-paths ["dev/clj"]
                   :resource-paths ["env/dev/resources"]
