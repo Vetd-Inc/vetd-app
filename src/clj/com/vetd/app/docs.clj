@@ -384,14 +384,6 @@
 (def delete-form-template-prompt (partial update-deleted :form_template_prompt))
 (def delete-doc-response (partial update-deleted :doc_resp))
 
-(defn delete-form-prompt-by-ids [prompt-id form-id]
-  (delete-form-prompt
-   (select-form-prompt-id prompt-id form-id)))
-
-(defn delete-doc-response-by-ids [response-id doc-id]
-  (delete-doc-response
-   (select-doc-response-id response-id doc-id)))
-
 (defn find-latest-form-template-id [where]
   (-> {:select [:id]
        :from [:form_templates]
@@ -588,6 +580,16 @@
       db/hs-query
       first
       :id))
+
+
+(defn delete-form-prompt-by-ids [prompt-id form-id]
+  (delete-form-prompt
+   (select-form-prompt-id prompt-id form-id)))
+
+(defn delete-doc-response-by-ids [response-id doc-id]
+  (delete-doc-response
+   (select-doc-response-id response-id doc-id)))
+
 
 (defn upsert-prompt [{:keys [id] :as prompt} & [use-id?]]
   (upsert* prompt-exists?
