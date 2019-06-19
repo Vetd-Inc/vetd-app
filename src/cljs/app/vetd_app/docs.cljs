@@ -377,6 +377,18 @@
                    "i" #'c-prompt-field-entity})
 
 
+(defn c-missing-prompts
+  [{prompts1 :prompts :as prod-prof-form} {prompts2 :prompts :as form-doc}]
+  (let [missing-prompt-ids (clojure.set/difference (->> prompts1 (mapv :id) set)
+                                                   (->> prompts2 (mapv :id) set))]
+    [:div
+     (for [p (->> prompts1
+                  (filter #(-> % :id missing-prompt-ids))
+                  (map :prompt)
+                  (sort-by :sort))]
+       [:div p
+        [:a "add"]])]))
+
 ;; "data" can have term->field->value's
 ;;          and/or prompt-id->field->value's
 ;; E.g.,

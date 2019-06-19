@@ -131,9 +131,16 @@
                            (assoc form-doc
                                   :product
                                   doc-product))]
-           [:div
-            [c-product (assoc p
-                              :form-doc
-                              (or form-doc'
-                                  (assoc prod-prof-form
-                                         :product {:id id})))]])]))))
+           (when id
+             [:div
+              [docs/c-missing-prompts prod-prof-form form-doc]
+              [c-product (assoc p
+                                :form-doc
+                                (or form-doc'
+                                    (assoc prod-prof-form
+                                           :product {:id id})))]]))]))))
+#_
+(cljs.pprint/pprint prod-prof-form1)
+
+#_
+(cljs.pprint/pprint form-doc1)
