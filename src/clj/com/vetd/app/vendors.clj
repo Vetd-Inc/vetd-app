@@ -114,8 +114,13 @@
   [{:keys [product-id]} ws-id sub-fn]
   (delete-product product-id))
 
+(defmethod com/handle-ws-inbound :v/remove-prompt-from-form
+  [{:keys [prompt-id form-id]} ws-id sub-fn]
+  (docs/delete-form-prompt-by-ids prompt-id form-id))
 
-
+(defmethod com/handle-ws-inbound :v/remove-response-from-doc
+  [{:keys [response-id doc-id]} ws-id sub-fn]
+  (docs/delete-doc-response-by-ids response-id doc-id))
 
 (defn process-product-logo [prod-profile-doc-id]
   (let [{:keys [subject] :as doc} (-> [[:docs {:id prod-profile-doc-id}
