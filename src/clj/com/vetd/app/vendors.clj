@@ -122,6 +122,10 @@
   [{:keys [response-id doc-id]} ws-id sub-fn]
   (docs/delete-doc-response-by-ids response-id doc-id))
 
+(defmethod com/handle-ws-inbound :v/propagate-prompt
+  [{:keys [form-prompt-ref-id target-form-id]} ws-id sub-fn]
+  (docs/propagate-prompt form-prompt-ref-id target-form-id))
+
 (defn process-product-logo [prod-profile-doc-id]
   (let [{:keys [subject] :as doc} (-> [[:docs {:id prod-profile-doc-id}
                                         [:subject

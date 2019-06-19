@@ -115,7 +115,7 @@
                                            [:prompts {:_order_by {:sort :asc}
                                                       :deleted nil
                                                       :ref-deleted nil}
-                                            [:id :idstr :prompt :descr :sort
+                                            [:id :idstr :prompt :descr :sort :ref-id
                                              [:fields {:_order_by {:sort :asc}
                                                        :deleted nil}
                                               [:id :idstr :fname :ftype

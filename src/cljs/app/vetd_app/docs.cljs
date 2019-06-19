@@ -141,6 +141,14 @@
                                    :response-id response-id
                                    :doc-id doc-id}})])}))
 
+(rf/reg-event-fx
+ :propagate-prompt
+ (fn [{:keys [db]} [_ form-prompt-ref-id target-form-id]]
+   {:ws-send {:payload {:cmd :v/propagate-prompt
+                        :return nil
+                        :form-prompt-ref-id form-prompt-ref-id
+                        :target-form-id target-form-id}}}))
+
 (defn mk-form-doc-prompt-field-state
   [fields {:keys [id] :as prompt-field}]
   (let [resp-fields (mapv (fn [{:keys [sval nval dval jval] :as resp-field}]
@@ -378,16 +386,22 @@
 
 
 (defn c-missing-prompts
-  [{prompts1 :prompts :as prod-prof-form} {prompts2 :prompts :as form-doc}]
+  [{prompts1 :prompts :as prod-prof-form} {prompts2 :prompts :keys [id] :as form-doc}]
+  (def prod-prof-form1 prod-prof-form)
+  #_ (cljs.pprint/pprint prod-prof-form1)
+  (def form-doc1 form-doc)
+  #_ (cljs.pprint/pprint form-doc1)
   (let [missing-prompt-ids (clojure.set/difference (->> prompts1 (mapv :id) set)
                                                    (->> prompts2 (mapv :id) set))]
-    [:div
-     (for [p (->> prompts1
-                  (filter #(-> % :id missing-prompt-ids))
-                  (map :prompt)
-                  (sort-by :sort))]
-       [:div p
-        [:a "add"]])]))
+    (when-not (empty? missing-prompt-ids)
+      [:div {:style {:margin "20px"}}
+       (for [{:keys [prompt ref-id]} (->> prompts1
+                                          (filter #(-> % :id missing-prompt-ids))
+                                          (sort-by :sort))]
+         [:div {:style {:margin "5px"}} prompt
+          [:a {:style {:margin-left "10px"}
+               :on-click #(rf/dispatch [:propagate-prompt ref-id id])}
+           "add"]])])))
 
 ;; "data" can have term->field->value's
 ;;          and/or prompt-id->field->value's
