@@ -1,7 +1,8 @@
 process.env.CHROME_BIN = require('puppeteer').executablePath()
 // process.env.CHROME_BIN = "/usr/bin/google-chrome";
+//process.env.CHROMIUM_BIN = require('puppeteer').executablePath()
 
-console.log(require('puppeteer').executablePath());
+// console.log(require('puppeteer').executablePath());
 
 module.exports = function (config) {
   var root = 'resources/public/karma/test'; // same as :output-dir

@@ -80,7 +80,7 @@
 
   :npm {:devDependencies [[karma "4.1.0"]
                           [karma-cljs-test "0.1.0"]
-                          [karma-chrome-launcher "0.2.2"]
+                          [karma-chrome-launcher "2.2.0"]
                           [karma-junit-reporter "1.2.0"]
                           [puppeteer "1.17.0"]]}
 
