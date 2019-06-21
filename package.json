@@ -1,0 +1,26 @@
+{
+  "name": "vetd-app",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "cypress": "^3.3.1"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Vetd-Inc/vetd-app.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Vetd-Inc/vetd-app/issues"
+  },
+  "homepage": "https://github.com/Vetd-Inc/vetd-app#readme"
+}

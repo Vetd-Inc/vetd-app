@@ -150,7 +150,15 @@
                                  [pjstadig/humane-test-output "0.8.3"]
                                  [prone "1.6.0"]
                                  [ring/ring-devel "1.6.3"]
-                                 [ring/ring-mock "0.3.2"]]
+                                 [ring/ring-mock "0.3.2"]
+                                 ;; A ClojureScript wrapper for Mocha.
+                                 ;;
+                                 ;; Provides (describe ,,,), (it ,,,), etc.
+                                 [mocha-latte "0.1.2"]
+                                 ;; A ClojureScript wrapper for Chai.
+                                 ;;
+                                 ;; Provides (expect ,,,).
+                                 [chai-latte "0.2.0"]]
                   :plugins      [[com.jakemccrary/lein-test-refresh "0.23.0"]
                                  [lein-doo "0.1.10"]
                                  [lein-figwheel "0.5.18"]]
@@ -168,7 +176,22 @@
                       :optimizations :none
                       :pretty-print true
                       :closure-defines {"re_frame.trace.trace_enabled_QMARK_" true}
-                      :preloads [devtools.preload day8.re-frame-10x.preload]}}]}
+                      :preloads [devtools.preload day8.re-frame-10x.preload]}}
+                    {:id "cypress"
+                     :source-paths ["test/cljs/vetd-app"]
+                     ;; Note from @eerohele:
+                     ;; If you want :optimizations :none for faster
+                     ;; compilation, the only solution I could come up with
+                     ;; was to serve the Google Closure assets from the
+                     ;; application web server (that is, from http://localhost:3000/js/test).
+                     ;;
+                     ;; If you can live with :optimizations :simple, you
+                     ;; can omit the weird :asset-path.
+                     :compiler     {:optimizations :none
+                                    :main          vetd-app.core-test
+                                    :output-to     "main.js"
+                                    :output-dir    "resources/public/js/test"
+                                    :asset-path    "http://localhost:3000/js/test"}}]}
                   :doo {:build "test"}
                   :source-paths ["dev/clj"]
                   :resource-paths ["env/dev/resources"]
