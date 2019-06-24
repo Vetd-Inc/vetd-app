@@ -222,7 +222,9 @@
 
 (defmethod com/handle-ws-inbound :create-acct
   [m ws-id sub-fn]
-  (create-account m))
+  (create-account m)
+  ;; we don't need to send back user data (esp. pwd hash) to the client
+  {})
 
 (defmethod com/handle-ws-inbound :auth-by-creds
   [{:keys [email pwd] :as req} ws-id sub-fn]
