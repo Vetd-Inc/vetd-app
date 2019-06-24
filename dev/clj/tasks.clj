@@ -163,7 +163,7 @@
           (clojure.pprint/pprint t))))
     :done))
 
-#_ (create-vendor-profiles 15000)
+#_ (create-vendor-profiles 20000)
 
 (defn apply-product-values-to-form
   [{:keys [pname product] :as v} {:keys [prompts ftype fsubtype] :as form}]
@@ -247,3 +247,8 @@
         (println "DONE")))))
 
 #_ (convert-ids->base31)
+
+;; get up and running
+#_ (do (create-vendor-profiles 20000)
+       (create-product-profiles 50000)
+       (convert-ids->base31))

@@ -9,6 +9,7 @@
             [honeysql.core :as hs]))
 
 ;; this seems secure
+;; it should be noted that this will create different length tokens (20-24 chars)
 (defn mk-session-token []
   (let [base 1000000
         f #(ut/base36->str
