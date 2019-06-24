@@ -39,7 +39,6 @@
                 :message message}}
        {:dispatch [:create-acct account]}))))
 
-
 (rf/reg-event-fx
  :create-acct
  (fn [{:keys [db]} [_ account]]
@@ -56,8 +55,8 @@
    (if-not (:email-used? results)
      {:dispatch [:nav-login]
       :toast {:type "success"
-              :title "Thanks for Signing Up!"
-              :message "You can now login."}
+              :title "Please check your email"
+              :message (str "We've sent a message to " email " with a link to activate your account.")}
       :analytics/track {:event "Signup Complete"
                         :props {:category "Accounts"
                                 :label org-type}}}
