@@ -3,6 +3,8 @@
             [com.vetd.app.hasura :as ha]
             [com.vetd.app.util :as ut]))
 
+(def base-url "https://app.vetd.com/l/")
+
 ;; Links have a command (cmd) and data, as well as metadata defining its validity.
 ;; They also have a key.
 ;; Some commands: TODO should be keyword or string?
@@ -21,28 +23,28 @@
 ;;   - uses-action (default = 0)
 ;;   - uses-read (default = 0)
 
-(defn insert
+(defn create
   [{:keys [cmd data max-uses-action max-uses-read
            expires-action expires-read] :as link}]
-  (let [[id idstr] (ut/mk-id&str)]
-    (-> (db/insert! :links
-                    {:id id
-                     :idstr idstr
-                     :key (ut/mk-strong-key)
-                     :cmd cmd
-                     :data (str data)
-                     :max_uses_action (or max-uses-action 1)
-                     :max_uses_read (or max-uses-read 1)
-                     :expires_action (java.sql.Timestamp.
-                                      (or expires-action
-                                          (+ (ut/now) (* 1000 60 60 24 7)))) ; 7 days from now
-                     :expires_read (java.sql.Timestamp.
-                                    (or expires-read 0))
-                     :uses_action 0
-                     :uses_read 0
-                     :created (ut/now-ts)
-                     :updated (ut/now-ts)})
-        first)))
+  (let [[id idstr] (ut/mk-id&str)
+        k (ut/mk-strong-key)]
+    (db/insert! :links
+                {:id id
+                 :idstr idstr
+                 :key k
+                 :cmd cmd
+                 :data (str data)
+                 :max_uses_action (or max-uses-action 1)
+                 :max_uses_read (or max-uses-read 1)
+                 :expires_action (java.sql.Timestamp.
+                                  (or expires-action
+                                      (+ (ut/now) (* 1000 60 60 24 7)))) ; 7 days from now
+                 :expires_read (java.sql.Timestamp. (or expires-read 0))
+                 :uses_action 0
+                 :uses_read 0
+                 :created (ut/now-ts)
+                 :updated (ut/now-ts)})
+    k))
 
 (defn get-by-key
   [k]
@@ -54,3 +56,5 @@
       ha/sync-query
       :links
       first))
+
+;; TODO defmulti over cmd?

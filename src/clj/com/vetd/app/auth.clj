@@ -3,6 +3,7 @@
             [com.vetd.app.common :as com]
             [com.vetd.app.util :as ut]
             [com.vetd.app.hasura :as ha]
+            [com.vetd.app.email-client :as ec]
             [clojure.string :as st]
             [buddy.hashers :as bhsh]
             [taoensso.timbre :as log]
@@ -134,10 +135,6 @@
 
 
 
-
-
-
-
 (defn prepare-account-map
   "Normalizes and otherwise prepares an account map for insertion in DB."
   [{:keys [uname email pwd org-name org-type org-url] :as account}]
@@ -145,15 +142,27 @@
       (update :email st/lower-case)
       (update :pwd bhsh/derive)))
 
-(let [user (insert-user uname email pwd)
-            [org-created? org] (create-or-find-org org-name org-url (= org-type "buyer") (= org-type "vendor"))
-            [memb-created? memb] (create-or-find-memb (:id user) (:id org))]
-        {:user-created? true
-         :user user
-         :org-created? org-created?
-         :org org
-         :memb-created? memb-created?
-         :memb memb})
+
+(defn send-verify-account-email
+  [{:keys [uname org-name org-url org-type email pwd] :as account}]
+  (let [link-key (l/create {:cmd :create-verified-account
+                            :data account})]
+    (ec/send-template-email
+     email
+     {:verify-link (str l/base-url link-key)}
+     {:template-id "d-d1f3509a0c664b4d84a54777714d5272"})))
+
+
+;; TODO for the implementation of the create-verified-account cmd
+#_(let [user (insert-user uname email pwd)
+        [org-created? org] (create-or-find-org org-name org-url (= org-type "buyer") (= org-type "vendor"))
+        [memb-created? memb] (create-or-find-memb (:id user) (:id org))]
+    {:user-created? true
+     :user user
+     :org-created? org-created?
+     :org org
+     :memb-created? memb-created?
+     :memb memb})
 
 ;; TODO when handling create-verified-account, be sure to check (select-user-by-email email)
 ;; to ensure another person or same person created an account for that email address while the first
@@ -162,7 +171,8 @@
 (defn create-account
   "Create a user account. (Really just start the process; send verify email)
   NOTE: org-type is a string: either 'buyer' or 'vendor'"
-  [{:keys [uname org-name org-url org-type email pwd] :as account}]
+  ;; expecting these keys in account: [uname org-name org-url org-type email pwd]
+  [{:keys [email] :as account}]
   (try
     (if (select-user-by-email email)
       {:email-used? true}

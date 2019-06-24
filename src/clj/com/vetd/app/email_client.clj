@@ -1,4 +1,4 @@
-(ns com.vetd.app.sendgrid
+(ns com.vetd.app.email-client
   (:require [com.vetd.app.common :as com]
             [clj-http.client :as client]))
 
@@ -31,7 +31,7 @@
          {:success false
           :resp {:error {:message (.getMessage e)}}})))
 
-(defn- send-template-email
+(defn send-template-email
   [to data & [{:keys [from from-name template-id]}]]
   (request "mail/send"
            {:personalizations [{:to [{:email to}]
