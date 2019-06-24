@@ -91,8 +91,8 @@
 (defmulti fmap
   "Applies function f to each item in the data structure s and returns
    a structure of the same kind."
-   {:arglists '([f s])}
-   (fn [f s] (type s)))
+  {:arglists '([f s])}
+  (fn [f s] (type s)))
 
 (defmethod fmap clojure.lang.IPersistentList
   [f v]
@@ -238,6 +238,16 @@
 (defn mk-id&str []
   (let [id (mk-id)]
     [id (base31->str id)]))
+
+;; this seems secure
+;; it should be noted that this will create different length tokens (20-24 chars)
+(defn mk-strong-key []
+  (let [base 1000000
+        f #(base36->str
+            (+ base (rand-int (- Integer/MAX_VALUE base))))]
+    (-> (concat (f) (f) (f) (f))
+        shuffle
+        clojure.string/join)))
 
 ;; --------------------
 

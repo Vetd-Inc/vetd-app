@@ -8,15 +8,7 @@
             [taoensso.timbre :as log]
             [honeysql.core :as hs]))
 
-;; this seems secure
-;; it should be noted that this will create different length tokens (20-24 chars)
-(defn mk-session-token []
-  (let [base 1000000
-        f #(ut/base36->str
-            (+ base (rand-int (- Integer/MAX_VALUE base))))]
-    (-> (concat (f) (f) (f) (f))
-        shuffle
-        clojure.string/join)))
+
 
 (defn select-org-by-name [org-name]
   (-> [[:orgs {:oname org-name}
@@ -70,14 +62,14 @@
       ffirst))
 
 (defn insert-user
-  [uname email pwd]
+  [uname email pwd-hash]
   (let [[id idstr] (ut/mk-id&str)]  
     (-> (db/insert! :users
                     {:id id
                      :idstr idstr
                      :uname uname
-                     :email (st/lower-case email)
-                     :pwd (bhsh/derive pwd)})
+                     :email email
+                     :pwd pwd-hash})
         first)))
 
 (defn valid-creds?
@@ -136,14 +128,24 @@
     [false nil]
     [true (insert-memb user-id org-id)]))
 
-(defn create-account
-  "Create a user account.
-  NOTE: org-type is a string: either 'buyer' or 'vendor'"
-  [{:keys [uname org-name org-url org-type email pwd]}]
-  (try
-    (if (select-user-by-email email)
-      {:email-used? true}
-      (let [user (insert-user uname email pwd)
+
+
+
+
+
+
+
+
+
+
+(defn prepare-account-map
+  "Normalizes and otherwise prepares an account map for insertion in DB."
+  [{:keys [uname email pwd org-name org-type org-url] :as account}]
+  (-> account
+      (update :email st/lower-case)
+      (update :pwd bhsh/derive)))
+
+(let [user (insert-user uname email pwd)
             [org-created? org] (create-or-find-org org-name org-url (= org-type "buyer") (= org-type "vendor"))
             [memb-created? memb] (create-or-find-memb (:id user) (:id org))]
         {:user-created? true
@@ -151,7 +153,20 @@
          :org-created? org-created?
          :org org
          :memb-created? memb-created?
-         :memb memb}))
+         :memb memb})
+
+;; TODO when handling create-verified-account, be sure to check (select-user-by-email email)
+;; to ensure another person or same person created an account for that email address while the first
+;; Link was active.
+
+(defn create-account
+  "Create a user account. (Really just start the process; send verify email)
+  NOTE: org-type is a string: either 'buyer' or 'vendor'"
+  [{:keys [uname org-name org-url org-type email pwd] :as account}]
+  (try
+    (if (select-user-by-email email)
+      {:email-used? true}
+      (send-verify-account-email account))
     (catch Throwable e
       (com/log-error e))))
 
@@ -200,7 +215,7 @@
   (let [[id idstr] (ut/mk-id&str)]
     (-> (db/insert! :sessions
                     {:id id
-                     :token (mk-session-token)
+                     :token (ut/mk-strong-key)
                      :user_id user-id
                      :created (ut/now-ts)})
         first)))
