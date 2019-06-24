@@ -180,8 +180,9 @@
            "PrePosal Requested"
            [:<>
             "Pricing Unavailable "
-            [:a.teal {:onClick #(do (.stopPropagation %)
-                                    (rf/dispatch [:b/create-preposal-req product vendor]))}
+            [:a.teal {:onClick (fn [e]
+                                 (.stopPropagation e)
+                                 (rf/dispatch [:b/create-preposal-req product vendor]))}
              "Request a PrePosal"]]))]
       [:> ui/ItemDescription
        (util/truncate-text (or  (docs/get-field-value-from-response-prompt
@@ -216,8 +217,9 @@
      [:> ui/Label {:color "teal"
                    :size "large"
                    :as "a"
-                   :on-click #(do (.stopPropagation %)
-                                  (rf/dispatch [:b/nav-round-detail round-idstr]))}
+                   :on-click (fn [e]
+                               (.stopPropagation e)
+                               (rf/dispatch [:b/nav-round-detail round-idstr]))}
       "VetdRound In Progress for \"" cname "\""]
      [bc/c-start-round-button {:etype :category
                                :eid id
