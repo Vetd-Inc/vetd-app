@@ -52,6 +52,7 @@
 (defn parse-stored-link
   [link]
   (-> link
+      (update :cmd keyword)
       (update :input-data edn/read-string)
       (update :output-data edn/read-string)))
 
@@ -84,14 +85,22 @@
 
 (defn update-output
   "Store the output of a link action."
-  [id output]
+  [{:keys [id]} output]
   (db/update-any! {:id id
                    :output_data (str output)}
                   :links))
 
+(defn inc-uses-action
+  [{:keys [id uses-action]}]
+  (db/update-any! {:id id
+                   :uses_action (inc uses-action)}
+                  :links))
+
 (defn do-action
-  [{:keys [id] :as link}]
-  (update-output id (action link)))
+  [link]
+  (update-output link (action link))
+  ;; note that they way this is written, uses are seen as attempts, not necessarily successful
+  (inc-uses-action link))
 
 (defn do-action-by-key
   "Given a link key, try to do its action."
@@ -103,18 +112,22 @@
   [{:keys [max-uses-read uses-read]}]
   (> max-uses-read uses-read))
 
+(defn inc-uses-read
+  [{:keys [id uses-read]}]
+  (db/update-any! {:id id
+                   :uses_read (inc uses-read)}
+                  :links))
+
 (defn read-output
   [{:keys [output-data :as link]}]
   (when (readable? link)
+    (inc-uses-read link)
     output-data))
 
 (defn read-output-by-key
   "Given a link key, try to read its output."
   [k]
   (read-output (get-by-key k)))
-
-
-
 
 ;; (do-action-by-key "0p7sb6vb24jfkkgdmnsaz37i")
 
