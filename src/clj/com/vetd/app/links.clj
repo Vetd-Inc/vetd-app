@@ -50,12 +50,11 @@
 
 (defn get-by-key
   [k]
-  (-> [[:links ; {:key k}
-        [:id
-         ;;  :cmd :input-data :output-data
-         ;; :max-uses-action :max-uses-read
-         ;; :expires-action :expires-read
-         ;; :uses-action :uses-read :deleted
+  (-> [[:links {:key k}
+        [:id :cmd :input-data :output-data
+         :max-uses-action :max-uses-read
+         :expires-action :expires-read
+         :uses-action :uses-read :deleted
          ]]]
       ha/sync-query
       :links
@@ -65,7 +64,6 @@
   "Given a link key, try to do its action."
   [k]
   )
-
 
 (get-by-key "0p7sb6vb24jfkkgdmnsaz37i")
 
