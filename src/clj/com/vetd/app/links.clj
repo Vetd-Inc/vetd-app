@@ -18,7 +18,7 @@
 ;; Metadata:
 ;;   - max-uses-action (default = 1)
 ;;   - max-uses-read (default = 1)
-;;   - expires-action (default = current time + 7 days) accepts unixtime
+;;   - expires-action (default = current time + 30 days) accepts unixtime
 ;;   - expires-read (default = unixtime 0, usually reset to future time upon action) accepts unixtime
 ;;   - uses-action (default = 0)
 ;;   - uses-read (default = 0)
@@ -40,7 +40,7 @@
                  :max_uses_read (or max-uses-read 1)
                  :expires_action (java.sql.Timestamp.
                                   (or expires-action
-                                      (+ (ut/now) (* 1000 60 60 24 7)))) ; 7 days from now
+                                      (+ (ut/now) (* 1000 60 60 24 30)))) ; 30 days from now
                  :expires_read (java.sql.Timestamp. (or expires-read 0))
                  :uses_action 0
                  :uses_read 0

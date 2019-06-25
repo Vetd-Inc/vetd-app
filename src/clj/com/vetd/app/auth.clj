@@ -136,16 +136,17 @@
 
 (defn prepare-account-map
   "Normalizes and otherwise prepares an account map for insertion in DB."
-  [{:keys [uname email pwd org-name org-type org-url] :as account}]
+  [account]
   (-> account
+      (select-keys [:uname :org-name :org-url :org-type :email :pwd])
       (update :email st/lower-case)
       (update :pwd bhsh/derive)))
 
 
 (defn send-verify-account-email
-  [{:keys [uname org-name org-url org-type email pwd] :as account}]
+  [{:keys [email] :as account}]
   (let [link-key (l/create {:cmd :create-verified-account
-                            :input-data account})]
+                            :input-data (prepare-account-map account)})]
     (ec/send-template-email
      email
      {:verify-link (str l/base-url link-key)}
