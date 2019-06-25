@@ -34,7 +34,7 @@
                 {:id id
                  :idstr idstr
                  :key k
-                 :cmd cmd
+                 :cmd (name cmd)
                  :input_data (str input-data)
                  :max_uses_action (or max-uses-action 1)
                  :max_uses_read (or max-uses-read 1)
