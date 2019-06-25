@@ -50,13 +50,23 @@
 
 (defn get-by-key
   [k]
-  (-> [[:links {:key k}
-        [:id :cmd :input_data :output_data
-         :max_uses_action :max_uses_read
-         :expires_action :expires_read
-         :uses_action :uses_read]]]
+  (-> [[:links ; {:key k}
+        [:id
+         ;;  :cmd :input-data :output-data
+         ;; :max-uses-action :max-uses-read
+         ;; :expires-action :expires-read
+         ;; :uses-action :uses-read :deleted
+         ]]]
       ha/sync-query
       :links
       first))
+
+(defn do-action
+  "Given a link key, try to do its action."
+  [k]
+  )
+
+
+(get-by-key "0p7sb6vb24jfkkgdmnsaz37i")
 
 ;; TODO defmulti over cmd?
