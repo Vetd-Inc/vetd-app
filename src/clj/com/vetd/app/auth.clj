@@ -4,12 +4,11 @@
             [com.vetd.app.util :as ut]
             [com.vetd.app.hasura :as ha]
             [com.vetd.app.email-client :as ec]
+            [com.vetd.app.links :as l]
             [clojure.string :as st]
             [buddy.hashers :as bhsh]
             [taoensso.timbre :as log]
             [honeysql.core :as hs]))
-
-
 
 (defn select-org-by-name [org-name]
   (-> [[:orgs {:oname org-name}
@@ -146,11 +145,14 @@
 (defn send-verify-account-email
   [{:keys [uname org-name org-url org-type email pwd] :as account}]
   (let [link-key (l/create {:cmd :create-verified-account
-                            :data account})]
+                            :input-data account})]
     (ec/send-template-email
      email
      {:verify-link (str l/base-url link-key)}
      {:template-id "d-d1f3509a0c664b4d84a54777714d5272"})))
+
+
+
 
 
 ;; TODO for the implementation of the create-verified-account cmd

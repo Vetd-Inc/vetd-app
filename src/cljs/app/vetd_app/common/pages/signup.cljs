@@ -107,8 +107,11 @@
                         :type "email"
                         :spellCheck false
                         :on-invalid #(.preventDefault %) ; no type=email error message (we'll show our own)
-                        :on-blur #(when (empty? @org-url)
-                                    (reset! org-url (second (s/split @email #"@"))))
+                        ;; for convenience, try to autofill Organization Website field
+                        :on-blur #(let [email-domain (second (s/split @email #"@"))]
+                                    (when (and (empty? @org-url)
+                                               (not (#{"gmail.com" "yahoo.com" "hotmail.com" "msn.com" "outlook.com"} email-domain)))
+                                      (reset! org-url email-domain)))
                         :on-change (fn [_ this]
                                      (reset! email (.-value this)))}]]]
         [:> ui/FormField {:error (= @bad-input& :pwd)}

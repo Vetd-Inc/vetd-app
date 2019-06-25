@@ -5,13 +5,13 @@
 
 (def base-url "https://app.vetd.com/l/")
 
-;; Links have a command (cmd) and data, as well as metadata defining its validity.
+;; Links have a command (cmd) and input data, as well as metadata defining its validity.
 ;; They also have a key.
 ;; Some commands: TODO should be keyword or string?
 ;;   - create-verified-account
 ;;   - reset-password
 ;;   - accept-invitation
-;; Possible data (respective):
+;; Possible input data (respective):
 ;;   - an account map
 ;;   - user id
 ;;   - map with org-id and role
@@ -23,8 +23,10 @@
 ;;   - uses-action (default = 0)
 ;;   - uses-read (default = 0)
 
+;; TODO check if the time zone is being properly handled on its way to the DB
+;; I'm using [:expires_action [:timestamp :with :time :zone]] in schema, so may have an issue
 (defn create
-  [{:keys [cmd data max-uses-action max-uses-read
+  [{:keys [cmd input-data max-uses-action max-uses-read
            expires-action expires-read] :as link}]
   (let [[id idstr] (ut/mk-id&str)
         k (ut/mk-strong-key)]
@@ -33,7 +35,7 @@
                  :idstr idstr
                  :key k
                  :cmd cmd
-                 :data (str data)
+                 :input_data (str input-data)
                  :max_uses_action (or max-uses-action 1)
                  :max_uses_read (or max-uses-read 1)
                  :expires_action (java.sql.Timestamp.
@@ -49,7 +51,7 @@
 (defn get-by-key
   [k]
   (-> [[:links {:key k}
-        [:id :cmd :data
+        [:id :cmd :input_data :output_data
          :max_uses_action :max_uses_read
          :expires_action :expires_read
          :uses_action :uses_read]]]
