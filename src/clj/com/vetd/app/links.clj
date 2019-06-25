@@ -1,7 +1,8 @@
 (ns com.vetd.app.links
   (:require [com.vetd.app.db :as db]
             [com.vetd.app.hasura :as ha]
-            [com.vetd.app.util :as ut]))
+            [com.vetd.app.util :as ut]
+            [clojure.edn :as edn]))
 
 (def base-url "https://app.vetd.com/l/")
 
@@ -48,23 +49,72 @@
                  :updated (ut/now-ts)})
     k))
 
+(defn parse-stored-link
+  [link]
+  (-> link
+      (update :input-data edn/read-string)
+      (update :output-data edn/read-string)))
+
 (defn get-by-key
   [k]
-  (-> [[:links {:key k}
-        [:id :cmd :input-data :output-data
-         :max-uses-action :max-uses-read
-         :expires-action :expires-read
-         :uses-action :uses-read :deleted
-         ]]]
-      ha/sync-query
-      :links
-      first))
+  (some-> [[:links {:key k}
+            [:id :cmd :input-data :output-data
+             :max-uses-action :max-uses-read
+             :expires-action :expires-read
+             :uses-action :uses-read :deleted
+             ]]]
+          ha/sync-query
+          :links
+          first
+          parse-stored-link))
+
+;; TODO add expires constraint
+(defn actionable?
+  [{:keys [max-uses-action uses-action]}]
+  (> max-uses-action uses-action))
+
+;; if invoking, you probably want to use "do-action" instead
+(defmulti action (fn [link]
+                   (if (actionable? link)
+                     (:cmd link)
+                     :invalid)))
+
+;; called when link does not exist, is expired, or already did maximum action's
+(defmethod action :invalid [link] false)
+
+(defn update-output
+  "Store the output of a link action."
+  [id output]
+  (db/update-any! {:id id
+                   :output_data (str output)}
+                  :links))
 
 (defn do-action
+  [{:keys [id] :as link}]
+  (update-output id (action link)))
+
+(defn do-action-by-key
   "Given a link key, try to do its action."
   [k]
-  )
+  (do-action (get-by-key k)))
 
-(get-by-key "0p7sb6vb24jfkkgdmnsaz37i")
+;; TODO add expires constraint
+(defn readable?
+  [{:keys [max-uses-read uses-read]}]
+  (> max-uses-read uses-read))
 
-;; TODO defmulti over cmd?
+(defn read-output
+  [{:keys [output-data :as link]}]
+  (when (readable? link)
+    output-data))
+
+(defn read-output-by-key
+  "Given a link key, try to read its output."
+  [k]
+  (read-output (get-by-key k)))
+
+
+
+
+;; (do-action-by-key "0p7sb6vb24jfkkgdmnsaz37i")
+

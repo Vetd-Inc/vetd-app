@@ -128,20 +128,13 @@
     [false nil]
     [true (insert-memb user-id org-id)]))
 
-
-
-
-
-
-
 (defn prepare-account-map
   "Normalizes and otherwise prepares an account map for insertion in DB."
   [account]
   (-> account
-      (select-keys [:uname :org-name :org-url :org-type :email :pwd])
+      (select-keys [:uname :email :pwd :org-name :org-url :org-type])
       (update :email st/lower-case)
       (update :pwd bhsh/derive)))
-
 
 (defn send-verify-account-email
   [{:keys [email] :as account}]
@@ -152,24 +145,17 @@
      {:verify-link (str l/base-url link-key)}
      {:template-id "d-d1f3509a0c664b4d84a54777714d5272"})))
 
-
-
-
-
-;; TODO for the implementation of the create-verified-account cmd
-#_(let [user (insert-user uname email pwd)
-        [org-created? org] (create-or-find-org org-name org-url (= org-type "buyer") (= org-type "vendor"))
-        [memb-created? memb] (create-or-find-memb (:id user) (:id org))]
-    {:user-created? true
-     :user user
-     :org-created? org-created?
-     :org org
-     :memb-created? memb-created?
-     :memb memb})
-
-;; TODO when handling create-verified-account, be sure to check (select-user-by-email email)
-;; to ensure another person or same person created an account for that email address while the first
-;; Link was active.
+(defmethod l/action :create-verified-account
+  [{:keys [input-data] :as link}]
+  (let [{:keys [uname email pwd org-name org-url org-type]} input-data]
+    (if (select-user-by-email email)
+      false ; rare, but someone created an account with this email sometime after the link was made
+      (let [user (insert-user uname email pwd)
+            [org-created? org] (create-or-find-org org-name org-url (= org-type "buyer") (= org-type "vendor"))
+            [memb-created? memb] (create-or-find-memb (:id user) (:id org))]
+        ;; consider outputting a session token (so user can be immediately logged in
+        ;; those this may pose a security risk, since it would be stored in the links table
+        true))))
 
 (defn create-account
   "Create a user account. (Really just start the process; send verify email)
@@ -251,7 +237,6 @@
 (defmethod com/handle-ws-inbound :create-acct
   [m ws-id sub-fn]
   (create-account m)
-  ;; we don't need to send back user data (esp. pwd hash) to the client
   {})
 
 (defmethod com/handle-ws-inbound :auth-by-creds
