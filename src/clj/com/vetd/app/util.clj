@@ -11,6 +11,10 @@
   (java.sql.Timestamp.
    (System/currentTimeMillis)))
 
+(defn sql-ts->unix-ms
+  [sql-ts]
+  (int (.getTime sql-ts)))
+
 (defn kw->str
   [kw]
   (str (when-let [n (and (keyword? kw)

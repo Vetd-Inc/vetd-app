@@ -71,8 +71,16 @@
 
 ;; TODO add expires constraint
 (defn actionable?
-  [{:keys [max-uses-action uses-action]}]
-  (> max-uses-action uses-action))
+  [{:keys [max-uses-action uses-action expires-action]}]
+  (and (> max-uses-action uses-action)
+       (> (-> expires-action
+              java.sql.Timestamp. ; TODO this doesn't work because expires-action is a string
+                 ;; ideally this would have already been parsed into a java.sql.Timestamp object.
+              ut/sql-ts->unix-ms)
+          (ut/now))))
+
+(-> (get-by-key "g2nfg6voxq3ysp6vabb9n9jd")
+    actionable?)
 
 ;; if invoking, you probably want to use "do-action" instead
 (defmulti action (fn [link]
@@ -99,7 +107,7 @@
 (defn do-action
   [link]
   (update-output link (action link))
-  ;; note that they way this is written, uses are seen as attempts, not necessarily successful
+  ;; note that the way this is written, uses are seen as attempts, not necessarily successful
   (inc-uses-action link))
 
 (defn do-action-by-key
