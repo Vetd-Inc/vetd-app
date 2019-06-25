@@ -213,13 +213,14 @@
 
 (defn mk-migration-files
   [migrations-def dest-path]
-  (map-indexed (partial mk-migration-file
-                        (-> dest-path
-                            io/resource
-                            .getPath))
-               (for [[dtime & stmts] migrations-def
-                     s stmts]
-                 [dtime s])))
+  (doall
+   (map-indexed (partial mk-migration-file
+                         (-> dest-path
+                             io/resource
+                             .getPath))
+                (for [[dtime & stmts] migrations-def
+                      s stmts]
+                  [dtime s]))))
 
 (defn mk-copy-from-up-fn [filename]
   (fn [{:keys [db]}]
