@@ -2,6 +2,7 @@
   (:require [com.vetd.app.db :as db]
             [com.vetd.app.hasura :as ha]
             [com.vetd.app.util :as ut]
+            [com.vetd.app.common :as com]
             [clj-time.core :as t]
             [clojure.edn :as edn]))
 
@@ -135,3 +136,12 @@
   "Given a link key, try to read its output."
   [k]
   (read-output (get-by-key k)))
+
+(defmethod com/handle-ws-inbound :read-link
+  [req ws-id sub-fn]
+  (if-let [link (get-by-key (:key req))]
+    (if-let [output-data (read-output link)]
+      {:cmd (:cmd link)
+       :output-data output-data}
+      {:cmd :invalid})
+    {:cmd :invalid}))

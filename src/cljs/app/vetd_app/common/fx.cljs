@@ -6,3 +6,50 @@
  (fn [_]
    (.startConfetti js/window)
    (js/setTimeout #(.stopConfetti js/window) 3000)))
+
+(rf/reg-event-fx
+ :read-link
+ (fn [{:keys [db]} [_ k]]
+   { ;; :db (assoc db :page :login) ; add some kind of loading control
+    :ws-send {:payload {:cmd :read-link
+                        :return :read-link-result
+                        :key k}}}))
+
+(rf/reg-event-fx
+ :read-link-result
+ (fn [{:keys [db]} [_ {:keys [cmd output-data] :as results}]]
+   {:toast (if (= cmd :invalid)
+             {:type "error" 
+              :title "That link is expired or invalid."}
+             {:type "success" ; TODO handle various cmd's
+              :title (str "Link Result Output Data " cmd)
+              :message (str output-data)})
+    :dispatch [:nav-home]}))
+
+
+;; (if logged-in?
+;;   (let [org-id (-> memberships first :org-id)] ; TODO support users with multi-orgs
+;;     {:db (assoc db
+;;                 :login-failed? false
+;;                 :logged-in? true
+;;                 :user user
+;;                 :session-token session-token
+;;                 :memberships memberships
+;;                 :active-memb-id (some-> memberships first :id)
+;;                 :admin? admin?
+;;                 :org-id org-id)
+;;      :local-store {:session-token session-token}
+;;      :cookies {:admin-token (when admin? [session-token {:max-age 60 :path "/"}])}
+;;      :analytics/identify {:user-id (:id user)
+;;                           :traits {:name (:uname user)
+;;                                    :displayName (:uname user)
+;;                                    :email (:email user)}}
+;;      :analytics/group {:group-id org-id
+;;                        :traits {:name (-> memberships first :org :oname)}}
+;;      :dispatch-later [{:ms 100 :dispatch [:nav-home]}
+;;                       ;; to prevent the login form from flashing briefly
+;;                       {:ms 200 :dispatch [:hide-login-loading]}]})
+;;   {:db (assoc db
+;;               :logged-in? false
+;;               :login-loading? false
+;;               :login-failed? true)})

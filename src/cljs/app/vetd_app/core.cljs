@@ -168,6 +168,10 @@
 (sec/defroute signup-path "/signup/:type" [type]
   (rf/dispatch [:route-signup type]))
 
+;; Link - special links for actions such as reset password, or account verification
+(sec/defroute link-path "/l/:k" [k]
+  (rf/dispatch [:read-link k]))
+
 ;; Buyers
 (sec/defroute buyers-search-root "/b/search" []
   (rf/dispatch [:b/route-search]))
