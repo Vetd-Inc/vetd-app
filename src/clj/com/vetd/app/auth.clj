@@ -153,7 +153,7 @@
   (try
     (if (select-user-by-email email)
       {:email-used? true}
-      (send-verify-account-email account))
+      (future (send-verify-account-email account)))
     (catch Throwable e
       (com/log-error e))))
 
@@ -265,8 +265,6 @@
     (if (select-user-by-email email)
       false ; rare, but someone created an account with this email sometime after the link was made
       (let [user (insert-user uname email pwd)
-            [org-created? org] (create-or-find-org org-name org-url (= org-type "buyer") (= org-type "vendor"))
-            [memb-created? memb] (create-or-find-memb (:id user) (:id org))]
-        ;; consider outputting a session token (so user can be immediately logged in
-        ;; though this may pose a security risk, since it would be stored in the links table
-        true))))
+            [_ org] (create-or-find-org org-name org-url (= org-type "buyer") (= org-type "vendor"))
+            _ (create-or-find-memb (:id user) (:id org))]
+        {:session-token (-> user :id insert-session :token)}))))
