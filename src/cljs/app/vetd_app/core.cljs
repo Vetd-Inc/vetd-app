@@ -157,9 +157,18 @@
 
 
 ;;;; Routes
+
+;; Common
 (sec/defroute home-path "/" []
   (rf/dispatch [:nav-home]))
 
+(sec/defroute login-path "/login" [query-params]
+  (rf/dispatch [:route-login query-params]))
+
+(sec/defroute signup-path "/signup/:type" [type]
+  (rf/dispatch [:route-signup type]))
+
+;; Buyers
 (sec/defroute buyers-search-root "/b/search" []
   (rf/dispatch [:b/route-search]))
 (sec/defroute buyers-search "/b/search/:search-term" [search-term]
@@ -167,7 +176,6 @@
 
 (sec/defroute buyers-preposals "/b/preposals" [query-params]
   (rf/dispatch [:b/route-preposals query-params]))
-
 (sec/defroute buyers-preposal-detail "/b/preposals/:idstr" [idstr]
   (rf/dispatch [:b/route-preposal-detail idstr]))
 
@@ -176,38 +184,31 @@
 
 (sec/defroute buyers-rounds "/b/rounds" [query-params]
   (rf/dispatch [:b/route-rounds query-params]))
-
 (sec/defroute buyers-round-detail "/b/rounds/:idstr" [idstr]
   (rf/dispatch [:b/route-round-detail idstr]))
 
+;; Vendors
 (sec/defroute vendors-preposals "/v/preposals" [query-params]
   (rf/dispatch [:v/route-preposals query-params]))
 
 (sec/defroute vendors-products "/v/products" [query-params]
   (rf/dispatch [:v/route-products query-params]))
-
 (sec/defroute vendors-product-detail "/v/products/:idstr" [idstr]
   (rf/dispatch [:v/route-product-detail idstr]))
 
 (sec/defroute vendors-profile "/v/profile" [query-params]
   (rf/dispatch [:v/route-profile query-params]))
 
-(sec/defroute login-path "/login" [query-params]
-  (rf/dispatch [:route-login query-params]))
-
-(sec/defroute signup-path "/signup/:type" [type]
-  (rf/dispatch [:route-signup type]))
-
 (sec/defroute vendors-rounds-path "/v/rounds" [query-params]
   (rf/dispatch [:v/route-rounds query-params]))
-
 (sec/defroute vendors-round-product-detail "/v/rounds/:round-idstr/products/:product-idstr"
   [round-idstr product-idstr]
   (rf/dispatch [:v/route-round-product-detail round-idstr product-idstr]))
 
-(sec/defroute catchall-path "*" []
-  (do (.log js/console "nav catchall")
-      (rf/dispatch [:apply-route nil])))
+;; catch-all
+(sec/defroute catch-all-path "*" []
+  (do (.log js/console "nav catch-all")
+      (rf/dispatch [:nav-home])))
 
 (rf/reg-event-fx
  :ws-get-session-user
