@@ -8,11 +8,11 @@
 (def base-url "https://app.vetd.com/l/")
 
 ;; Links have a command (cmd) and input data, as well as metadata defining its validity.
-;; They also have a key.
-;; Some commands: TODO should be keyword or string?
-;;   - create-verified-account
-;;   - reset-password
-;;   - accept-invitation
+;; They also have a key (a secret string used to trigger action and/or read output).
+;; Some commands:
+;;   - :create-verified-account
+;;   - :reset-password
+;;   - :accept-invitation
 ;; Possible input data (respective):
 ;;   - an account map
 ;;   - user id
@@ -24,9 +24,7 @@
 ;;   - expires-read (default = unixtime 0, usually reset to future time upon action) accepts unixtime
 ;;   - uses-action (default = 0)
 ;;   - uses-read (default = 0)
-
-;; TODO check if the time zone is being properly handled on its way to the DB
-;; I'm using [:expires_action [:timestamp :with :time :zone]] in schema, so may have an issue
+;; Output data will be determined by method implementation for that cmd.
 (defn create
   [{:keys [cmd input-data max-uses-action max-uses-read
            expires-action expires-read] :as link}]
@@ -50,7 +48,7 @@
                  :updated (ut/now-ts)})
     k))
 
-(defn parse-stored-link
+(defn- parse-stored-link
   [link]
   (-> link
       (update :cmd keyword)
@@ -63,26 +61,32 @@
             [:id :cmd :input-data :output-data
              :max-uses-action :max-uses-read
              :expires-action :expires-read
-             :uses-action :uses-read :deleted :created]]]
+             :uses-action :uses-read :deleted]]]
           ha/sync-query
           :links
           first
           parse-stored-link))
 
-;; TODO add expires constraint
-(defn actionable?
-  [{:keys [max-uses-action uses-action expires-action]}]
-  (and (> max-uses-action uses-action)
-       (> (-> expires-action
-              java.sql.Timestamp. ; TODO this doesn't work because expires-action is a string
-                 ;; ideally this would have already been parsed into a java.sql.Timestamp object.
-              ut/sql-ts->unix-ms)
-          (ut/now))))
+(defn- valid?
+  [uses max-uses expires]
+  (and (< uses max-uses)
+       (< (ut/now) (ut/sql-ts->unix-ms expires))))
 
-(-> (get-by-key "g2nfg6voxq3ysp6vabb9n9jd")
-    actionable?)
+(def actionable?
+  (comp (partial apply valid?)
+        (juxt :uses-action :max-uses-action :expires-action)))
 
-;; if invoking, you probably want to use "do-action" instead
+(def readable?
+  (comp (partial apply valid?)
+        (juxt :uses-read :max-uses-read :expires-read)))
+
+;; If invoking, you probably want to use "do-action" instead.
+;; If adding a new link cmd, defmethod onto this multi,
+;; using the cmd keyword as dispatch-val. Your method will receive
+;; the parsed link map (the most useful part being :input-data),
+;; and should return whatever you want to be stored as output data.
+;; Your return value can be anything that is EDN-encodeable.
+;; Returning false has the unique behavior of not setting output data.
 (defmulti action (fn [link]
                    (if (actionable? link)
                      (:cmd link)
@@ -98,45 +102,36 @@
                    :output_data (str output)}
                   :links))
 
-(defn inc-uses-action
-  [{:keys [id uses-action]}]
-  (db/update-any! {:id id
-                   :uses_action (inc uses-action)}
-                  :links))
+(defn- inc-uses
+  "Increment the number of uses of a link in the DB.
+  system - 'action' / 'read'"
+  [link system]
+  (let [field (keyword (str "uses_" system))
+        curr-uses (->> (str "uses-" system)
+                       keyword
+                       (get link))]
+    (db/update-any! (assoc {:id (:id link)}
+                           field (inc curr-uses))
+                    :links)))
 
 (defn do-action
   [link]
-  (update-output link (action link))
-  ;; note that the way this is written, uses are seen as attempts, not necessarily successful
-  (inc-uses-action link))
+  (when-let [result (action link)]
+    (update-output link result)
+    (inc-uses link "action")))
 
 (defn do-action-by-key
   "Given a link key, try to do its action."
   [k]
   (do-action (get-by-key k)))
 
-;; TODO add expires constraint
-(defn readable?
-  [{:keys [max-uses-read uses-read]}]
-  (> max-uses-read uses-read))
-
-(defn inc-uses-read
-  [{:keys [id uses-read]}]
-  (db/update-any! {:id id
-                   :uses_read (inc uses-read)}
-                  :links))
-
 (defn read-output
   [{:keys [output-data :as link]}]
   (when (readable? link)
-    (inc-uses-read link)
+    (inc-uses link "read")
     output-data))
 
 (defn read-output-by-key
   "Given a link key, try to read its output."
   [k]
   (read-output (get-by-key k)))
-
-;; (do-action-by-key "0p7sb6vb24jfkkgdmnsaz37i")
-
-;; (get-by-key "0p7sb6vb24jfkkgdmnsaz37i")

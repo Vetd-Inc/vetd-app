@@ -13,7 +13,7 @@
 
 (defn sql-ts->unix-ms
   [sql-ts]
-  (int (.getTime sql-ts)))
+  (long (.getTime sql-ts)))
 
 (defn kw->str
   [kw]
