@@ -145,18 +145,6 @@
      {:verify-link (str l/base-url link-key)}
      {:template-id "d-d1f3509a0c664b4d84a54777714d5272"})))
 
-(defmethod l/action :create-verified-account
-  [{:keys [input-data] :as link}]
-  (let [{:keys [uname email pwd org-name org-url org-type]} input-data]
-    (if (select-user-by-email email)
-      false ; rare, but someone created an account with this email sometime after the link was made
-      (let [user (insert-user uname email pwd)
-            [org-created? org] (create-or-find-org org-name org-url (= org-type "buyer") (= org-type "vendor"))
-            [memb-created? memb] (create-or-find-memb (:id user) (:id org))]
-        ;; consider outputting a session token (so user can be immediately logged in
-        ;; those this may pose a security risk, since it would be stored in the links table
-        true))))
-
 (defn create-account
   "Create a user account. (Really just start the process; send verify email)
   NOTE: org-type is a string: either 'buyer' or 'vendor'"
@@ -234,6 +222,7 @@
       {:logged-in? false
        :login-failed? true}))
 
+;; Websocket handlers
 (defmethod com/handle-ws-inbound :create-acct
   [m ws-id sub-fn]
   (create-account m)
@@ -268,3 +257,16 @@
   (create-or-find-memb user-id org-id))
 
 ;; TODO logout!!!!!!!!!!!!!!!
+
+;;;; Link action handlers
+(defmethod l/action :create-verified-account
+  [{:keys [input-data] :as link}]
+  (let [{:keys [uname email pwd org-name org-url org-type]} input-data]
+    (if (select-user-by-email email)
+      false ; rare, but someone created an account with this email sometime after the link was made
+      (let [user (insert-user uname email pwd)
+            [org-created? org] (create-or-find-org org-name org-url (= org-type "buyer") (= org-type "vendor"))
+            [memb-created? memb] (create-or-find-memb (:id user) (:id org))]
+        ;; consider outputting a session token (so user can be immediately logged in
+        ;; though this may pose a security risk, since it would be stored in the links table
+        true))))

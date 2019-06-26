@@ -126,7 +126,7 @@
   (do-action (get-by-key k)))
 
 (defn read-output
-  [{:keys [output-data :as link]}]
+  [{:keys [output-data] :as link}]
   (when (readable? link)
     (inc-uses link "read")
     output-data))
