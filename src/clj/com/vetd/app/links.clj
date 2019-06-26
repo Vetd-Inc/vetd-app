@@ -2,6 +2,7 @@
   (:require [com.vetd.app.db :as db]
             [com.vetd.app.hasura :as ha]
             [com.vetd.app.util :as ut]
+            [clj-time.core :as t]
             [clojure.edn :as edn]))
 
 (def base-url "https://app.vetd.com/l/")
@@ -62,8 +63,7 @@
             [:id :cmd :input-data :output-data
              :max-uses-action :max-uses-read
              :expires-action :expires-read
-             :uses-action :uses-read :deleted
-             ]]]
+             :uses-action :uses-read :deleted :created]]]
           ha/sync-query
           :links
           first
@@ -139,3 +139,4 @@
 
 ;; (do-action-by-key "0p7sb6vb24jfkkgdmnsaz37i")
 
+;; (get-by-key "0p7sb6vb24jfkkgdmnsaz37i")
