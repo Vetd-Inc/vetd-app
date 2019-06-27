@@ -94,7 +94,7 @@
                                     [:doc-product [:id]]
                                     [:prompts {:ref-deleted nil
                                                :_order_by {:sort :asc}}
-                                     [:id :idstr :prompt :descr :sort
+                                     [:id :idstr :prompt :descr :sort :term
                                       [:fields {:deleted nil
                                                 :_order_by {:sort :asc}}
                                        [:id :idstr :fname :ftype

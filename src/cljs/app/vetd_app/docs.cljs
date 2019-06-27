@@ -178,6 +178,7 @@
                          {:notes-state (r/atom (or notes ""))})
         fields' (group-by :pf-id
                           fields)]
+    (println (:term prompt))
     (-> prompt
         (assoc :response response')
         (update :fields
@@ -200,8 +201,6 @@
                              responses)]
     (update form-doc :prompts
             mk-form-doc-prompt-states responses')))
-
-
 
 (defn c-prompt-field-default
   [{:keys [fname ftype fsubtype response] :as prompt-field}]
