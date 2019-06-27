@@ -111,16 +111,16 @@
         curr-uses (->> (str "uses-" system)
                        keyword
                        (get link))]
-    (db/update-any! (assoc {:id (:id link)}
-                           field (inc curr-uses))
+    (db/update-any! {:id (:id link)
+                     field (inc curr-uses)}
                     :links)))
 
 (defn update-expires
   "Update the expires time for a given system (action / read)."
   [link system expires-unix-ms]
   (let [field (keyword (str "expires_" system))]
-    (db/update-any! (assoc {:id (:id link)}
-                           field (java.sql.Timestamp. expires-unix-ms))
+    (db/update-any! {:id (:id link)
+                     field (java.sql.Timestamp. expires-unix-ms)}
                     :links)))
 
 (defn do-action
