@@ -18,13 +18,16 @@
 (rf/reg-event-fx
  :read-link-result
  (fn [{:keys [db]} [_ {:keys [cmd output-data] :as results}]]
-   {:toast (if (= cmd :invalid)
-             {:type "error" 
+   (case cmd ; make sure your case nav's the user somewhere (often :nav-home)
+     :create-verified-account {:toast {:type "success"
+                                       :title "Account Verified!"
+                                       :message "Thank you for verifying your email address."}
+                               :local-store {:session-token (:session-token output-data)}
+                               :dispatch-later [{:ms 100 :dispatch [:ws-get-session-user]}
+                                                {:ms 200 :dispatch [:nav-home]}]}
+     {:toast {:type "error"
               :title "That link is expired or invalid."}
-             {:type "success" ; TODO handle various cmd's
-              :title (str "Link Result Output Data " cmd)
-              :message (str output-data)})
-    :dispatch [:nav-home]}))
+      :dispatch [:nav-home]})))
 
 
 ;; (if logged-in?

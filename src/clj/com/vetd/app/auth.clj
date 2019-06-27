@@ -153,7 +153,8 @@
   (try
     (if (select-user-by-email email)
       {:email-used? true}
-      (future (send-verify-account-email account)))
+      (do (future (send-verify-account-email account))
+          {}))
     (catch Throwable e
       (com/log-error e))))
 
@@ -225,8 +226,7 @@
 ;; Websocket handlers
 (defmethod com/handle-ws-inbound :create-acct
   [m ws-id sub-fn]
-  (create-account m)
-  {})
+  (create-account m))
 
 (defmethod com/handle-ws-inbound :auth-by-creds
   [{:keys [email pwd] :as req} ws-id sub-fn]

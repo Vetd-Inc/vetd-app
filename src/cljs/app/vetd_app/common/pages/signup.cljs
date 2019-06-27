@@ -63,7 +63,7 @@
      {:db (assoc-in db [:page-params :bad-input] :email)
       :toast {:type "error" 
               :title "Error"
-              :message "That email address already has an account."}})))
+              :message "There is already an account with that email address."}})))
 
 ;; Subscriptions
 (rf/reg-sub

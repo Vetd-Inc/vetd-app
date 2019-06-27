@@ -217,7 +217,7 @@
 (rf/reg-event-fx
  :ws-get-session-user
  [(rf/inject-cofx :local-store [:session-token])] 
- (fn [{:keys [db local-store]} [_ [email pwd]]]
+ (fn [{:keys [local-store]}]
    {:ws-send {:payload {:cmd :auth-by-session
                         :return :ws/req-session
                         :session-token (:session-token local-store)}}}))
@@ -249,14 +249,18 @@
     :path-exists? sec/locate-route
     :reload-same-path? false}))
 
+(defonce additional-init-done? (volatile! false))
+
 ;; additional init that must occur after :ws/req-session
 (rf/reg-fx
  :after-req-session
  (fn []
-   (clerk/initialize!)
-   (config-acct)
-   (acct/dispatch-current!)
-   (mount-components)))
+   (when-not @additional-init-done?
+     (vreset! additional-init-done? true)
+     (clerk/initialize!)
+     (config-acct)
+     (acct/dispatch-current!)
+     (mount-components))))
 
 (defonce init-done? (volatile! false))
 
@@ -270,10 +274,5 @@
       (rf/dispatch-sync [:ws-init])
       (rf/dispatch-sync [:ws-get-session-user])
       (println "init! END"))))
-
-;; for dev
-(defn re-init! []
-  (vreset! init-done? false)
-  (init!))
 
 (println "END core")
