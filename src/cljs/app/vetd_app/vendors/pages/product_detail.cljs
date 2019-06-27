@@ -139,8 +139,3 @@
                                 (or form-doc'
                                     (assoc prod-prof-form
                                            :product {:id id})))]]))]))))
-#_
-(cljs.pprint/pprint prod-prof-form1)
-
-#_
-(cljs.pprint/pprint form-doc1)
