@@ -122,6 +122,10 @@
   [{:keys [response-id doc-id]} ws-id sub-fn]
   (docs/delete-doc-response-by-ids response-id doc-id))
 
+(defmethod com/handle-ws-inbound :v/propagate-prompt
+  [{:keys [form-prompt-ref-id target-form-id]} ws-id sub-fn]
+  (docs/propagate-prompt form-prompt-ref-id target-form-id))
+
 (defn process-product-logo [prod-profile-doc-id]
   (let [{:keys [subject] :as doc} (-> [[:docs {:id prod-profile-doc-id}
                                         [:subject
@@ -138,22 +142,23 @@
                          :fields
                          first
                          :sval)]
-    (if logo-url
-      (let [baos (java.io.ByteArrayOutputStream.)
-            _ (ut/$- -> logo-url
-                     (http/get {:as :stream})
-                     :body
-                     mimg/load-image
-                     ((rzimg/resize-fn 150 150 image-resizer.scale-methods/automatic))
-                     (mimg/write baos "png"))
-            ba (.toByteArray baos)
-            new-file-name (format "%s.png"
-                                  (com/md5-hex ba))]
-        (com/s3-put "vetd-logos" new-file-name ba)
-        (db/update-any! {:id subject
-                         :logo new-file-name}
-                        :products)
-        (log/info (format "Product logo processed: '%s' '%s'" new-file-name subject)))
+    (if logo-url ;; TODO only do this if logo-url changed
+      (when (.startsWith logo-url "http")
+        (let [baos (java.io.ByteArrayOutputStream.)
+              _ (ut/$- -> logo-url
+                       (http/get {:as :stream})
+                       :body
+                       mimg/load-image
+                       ((rzimg/resize-fn 150 150 image-resizer.scale-methods/automatic))
+                       (mimg/write baos "png"))
+              ba (.toByteArray baos)
+              new-file-name (format "%s.png"
+                                    (com/md5-hex ba))]
+          (com/s3-put "vetd-logos" new-file-name ba)
+          (db/update-any! {:id subject
+                           :logo new-file-name}
+                          :products)
+          (log/info (format "Product logo processed: '%s' '%s'" new-file-name subject))))
       (com/log-error  (format "NO Product logo found in profile doc: '%s'" subject)))))
 
 

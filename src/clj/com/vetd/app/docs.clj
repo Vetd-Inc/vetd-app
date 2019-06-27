@@ -171,6 +171,16 @@
                      :sort sort'})
         first)))
 
+(defn propagate-prompt [form-prompt-ref-id target-form-id]
+  (let [{prompt-id :prompt_id sort' :sort} (-> {:select [:sort :prompt_id]
+                                                :from [:form_prompt]
+                                                :where [:= :id form-prompt-ref-id]}
+                                               db/hs-query
+                                               first)]
+    (insert-form-prompt target-form-id
+                        prompt-id
+                        sort')))
+
 (defn get-max-prompt-sort-by-form-template-id
   [form-template-id]
   (some->> [[:form-templates {:id form-template-id}
@@ -559,8 +569,8 @@
       empty?
       not))
 
-(defn select-form-prompt-id [prompt-id form-id]
-  (-> {:select [:id]
+(defn select-form-prompt-id [prompt-id form-id & fields]
+  (-> {:select (or [:id] fields)
        :from [:form_prompt]
        :where [:and
                [:= :deleted nil]
