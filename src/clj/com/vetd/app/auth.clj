@@ -267,4 +267,5 @@
       (let [user (insert-user uname email pwd)
             [_ org] (create-or-find-org org-name org-url (= org-type "buyer") (= org-type "vendor"))
             _ (create-or-find-memb (:id user) (:id org))]
+        (l/update-expires link "read" (+ (ut/now) (* 1000 60 5))) ; allow read for next 5 mins
         {:session-token (-> user :id insert-session :token)}))))

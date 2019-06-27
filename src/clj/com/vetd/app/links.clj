@@ -42,7 +42,7 @@
                  :expires_action (java.sql.Timestamp.
                                   (or expires-action
                                       (+ (ut/now) (* 1000 60 60 24 30)))) ; 30 days from now
-                 :expires_read (java.sql.Timestamp. (or expires-read 0))
+                 :expires_read (java.sql.Timestamp. (or expires-read 0)) ; can't read by default
                  :uses_action 0
                  :uses_read 0
                  :created (ut/now-ts)
@@ -113,6 +113,14 @@
                        (get link))]
     (db/update-any! (assoc {:id (:id link)}
                            field (inc curr-uses))
+                    :links)))
+
+(defn update-expires
+  "Update the expires time for a given system (action / read)."
+  [link system expires-unix-ms]
+  (let [field (keyword (str "expires_" system))]
+    (db/update-any! (assoc {:id (:id link)}
+                           field (java.sql.Timestamp. expires-unix-ms))
                     :links)))
 
 (defn do-action
