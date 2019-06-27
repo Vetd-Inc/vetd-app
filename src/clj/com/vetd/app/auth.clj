@@ -139,7 +139,9 @@
 (defn send-verify-account-email
   [{:keys [email] :as account}]
   (let [link-key (l/create {:cmd :create-verified-account
-                            :input-data (prepare-account-map account)})]
+                            :input-data (prepare-account-map account)
+                            ;; 30 days from now
+                            :expires-action (+ (ut/now) (* 1000 60 60 24 30))})]
     (ec/send-template-email
      email
      {:verify-link (str l/base-url link-key)}

@@ -41,7 +41,7 @@
                  :max_uses_read (or max-uses-read 1)
                  :expires_action (java.sql.Timestamp.
                                   (or expires-action
-                                      (+ (ut/now) (* 1000 60 60 24 30)))) ; 30 days from now
+                                      (+ (ut/now) (* 1000 60 60 24)))) ; 1 days from now
                  :expires_read (java.sql.Timestamp. (or expires-read 0)) ; can't read by default
                  :uses_action 0
                  :uses_read 0
