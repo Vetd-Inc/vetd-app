@@ -141,22 +141,39 @@
                                    :response-id response-id
                                    :doc-id doc-id}})])}))
 
+(rf/reg-event-fx
+ :propagate-prompt
+ (fn [{:keys [db]} [_ form-prompt-ref-id target-form-id]]
+   {:ws-send {:payload {:cmd :v/propagate-prompt
+                        :return nil
+                        :form-prompt-ref-id form-prompt-ref-id
+                        :target-form-id target-form-id}}}))
+
+(defn mk-form-doc-prompt-field-state*
+  [{:keys [sval nval dval jval] :as resp-field}]
+  (merge resp-field
+         {:state (r/atom (or dval nval sval jval
+                             ""))}))
+
 (defn mk-form-doc-prompt-field-state
-  [fields {:keys [id] :as prompt-field}]
-  (let [resp-fields (mapv (fn [{:keys [sval nval dval jval] :as resp-field}]
-                            (merge resp-field
-                                   {:state (r/atom (or dval nval sval jval
-                                                       ""))}))
-                          (or (not-empty (fields id))
-                              [{}]))]
+  [prompt-field response-fields]
+  (let [resp-fields (mapv mk-form-doc-prompt-field-state*
+                          response-fields)]
     (assoc prompt-field
            :response
            ;; TODO sort resp-fields by idx??
            (r/atom resp-fields))))
 
+(defn mk-form-doc-prompt-field-states
+  [prompt-fields response-fields-by-pf-id]
+  (for [{:keys [id] :as prompt-field} prompt-fields]
+    (mk-form-doc-prompt-field-state  prompt-field
+                                     (or (not-empty (response-fields-by-pf-id id))
+                                         [{}]))))
+
 (defn mk-form-doc-prompt-state
-  [responses {:keys [id] :as prompt}]
-  (let [{:keys [fields notes] :as response} (responses id)
+  [prompt response]
+  (let [{:keys [fields notes]} response
         response' (merge response
                          {:notes-state (r/atom (or notes ""))})
         fields' (group-by :pf-id
@@ -164,20 +181,27 @@
     (-> prompt
         (assoc :response response')
         (update :fields
-                (partial mapv
-                         (partial mk-form-doc-prompt-field-state
-                                  fields'))))))
+                mk-form-doc-prompt-field-states fields'))))
+
+(defn mk-form-doc-prompt-states
+  [prompts responses-by-prompt]
+  (-> (for [{:keys [id] :as prompt} prompts]
+        (-> (for [response (responses-by-prompt id)]
+              (mk-form-doc-prompt-state prompt
+                                        response))
+            not-empty
+            (or (mk-form-doc-prompt-state prompt
+                                          {}))))
+      flatten))
 
 (defn mk-form-doc-state
   [{:keys [responses] :as form-doc}]
-  (let [responses' (->> responses
-                        (group-by :prompt-id)
-                        (util/fmap first))]
-    (update form-doc
-            :prompts
-            (partial mapv
-                     (partial mk-form-doc-prompt-state
-                              responses')))))
+  (let [responses' (group-by :prompt-id
+                             responses)]
+    (update form-doc :prompts
+            mk-form-doc-prompt-states responses')))
+
+
 
 (defn c-prompt-field-default
   [{:keys [fname ftype fsubtype response] :as prompt-field}]
@@ -236,7 +260,6 @@
          [:label fname])
        [:> ui/Dropdown {:value @value&
                         :onChange #(reset! value& (.-value %2))
-                        ;; :placeholder "Select Product"
                         :selection true
                         :options (cons {:key "nil"
                                         :text " - - - "
@@ -376,6 +399,21 @@
                    "e" #'c-prompt-field-enum
                    "i" #'c-prompt-field-entity})
 
+
+(defn c-missing-prompts
+  [{prompts1 :prompts :as prod-prof-form} {prompts2 :prompts :keys [id] :as form-doc}]
+  (let [missing-prompt-ids (clojure.set/difference (->> prompts1 (mapv :id) set)
+                                                   (->> prompts2 (mapv :id) set))]
+    (when-not (empty? missing-prompt-ids)
+      [:div {:style {:margin "20px"}}
+       "Prompts available for propagation from template:"
+       (for [{:keys [prompt ref-id]} (->> prompts1
+                                          (filter #(-> % :id missing-prompt-ids))
+                                          (sort-by :sort))]
+         [:div {:style {:margin "5px"}} prompt
+          [:a {:style {:margin-left "10px"}
+               :on-click #(rf/dispatch [:propagate-prompt ref-id id])}
+           "add"]])])))
 
 ;; "data" can have term->field->value's
 ;;          and/or prompt-id->field->value's
