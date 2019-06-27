@@ -406,6 +406,7 @@
                                                    (->> prompts2 (mapv :id) set))]
     (when-not (empty? missing-prompt-ids)
       [:div {:style {:margin "20px"}}
+       "Prompts available for propagation from template:"
        (for [{:keys [prompt ref-id]} (->> prompts1
                                           (filter #(-> % :id missing-prompt-ids))
                                           (sort-by :sort))]
