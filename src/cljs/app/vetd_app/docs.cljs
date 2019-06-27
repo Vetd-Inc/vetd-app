@@ -149,22 +149,31 @@
                         :form-prompt-ref-id form-prompt-ref-id
                         :target-form-id target-form-id}}}))
 
+(defn mk-form-doc-prompt-field-state*
+  [{:keys [sval nval dval jval] :as resp-field}]
+  (merge resp-field
+         {:state (r/atom (or dval nval sval jval
+                             ""))}))
+
 (defn mk-form-doc-prompt-field-state
-  [fields {:keys [id] :as prompt-field}]
-  (let [resp-fields (mapv (fn [{:keys [sval nval dval jval] :as resp-field}]
-                            (merge resp-field
-                                   {:state (r/atom (or dval nval sval jval
-                                                       ""))}))
-                          (or (not-empty (fields id))
-                              [{}]))]
+  [prompt-field response-fields]
+  (let [resp-fields (mapv mk-form-doc-prompt-field-state*
+                          response-fields)]
     (assoc prompt-field
            :response
            ;; TODO sort resp-fields by idx??
            (r/atom resp-fields))))
 
+(defn mk-form-doc-prompt-field-states
+  [prompt-fields response-fields-by-pf-id]
+  (for [{:keys [id] :as prompt-field} prompt-fields]
+    (mk-form-doc-prompt-field-state  prompt-field
+                                     (or (not-empty (response-fields-by-pf-id id))
+                                         [{}]))))
+
 (defn mk-form-doc-prompt-state
-  [responses {:keys [id] :as prompt}]
-  (let [{:keys [fields notes] :as response} (responses id)
+  [prompt response]
+  (let [{:keys [fields notes]} response
         response' (merge response
                          {:notes-state (r/atom (or notes ""))})
         fields' (group-by :pf-id
@@ -172,20 +181,27 @@
     (-> prompt
         (assoc :response response')
         (update :fields
-                (partial mapv
-                         (partial mk-form-doc-prompt-field-state
-                                  fields'))))))
+                mk-form-doc-prompt-field-states fields'))))
+
+(defn mk-form-doc-prompt-states
+  [prompts responses-by-prompt]
+  (-> (for [{:keys [id] :as prompt} prompts]
+        (-> (for [response (responses-by-prompt id)]
+              (mk-form-doc-prompt-state prompt
+                                        response))
+            not-empty
+            (or (mk-form-doc-prompt-state prompt
+                                          {}))))
+      flatten))
 
 (defn mk-form-doc-state
   [{:keys [responses] :as form-doc}]
-  (let [responses' (->> responses
-                        (group-by :prompt-id)
-                        (util/fmap first))]
-    (update form-doc
-            :prompts
-            (partial mapv
-                     (partial mk-form-doc-prompt-state
-                              responses')))))
+  (let [responses' (group-by :prompt-id
+                             responses)]
+    (update form-doc :prompts
+            mk-form-doc-prompt-states responses')))
+
+
 
 (defn c-prompt-field-default
   [{:keys [fname ftype fsubtype response] :as prompt-field}]
@@ -244,7 +260,6 @@
          [:label fname])
        [:> ui/Dropdown {:value @value&
                         :onChange #(reset! value& (.-value %2))
-                        ;; :placeholder "Select Product"
                         :selection true
                         :options (cons {:key "nil"
                                         :text " - - - "
@@ -387,10 +402,6 @@
 
 (defn c-missing-prompts
   [{prompts1 :prompts :as prod-prof-form} {prompts2 :prompts :keys [id] :as form-doc}]
-  (def prod-prof-form1 prod-prof-form)
-  #_ (cljs.pprint/pprint prod-prof-form1)
-  (def form-doc1 form-doc)
-  #_ (cljs.pprint/pprint form-doc1)
   (let [missing-prompt-ids (clojure.set/difference (->> prompts1 (mapv :id) set)
                                                    (->> prompts2 (mapv :id) set))]
     (when-not (empty? missing-prompt-ids)
