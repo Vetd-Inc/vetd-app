@@ -173,7 +173,7 @@
     (ec/send-template-email
      email
      {:reset-link (str l/base-url link-key)}
-     {:template-id "d-d1f3509a0c664b4d84a54777714d5272"})))
+     {:template-id "d-a782e6648d054f34b8453cbf8e14c007"})))
 
 (defn password-reset-request
   [{:keys [email pwd] :as creds}]
