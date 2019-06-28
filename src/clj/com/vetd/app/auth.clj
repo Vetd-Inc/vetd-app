@@ -160,6 +160,12 @@
     (catch Throwable e
       (com/log-error e))))
 
+(defn change-password
+  [user-id pwd]
+  (db/update-any! {:id user-id
+                   :pwd pwd}
+                  :users))
+
 (defn send-password-reset-email
   [{:keys [email pwd] :as creds}]
   (let [link-key (l/create {:cmd :password-reset
@@ -291,3 +297,12 @@
             _ (create-or-find-memb (:id user) (:id org))]
         (l/update-expires link "read" (+ (ut/now) (* 1000 60 5))) ; allow read for next 5 mins
         {:session-token (-> user :id insert-session :token)}))))
+
+(defmethod l/action :password-reset
+  [{:keys [input-data] :as link}]
+  (let [{:keys [email pwd]} input-data]
+    (if-let [user (select-user-by-email email)]
+      (do (change-password (:id user) pwd)
+          (l/update-expires link "read" (+ (ut/now) (* 1000 60 5))) ; allow read for next 5 mins
+          {:session-token (-> user :id insert-session :token)})
+      false))) ; TODO use nil instead of false?
