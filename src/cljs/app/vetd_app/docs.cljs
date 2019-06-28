@@ -172,35 +172,38 @@
                                          [{}]))))
 
 (defn mk-form-doc-prompt-state
-  [prompt response]
+  [{:keys [term] :as prompt} response prompt-actions]
   (let [{:keys [fields notes]} response
         response' (merge response
                          {:notes-state (r/atom (or notes ""))})
         fields' (group-by :pf-id
                           fields)]
-    (println (:term prompt))
     (-> prompt
+        (assoc :actions (when (and prompt-actions term)
+                          (prompt-actions term)))
         (assoc :response response')
         (update :fields
                 mk-form-doc-prompt-field-states fields'))))
 
 (defn mk-form-doc-prompt-states
-  [prompts responses-by-prompt]
-  (-> (for [{:keys [id] :as prompt} prompts]
+  [prompts responses-by-prompt prompt-actions]
+  (-> (for [{:keys [id term] :as prompt} prompts]
         (-> (for [response (responses-by-prompt id)]
               (mk-form-doc-prompt-state prompt
-                                        response))
+                                        response
+                                        prompt-actions))
             not-empty
             (or (mk-form-doc-prompt-state prompt
-                                          {}))))
+                                          {}
+                                          prompt-actions))))
       flatten))
 
 (defn mk-form-doc-state
-  [{:keys [responses] :as form-doc}]
+  [{:keys [responses] :as form-doc} & [prompt-actions]]
   (let [responses' (group-by :prompt-id
                              responses)]
     (update form-doc :prompts
-            mk-form-doc-prompt-states responses')))
+            mk-form-doc-prompt-states responses' prompt-actions)))
 
 (defn c-prompt-field-default
   [{:keys [fname ftype fsubtype response] :as prompt-field}]
@@ -327,7 +330,7 @@
                                  :response deref)])))
 
 (defn c-prompt-default
-  [{:keys [id prompt descr fields response] :as p} form-id doc-id]
+  [{:keys [id prompt descr fields response actions] :as p} form-id doc-id]
   [:div {:style {:margin "10px 0 40px 0"}}
    [:div {:style {:margin-bottom "5px"}}
     [:span {:style {:padding-right "10px"}} prompt]
@@ -338,7 +341,10 @@
        descr])
     [:a
      {:on-click #(rf/dispatch [:remove-prompt&response id (:id response) form-id doc-id ])}
-     "remove"]]
+     "remove"]
+    (for [[k f] actions]
+      [:a {:on-click (partial f p)
+           :style {:margin-left "10px"}} k])]
    (for [{:keys [idstr ftype fsubtype] :as f} fields]
      ^{:key (str "field" (:id f))}
      [c-prompt-field f])])
@@ -404,12 +410,16 @@
   (let [missing-prompt-ids (clojure.set/difference (->> prompts1 (mapv :id) set)
                                                    (->> prompts2 (mapv :id) set))]
     (when-not (empty? missing-prompt-ids)
-      [:div {:style {:margin "20px"}}
+      [:div {:style {:margin "20px"
+                     :padding "10px"
+                     :width "600px"
+                     :border "solid 1px green"}}
        "Prompts available for propagation from template:"
        (for [{:keys [prompt ref-id]} (->> prompts1
                                           (filter #(-> % :id missing-prompt-ids))
                                           (sort-by :sort))]
-         [:div {:style {:margin "5px"}} prompt
+         ^{:key (str "template-prompt" ref-id)}
+         [:div {:style {:margin "10px"}} prompt
           [:a {:style {:margin-left "10px"}
                :on-click #(rf/dispatch [:propagate-prompt ref-id id])}
            "add"]])])))

@@ -52,10 +52,12 @@
                     :spellCheck false
                     :on-change (fn [this]
                                  (reset! pname& (-> this .-target .-value)))}]]
-        [:div "created: " created]
-        [:div "updated: " updated]       
+        [:div "created: " (str created)]
+        [:div "updated: " (str updated)]       
         [docs/c-form-maybe-doc
-         (docs/mk-form-doc-state form-doc)
+         (docs/mk-form-doc-state form-doc
+                                 {"product/categories"
+                                  {"auto-populate" #(cljs.pprint/pprint %)}})
          {:return-save-fn& save-doc-fn&
           :c-wrapper [:div]}]
         [:> ui/Button {:color "teal"
@@ -134,8 +136,9 @@
            (when id
              [:div
               [docs/c-missing-prompts prod-prof-form form-doc]
-              [c-product (assoc p
-                                :form-doc
-                                (or form-doc'
-                                    (assoc prod-prof-form
-                                           :product {:id id})))]]))]))))
+              [c-product
+               (assoc p
+                      :form-doc
+                      (or form-doc'
+                          (assoc prod-prof-form
+                                 :product {:id id})))]]))]))))
