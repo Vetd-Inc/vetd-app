@@ -25,6 +25,7 @@
             [vetd-app.common.fixtures :as pub-fix]
             [vetd-app.common.pages.signup :as p-signup]
             [vetd-app.common.pages.login :as p-login]
+            [vetd-app.common.pages.forgot-password :as p-forgot-password]
             [reagent.core :as r]
             [re-frame.core :as rf]
             [secretary.core :as sec]
@@ -36,6 +37,7 @@
 (hooks/reg-hooks! hooks/c-page
                   {:login #'p-login/c-page
                    :signup #'p-signup/c-page
+                   :forgot-password #'p-forgot-password/c-page
                    :b/search #'p-bsearch/c-page
                    :b/preposals #'p-bpreposals/c-page
                    :b/preposal-detail #'p-bpreposal-detail/c-page
@@ -52,6 +54,7 @@
 (hooks/reg-hooks! hooks/c-container
                   {:login #'pub-fix/container
                    :signup #'pub-fix/container
+                   :forgot-password #'pub-fix/container
                    :b/search #'b-fix/container
                    :b/preposals #'b-fix/container
                    :b/preposal-detail #'b-fix/container
@@ -75,7 +78,7 @@
    :loading? {:products #{}} ; entities (by ID) that are in a loading?=true state (for UI display)
    :round-products-order []}))
 
-(def public-pages #{:login :signup})
+(def public-pages #{:login :signup :forgot-password})
 
 (rf/reg-sub
  :page
@@ -162,11 +165,17 @@
 (sec/defroute home-path "/" []
   (rf/dispatch [:nav-home]))
 
-(sec/defroute login-path "/login" [query-params]
-  (rf/dispatch [:route-login query-params]))
+(sec/defroute login-path "/login" []
+  (rf/dispatch [:route-login]))
 
 (sec/defroute signup-path "/signup/:type" [type]
   (rf/dispatch [:route-signup type]))
+
+(sec/defroute forgot-password-path "/forgot-password/" []
+  (rf/dispatch [:route-forgot-password]))
+
+(sec/defroute forgot-password-prefill-path "/forgot-password/:email-address" [email-address]
+  (rf/dispatch [:route-forgot-password email-address]))
 
 ;; Link - special links for actions such as reset password, or account verification
 (sec/defroute link-path "/l/:k" [k]
