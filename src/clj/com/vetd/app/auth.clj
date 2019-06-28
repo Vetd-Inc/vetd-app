@@ -160,6 +160,22 @@
     (catch Throwable e
       (com/log-error e))))
 
+(defn send-password-reset-email
+  [{:keys [email pwd] :as creds}]
+  (let [link-key (l/create {:cmd :password-reset
+                            :input-data (prepare-account-map creds)})]
+    (ec/send-template-email
+     email
+     {:reset-link (str l/base-url link-key)}
+     {:template-id "d-d1f3509a0c664b4d84a54777714d5272"})))
+
+(defn password-reset-request
+  [{:keys [email pwd] :as creds}]
+  (if (select-user-by-email email)
+    (do (future (send-password-reset-email creds))
+        {})
+    {:no-account? true}))
+
 (defn select-session-by-id
   [session-token]
   (-> [[:sessions
@@ -243,6 +259,10 @@
      :admin? (is-admin? user-id)     
      :memberships (select-memb-org-by-user-id user-id)}
     {:logged-in? false}))
+
+(defmethod com/handle-ws-inbound :forgot-password.request-reset
+  [{:keys [email pwd] :as req} ws-id sub-fn]
+  (password-reset-request req))
 
 (defmethod com/handle-ws-inbound :create-membership
   [{:keys [user-id org-id]} ws-id sub-fn]

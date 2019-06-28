@@ -173,7 +173,6 @@
 
 (sec/defroute forgot-password-path "/forgot-password/" []
   (rf/dispatch [:route-forgot-password]))
-
 (sec/defroute forgot-password-prefill-path "/forgot-password/:email-address" [email-address]
   (rf/dispatch [:route-forgot-password email-address]))
 

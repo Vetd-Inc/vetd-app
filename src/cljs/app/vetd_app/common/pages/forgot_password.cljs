@@ -18,49 +18,46 @@
                :page-params {:email-address email-address})
     :analytics/page {:name "Forgot Password"}}))
 
-;; (rf/reg-event-fx
-;;  :signup.submit
-;;  (fn [{:keys [db]} [_ {:keys [uname email pwd cpwd org-name terms-agree] :as account}]]
-;;    (let [[bad-input message]
-;;          (cond
-;;            (not (re-matches #".*\s.*" uname)) [:uname "Please enter your full name (first & last)."]
-;;            (not (re-matches #"^\S+@\S+\.\S+$" email)) [:email "Please enter a valid email address."]
-;;            (< (count pwd) 8) [:pwd "Password must be at least 8 characters."]
-;;            (not= pwd cpwd) [:cpwd "Password and Confirm Password must match."]
-;;            (not terms-agree) [:terms-agree "You must agree to the Terms of Use in order to sign up."]
-;;            :else nil)]
-;;      (if bad-input
-;;        {:db (assoc-in db [:page-params :bad-input] bad-input)
-;;         :toast {:type "error" 
-;;                 :title "Error"
-;;                 :message message}}
-;;        {:dispatch [:create-acct account]}))))
+(rf/reg-event-fx
+ :forgot-password.submit
+ (fn [{:keys [db]} [_ email pwd cpwd]]
+   (let [[bad-input message]
+         (cond
+           (not (re-matches #"^\S+@\S+\.\S+$" email)) [:email "Please enter a valid email address."]
+           (< (count pwd) 8) [:pwd "Password must be at least 8 characters."]
+           (not= pwd cpwd) [:cpwd "Password and Confirm Password must match."]
+           :else nil)]
+     (if bad-input
+       {:db (assoc-in db [:page-params :bad-input] bad-input)
+        :toast {:type "error" 
+                :title "Error"
+                :message message}}
+       {:dispatch [:forgot-password.request-reset email pwd]}))))
 
-;; (rf/reg-event-fx
-;;  :create-acct
-;;  (fn [{:keys [db]} [_ account]]
-;;    {:ws-send {:ws (:ws db)
-;;               :payload (merge {:cmd :create-acct
-;;                                :return {:handler :create-acct-return
-;;                                         :org-type (:org-type account)
-;;                                         :email (:email account)}}
-;;                               (select-keys account [:uname :org-name :org-url
-;;                                                     :org-type :email :pwd]))}}))
-;; (rf/reg-event-fx
-;;  :create-acct-return
-;;  (fn [{:keys [db]} [_ results {{:keys [org-type email]} :return}]]
-;;    (if-not (:email-used? results)
-;;      {:dispatch [:nav-login]
-;;       :toast {:type "success"
-;;               :title "Please check your email"
-;;               :message (str "We've sent an email to " email " with a link to activate your account.")}
-;;       :analytics/track {:event "Signup Complete"
-;;                         :props {:category "Accounts"
-;;                                 :label org-type}}}
-;;      {:db (assoc-in db [:page-params :bad-input] :email)
-;;       :toast {:type "error" 
-;;               :title "Error"
-;;               :message "There is already an account with that email address."}})))
+(rf/reg-event-fx
+ :forgot-password.request-reset
+ (fn [{:keys [db]} [_ email pwd]]
+   {:ws-send {:ws (:ws db)
+              :payload {:cmd :forgot-password.request-reset
+                        :return {:handler :forgot-password.request-reset-return
+                                 :email email}
+                        :email email
+                        :pwd pwd}}}))
+
+(rf/reg-event-fx
+ :forgot-password.request-reset-return
+ (fn [{:keys [db]} [_ results {{:keys [email]} :return}]]
+   (if (:no-account? results)
+     {:db (assoc-in db [:page-params :bad-input] :email)
+      :toast {:type "error" 
+              :title "Error"
+              :message "That email address is not associated with an account."}}
+     {:dispatch [:nav-login]
+      :toast {:type "success"
+              :title "Please check your email"
+              :message (str "An email has been sent to \"" email "\" with a link to complete your password reset.")}
+      :analytics/track {:event "Password Reset Requested"
+                        :props {:category "Accounts"}}})))
 
 ;; Subscriptions
 (rf/reg-sub
@@ -68,22 +65,24 @@
  :<- [:page-params] 
  (fn [{:keys [email-address]}] email-address))
 
-;; (rf/reg-sub
-;;  :bad-input
-;;  :<- [:page-params]
-;;  (fn [{:keys [bad-input]}] bad-input))
+(rf/reg-sub
+ :bad-input
+ :<- [:page-params]
+ (fn [{:keys [bad-input]}] bad-input))
 
 ;; Components
 (defn c-page []
-  (let [email (r/atom @(rf/subscribe [:forgot-password-email-address]))
+  (let [email (r/atom (or @(rf/subscribe [:forgot-password-email-address]) ""))
+        pwd (r/atom "")
+        cpwd (r/atom "")
+        bad-cpwd (r/atom false)
         bad-input& (rf/subscribe [:bad-input])]
     (fn []
       [:div.centerpiece
        [:a {:on-click #(rf/dispatch [:nav-login])}
         [:img.logo {:src "https://s3.amazonaws.com/vetd-logos/vetd.svg"}]]
        [:> ui/Header {:as "h2"
-                      ;; :class "blue"
-                      }
+                      :class "teal"}
         "Forgot Password?"]
        [:> ui/Form {:style {:margin-top 25}}
         [:> ui/FormField {:error (= @bad-input& :email)}
@@ -96,19 +95,26 @@
                         :on-invalid #(.preventDefault %) ; no type=email error message (we'll show our own)
                         :on-change (fn [_ this]
                                      (reset! email (.-value this)))}]]]
+        [:> ui/FormField {:error (= @bad-input& :pwd)}
+         [:label "New Password"
+          [:> ui/Input {:class "borderless"
+                        :type "password"
+                        :onChange (fn [_ this] (reset! pwd (.-value this)))}]]]
+        [:> ui/FormField {:error (or @bad-cpwd
+                                     (= @bad-input& :cpwd))}
+         [:label "Confirm New Password"]
+         [:> ui/Input {:class "borderless"
+                       :type "password"
+                       :on-blur #(when-not (= @cpwd @pwd)
+                                   (reset! bad-cpwd true))
+                       :on-change (fn [_ this]
+                                    (reset! cpwd (.-value this))
+                                    (when (= @cpwd @pwd)
+                                      (reset! bad-cpwd false)))}]]
         [:> ui/Button {:color "teal"
                        :fluid true
-                       ;; :on-click #(rf/dispatch [:signup.submit
-                       ;;                          {:uname @uname
-                       ;;                           :email @email
-                       ;;                           :org-name @org-name
-                       ;;                           :org-url @org-url
-                       ;;                           :org-type (name @signup-org-type&)
-                       ;;                           :pwd @pwd
-                       ;;                           :cpwd @cpwd
-                       ;;                           :terms-agree @terms-agree}])
-                       }
-         "Request Password Reset Link"]
+                       :on-click #(rf/dispatch [:forgot-password.submit @email @pwd @cpwd])}
+         "Send Reset Link via Email"]
         [:br] [:br]
         [:a {:on-click #(rf/dispatch [:nav-login])}
-         "Return to Login"]]])))
+         "Back to Login"]]])))
