@@ -595,16 +595,17 @@
         rating-disapproved 0]
     [:div.actions
      [c-action-button {:props {:class "action-button question"}
-                       :icon "chat outline" ; no on-click, just pass through to cell click
+                       :icon "chat outline" ; no on-click, let it pass through to underlying cell click
                        :popup-text "Ask Question"}]
      [c-action-button {:props {:class "action-button approve"}
-                       :on-click #(do (.stopPropagation %) ; stop propagation to cell click
-                                      (rf/dispatch [:b/round.rate-response resp-id rating-approved]))
+                       :on-click (fn [e]
+                                   (.stopPropagation e) ; stop propagation to underlying cell click
+                                   (rf/dispatch [:b/round.rate-response resp-id rating-approved]))
                        :icon "thumbs up outline"
                        :popup-text (if (= rating-approved resp-rating) "Approved" "Approve")}]
      [c-action-button {:props {:class "action-button disapprove"}
-                       :on-click #(do (.stopPropagation %) ; stop propagation to cell click
-                                      (rf/dispatch [:b/round.rate-response resp-id rating-disapproved]))
+                       :on-click (fn [e] (.stopPropagation e) ; stop propagation to cell click
+                                   (rf/dispatch [:b/round.rate-response resp-id rating-disapproved]))
                        :icon "thumbs down outline"
                        :popup-text (if (= rating-disapproved resp-rating) "Disapproved" "Disapprove")}]]))
 

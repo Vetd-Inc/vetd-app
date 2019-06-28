@@ -39,7 +39,6 @@
                 :message message}}
        {:dispatch [:create-acct account]}))))
 
-
 (rf/reg-event-fx
  :create-acct
  (fn [{:keys [db]} [_ account]]
@@ -56,15 +55,15 @@
    (if-not (:email-used? results)
      {:dispatch [:nav-login]
       :toast {:type "success"
-              :title "Thanks for Signing Up!"
-              :message "You can now login."}
+              :title "Please check your email"
+              :message (str "We've sent an email to " email " with a link to activate your account.")}
       :analytics/track {:event "Signup Complete"
                         :props {:category "Accounts"
                                 :label org-type}}}
      {:db (assoc-in db [:page-params :bad-input] :email)
       :toast {:type "error" 
               :title "Error"
-              :message "That email address already has an account."}})))
+              :message "There is already an account with that email address."}})))
 
 ;; Subscriptions
 (rf/reg-sub
@@ -108,8 +107,11 @@
                         :type "email"
                         :spellCheck false
                         :on-invalid #(.preventDefault %) ; no type=email error message (we'll show our own)
-                        :on-blur #(when (empty? @org-url)
-                                    (reset! org-url (second (s/split @email #"@"))))
+                        ;; for convenience, try to autofill Organization Website field
+                        :on-blur #(let [email-domain (second (s/split @email #"@"))]
+                                    (when (and (empty? @org-url)
+                                               (not (#{"gmail.com" "yahoo.com" "hotmail.com" "msn.com" "outlook.com"} email-domain)))
+                                      (reset! org-url email-domain)))
                         :on-change (fn [_ this]
                                      (reset! email (.-value this)))}]]]
         [:> ui/FormField {:error (= @bad-input& :pwd)}

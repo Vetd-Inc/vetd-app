@@ -70,8 +70,9 @@
 ;;;; Components
 (defn c-round
   [{:keys [id idstr status title products] :as round} share-modal-fn]
-  (let [nav-click #(do (.stopPropagation %)
-                       (rf/dispatch [:b/nav-round-detail idstr]))]
+  (let [nav-click (fn [e]
+                    (.stopPropagation e)
+                    (rf/dispatch [:b/nav-round-detail idstr]))]
     [:> ui/Item {:onClick nav-click}
      [:> ui/ItemContent
       [:> ui/ItemHeader
@@ -82,8 +83,9 @@
                       :floated "right"}
         "View / Manage"
         [:> ui/Icon {:name "right arrow"}]]
-       [:> ui/Button {:onClick #(do (.stopPropagation %)
-                                    (share-modal-fn id title))
+       [:> ui/Button {:onClick (fn [e]
+                                 (.stopPropagation e)
+                                 (share-modal-fn id title))
                       :color "lightblue"
                       :icon true
                       :labelPosition "right"

@@ -1412,7 +1412,31 @@
               :join [[:rounds :r]
                      [:= :r.id :rp.round_id]]}
       :owner :vetd
-      :grants {:hasura [:SELECT]}}]]])
+      :grants {:hasura [:SELECT]}}]]
+
+   [[2019 6 25 00 00]
+    
+    [:create-table {:schema :vetd
+                    :name :links
+                    :columns {:id [:bigint :NOT :NULL]
+                              :idstr [:text]
+                              :created [:timestamp :with :time :zone]
+                              :updated [:timestamp :with :time :zone]
+                              :deleted [:timestamp :with :time :zone]
+                              :key [:text] ; secure key to allow execution and read (will be part of link URI)
+                              :cmd [:text] ; command to execute upon link visit
+                              :input_data [:text] ; an EDN-parseable string defining args to pass to cmd
+                              :output_data [:text] ; this is populated with the results of cmd(input_data) as an EDN-parseable string
+                              :expires_action [:timestamp :with :time :zone] ; time when actionability expires
+                              :expires_read [:timestamp :with :time :zone] ; time when readability expires (often dynamic over life of link)
+                              :max_uses_action [:integer] ; maximum times the link can be actioned
+                              :max_uses_read [:integer] ; maximum times output_data can be read
+                              :uses_action [:integer] ; the number of times the link was visited
+                              :uses_read [:integer]} ; the number of times the output_data was read
+                    :owner :vetd
+                    :grants {:hasura [:SELECT]}}]
+
+    [:alter-table {:schema :vetd, :name :links, :pk :id}]]])
 
 #_(mig/mk-migration-files migrations
                           "migrations")

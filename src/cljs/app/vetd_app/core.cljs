@@ -157,9 +157,22 @@
 
 
 ;;;; Routes
+
+;; Common
 (sec/defroute home-path "/" []
   (rf/dispatch [:nav-home]))
 
+(sec/defroute login-path "/login" [query-params]
+  (rf/dispatch [:route-login query-params]))
+
+(sec/defroute signup-path "/signup/:type" [type]
+  (rf/dispatch [:route-signup type]))
+
+;; Link - special links for actions such as reset password, or account verification
+(sec/defroute link-path "/l/:k" [k]
+  (rf/dispatch [:read-link k]))
+
+;; Buyers
 (sec/defroute buyers-search-root "/b/search" []
   (rf/dispatch [:b/route-search]))
 (sec/defroute buyers-search "/b/search/:search-term" [search-term]
@@ -167,7 +180,6 @@
 
 (sec/defroute buyers-preposals "/b/preposals" [query-params]
   (rf/dispatch [:b/route-preposals query-params]))
-
 (sec/defroute buyers-preposal-detail "/b/preposals/:idstr" [idstr]
   (rf/dispatch [:b/route-preposal-detail idstr]))
 
@@ -176,43 +188,36 @@
 
 (sec/defroute buyers-rounds "/b/rounds" [query-params]
   (rf/dispatch [:b/route-rounds query-params]))
-
 (sec/defroute buyers-round-detail "/b/rounds/:idstr" [idstr]
   (rf/dispatch [:b/route-round-detail idstr]))
 
+;; Vendors
 (sec/defroute vendors-preposals "/v/preposals" [query-params]
   (rf/dispatch [:v/route-preposals query-params]))
 
 (sec/defroute vendors-products "/v/products" [query-params]
   (rf/dispatch [:v/route-products query-params]))
-
 (sec/defroute vendors-product-detail "/v/products/:idstr" [idstr]
   (rf/dispatch [:v/route-product-detail idstr]))
 
 (sec/defroute vendors-profile "/v/profile" [query-params]
   (rf/dispatch [:v/route-profile query-params]))
 
-(sec/defroute login-path "/login" [query-params]
-  (rf/dispatch [:route-login query-params]))
-
-(sec/defroute signup-path "/signup/:type" [type]
-  (rf/dispatch [:route-signup type]))
-
 (sec/defroute vendors-rounds-path "/v/rounds" [query-params]
   (rf/dispatch [:v/route-rounds query-params]))
-
 (sec/defroute vendors-round-product-detail "/v/rounds/:round-idstr/products/:product-idstr"
   [round-idstr product-idstr]
   (rf/dispatch [:v/route-round-product-detail round-idstr product-idstr]))
 
-(sec/defroute catchall-path "*" []
-  (do (.log js/console "nav catchall")
-      (rf/dispatch [:apply-route nil])))
+;; catch-all
+(sec/defroute catch-all-path "*" []
+  (do (.log js/console "nav catch-all")
+      (rf/dispatch [:nav-home])))
 
 (rf/reg-event-fx
  :ws-get-session-user
  [(rf/inject-cofx :local-store [:session-token])] 
- (fn [{:keys [db local-store]} [_ [email pwd]]]
+ (fn [{:keys [local-store]}]
    {:ws-send {:payload {:cmd :auth-by-session
                         :return :ws/req-session
                         :session-token (:session-token local-store)}}}))
@@ -244,14 +249,18 @@
     :path-exists? sec/locate-route
     :reload-same-path? false}))
 
+(defonce additional-init-done? (volatile! false))
+
 ;; additional init that must occur after :ws/req-session
 (rf/reg-fx
  :after-req-session
  (fn []
-   (clerk/initialize!)
-   (config-acct)
-   (acct/dispatch-current!)
-   (mount-components)))
+   (when-not @additional-init-done?
+     (vreset! additional-init-done? true)
+     (clerk/initialize!)
+     (config-acct)
+     (acct/dispatch-current!)
+     (mount-components))))
 
 (defonce init-done? (volatile! false))
 
@@ -265,10 +274,5 @@
       (rf/dispatch-sync [:ws-init])
       (rf/dispatch-sync [:ws-get-session-user])
       (println "init! END"))))
-
-;; for dev
-(defn re-init! []
-  (vreset! init-done? false)
-  (init!))
 
 (println "END core")
