@@ -19,7 +19,7 @@
  (fn [{:keys [db]} [_ {:keys [cmd output-data] :as results}]]
    (case cmd ; make sure your case nav's the user somewhere (often :nav-home)
      :create-verified-account {:toast {:type "success"
-                                       :title "Account Verified!"
+                                       :title "Account Verified"
                                        :message "Thank you for verifying your email address."}
                                :local-store {:session-token (:session-token output-data)}
                                :dispatch-later [{:ms 100 :dispatch [:ws-get-session-user]}
