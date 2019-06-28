@@ -1,0 +1,2 @@
+ALTER TABLE vetd.links 
+ADD PRIMARY KEY (id)

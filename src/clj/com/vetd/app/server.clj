@@ -4,6 +4,7 @@
             [migratus.core :as mig]
             [com.vetd.app.env :as env]
             [com.vetd.app.db :as db]
+            [com.vetd.app.links :as l]
             [clojure.core.async :as a]
             [compojure.core :as c]
             [compojure.handler :as ch]
@@ -243,6 +244,10 @@
 
 (def app
   (-> (c/routes
+       (c/GET "/l/:k" [k]
+              (fn [{:keys [cookies]}]
+                (l/do-action-by-key k)
+                (app-html cookies)))
        (c/GET "/ws" [] #'ws-handler)
        (cr/resources "/assets" {:root "public/assets"})
        (c/GET "/assets*" [] cr/not-found)
@@ -260,6 +265,7 @@
                                    (public-resource-response uri)
                                    "")))
        (serve-public-resource "/js*")
+       ;; when updating "*" route, also update "/l/:k" route
        (c/GET "*" [] (fn [{:keys [cookies]}]
                        (app-html cookies))))
       rm-cookies/wrap-cookies))
