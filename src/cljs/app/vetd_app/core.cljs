@@ -247,8 +247,11 @@
                                              {:max-age 3600 :path "/"}])}
         :analytics/identify {:user-id (:id user)
                              :traits {:name (:uname user)
-                                      :displayName (:uname user)
-                                      :email (:email user)}}
+                                      :displayName (:uname user)                                      
+                                      :email (:email user)
+                                      ;; only for MailChimp integration
+                                      :fullName (:uname user)
+                                      :userStatus (if (some-> memberships first :buyer?) "Buyer" "Vendor")}}
         :analytics/group {:group-id org-id
                           :traits {:name (some-> memberships first :org :oname)}}
         :after-req-session nil})
