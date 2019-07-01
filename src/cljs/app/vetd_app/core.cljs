@@ -251,7 +251,8 @@
                                       :email (:email user)
                                       ;; only for MailChimp integration
                                       :fullName (:uname user)
-                                      :userStatus (if (some-> memberships first :buyer?) "Buyer" "Vendor")}}
+                                      :userStatus (if (some-> memberships first :org :buyer?) "Buyer" "Vendor")
+                                      :oName (some-> memberships first :org :oname)}}
         :analytics/group {:group-id org-id
                           :traits {:name (some-> memberships first :org :oname)}}
         :after-req-session nil})
