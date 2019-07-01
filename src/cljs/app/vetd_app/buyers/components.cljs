@@ -49,6 +49,7 @@
                         :category (str (util/capitalize-words ename) " Products")
                         :none "")
         title& (atom default-title)
+        bad-title?& (r/atom false)
         start-round-fn #(rf/dispatch [:b/start-round
                                       @title&
                                       (case etype
@@ -71,7 +72,7 @@
                                         :margin-bottom 7}}
                             "Enter a name for your VetdRound:"]
                            [:> ui/Form {:style {:width 500}}
-                            [:> ui/FormField
+                            [:> ui/FormField {:error @bad-title?&}
                              [:> ui/Input
                               {:placeholder "E.g., Marketing Analytics Products"
                                :default-value @title&
@@ -80,8 +81,12 @@
                                :action (r/as-element
                                         [:> ui/Button
                                          {:color "blue"
-                                          :on-click #(do (reset! popup-open?& false)
-                                                         (start-round-fn))}
+                                          :on-click (fn []
+                                                      (if (s/blank? @title&)
+                                                        (reset! bad-title?& true)
+                                                        (do (reset! bad-title?& false)
+                                                            (reset! popup-open?& false)
+                                                            (start-round-fn))))}
                                          "Create"])}]]]])}
                popup-props)]
        [:> ui/Popup
