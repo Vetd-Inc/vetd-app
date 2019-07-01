@@ -235,17 +235,23 @@
  [(rf/inject-cofx :local-store [:session-token])]  
  (fn [{:keys [db local-store]} [_ {:keys [logged-in? user memberships admin?]}]]
    (if logged-in?
-     {:db (assoc db
-                 :user user
-                 :logged-in? true
-                 :memberships memberships
-                 :admin? admin?
-                 ;; TODO support users with multi-orgs
-                 :active-memb-id (some-> memberships first :id))
-      :cookies {:admin-token (when admin?
-                               [(:session-token local-store)
-                                {:max-age 3600 :path "/"}])}
-      :after-req-session nil}
+     (let [org-id (some-> memberships first :org-id)] ; TODO support users with multi-orgs
+       {:db (assoc db  
+                   :logged-in? true
+                   :user user
+                   :memberships memberships
+                   :active-memb-id (some-> memberships first :id)
+                   :org-id org-id
+                   :admin? admin?)
+        :cookies {:admin-token (when admin? [(:session-token local-store)
+                                             {:max-age 3600 :path "/"}])}
+        :analytics/identify {:user-id (:id user)
+                             :traits {:name (:uname user)
+                                      :displayName (:uname user)
+                                      :email (:email user)}}
+        :analytics/group {:group-id org-id
+                          :traits {:name (some-> memberships first :org :oname)}}
+        :after-req-session nil})
      {:after-req-session nil})))
 
 (defn config-acct []
