@@ -52,8 +52,8 @@
                     :spellCheck false
                     :on-change (fn [this]
                                  (reset! pname& (-> this .-target .-value)))}]]
-        [:div "created: " created]
-        [:div "updated: " updated]       
+        [:div "created: " (.toString (js/Date. created))]
+        [:div "updated: " (.toString (js/Date. updated))]       
         [docs/c-form-maybe-doc
          (docs/mk-form-doc-state form-doc)
          {:return-save-fn& save-doc-fn&
