@@ -87,14 +87,14 @@
 ;; the parsed link map (the most useful part being :input-data),
 ;; and should return whatever you want to be stored as output data.
 ;; Your return value can be anything that is EDN-encodeable.
-;; Returning false has the unique behavior of not setting output data.
+;; Returning nil has the unique behavior of not setting output data.
 (defmulti action (fn [link]
                    (if (actionable? link)
                      (:cmd link)
                      :invalid)))
 
 ;; called when link does not exist, is expired, or already did maximum action's
-(defmethod action :invalid [link] false)
+(defmethod action :invalid [link] nil)
 
 (defn update-output
   "Store the output of a link action."
@@ -125,9 +125,10 @@
 
 (defn do-action
   [link]
-  (when-let [result (action link)]
-    (update-output link result)
-    (inc-uses link "action")))
+  (let [result (action link)]
+    (when-not (nil? result)
+      (update-output link result)
+      (inc-uses link "action"))))
 
 (defn do-action-by-key
   "Given a link key, try to do its action."

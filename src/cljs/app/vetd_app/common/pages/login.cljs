@@ -113,7 +113,14 @@
                            :type "password"
                            :placeholder "Password"
                            :onChange (fn [_ this]
-                                       (reset! pwd (.-value this)))}]]
+                                       (reset! pwd (.-value this)))}]
+             [:div {:style {:float "right"
+                            :margin-top 5
+                            :margin-bottom 18}}
+              [:a {:on-click #(rf/dispatch [:nav-forgot-password @email])
+                   :style {:font-size 13
+                           :opacity 0.75}}
+               "Forgot Password?"]]]
             [:> ui/Button {:fluid true
                            :on-click #(rf/dispatch [:login [@email @pwd]])}
              "Log In"]
