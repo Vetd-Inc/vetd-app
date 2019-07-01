@@ -10,6 +10,10 @@
             [taoensso.timbre :as log]
             [honeysql.core :as hs]))
 
+;; Sendgrid template id's
+(def verify-account-template-id "d-d1f3509a0c664b4d84a54777714d5272")
+(def password-reset-template-id "d-a782e6648d054f34b8453cbf8e14c007")
+
 (defn select-org-by-name [org-name]
   (-> [[:orgs {:oname org-name}
         [:id :created :idstr :oname :buyer? :vendor? :short-desc :long-desc]]]
@@ -145,7 +149,7 @@
     (ec/send-template-email
      email
      {:verify-link (str l/base-url link-key)}
-     {:template-id "d-d1f3509a0c664b4d84a54777714d5272"})))
+     {:template-id verify-account-template-id})))
 
 (defn create-account
   "Create a user account. (Really just start the process; send verify email)
@@ -161,22 +165,24 @@
       (com/log-error e))))
 
 (defn change-password
-  [user-id pwd]
+  [user-id pwd-hash]
   (db/update-any! {:id user-id
-                   :pwd pwd}
+                   :pwd pwd-hash}
                   :users))
 
 (defn send-password-reset-email
-  [{:keys [email pwd] :as creds}]
+  [{:keys [email] :as creds}]
   (let [link-key (l/create {:cmd :password-reset
-                            :input-data (prepare-account-map creds)})]
+                            :input-data (-> creds
+                                            (select-keys [:email :pwd])
+                                            prepare-account-map)})]
     (ec/send-template-email
      email
      {:reset-link (str l/base-url link-key)}
-     {:template-id "d-a782e6648d054f34b8453cbf8e14c007"})))
+     {:template-id password-reset-template-id})))
 
 (defn password-reset-request
-  [{:keys [email pwd] :as creds}]
+  [{:keys [email] :as creds}]
   (if (select-user-by-email email)
     (do (future (send-password-reset-email creds))
         {})
@@ -290,8 +296,7 @@
 (defmethod l/action :create-verified-account
   [{:keys [input-data] :as link}]
   (let [{:keys [uname email pwd org-name org-url org-type]} input-data]
-    (if (select-user-by-email email)
-      false ; rare, but someone created an account with this email sometime after the link was made
+    (when-not (select-user-by-email email) ; rare, but someone created an account with this email sometime after the link was made
       (let [user (insert-user uname email pwd)
             [_ org] (create-or-find-org org-name org-url (= org-type "buyer") (= org-type "vendor"))
             _ (create-or-find-memb (:id user) (:id org))]
@@ -301,8 +306,7 @@
 (defmethod l/action :password-reset
   [{:keys [input-data] :as link}]
   (let [{:keys [email pwd]} input-data]
-    (if-let [user (select-user-by-email email)]
-      (do (change-password (:id user) pwd)
+    (when-let [{:keys [id]} (select-user-by-email email)]
+      (do (change-password id pwd)
           (l/update-expires link "read" (+ (ut/now) (* 1000 60 5))) ; allow read for next 5 mins
-          {:session-token (-> user :id insert-session :token)})
-      false))) ; TODO use nil instead of false?
+          {:session-token (:token (insert-session id))}))))
