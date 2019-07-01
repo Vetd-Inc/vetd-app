@@ -52,8 +52,8 @@
                     :spellCheck false
                     :on-change (fn [this]
                                  (reset! pname& (-> this .-target .-value)))}]]
-        [:div "created: " (str created)]
-        [:div "updated: " (str updated)]       
+        [:div "created: " (.toString (js/Date. created))]
+        [:div "updated: " (.toString (js/Date. updated))]       
         [docs/c-form-maybe-doc
          (docs/mk-form-doc-state form-doc
                                  {"product/categories"

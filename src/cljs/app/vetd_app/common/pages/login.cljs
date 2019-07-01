@@ -40,7 +40,7 @@
  (fn [{:keys [db]} [_ {:keys [logged-in? user session-token memberships admin?]
                        :as results}]]
    (if logged-in?
-     (let [org-id (-> memberships first :org-id)] ; TODO support users with multi-orgs
+     (let [org-id (some-> memberships first :org-id)] ; TODO support users with multi-orgs
        {:db (assoc db
                    :login-failed? false
                    :logged-in? true
@@ -48,8 +48,8 @@
                    :session-token session-token
                    :memberships memberships
                    :active-memb-id (some-> memberships first :id)
-                   :admin? admin?
-                   :org-id org-id)
+                   :org-id org-id
+                   :admin? admin?)
         :local-store {:session-token session-token}
         :cookies {:admin-token (when admin? [session-token {:max-age 60 :path "/"}])}
         :analytics/identify {:user-id (:id user)
@@ -57,7 +57,7 @@
                                       :displayName (:uname user)
                                       :email (:email user)}}
         :analytics/group {:group-id org-id
-                          :traits {:name (-> memberships first :org :oname)}}
+                          :traits {:name (some-> memberships first :org :oname)}}
         :dispatch-later [{:ms 100 :dispatch [:nav-home]}
                          ;; to prevent the login form from flashing briefly
                          {:ms 200 :dispatch [:hide-login-loading]}]})
@@ -113,7 +113,14 @@
                            :type "password"
                            :placeholder "Password"
                            :onChange (fn [_ this]
-                                       (reset! pwd (.-value this)))}]]
+                                       (reset! pwd (.-value this)))}]
+             [:div {:style {:float "right"
+                            :margin-top 5
+                            :margin-bottom 18}}
+              [:a {:on-click #(rf/dispatch [:nav-forgot-password @email])
+                   :style {:font-size 13
+                           :opacity 0.75}}
+               "Forgot Password?"]]]
             [:> ui/Button {:fluid true
                            :on-click #(rf/dispatch [:login [@email @pwd]])}
              "Log In"]

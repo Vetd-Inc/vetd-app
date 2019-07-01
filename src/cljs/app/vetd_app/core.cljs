@@ -25,6 +25,7 @@
             [vetd-app.common.fixtures :as pub-fix]
             [vetd-app.common.pages.signup :as p-signup]
             [vetd-app.common.pages.login :as p-login]
+            [vetd-app.common.pages.forgot-password :as p-forgot-password]
             [reagent.core :as r]
             [re-frame.core :as rf]
             [secretary.core :as sec]
@@ -36,6 +37,7 @@
 (hooks/reg-hooks! hooks/c-page
                   {:login #'p-login/c-page
                    :signup #'p-signup/c-page
+                   :forgot-password #'p-forgot-password/c-page
                    :b/search #'p-bsearch/c-page
                    :b/preposals #'p-bpreposals/c-page
                    :b/preposal-detail #'p-bpreposal-detail/c-page
@@ -52,6 +54,7 @@
 (hooks/reg-hooks! hooks/c-container
                   {:login #'pub-fix/container
                    :signup #'pub-fix/container
+                   :forgot-password #'pub-fix/container
                    :b/search #'b-fix/container
                    :b/preposals #'b-fix/container
                    :b/preposal-detail #'b-fix/container
@@ -75,7 +78,7 @@
    :loading? {:products #{}} ; entities (by ID) that are in a loading?=true state (for UI display)
    :round-products-order []}))
 
-(def public-pages #{:login :signup})
+(def public-pages #{:login :signup :forgot-password})
 
 (rf/reg-sub
  :page
@@ -162,11 +165,16 @@
 (sec/defroute home-path "/" []
   (rf/dispatch [:nav-home]))
 
-(sec/defroute login-path "/login" [query-params]
-  (rf/dispatch [:route-login query-params]))
+(sec/defroute login-path "/login" []
+  (rf/dispatch [:route-login]))
 
 (sec/defroute signup-path "/signup/:type" [type]
   (rf/dispatch [:route-signup type]))
+
+(sec/defroute forgot-password-path "/forgot-password/" []
+  (rf/dispatch [:route-forgot-password]))
+(sec/defroute forgot-password-prefill-path "/forgot-password/:email-address" [email-address]
+  (rf/dispatch [:route-forgot-password email-address]))
 
 ;; Link - special links for actions such as reset password, or account verification
 (sec/defroute link-path "/l/:k" [k]
@@ -227,17 +235,23 @@
  [(rf/inject-cofx :local-store [:session-token])]  
  (fn [{:keys [db local-store]} [_ {:keys [logged-in? user memberships admin?]}]]
    (if logged-in?
-     {:db (assoc db
-                 :user user
-                 :logged-in? true
-                 :memberships memberships
-                 :admin? admin?
-                 ;; TODO support users with multi-orgs
-                 :active-memb-id (some-> memberships first :id))
-      :cookies {:admin-token (when admin?
-                               [(:session-token local-store)
-                                {:max-age 3600 :path "/"}])}
-      :after-req-session nil}
+     (let [org-id (some-> memberships first :org-id)] ; TODO support users with multi-orgs
+       {:db (assoc db  
+                   :logged-in? true
+                   :user user
+                   :memberships memberships
+                   :active-memb-id (some-> memberships first :id)
+                   :org-id org-id
+                   :admin? admin?)
+        :cookies {:admin-token (when admin? [(:session-token local-store)
+                                             {:max-age 3600 :path "/"}])}
+        :analytics/identify {:user-id (:id user)
+                             :traits {:name (:uname user)
+                                      :displayName (:uname user)
+                                      :email (:email user)}}
+        :analytics/group {:group-id org-id
+                          :traits {:name (some-> memberships first :org :oname)}}
+        :after-req-session nil})
      {:after-req-session nil})))
 
 (defn config-acct []

@@ -35,8 +35,8 @@
                    :padding "10px"
                    :border "solid 1px #666666"}}
      [:div "Name: " pname]
-     [:div "Created: " created]
-     [:div "Updated: " updated]]))
+     [:div "Created: " (.toString (js/Date. created))]
+     [:div "Updated: " (.toString (js/Date. updated))]]))
 
 (defn c-page []
   (let [org-id& (rf/subscribe [:org-id])
