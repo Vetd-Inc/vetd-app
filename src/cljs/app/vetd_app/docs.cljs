@@ -109,19 +109,19 @@
             first)
        k))
 
-(defn walk-deref-ratoms
+(defn walk-prep-for-save-form-doc
   [frm]
   (clojure.walk/prewalk
    (fn [f]
-     (if (instance? reagent.ratom/RAtom f)
-       @f
-       f))
+     (cond (instance? reagent.ratom/RAtom f) @f
+           (fn? f) nil
+           :else f))
    frm))
 
 (rf/reg-event-fx
  :save-form-doc
  (fn [{:keys [db]} [_ form-doc]]
-   (let [fd (walk-deref-ratoms form-doc)]
+   (let [fd (walk-prep-for-save-form-doc form-doc)]
      {:ws-send {:payload {:cmd :save-form-doc
                           :return nil
                           :form-doc fd}}})))
@@ -305,7 +305,7 @@
   [c-prompt-field-fn {:keys [fname ftype fsubtype response] :as prompt-field}]
   [:div
    (for [{:keys [id] :as response-field} @response]
-     ^{:key (str "resp-field" id)}
+     ^{:key (str "resp-field" (or id (hash response-field)))}
      [:> ui/FormGroup
       [c-prompt-field-fn (assoc prompt-field
                                 :response [response-field])]
@@ -407,6 +407,9 @@
 
 (defn c-missing-prompts
   [{prompts1 :prompts :as prod-prof-form} {prompts2 :prompts :keys [id] :as form-doc}]
+  (def ppf1 prod-prof-form)
+  #_ (cljs.pprint/pprint ppf1)
+  (def fd1 form-doc)
   (let [missing-prompt-ids (clojure.set/difference (->> prompts1 (mapv :id) set)
                                                    (->> prompts2 (mapv :id) set))]
     (when-not (empty? missing-prompt-ids)

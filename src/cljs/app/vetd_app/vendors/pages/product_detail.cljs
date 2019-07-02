@@ -35,6 +35,32 @@
    {:ws-send {:payload {:cmd :v/delete-product
                         :product-id product-id}}}))
 
+(defn auto-populate-categories [prompt]
+  (let [product-idstr& (rf/subscribe [:product-idstr])
+        cats& (rf/subscribe
+               [:gql/q {:queries
+                        [[:products {:idstr @product-idstr&
+                                     :deleted nil
+                                     :_order_by {:created :desc}
+                                     :_limit 1}
+                          [[:categories  {:ref-deleted nil}
+                            [:id :cname]]]]]}])]
+    (r/track!  
+      #(reset!
+       (-> prompt
+           :fields
+           first
+           :response)
+       (->> @cats&
+            :products
+            first
+            :categories
+            (mapv (fn [{:keys [id cname]}]
+                    {:state
+                     (r/atom
+                      {:id id
+                       :text cname})})))))))
+
 (defn c-product
   [{:keys [id pname form-doc created updated]}]
   (let [pname& (r/atom pname)
@@ -57,7 +83,7 @@
         [docs/c-form-maybe-doc
          (docs/mk-form-doc-state form-doc
                                  {"product/categories"
-                                  {"auto-populate" #(cljs.pprint/pprint %)}})
+                                  {"auto-populate" auto-populate-categories}})
          {:return-save-fn& save-doc-fn&
           :c-wrapper [:div]}]
         [:> ui/Button {:color "teal"
@@ -71,6 +97,7 @@
                        :fluid true
                        :on-click #(rf/dispatch [:v/delete-product id])}
          "DELETE  Product"]]])))
+
 
 (defn c-page []
   (let [org-id& (rf/subscribe [:org-id])

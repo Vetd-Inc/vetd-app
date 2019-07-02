@@ -105,3 +105,4 @@
      (rf/dispatch-sync [:gql/sub query sub-id])
      {:computation identity
       :on-dispose #(rf/dispatch [:gql/unsubscribe query sub-id])})))
+
