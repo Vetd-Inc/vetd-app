@@ -25,6 +25,7 @@
             [vetd-app.common.fixtures :as pub-fix]
             [vetd-app.common.pages.signup :as p-signup]
             [vetd-app.common.pages.login :as p-login]
+            [vetd-app.common.pages.forgot-password :as p-forgot-password]
             [reagent.core :as r]
             [re-frame.core :as rf]
             [secretary.core :as sec]
@@ -36,6 +37,7 @@
 (hooks/reg-hooks! hooks/c-page
                   {:login #'p-login/c-page
                    :signup #'p-signup/c-page
+                   :forgot-password #'p-forgot-password/c-page
                    :b/search #'p-bsearch/c-page
                    :b/preposals #'p-bpreposals/c-page
                    :b/preposal-detail #'p-bpreposal-detail/c-page
@@ -52,6 +54,7 @@
 (hooks/reg-hooks! hooks/c-container
                   {:login #'pub-fix/container
                    :signup #'pub-fix/container
+                   :forgot-password #'pub-fix/container
                    :b/search #'b-fix/container
                    :b/preposals #'b-fix/container
                    :b/preposal-detail #'b-fix/container
@@ -75,7 +78,7 @@
    :loading? {:products #{}} ; entities (by ID) that are in a loading?=true state (for UI display)
    :round-products-order []}))
 
-(def public-pages #{:login :signup})
+(def public-pages #{:login :signup :forgot-password})
 
 (rf/reg-sub
  :page
@@ -157,9 +160,27 @@
 
 
 ;;;; Routes
+
+;; Common
 (sec/defroute home-path "/" []
   (rf/dispatch [:nav-home]))
 
+(sec/defroute login-path "/login" []
+  (rf/dispatch [:route-login]))
+
+(sec/defroute signup-path "/signup/:type" [type]
+  (rf/dispatch [:route-signup type]))
+
+(sec/defroute forgot-password-path "/forgot-password/" []
+  (rf/dispatch [:route-forgot-password]))
+(sec/defroute forgot-password-prefill-path "/forgot-password/:email-address" [email-address]
+  (rf/dispatch [:route-forgot-password email-address]))
+
+;; Link - special links for actions such as reset password, or account verification
+(sec/defroute link-path "/l/:k" [k]
+  (rf/dispatch [:read-link k]))
+
+;; Buyers
 (sec/defroute buyers-search-root "/b/search" []
   (rf/dispatch [:b/route-search]))
 (sec/defroute buyers-search "/b/search/:search-term" [search-term]
@@ -167,7 +188,6 @@
 
 (sec/defroute buyers-preposals "/b/preposals" [query-params]
   (rf/dispatch [:b/route-preposals query-params]))
-
 (sec/defroute buyers-preposal-detail "/b/preposals/:idstr" [idstr]
   (rf/dispatch [:b/route-preposal-detail idstr]))
 
@@ -176,43 +196,36 @@
 
 (sec/defroute buyers-rounds "/b/rounds" [query-params]
   (rf/dispatch [:b/route-rounds query-params]))
-
 (sec/defroute buyers-round-detail "/b/rounds/:idstr" [idstr]
   (rf/dispatch [:b/route-round-detail idstr]))
 
+;; Vendors
 (sec/defroute vendors-preposals "/v/preposals" [query-params]
   (rf/dispatch [:v/route-preposals query-params]))
 
 (sec/defroute vendors-products "/v/products" [query-params]
   (rf/dispatch [:v/route-products query-params]))
-
 (sec/defroute vendors-product-detail "/v/products/:idstr" [idstr]
   (rf/dispatch [:v/route-product-detail idstr]))
 
 (sec/defroute vendors-profile "/v/profile" [query-params]
   (rf/dispatch [:v/route-profile query-params]))
 
-(sec/defroute login-path "/login" [query-params]
-  (rf/dispatch [:route-login query-params]))
-
-(sec/defroute signup-path "/signup/:type" [type]
-  (rf/dispatch [:route-signup type]))
-
 (sec/defroute vendors-rounds-path "/v/rounds" [query-params]
   (rf/dispatch [:v/route-rounds query-params]))
-
 (sec/defroute vendors-round-product-detail "/v/rounds/:round-idstr/products/:product-idstr"
   [round-idstr product-idstr]
   (rf/dispatch [:v/route-round-product-detail round-idstr product-idstr]))
 
-(sec/defroute catchall-path "*" []
-  (do (.log js/console "nav catchall")
-      (rf/dispatch [:apply-route nil])))
+;; catch-all
+(sec/defroute catch-all-path "*" []
+  (do (.log js/console "nav catch-all")
+      (rf/dispatch [:nav-home])))
 
 (rf/reg-event-fx
  :ws-get-session-user
  [(rf/inject-cofx :local-store [:session-token])] 
- (fn [{:keys [db local-store]} [_ [email pwd]]]
+ (fn [{:keys [local-store]}]
    {:ws-send {:payload {:cmd :auth-by-session
                         :return :ws/req-session
                         :session-token (:session-token local-store)}}}))
@@ -222,17 +235,27 @@
  [(rf/inject-cofx :local-store [:session-token])]  
  (fn [{:keys [db local-store]} [_ {:keys [logged-in? user memberships admin?]}]]
    (if logged-in?
-     {:db (assoc db
-                 :user user
-                 :logged-in? true
-                 :memberships memberships
-                 :admin? admin?
-                 ;; TODO support users with multi-orgs
-                 :active-memb-id (some-> memberships first :id))
-      :cookies {:admin-token (when admin?
-                               [(:session-token local-store)
-                                {:max-age 3600 :path "/"}])}
-      :after-req-session nil}
+     (let [org-id (some-> memberships first :org-id)] ; TODO support users with multi-orgs
+       {:db (assoc db  
+                   :logged-in? true
+                   :user user
+                   :memberships memberships
+                   :active-memb-id (some-> memberships first :id)
+                   :org-id org-id
+                   :admin? admin?)
+        :cookies {:admin-token (when admin? [(:session-token local-store)
+                                             {:max-age 3600 :path "/"}])}
+        :analytics/identify {:user-id (:id user)
+                             :traits {:name (:uname user)
+                                      :displayName (:uname user)                                      
+                                      :email (:email user)
+                                      ;; only for MailChimp integration
+                                      :fullName (:uname user)
+                                      :userStatus (if (some-> memberships first :org :buyer?) "Buyer" "Vendor")
+                                      :oName (some-> memberships first :org :oname)}}
+        :analytics/group {:group-id org-id
+                          :traits {:name (some-> memberships first :org :oname)}}
+        :after-req-session nil})
      {:after-req-session nil})))
 
 (defn config-acct []
@@ -244,14 +267,18 @@
     :path-exists? sec/locate-route
     :reload-same-path? false}))
 
+(defonce additional-init-done? (volatile! false))
+
 ;; additional init that must occur after :ws/req-session
 (rf/reg-fx
  :after-req-session
  (fn []
-   (clerk/initialize!)
-   (config-acct)
-   (acct/dispatch-current!)
-   (mount-components)))
+   (when-not @additional-init-done?
+     (vreset! additional-init-done? true)
+     (clerk/initialize!)
+     (config-acct)
+     (acct/dispatch-current!)
+     (mount-components))))
 
 (defonce init-done? (volatile! false))
 
@@ -265,10 +292,5 @@
       (rf/dispatch-sync [:ws-init])
       (rf/dispatch-sync [:ws-get-session-user])
       (println "init! END"))))
-
-;; for dev
-(defn re-init! []
-  (vreset! init-done? false)
-  (init!))
 
 (println "END core")

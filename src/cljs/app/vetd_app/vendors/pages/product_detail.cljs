@@ -52,8 +52,8 @@
                     :spellCheck false
                     :on-change (fn [this]
                                  (reset! pname& (-> this .-target .-value)))}]]
-        [:div "created: " created]
-        [:div "updated: " updated]       
+        [:div "created: " (.toString (js/Date. created))]
+        [:div "updated: " (.toString (js/Date. updated))]       
         [docs/c-form-maybe-doc
          (docs/mk-form-doc-state form-doc)
          {:return-save-fn& save-doc-fn&
@@ -115,7 +115,7 @@
                                            [:prompts {:_order_by {:sort :asc}
                                                       :deleted nil
                                                       :ref-deleted nil}
-                                            [:id :idstr :prompt :descr :sort
+                                            [:id :idstr :prompt :descr :sort :ref-id
                                              [:fields {:_order_by {:sort :asc}
                                                        :deleted nil}
                                               [:id :idstr :fname :ftype
@@ -131,9 +131,11 @@
                            (assoc form-doc
                                   :product
                                   doc-product))]
-           [:div
-            [c-product (assoc p
-                              :form-doc
-                              (or form-doc'
-                                  (assoc prod-prof-form
-                                         :product {:id id})))]])]))))
+           (when id
+             [:div
+              [docs/c-missing-prompts prod-prof-form form-doc]
+              [c-product (assoc p
+                                :form-doc
+                                (or form-doc'
+                                    (assoc prod-prof-form
+                                           :product {:id id})))]]))]))))

@@ -3,19 +3,16 @@
             [com.vetd.app.common :as com]
             [com.vetd.app.util :as ut]
             [com.vetd.app.hasura :as ha]
+            [com.vetd.app.email-client :as ec]
+            [com.vetd.app.links :as l]
             [clojure.string :as st]
             [buddy.hashers :as bhsh]
             [taoensso.timbre :as log]
             [honeysql.core :as hs]))
 
-;; this seems secure
-(defn mk-session-token []
-  (let [base 1000000
-        f #(ut/base36->str
-            (+ base (rand-int (- Integer/MAX_VALUE base))))]
-    (-> (concat (f) (f) (f) (f))
-        shuffle
-        clojure.string/join)))
+;; Sendgrid template id's
+(def verify-account-template-id "d-d1f3509a0c664b4d84a54777714d5272")
+(def password-reset-template-id "d-a782e6648d054f34b8453cbf8e14c007")
 
 (defn select-org-by-name [org-name]
   (-> [[:orgs {:oname org-name}
@@ -69,14 +66,14 @@
       ffirst))
 
 (defn insert-user
-  [uname email pwd]
+  [uname email pwd-hash]
   (let [[id idstr] (ut/mk-id&str)]  
     (-> (db/insert! :users
                     {:id id
                      :idstr idstr
                      :uname uname
-                     :email (st/lower-case email)
-                     :pwd (bhsh/derive pwd)})
+                     :email email
+                     :pwd pwd-hash})
         first)))
 
 (defn valid-creds?
@@ -135,24 +132,61 @@
     [false nil]
     [true (insert-memb user-id org-id)]))
 
+(defn prepare-account-map
+  "Normalizes and otherwise prepares an account map for insertion in DB."
+  [account]
+  (-> account
+      (select-keys [:uname :email :pwd :org-name :org-url :org-type])
+      (update :email st/lower-case)
+      (update :pwd bhsh/derive)))
+
+(defn send-verify-account-email
+  [{:keys [email] :as account}]
+  (let [link-key (l/create {:cmd :create-verified-account
+                            :input-data (prepare-account-map account)
+                            ;; 30 days from now
+                            :expires-action (+ (ut/now) (* 1000 60 60 24 30))})]
+    (ec/send-template-email
+     email
+     {:verify-link (str l/base-url link-key)}
+     {:template-id verify-account-template-id})))
+
 (defn create-account
-  "Create a user account.
+  "Create a user account. (Really just start the process; send verify email)
   NOTE: org-type is a string: either 'buyer' or 'vendor'"
-  [{:keys [uname org-name org-url org-type email pwd]}]
+  ;; expecting these keys in account: [uname org-name org-url org-type email pwd]
+  [{:keys [email] :as account}]
   (try
     (if (select-user-by-email email)
       {:email-used? true}
-      (let [user (insert-user uname email pwd)
-            [org-created? org] (create-or-find-org org-name org-url (= org-type "buyer") (= org-type "vendor"))
-            [memb-created? memb] (create-or-find-memb (:id user) (:id org))]
-        {:user-created? true
-         :user user
-         :org-created? org-created?
-         :org org
-         :memb-created? memb-created?
-         :memb memb}))
+      (do (future (send-verify-account-email account))
+          {}))
     (catch Throwable e
       (com/log-error e))))
+
+(defn change-password
+  [user-id pwd-hash]
+  (db/update-any! {:id user-id
+                   :pwd pwd-hash}
+                  :users))
+
+(defn send-password-reset-email
+  [{:keys [email] :as creds}]
+  (let [link-key (l/create {:cmd :password-reset
+                            :input-data (-> creds
+                                            (select-keys [:email :pwd])
+                                            prepare-account-map)})]
+    (ec/send-template-email
+     email
+     {:reset-link (str l/base-url link-key)}
+     {:template-id password-reset-template-id})))
+
+(defn password-reset-request
+  [{:keys [email] :as creds}]
+  (if (select-user-by-email email)
+    (do (future (send-password-reset-email creds))
+        {})
+    {:no-account? true}))
 
 (defn select-session-by-id
   [session-token]
@@ -199,7 +233,7 @@
   (let [[id idstr] (ut/mk-id&str)]
     (-> (db/insert! :sessions
                     {:id id
-                     :token (mk-session-token)
+                     :token (ut/mk-strong-key)
                      :user_id user-id
                      :created (ut/now-ts)})
         first)))
@@ -219,6 +253,7 @@
       {:logged-in? false
        :login-failed? true}))
 
+;; Websocket handlers
 (defmethod com/handle-ws-inbound :create-acct
   [m ws-id sub-fn]
   (create-account m))
@@ -237,6 +272,10 @@
      :memberships (select-memb-org-by-user-id user-id)}
     {:logged-in? false}))
 
+(defmethod com/handle-ws-inbound :forgot-password.request-reset
+  [{:keys [email pwd] :as req} ws-id sub-fn]
+  (password-reset-request req))
+
 (defmethod com/handle-ws-inbound :create-membership
   [{:keys [user-id org-id]} ws-id sub-fn]
   (create-or-find-memb user-id org-id))
@@ -252,3 +291,22 @@
   (create-or-find-memb user-id org-id))
 
 ;; TODO logout!!!!!!!!!!!!!!!
+
+;;;; Link action handlers
+(defmethod l/action :create-verified-account
+  [{:keys [input-data] :as link}]
+  (let [{:keys [uname email pwd org-name org-url org-type]} input-data]
+    (when-not (select-user-by-email email) ; rare, but someone created an account with this email sometime after the link was made
+      (let [user (insert-user uname email pwd)
+            [_ org] (create-or-find-org org-name org-url (= org-type "buyer") (= org-type "vendor"))
+            _ (create-or-find-memb (:id user) (:id org))]
+        (l/update-expires link "read" (+ (ut/now) (* 1000 60 5))) ; allow read for next 5 mins
+        {:session-token (-> user :id insert-session :token)}))))
+
+(defmethod l/action :password-reset
+  [{:keys [input-data] :as link}]
+  (let [{:keys [email pwd]} input-data]
+    (when-let [{:keys [id]} (select-user-by-email email)]
+      (do (change-password id pwd)
+          (l/update-expires link "read" (+ (ut/now) (* 1000 60 5))) ; allow read for next 5 mins
+          {:session-token (:token (insert-session id))}))))

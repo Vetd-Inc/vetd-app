@@ -13,6 +13,7 @@
             [clojure.walk :as w]
             [cheshire.core :as json]
             [graphql-query.core :as dgql]
+            [clj-time.coerce :as tc]
             clojure.edn))
 
 ;; :pre-init :init-sent :ackd :closed
@@ -254,11 +255,15 @@
   (mapv (partial walk-result-sub-map field sub)
         coll))
 
+(defn timestamp? [kw]
+  ;; HACK -- this would ideally be based on schema, not column names
+  (#{:created :deleted :updated :expires_action :expires_read} kw))
+
 (defn walk-result-sub-val [field sub v]
-  ;; HACK -- Hasura returns bigints as string
-  (if (coerce-to-long? sub)
-    (ut/->long v)
-    v))
+  (cond
+    (coerce-to-long? sub) (ut/->long v) ; HACK -- Hasura returns bigints as string
+    (timestamp? sub) (tc/to-sql-time v)
+    :else v))
 
 (defn walk-result-sub-val-pair
   [field sub v]

@@ -49,6 +49,7 @@
                         :category (str (util/capitalize-words ename) " Products")
                         :none "")
         title& (atom default-title)
+        bad-title?& (r/atom false)
         start-round-fn #(rf/dispatch [:b/start-round
                                       @title&
                                       (case etype
@@ -71,7 +72,7 @@
                                         :margin-bottom 7}}
                             "Enter a name for your VetdRound:"]
                            [:> ui/Form {:style {:width 500}}
-                            [:> ui/FormField
+                            [:> ui/FormField {:error @bad-title?&}
                              [:> ui/Input
                               {:placeholder "E.g., Marketing Analytics Products"
                                :default-value @title&
@@ -80,8 +81,12 @@
                                :action (r/as-element
                                         [:> ui/Button
                                          {:color "blue"
-                                          :on-click #(do (reset! popup-open?& false)
-                                                         (start-round-fn))}
+                                          :on-click (fn []
+                                                      (if (s/blank? @title&)
+                                                        (reset! bad-title?& true)
+                                                        (do (reset! bad-title?& false)
+                                                            (reset! popup-open?& false)
+                                                            (start-round-fn))))}
                                          "Create"])}]]]])}
                popup-props)]
        [:> ui/Popup
@@ -96,8 +101,9 @@
           :position "bottom left"
           :context @context-ref&
           :trigger (r/as-element
-                    [:> ui/Button (merge {:on-click #(do (.stopPropagation %)
-                                                         (swap! popup-open?& not))
+                    [:> ui/Button (merge {:on-click (fn [e]
+                                                      (.stopPropagation e)
+                                                      (swap! popup-open?& not))
                                           :color "blue"
                                           :icon true
                                           :labelPosition "left"
@@ -114,8 +120,9 @@
   [:> ui/Label (merge {:color "teal"
                        :size "medium"
                        :as "a"
-                       :on-click #(do (.stopPropagation %)
-                                      (rf/dispatch [:b/nav-round-detail round-idstr]))}
+                       :on-click (fn [e]
+                                   (.stopPropagation e)
+                                   (rf/dispatch [:b/nav-round-detail round-idstr]))}
                       props)
    "Product In VetdRound"])
 
@@ -213,8 +220,9 @@
            :context @context-ref&
            :trigger (r/as-element
                      (if icon?
-                       [:> ui/Icon {:on-click #(do (.stopPropagation %)
-                                                   (swap! popup-open?& not))
+                       [:> ui/Icon {:on-click (fn [e]
+                                                (.stopPropagation e)
+                                                (swap! popup-open?& not))
                                     :color "black"
                                     :link true
                                     :name "close"
@@ -235,8 +243,9 @@
           :position popup-position
           :trigger (r/as-element
                     (if icon?
-                      [:> ui/Icon {:on-click #(do (.stopPropagation %)
-                                                  (rf/dispatch [:b/preposals.undo-reject id]))
+                      [:> ui/Icon {:on-click (fn [e]
+                                               (.stopPropagation e)
+                                               (rf/dispatch [:b/preposals.undo-reject id]))
                                    :link true
                                    :color "red"
                                    :name "undo"
@@ -317,8 +326,9 @@
      ^{:key c}
      [:> ui/Label {:class "category-tag"
                    :as "a"
-                   :onClick #(do (.stopPropagation %)
-                                 (rf/dispatch [:b/nav-search c]))}
+                   :onClick (fn [e]
+                              (.stopPropagation e)
+                              (rf/dispatch [:b/nav-search c]))}
       c])])
 
 (defn c-free-trial-tag []
@@ -354,12 +364,13 @@
       [:<>
        [:div.display-field-value "Unavailable"]
        [:> ui/Button {:color "lightteal"
-                      :onClick #(do (.stopPropagation %)
-                                    (rf/dispatch [:b/request-complete-profile
-                                                  (:type profile)
-                                                  (:id profile)
-                                                  (:name profile)
-                                                  field-key]))}
+                      :onClick (fn [e]
+                                 (.stopPropagation e)
+                                 (rf/dispatch [:b/request-complete-profile
+                                               (:type profile)
+                                               (:id profile)
+                                               (:name profile)
+                                               field-key]))}
         "Request Complete Profile"]])]])
 
 (defn requestable
