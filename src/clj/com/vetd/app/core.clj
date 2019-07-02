@@ -110,10 +110,11 @@
 (defn shutdown []
   (try
     (log/info "Starting shutdown hook")
-    (a/close! com/shutdown-ch)
+    (reset! com/shutdown-signal true)
     (when-let [svr (svr/stop-server)]
       (wait-to-exit svr)
       (log/info "Completed `wait-to-exit`"))
+    (com/force-all-ws-on-close-fns)
     (try-stop-nrepl-server)
     (catch Throwable t
       (com/log-error t))

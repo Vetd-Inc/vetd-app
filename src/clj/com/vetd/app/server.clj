@@ -4,6 +4,7 @@
             [migratus.core :as mig]
             [com.vetd.app.env :as env]
             [com.vetd.app.db :as db]
+            [com.vetd.app.links :as l]
             [clojure.core.async :as a]
             [compojure.core :as c]
             [compojure.handler :as ch]
@@ -64,6 +65,8 @@
     (t/write tw v)
     (.toByteArray baos)))
 
+
+
 (defn respond-transit
   [data ws]
   (ms/try-put! ws
@@ -113,6 +116,7 @@
                 :return return
                 :request req
                 :response data
+                :response-size (-> data ->transit count)
                 :resp-idx (swap! counter& inc)
                 :latency-ms (- (ut/now) req-ts)})
   (respond-transit {:cmd cmd
@@ -240,6 +244,10 @@
 
 (def app
   (-> (c/routes
+       (c/GET "/l/:k" [k]
+              (fn [{:keys [cookies]}]
+                (l/do-action-by-key k)
+                (app-html cookies)))
        (c/GET "/ws" [] #'ws-handler)
        (cr/resources "/assets" {:root "public/assets"})
        (c/GET "/assets*" [] cr/not-found)
@@ -257,6 +265,7 @@
                                    (public-resource-response uri)
                                    "")))
        (serve-public-resource "/js*")
+       ;; when updating "*" route, also update "/l/:k" route
        (c/GET "*" [] (fn [{:keys [cookies]}]
                        (app-html cookies))))
       rm-cookies/wrap-cookies))

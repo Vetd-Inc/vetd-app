@@ -13,6 +13,7 @@
             [clojure.walk :as w]
             [cheshire.core :as json]
             [graphql-query.core :as dgql]
+            [clj-time.coerce :as tc]
             clojure.edn))
 
 ;; :pre-init :init-sent :ackd :closed
@@ -27,6 +28,21 @@
 
 #_ (def sub-id->resp-fn& (atom {}))
 (defonce sub-id->resp-fn& (atom {}))
+
+(defonce sub-count-monitor (atom nil))
+
+(defn start-sub-count-monitor-thread []
+  (when (and env/prod?
+             (nil? @sub-count-monitor))
+    (reset! sub-count-monitor
+            (future
+              (log/info "Starting sub-count-monitor")
+              (while (not @com/shutdown-signal)
+                (com/hc-send {:hasura-sub-count (count @sub-id->resp-fn&)})
+                (Thread/sleep 5000))
+              (log/info "Stopped sub-count-monitor")))))
+
+(start-sub-count-monitor-thread) ;; TODO calling this here is gross -- Bill
 
 ;; https://github.com/apollographql/subscriptions-transport-ws/blob/faa219cff7b6f9873cae59b490da46684d7bea19/src/message-types.ts
 
@@ -239,11 +255,15 @@
   (mapv (partial walk-result-sub-map field sub)
         coll))
 
+(defn timestamp? [kw]
+  ;; HACK -- this would ideally be based on schema, not column names
+  (#{:created :deleted :updated :expires_action :expires_read} kw))
+
 (defn walk-result-sub-val [field sub v]
-  ;; HACK -- Hasura returns bigints as string
-  (if (coerce-to-long? sub)
-    (ut/->long v)
-    v))
+  (cond
+    (coerce-to-long? sub) (ut/->long v) ; HACK -- Hasura returns bigints as string
+    (timestamp? sub) (tc/to-sql-time v)
+    :else v))
 
 (defn walk-result-sub-val-pair
   [field sub v]
@@ -464,15 +484,13 @@
                                   {:query (->gql-str {:queries queries})})})
                 :body
                 slurp)]
-      (def r1 r)
       (-> r
           (json/parse-string keyword)
           :data
           walk-result #_process-result))
     (catch Exception e
-      (def e1 e)
       (com/log-error e (try (some-> e .getData :body slurp)
-                        (catch Exception e2 "")))
+                            (catch Exception e2 "")))
       (throw e))))
 
 #_(send-terminate)

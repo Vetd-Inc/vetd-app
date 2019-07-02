@@ -171,6 +171,16 @@
                      :sort sort'})
         first)))
 
+(defn propagate-prompt [form-prompt-ref-id target-form-id]
+  (let [{prompt-id :prompt_id sort' :sort} (-> {:select [:sort :prompt_id]
+                                                :from [:form_prompt]
+                                                :where [:= :id form-prompt-ref-id]}
+                                               db/hs-query
+                                               first)]
+    (insert-form-prompt target-form-id
+                        prompt-id
+                        sort')))
+
 (defn get-max-prompt-sort-by-form-template-id
   [form-template-id]
   (some->> [[:form-templates {:id form-template-id}
@@ -382,6 +392,7 @@
 (def delete-form-prompt-field (partial update-deleted :prompt_fields))
 (def delete-form-prompt (partial update-deleted :form_prompt))
 (def delete-form-template-prompt (partial update-deleted :form_template_prompt))
+(def delete-doc-response (partial update-deleted :doc_resp))
 
 (defn find-latest-form-template-id [where]
   (-> {:select [:id]
@@ -558,17 +569,37 @@
       empty?
       not))
 
-(defn form-prompt-exists? [{:keys [form-id prompt-id] :as form-prompt}]
-  (-> {:select [[:%count.* :c]]
+(defn select-form-prompt-id [prompt-id form-id & fields]
+  (-> {:select (or [:id] fields)
        :from [:form_prompt]
        :where [:and
+               [:= :deleted nil]
                [:= :form_id form-id]
                [:= :prompt_id prompt-id]]}
       db/hs-query
       first
-      :c
-      zero?
-      not))
+      :id))
+
+(defn select-doc-response-id [response-id doc-id]
+  (-> {:select [:id]
+       :from [:doc_resp]
+       :where [:and
+               [:= :deleted nil]
+               [:= :resp_id response-id]
+               [:= :doc_id doc-id]]}
+      db/hs-query
+      first
+      :id))
+
+
+(defn delete-form-prompt-by-ids [prompt-id form-id]
+  (delete-form-prompt
+   (select-form-prompt-id prompt-id form-id)))
+
+(defn delete-doc-response-by-ids [response-id doc-id]
+  (delete-doc-response
+   (select-doc-response-id response-id doc-id)))
+
 
 (defn upsert-prompt [{:keys [id] :as prompt} & [use-id?]]
   (upsert* prompt-exists?

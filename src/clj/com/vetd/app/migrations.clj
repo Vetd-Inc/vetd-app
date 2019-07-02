@@ -1316,7 +1316,127 @@
                    :name :docs
                    :columns
                    {:add {:result [:integer]
-                          :reason [:text]}}}]]])
+                          :reason [:text]}}}]]
+
+   [[2019 6 18 00 00]
+    
+    [:create-or-replace-view
+     {:schema :vetd
+      :name :rounds_by_category
+      :honey {:select [[:rc.id :rcid]
+                       :rc.category_id
+                       [:rc.id :ref_id]
+                       [:rc.deleted :ref_deleted]
+                       :r.id
+                       :r.idstr                                    
+                       :r.created
+                       :r.deleted
+                       :r.buyer_id
+                       :r.status
+                       :r.req_form_template_id
+                       :r.doc_id]
+              :from [[:round_category :rc]]
+              :join [[:rounds :r]
+                     [:= :r.id :rc.round_id]]}
+      :owner :vetd
+      :grants {:hasura [:SELECT]}}]
+
+    [:create-or-replace-view
+     {:schema :vetd
+      :name :response_prompt_by_doc
+      :honey {:select [[:dr.id :drid]
+                       [:dr.doc_id :doc_id]
+                       [:dr.id :ref_id]
+                       [:dr.deleted :ref_deleted]
+                       :r.id
+                       :r.idstr                                    
+                       :r.created
+                       :r.updated
+                       :r.deleted
+                       :r.prompt_id
+                       :r.user_id
+                       :r.notes
+                       [:p.idstr :prompt_idstr]
+                       [:p.created :prompt_created]
+                       [:p.updated :prompt_updated]
+                       [:p.deleted :prompt_deleted]
+                       [:p.prompt :prompt_prompt]
+                       [:p.term :prompt_term]                       
+                       [:p.descr :prompt_descr]]
+              :from [[:doc_resp :dr]]
+              :join [[:responses :r]
+                     [:= :r.id :dr.resp_id]
+                     [:prompts :p]
+                     [:= :p.id :r.prompt_id]]}
+      :owner :vetd
+      :grants {:hasura [:SELECT]}}]
+
+    [:create-or-replace-view
+     {:schema :vetd
+      :name :responses_by_doc
+      :honey {:select [[:dr.id :drid]
+                       :dr.doc_id
+                       [:dr.id :ref_id]
+                       [:dr.deleted :ref_deleted]
+                       :r.id
+                       :r.idstr                                    
+                       :r.created
+                       :r.updated
+                       :r.deleted
+                       :r.prompt_id
+                       :r.user_id
+                       :r.notes
+                       :r.subject]
+              :from [[:doc_resp :dr]]
+              :join [[:responses :r]
+                     [:= :r.id :dr.resp_id]]}
+      :owner :vetd
+      :grants {:hasura [:SELECT]}}]
+
+    [:create-or-replace-view
+     {:schema :vetd
+      :name :rounds_by_product
+      :honey {:select [[:rp.id :rcid]
+                       :rp.product_id
+                       [:rp.id :ref_id]
+                       [:rp.deleted :ref_deleted]
+                       :r.id
+                       :r.idstr                                    
+                       :r.created
+                       :r.deleted
+                       :r.buyer_id
+                       :r.status
+                       :r.req_form_template_id
+                       :r.doc_id]
+              :from [[:round_product :rp]]
+              :join [[:rounds :r]
+                     [:= :r.id :rp.round_id]]}
+      :owner :vetd
+      :grants {:hasura [:SELECT]}}]]
+
+   [[2019 6 25 00 00]
+    
+    [:create-table {:schema :vetd
+                    :name :links
+                    :columns {:id [:bigint :NOT :NULL]
+                              :idstr [:text]
+                              :created [:timestamp :with :time :zone]
+                              :updated [:timestamp :with :time :zone]
+                              :deleted [:timestamp :with :time :zone]
+                              :key [:text] ; secure key to allow execution and read (will be part of link URI)
+                              :cmd [:text] ; command to execute upon link visit
+                              :input_data [:text] ; an EDN-parseable string defining args to pass to cmd
+                              :output_data [:text] ; this is populated with the results of cmd(input_data) as an EDN-parseable string
+                              :expires_action [:timestamp :with :time :zone] ; time when actionability expires
+                              :expires_read [:timestamp :with :time :zone] ; time when readability expires (often dynamic over life of link)
+                              :max_uses_action [:integer] ; maximum times the link can be actioned
+                              :max_uses_read [:integer] ; maximum times output_data can be read
+                              :uses_action [:integer] ; the number of times the link was visited
+                              :uses_read [:integer]} ; the number of times the output_data was read
+                    :owner :vetd
+                    :grants {:hasura [:SELECT]}}]
+
+    [:alter-table {:schema :vetd, :name :links, :pk :id}]]])
 
 #_(mig/mk-migration-files migrations
                           "migrations")

@@ -22,7 +22,7 @@
 
                  [cheshire "5.8.0"]
                  [clj-http "3.9.1"]
-                 [clj-time "0.14.4"]
+                 [clj-time "0.15.0"]
                  [environ "1.1.0"]
 
                  [compojure "1.6.1"]

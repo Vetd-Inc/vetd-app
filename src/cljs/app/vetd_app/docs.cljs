@@ -126,22 +126,54 @@
                           :return nil
                           :form-doc fd}}})))
 
+(rf/reg-event-fx
+ :remove-prompt&response
+ (fn [{:keys [db]} [_ prompt-id response-id form-id doc-id]]
+   {:ws-send (remove nil?
+                     [(when (and prompt-id form-id)
+                         {:payload {:cmd :v/remove-prompt-from-form
+                                    :return nil
+                                    :prompt-id prompt-id
+                                    :form-id form-id}})
+                      (when (and response-id doc-id)
+                        {:payload {:cmd :v/remove-response-from-doc
+                                   :return nil
+                                   :response-id response-id
+                                   :doc-id doc-id}})])}))
+
+(rf/reg-event-fx
+ :propagate-prompt
+ (fn [{:keys [db]} [_ form-prompt-ref-id target-form-id]]
+   {:ws-send {:payload {:cmd :v/propagate-prompt
+                        :return nil
+                        :form-prompt-ref-id form-prompt-ref-id
+                        :target-form-id target-form-id}}}))
+
+(defn mk-form-doc-prompt-field-state*
+  [{:keys [sval nval dval jval] :as resp-field}]
+  (merge resp-field
+         {:state (r/atom (or dval nval sval jval
+                             ""))}))
+
 (defn mk-form-doc-prompt-field-state
-  [fields {:keys [id] :as prompt-field}]
-  (let [resp-fields (mapv (fn [{:keys [sval nval dval jval] :as resp-field}]
-                            (merge resp-field
-                                   {:state (r/atom (or dval nval sval jval
-                                                       ""))}))
-                          (or (not-empty (fields id))
-                              [{}]))]
+  [prompt-field response-fields]
+  (let [resp-fields (mapv mk-form-doc-prompt-field-state*
+                          response-fields)]
     (assoc prompt-field
            :response
            ;; TODO sort resp-fields by idx??
            (r/atom resp-fields))))
 
+(defn mk-form-doc-prompt-field-states
+  [prompt-fields response-fields-by-pf-id]
+  (for [{:keys [id] :as prompt-field} prompt-fields]
+    (mk-form-doc-prompt-field-state  prompt-field
+                                     (or (not-empty (response-fields-by-pf-id id))
+                                         [{}]))))
+
 (defn mk-form-doc-prompt-state
-  [responses {:keys [id] :as prompt}]
-  (let [{:keys [fields notes] :as response} (responses id)
+  [prompt response]
+  (let [{:keys [fields notes]} response
         response' (merge response
                          {:notes-state (r/atom (or notes ""))})
         fields' (group-by :pf-id
@@ -149,20 +181,27 @@
     (-> prompt
         (assoc :response response')
         (update :fields
-                (partial mapv
-                         (partial mk-form-doc-prompt-field-state
-                                  fields'))))))
+                mk-form-doc-prompt-field-states fields'))))
+
+(defn mk-form-doc-prompt-states
+  [prompts responses-by-prompt]
+  (-> (for [{:keys [id] :as prompt} prompts]
+        (-> (for [response (responses-by-prompt id)]
+              (mk-form-doc-prompt-state prompt
+                                        response))
+            not-empty
+            (or (mk-form-doc-prompt-state prompt
+                                          {}))))
+      flatten))
 
 (defn mk-form-doc-state
   [{:keys [responses] :as form-doc}]
-  (let [responses' (->> responses
-                        (group-by :prompt-id)
-                        (util/fmap first))]
-    (update form-doc
-            :prompts
-            (partial mapv
-                     (partial mk-form-doc-prompt-state
-                              responses')))))
+  (let [responses' (group-by :prompt-id
+                             responses)]
+    (update form-doc :prompts
+            mk-form-doc-prompt-states responses')))
+
+
 
 (defn c-prompt-field-default
   [{:keys [fname ftype fsubtype response] :as prompt-field}]
@@ -189,6 +228,7 @@
      [:textarea {:value @value&
                  :on-change (fn [this]
                               (reset! value& (-> this .-target .-value)))
+                 :data-prompt-field (str prompt-field)
                  :data-response-field-id response-id
                  :data-prompt-field-id prompt-field-id}]]))
 
@@ -204,6 +244,7 @@
                 :on-change (fn [this]
                              (reset! value& (-> this .-target .-value)))
                 :attrs {:type "number"
+                        :data-prompt-field (str prompt-field)
                         :data-response-field-id response-id
                         :data-prompt-field-id prompt-field-id}}]]))
 
@@ -219,12 +260,12 @@
          [:label fname])
        [:> ui/Dropdown {:value @value&
                         :onChange #(reset! value& (.-value %2))
-                        ;; :placeholder "Select Product"
                         :selection true
                         :options (cons {:key "nil"
                                         :text " - - - "
                                         :value nil}
                                        @enum-vals)
+                        :data-prompt-field (str prompt-field)
                         :data-response-field-id response-id
                         :data-prompt-field-id prompt-field-id}]])))
 
@@ -238,6 +279,9 @@
         {response-id :id prompt-field-id :pf-id} (first response)]
     (fn [{:keys [fname fsubtype response] :as prompt-field}]
       [:> ui/FormField
+       [:span {:data-prompt-field (str prompt-field)
+               :data-response-field-id response-id
+               :data-prompt-field-id prompt-field-id}]
        (when-not (= fname "value")
          [:label fname])
        [:> ui/Dropdown {:value (:id @state&)
@@ -253,9 +297,7 @@
                         :searchQuery (:text @state&)
                         :selectOnNavigation false
                         :text (:text @state&)
-                        :options @opts&
-                        :data-response-field-id response-id
-                        :data-prompt-field-id prompt-field-id}]])))
+                        :options @opts&}]])))
 
 (defn c-prompt-field-list
   [c-prompt-field-fn {:keys [fname ftype fsubtype response] :as prompt-field}]
@@ -286,14 +328,18 @@
                                  :response deref)])))
 
 (defn c-prompt-default
-  [{:keys [prompt descr fields]}]
+  [{:keys [id prompt descr fields response] :as p} form-id doc-id]
   [:div {:style {:margin "10px 0 40px 0"}}
    [:div {:style {:margin-bottom "5px"}}
-    prompt
+    [:span {:style {:padding-right "10px"}} prompt]
     (when descr
-      [:> ui/Popup {:trigger (r/as-element [:> ui/Icon {:name "info circle"}])
+      [:> ui/Popup {:trigger (r/as-element [:> ui/Icon {:name "info circle"
+                                                        :style {:padding-right "30px"}}])
                     :wide true}
-       descr])]
+       descr])
+    [:a
+     {:on-click #(rf/dispatch [:remove-prompt&response id (:id response) form-id doc-id ])}
+     "remove"]]
    (for [{:keys [idstr ftype fsubtype] :as f} fields]
      ^{:key (str "field" (:id f))}
      [c-prompt-field f])])
@@ -335,7 +381,7 @@
 	           [:div.user-name (:uname from-user)])
 	         (for [p (sort-by :sort prompts)]
 	           ^{:key (str "prompt" (:id p))}
-	           [(hooks/c-prompt :default) p])
+	           [(hooks/c-prompt :default) p id doc-id])
 	         (when show-submit
 	           [:> ui/Button {:color "blue"
 	                          :fluid true
@@ -353,6 +399,21 @@
                    "e" #'c-prompt-field-enum
                    "i" #'c-prompt-field-entity})
 
+
+(defn c-missing-prompts
+  [{prompts1 :prompts :as prod-prof-form} {prompts2 :prompts :keys [id] :as form-doc}]
+  (let [missing-prompt-ids (clojure.set/difference (->> prompts1 (mapv :id) set)
+                                                   (->> prompts2 (mapv :id) set))]
+    (when-not (empty? missing-prompt-ids)
+      [:div {:style {:margin "20px"}}
+       "Prompts available for propagation from template:"
+       (for [{:keys [prompt ref-id]} (->> prompts1
+                                          (filter #(-> % :id missing-prompt-ids))
+                                          (sort-by :sort))]
+         [:div {:style {:margin "5px"}} prompt
+          [:a {:style {:margin-left "10px"}
+               :on-click #(rf/dispatch [:propagate-prompt ref-id id])}
+           "add"]])])))
 
 ;; "data" can have term->field->value's
 ;;          and/or prompt-id->field->value's

@@ -263,8 +263,8 @@
            :cols [:id :subject]
            :rel :one-many}
 
-          {:tables [:vetd :responses
-                    :vetd :response_prompt]
+          {:tables [:vetd :response_prompt
+                    :vetd :responses]
            :fields [:subject-response-prompt]
            :cols [:subject :id]
            :rel :many-one}
@@ -285,7 +285,15 @@
                     :vetd :enum_vals]
            :fields [:vals :enum]
            :cols [:id :enum_id]
-           :rel :one-many}]})
+           :rel :one-many}
+
+          ;; dummy to make ha/sync-query work for links table
+          {:tables [:vetd :links
+                    :vetd :rounds_by_category]
+           :fields [:dummy]
+           :cols [:id :category_id]
+           :rel :one-many}
+          ]})
 
 
 #_
