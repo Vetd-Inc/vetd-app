@@ -1,0 +1,1 @@
+{:output-wrapper false, :externs ["closure-js/externs"], :libs ["closure-js/libs"], :optimizations :simple, :output-to "cypress/integration/main.js", :output-dir "cypress/integration/assets"}

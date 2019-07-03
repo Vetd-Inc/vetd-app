@@ -1,0 +1,1 @@
+{:output-wrapper false, :externs ["closure-js/externs"], :libs ["closure-js/libs"], :optimizations :none, :main vetd-app.core-test, :output-to "cypress/integration/main.js", :output-dir "cypress/assets", :asset-path "assets"}

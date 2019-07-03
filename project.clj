@@ -186,12 +186,14 @@
                      ;;
                      ;; If you can live with :optimizations :simple, you
                      ;; can omit the weird :asset-path.
-                     :compiler     {:optimizations :advanced
+                     :compiler     {:optimizations :simple
                                     ;; :main          vetd-app.core-test
                                     :output-to     "cypress/integration/main.js"
-                                    :output-dir    "cypress/integration"
-                                    :closure-warnings {:externs-validation :off :non-standard-jsdoc :off}
-                                    :externs ["src/js/externs.js"]
+                                    :output-dir    "cypress/integration/assets"
+                                    ;; :output-dir    "target/cljsbuild/public/js/test-out"
+                                    ;; :closure-warnings {:externs-validation :off :non-standard-jsdoc :off}
+                                    ;; :externs ["src/js/externs.js"]
+                                    ;; :asset-path    "assets"
                                     ;; :asset-path "/js/full-out"
                                     ;; :output-dir    "target/cljsbuild/public/js/test-out"
                                     }

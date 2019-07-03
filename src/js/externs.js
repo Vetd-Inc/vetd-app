@@ -7,4 +7,5 @@ analytics.group;
 
 var startConfetti, stopConfetti;
 
-var cy;
+var cy, _chai; // not needed?
+_chai.Assertion;

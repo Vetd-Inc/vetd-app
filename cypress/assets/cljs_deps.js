@@ -1,0 +1,10 @@
+goog.addDependency("base.js", ['goog'], []);
+goog.addDependency("../cljs/core.js", ['cljs.core'], ['goog.string', 'goog.Uri', 'goog.object', 'goog.math.Integer', 'goog.string.StringBuffer', 'goog.array', 'goog.math.Long']);
+goog.addDependency("../process/env.js", ['process.env'], ['cljs.core']);
+goog.addDependency("../kit/core.js", ['kit.core'], ['cljs.core']);
+goog.addDependency("../latte/add.js", ['latte.add'], ['cljs.core', 'kit.core']);
+goog.addDependency("../clojure/set.js", ['clojure.set'], ['cljs.core']);
+goog.addDependency("../latte/overwrite.js", ['latte.overwrite'], ['cljs.core', 'kit.core']);
+goog.addDependency("../clojure/string.js", ['clojure.string'], ['goog.string', 'cljs.core', 'goog.string.StringBuffer']);
+goog.addDependency("../latte/chai.js", ['latte.chai'], ['cljs.core', 'latte.add', 'kit.core', 'clojure.set', 'latte.overwrite', 'clojure.string']);
+goog.addDependency("../vetd_app/core_test.js", ['vetd_app.core_test'], ['cljs.core', 'latte.chai']);

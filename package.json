@@ -6,7 +6,10 @@
   "directories": {
     "test": "test"
   },
-  "dependencies": {},
+  "dependencies": {
+    "chai": "^4.2.0",
+    "mocha": "^6.1.4"
+  },
   "devDependencies": {
     "cypress": "^3.3.2"
   },
