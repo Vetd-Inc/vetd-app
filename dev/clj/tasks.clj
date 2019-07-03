@@ -252,3 +252,8 @@
 #_ (do (create-vendor-profiles 20000)
        (create-product-profiles 50000)
        (convert-ids->base31))
+
+;; get up and running fast
+#_ (do (create-vendor-profiles 100)
+       (create-product-profiles 50)
+       (convert-ids->base31))

@@ -1,0 +1,1 @@
+{:output-wrapper true, :externs ["src/js/externs.js" "closure-js/externs"], :libs ["closure-js/libs"], :optimizations :advanced, :output-to "cypress/integration/main.js", :output-dir "cypress/integration", :closure-warnings {:externs-validation :off, :non-standard-jsdoc :off}}

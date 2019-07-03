@@ -114,8 +114,7 @@
                  :source-map "target/cljsbuild/public/js/full.js.map"
                  :optimizations :advanced
                  :pretty-print false
-                 :closure-warnings
-                 {:externs-validation :off :non-standard-jsdoc :off}
+                 :closure-warnings {:externs-validation :off :non-standard-jsdoc :off}
                  :externs ["src/js/externs.js"]}}}}
              :aot :all
              :uberjar-name "vetd-app.jar"
@@ -187,11 +186,21 @@
                      ;;
                      ;; If you can live with :optimizations :simple, you
                      ;; can omit the weird :asset-path.
-                     :compiler     {:optimizations :none
-                                    :main          vetd-app.core-test
-                                    :output-to     "main.js"
-                                    :output-dir    "resources/public/js/test"
-                                    :asset-path    "http://localhost:3000/js/test"}}]}
+                     :compiler     {:optimizations :advanced
+                                    ;; :main          vetd-app.core-test
+                                    :output-to     "cypress/integration/main.js"
+                                    :output-dir    "cypress/integration"
+                                    :closure-warnings {:externs-validation :off :non-standard-jsdoc :off}
+                                    :externs ["src/js/externs.js"]
+                                    ;; :asset-path "/js/full-out"
+                                    ;; :output-dir    "target/cljsbuild/public/js/test-out"
+                                    }
+                     ;; :compiler     {:optimizations :none
+                     ;;                :main          vetd-app.core-test
+                     ;;                :output-to     "main.js"
+                     ;;                :output-dir    "cypress/integration"
+                     ;;                :asset-path    "http://localhost:3000/js/test"}
+                     }]}
                   :doo {:build "test"}
                   :source-paths ["dev/clj"]
                   :resource-paths ["env/dev/resources"]

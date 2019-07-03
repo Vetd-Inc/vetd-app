@@ -6,3 +6,5 @@ analytics.page;
 analytics.group;
 
 var startConfetti, stopConfetti;
+
+var cy;
