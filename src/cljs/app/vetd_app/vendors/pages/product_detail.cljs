@@ -60,7 +60,7 @@
                                        :text cname})})))))))
 
 (defn c-product
-  [{:keys [id pname form-doc created updated]}]
+  [{:keys [id pname form-doc created updated actions]}]
   (let [pname& (r/atom pname)
         save-doc-fn& (atom nil)]
     (fn [{:keys [id pname form-doc created updated]}]
@@ -80,8 +80,7 @@
         [:div "updated: " (.toString (js/Date. updated))]       
         [docs/c-form-maybe-doc
          (docs/mk-form-doc-state form-doc
-                                 {"product/categories"
-                                  {"auto-populate" auto-populate-categories}})
+                                 actions)
          {:return-save-fn& save-doc-fn&
           :c-wrapper [:div]}]
         [:> ui/Button {:color "teal"
@@ -95,6 +94,18 @@
                        :fluid true
                        :on-click #(rf/dispatch [:v/delete-product id])}
          "DELETE  Product"]]])))
+
+(defn mk-actions
+  [{prompts1 :prompts :as prod-prof-form} {prompts2 :prompts form-id :id :keys [doc-id] :as form-doc}]
+  (let [missing-prompt-ids (clojure.set/difference (some->> prompts2 (mapv :id) set)
+                                                   (->> prompts1 (mapv :id) set))
+        remove-fn (fn [{:keys [id response]}]
+                    (rf/dispatch [:remove-prompt&response id (:id response) form-id doc-id]))]
+    (->> (for [{:keys [id prompt ref-id response]} (filter #(-> % :id missing-prompt-ids)
+                                                           prompts2)]
+           [id {"remove" remove-fn}])
+         (into {"product/categories"
+                {"auto-populate" auto-populate-categories}}))))
 
 (defn c-page []
   (let [org-id& (rf/subscribe [:org-id])
@@ -164,4 +175,5 @@
                                 :form-doc
                                 (or form-doc'
                                     (assoc prod-prof-form
-                                           :product {:id id})))]]))]))))
+                                           :product {:id id}))
+                                :actions (mk-actions prod-prof-form form-doc'))]]))]))))

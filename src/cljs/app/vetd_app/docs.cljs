@@ -172,15 +172,18 @@
                                          [{}]))))
 
 (defn mk-form-doc-prompt-state
-  [{:keys [term] :as prompt} response prompt-actions]
+  [{:keys [term id] :as prompt} response prompt-actions]
   (let [{:keys [fields notes]} response
         response' (merge response
                          {:notes-state (r/atom (or notes ""))})
         fields' (group-by :pf-id
                           fields)]
     (-> prompt
-        (assoc :actions (when (and prompt-actions term)
-                          (prompt-actions term)))
+        (assoc :actions (when prompt-actions
+                          (not-empty
+                           (merge
+                            (prompt-actions term)
+                            (prompt-actions id)))))
         (assoc :response response')
         (update :fields
                 mk-form-doc-prompt-field-states fields'))))
@@ -339,9 +342,6 @@
                                                         :style {:padding-right "30px"}}])
                     :wide true}
        descr])
-    [:a
-     {:on-click #(rf/dispatch [:remove-prompt&response id (:id response) form-id doc-id ])}
-     "remove"]
     (for [[k f] actions]
       [:a {:on-click (partial f p)
            :style {:margin-left "10px"}} k])]
