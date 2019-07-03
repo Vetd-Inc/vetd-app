@@ -96,7 +96,6 @@
                        :on-click #(rf/dispatch [:v/delete-product id])}
          "DELETE  Product"]]])))
 
-
 (defn c-page []
   (let [org-id& (rf/subscribe [:org-id])
         product-idstr& (rf/subscribe [:product-idstr])
