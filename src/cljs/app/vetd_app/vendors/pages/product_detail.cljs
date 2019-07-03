@@ -45,21 +45,19 @@
                                      :_limit 1}
                           [[:categories  {:ref-deleted nil}
                             [:id :cname]]]]]}])]
-    (r/track!  
-      #(reset!
-       (-> prompt
-           :fields
-           first
-           :response)
-       (->> @cats&
-            :products
-            first
-            :categories
-            (mapv (fn [{:keys [id cname]}]
-                    {:state
-                     (r/atom
-                      {:id id
-                       :text cname})})))))))
+    (r/track! #(reset! (-> prompt
+                           :fields
+                           first
+                           :response)
+                       (->> @cats&
+                            :products
+                            first
+                            :categories
+                            (mapv (fn [{:keys [id cname]}]
+                                    {:state
+                                     (r/atom
+                                      {:id id
+                                       :text cname})})))))))
 
 (defn c-product
   [{:keys [id pname form-doc created updated]}]
@@ -163,9 +161,8 @@
            (when id
              [:div
               [docs/c-missing-prompts prod-prof-form form-doc]
-              [c-product
-               (assoc p
-                      :form-doc
-                      (or form-doc'
-                          (assoc prod-prof-form
-                                 :product {:id id})))]]))]))))
+              [c-product (assoc p
+                                :form-doc
+                                (or form-doc'
+                                    (assoc prod-prof-form
+                                           :product {:id id})))]]))]))))
