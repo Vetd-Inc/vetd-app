@@ -407,9 +407,6 @@
 
 (defn c-missing-prompts
   [{prompts1 :prompts :as prod-prof-form} {prompts2 :prompts :keys [id] :as form-doc}]
-  (def ppf1 prod-prof-form)
-  #_ (cljs.pprint/pprint ppf1)
-  (def fd1 form-doc)
   (let [missing-prompt-ids (clojure.set/difference (->> prompts1 (mapv :id) set)
                                                    (->> prompts2 (mapv :id) set))]
     (when-not (empty? missing-prompt-ids)
