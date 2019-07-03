@@ -410,7 +410,7 @@
     [c-display-field 6 "Model" (v-fn :product/pricing-model) :has-markdown? true]
     [c-display-field 5 "Free Trial"
      (when (has-data? (v-fn :product/free-trial?))
-       (if (= "yes" (v-fn :product/free-trial?))
+       (if (= "yes" (s/lower-case (v-fn :product/free-trial?)))
          (if (has-data? (v-fn :product/free-trial-terms))
            (v-fn :product/free-trial-terms)
            "Yes")

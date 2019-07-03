@@ -4,6 +4,7 @@
             [vetd-app.ui :as ui]
             [vetd-app.util :as util]
             [vetd-app.docs :as docs]
+            [clojure.string :as s]
             [reagent.core :as r]
             [re-frame.core :as rf]))
 
@@ -46,7 +47,7 @@
      [:div {:style {:display "inline-block"
                     :height 26}}
       [bc/c-categories product]]
-     (when (= "yes" (product-v-fn :product/free-trial?))
+     (when (= "yes" (s/lower-case (product-v-fn :product/free-trial?)))
        [bc/c-free-trial-tag])
      [:> ui/Grid {:columns "equal"
                   :style {:margin-top 4}}
