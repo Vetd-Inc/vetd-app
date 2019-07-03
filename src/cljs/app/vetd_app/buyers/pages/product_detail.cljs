@@ -130,7 +130,7 @@
    [:div {:style {:display "inline-block"
                   :height 26}}
     [bc/c-categories product]]
-   (when (= "yes" (v-fn :product/free-trial?))
+   (when (= "yes" (s/lower-case (v-fn :product/free-trial?)))
      [bc/c-free-trial-tag])
    [:> ui/Grid {:columns "equal"
                 :style {:margin-top 4}}
