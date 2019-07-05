@@ -47,7 +47,9 @@
      [:div {:style {:display "inline-block"
                     :height 26}}
       [bc/c-categories product]]
-     (when (= "yes" (s/lower-case (product-v-fn :product/free-trial?)))
+     (when (some-> (v-fn :product/free-trial?)
+                   s/lower-case
+                   (= "yes"))
        [bc/c-free-trial-tag])
      [:> ui/Grid {:columns "equal"
                   :style {:margin-top 4}}
