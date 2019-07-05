@@ -338,6 +338,61 @@
                 :tag true}
    "Free Trial"])
 
+(defn c-product-logo
+  [filename] ; TODO make config var 's3-base-url'
+  [:div.product-logo {:style {:background-image (str "url('https://s3.amazonaws.com/vetd-logos/" filename "')")}}])
+
+(defn c-pricing-estimate
+  [v-fn]
+  (let [value (v-fn :preposal/pricing-estimate "value" :nval)
+        unit (v-fn :preposal/pricing-estimate "unit")
+        details (v-fn :preposal/pricing-estimate "details")]
+    (if value
+      [:span (util/currency-format value) " / " unit " " [:small "(estimate) " details]]
+      details)))
+
+(defn product-description
+  [v-fn]
+  (-> (product-v-fn :product/description)
+      (or "No description available.")
+      (util/truncate-text 175)))
+
+(defn c-tags
+  [product v-fn]
+  [:<>
+   [c-categories product]
+   (when (some-> (v-fn :product/free-trial?)
+                 s/lower-case
+                 (= "yes"))
+     [bc/c-free-trial-tag])])
+
+(defn c-preposal-list-item
+  [{:keys [product org on-click-fn]}]
+  (let [{:keys [pname logo rounds]} product
+        {:keys [oname]} org]
+    [:> ui/Item {:on-click on-click-fn}
+     [c-product-logo logo]
+     [:> ui/ItemContent
+      [:> ui/ItemHeader pname " " [:small " by " oname]
+       (when (empty? rounds) 
+         [c-reject-preposal-button id rejected? {:icon? true}])]
+      [:> ui/ItemMeta [c-pricing-estimate preposal-v-fn]]
+      [:> ui/ItemDescription (product-description product-v-fn)]
+      [:> ui/ItemExtra
+       (when (and (empty? (:rounds product))
+                  (not rejected?))
+         [c-start-round-button {:etype :product
+                                :eid (:id product)
+                                :ename (:pname product)
+                                :props {:floated "right"}
+                                :popup-props {:position "bottom right"}}])
+       [c-tags product product-v-fn]]]
+     (when (not-empty (:rounds product))
+       [c-round-in-progress {:round-idstr (-> product :rounds first :idstr)
+                             :props {:ribbon "right"
+                                     :style {:position "absolute"
+                                             :marginLeft -14}}}])]))
+
 (defn has-data?
   [value]
   (not-empty (str value)))

@@ -154,7 +154,7 @@
     [:> ui/Item {:on-click #(rf/dispatch (if preposal-responses
                                            [:b/nav-preposal-detail (-> docs first :idstr)]
                                            [:b/nav-product-detail idstr]))}
-     [:div.product-logo {:style {:background-image (str "url('https://s3.amazonaws.com/vetd-logos/" logo "')")}}]
+     [bc/c-product-logo logo]
      [:> ui/ItemContent
       [:> ui/ItemHeader
        pname " " [:small " by " (:oname vendor)]]

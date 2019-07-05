@@ -79,18 +79,21 @@
  :preposals-filter)
 
 ;;;; Components
-(defn c-preposal
+#_(defn c-preposal
   "Component to display Preposal as a list item."
   [{:keys [id idstr result product from-org responses]}]
-  (let [pricing-estimate-value (docs/get-field-value responses "Pricing Estimate" "value" :nval)
-        pricing-estimate-unit (docs/get-field-value responses "Pricing Estimate" "unit" :sval)
-        pricing-estimate-details (docs/get-field-value responses "Pricing Estimate" "details" :sval)
+  (let [preposal-v-fn (partial docs/get-value-by-term response-prompts)
+        product-v-fn (partial docs/get-value-by-term (-> product
+                                                         :form-docs
+                                                         first
+                                                         :response-prompts))
+        pricing-estimate-value (preposal-v-fn :preposal/pricing-estimate "value" :nval)
+        pricing-estimate-unit (preposal-v-fn :preposal/pricing-estimate "unit")
+        pricing-estimate-details (preposal-v-fn :preposal/pricing-estimate "details")
         product-profile-responses (-> product :form-docs first :response-prompts)
         rejected? (= 0 result)]
     [:> ui/Item {:onClick #(rf/dispatch [:b/nav-preposal-detail idstr])}
-     ;; TODO make config var 's3-base-url'
-     [:div.product-logo {:style {:background-image
-                                 (str "url('https://s3.amazonaws.com/vetd-logos/" (:logo product) "')")}}]
+     [bc/c-product-logo (:logo product)]
      [:> ui/ItemContent
       [:> ui/ItemHeader
        (:pname product) " " [:small " by " (:oname from-org)]
@@ -106,12 +109,8 @@
           [:small "(estimate) " pricing-estimate-details]]
          pricing-estimate-details)]
       [:> ui/ItemDescription
-       (util/truncate-text (or  (docs/get-field-value-from-response-prompt
-                                 product-profile-responses
-                                 "Describe your product or service"
-                                 "value"
-                                 :sval)
-                                "No description available.")
+       (util/truncate-text (or (product-v-fn :product/description)
+                               "No description available.")
                            175)]
       [:> ui/ItemExtra
        (when (and (empty? (:rounds product))
@@ -122,8 +121,9 @@
                                    :props {:floated "right"}
                                    :popup-props {:position "bottom right"}}])
        [bc/c-categories product]
-       (when (= "Yes" (docs/get-field-value-from-response-prompt
-                       product-profile-responses "Do you offer a free trial?" "value" :sval))
+       (when (-> (product-v-fn :product/free-trial?)
+                 s/lower-case
+                 (= "yes"))
          [bc/c-free-trial-tag])]]
      (when (not-empty (:rounds product))
        [bc/c-round-in-progress {:round-idstr (-> product :rounds first :idstr)
@@ -257,7 +257,7 @@
                     (if (seq preposals)
                       (for [preposal preposals]
                         ^{:key (:id preposal)}
-                        [c-preposal preposal])
+                        [bc/c-preposal-list-item preposal])
                       [:> ui/Segment {:placeholder true}
                        [:> ui/Header {:icon true}
                         [:> ui/Icon {:name "wpforms"}]
