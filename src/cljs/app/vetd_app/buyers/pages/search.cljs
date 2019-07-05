@@ -253,11 +253,10 @@
                                                    :_limit 1
                                                    :doc-deleted nil}
                                        [:id
-                                        [:response-prompts
-                                         {:prompt-prompt ["Describe your product or service"
-                                                          "Do you offer a free trial?"]
-                                          :ref_deleted nil}
-                                         [:id :prompt-id :notes :prompt-prompt
+                                        [:response-prompts {:prompt-term ["product/description"
+                                                                          "product/free-trial?"]
+                                                            :ref_deleted nil}
+                                         [:id :prompt-id :notes :prompt-prompt :prompt-term
                                           [:response-prompt-fields
                                            [:id :prompt-field-fname :idx :sval :nval :dval]]]]]]
                                       [:forms {:ftype "preposal" ; preposal requests

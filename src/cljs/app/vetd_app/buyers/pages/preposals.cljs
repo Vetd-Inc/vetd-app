@@ -4,6 +4,7 @@
             [vetd-app.ui :as ui]
             [vetd-app.util :as util]
             [vetd-app.docs :as docs]
+            [clojure.string :as s]
             [reagent.core :as r]
             [re-frame.core :as rf]
             [re-com.core :as rc]))
@@ -145,9 +146,10 @@
                                             (= result 0)))))
       (not-empty features) (filter (fn [{:keys [product]}]
                                      (if (features "free-trial")
-                                       (= "Yes"
+                                       (= "yes"
                                           (some-> product :form-docs first :response-prompts
-                                                  (docs/get-value-by-term :product/free-trial?)))
+                                                  (docs/get-value-by-term :product/free-trial?)
+                                                  s/lower-case))
                                        true)))
       (not-empty categories) (#(->> (for [{:keys [product] :as preposal} %
                                           category (:categories product)]
