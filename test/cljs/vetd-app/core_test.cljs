@@ -1,21 +1,37 @@
 (ns vetd-app.core-test
   (:require-macros [latte.core :refer [before describe it]])
-  (:require [latte.chai :refer [expect]])
-  (:refer-clojure :exclude [first get]))
+  (:require [cljs.test :refer-macros [deftest is testing run-tests]])
+  ;; (:require [latte.chai :refer [expect]])
+  (:refer-clojure :exclude [first get document])
+  
+  )
 
 (def cy js/cy)
 
 (describe "Login"
           (before []
-                  (.visit cy "http://localhost:8080"))
+                  (.visit cy "http://localhost:5080"))
 
           (it "logs in" []
-              (.. cy (get "#name") (type "Pikachu"))
-              (.. cy (get "#submit") (click))
               (.. cy
-                  (get "#pokémon")
+                  (get ".ui.input input")
                   (first)
-                  ;; See https://docs.cypress.io/api/commands/should.html#Function
-                  (should (fn [pokémon]
-                            (expect pokémon :to.have.length 1)
-                            (expect pokémon :to.contain "Pikachu"))))))
+                  (type "a@a.com"))
+              (.. cy
+                  (get ".ui.input input")
+                  (eq 1) 
+                  (type "aaaaaaaa"))
+              (.. cy
+                  (get "button")
+                  (contains "Log In")
+                  (click))
+              (.. cy
+                  (get ".ui.input"))
+              ;; (.. cy
+              ;;     (document)
+              ;;     (its "URL")
+              ;;     (notEqual "login")
+              ;;     ;; See https://docs.cypress.io/api/commands/should.html#Function
+              ;;     ;; (should (fn [hey] true))
+              ;;     )
+              ))
