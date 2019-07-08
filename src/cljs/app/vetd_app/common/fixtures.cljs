@@ -1,5 +1,6 @@
 (ns vetd-app.common.fixtures
   (:require [vetd-app.ui :as ui]
+            [clojure.string :as s]
             [reagent.core :as r]
             [re-frame.core :as rf]))
 
@@ -9,6 +10,26 @@
                    :active active
                    :on-click #(rf/dispatch event)}
    text])
+
+(defn c-avatar
+  [user-name]
+  (let [parts (s/split user-name " ")]
+    [:> ui/Popup
+     {:position "bottom right"
+      :on "click"
+      :content (r/as-element
+                [:div 
+                 [:h5 {:style {:text-align "right"}}
+                  user-name]
+                 [:> ui/Button {:color "white"
+                                :fluid true
+                                :on-click #(rf/dispatch [:logout])}
+                  "Log Out"]])
+      :trigger (r/as-element
+                [:div.avatar-initials (->> (select-keys parts [0 (dec (count parts))])
+                                           vals
+                                           (map first)
+                                           (apply str))])}]))
 
 (defn c-top-nav [top-nav-pages]
   (let [page& (rf/subscribe [:page])
@@ -31,10 +52,8 @@
           ;; [:> ui/MenuItem
           ;;    [:> ui/Input {:icon "search"
           ;;                  :placeholder "Search for products & categories..."}]]
-          [:> ui/MenuItem (str @user-name& " @ " @org-name&)]
-          [:> ui/MenuItem {:name "logout"
-                           :active false
-                           :on-click #(rf/dispatch [:logout])}]]]))))
+          [:> ui/MenuItem {:style {:padding-right 0}}
+           @org-name& (c-avatar @user-name&)]]]))))
 
 (defn container [body]
   [:<>

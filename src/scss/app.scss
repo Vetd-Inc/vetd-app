@@ -90,6 +90,26 @@ a.teal:hover {
   }
 }
 
+.avatar-initials {
+  width: 40px;
+  height: 40px;
+  margin-left: 10px;
+  padding-left: 2px;
+  text-transform: uppercase;
+  font-size: 15px;
+  text-align: center;
+  line-height: 40px;
+  letter-spacing: 2px;
+  border-radius: 50%;
+  background: linear-gradient(to right, #6dccce, #32abde) !important;
+  color: white;
+  cursor: pointer;
+
+  &:hover {
+    filter: brightness(1.1);
+  }
+}
+
 /* used by:
  *   Preposals & Preposal Detail */
 .container-with-sidebar {
