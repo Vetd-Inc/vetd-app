@@ -11,7 +11,7 @@
                    :on-click #(rf/dispatch event)}
    text])
 
-(defn avatar
+(defn c-avatar
   [user-name]
   (let [parts (s/split user-name " ")]
     [:> ui/Popup
@@ -53,7 +53,7 @@
           ;;    [:> ui/Input {:icon "search"
           ;;                  :placeholder "Search for products & categories..."}]]
           [:> ui/MenuItem {:style {:padding-right 0}}
-           @org-name& (avatar @user-name&)]]]))))
+           @org-name& (c-avatar @user-name&)]]]))))
 
 (defn container [body]
   [:<>
