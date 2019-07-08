@@ -129,8 +129,6 @@
         ^{:key (:id o)}
         [c-org-search-result o])]]))
 
-
-
 (defn c-page []
   (let [search-query& (rf/subscribe [:search-term])]
     (fn []

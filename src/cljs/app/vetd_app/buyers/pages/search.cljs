@@ -145,37 +145,29 @@
 
 
 ;;;; Components
-(defn c-product-search-result
-  [{:keys [id idstr pname short-desc logo categories
-           rounds form-docs forms docs vendor] :as product} ]
-  (let [product-profile-responses (-> form-docs first :response-prompts)
-        preposal-responses (-> docs first :responses)
-        requested-preposal? (not-empty forms)]
+(defn c-product-list-item
+  [{:keys [id idstr pname short-desc logo 
+           rounds form-docs forms docs vendor] :as product}]
+  (let [requested-preposal? (not-empty forms)
+        preposal-responses (-> docs
+                               first
+                               :response-prompts)
+        preposal-v-fn (->> preposal-responses
+                           (partial docs/get-value-by-term))
+        product-v-fn (->> form-docs
+                          first
+                          :response-prompts
+                          (partial docs/get-value-by-term))]
     [:> ui/Item {:on-click #(rf/dispatch (if preposal-responses
                                            [:b/nav-preposal-detail (-> docs first :idstr)]
                                            [:b/nav-product-detail idstr]))}
-     [:div.product-logo {:style {:background-image (str "url('https://s3.amazonaws.com/vetd-logos/" logo "')")}}]
+     [bc/c-product-logo logo]
      [:> ui/ItemContent
       [:> ui/ItemHeader
        pname " " [:small " by " (:oname vendor)]]
       [:> ui/ItemMeta
        (if preposal-responses
-         (let [p-e-details (docs/get-field-value preposal-responses
-                                                 "Pricing Estimate"
-                                                 "details"
-                                                 :sval)]
-           (if-let [p-e-value (docs/get-field-value preposal-responses
-                                                    "Pricing Estimate"
-                                                    "value"
-                                                    :nval)]
-             [:span
-              (util/currency-format p-e-value)
-              " / "
-              (docs/get-field-value preposal-responses "Pricing Estimate" "unit" :sval)
-              " "
-              [:small "(estimate) " p-e-details]]
-             (when p-e-details
-               (str "Price Estimate: " p-e-details))))
+         [bc/c-pricing-estimate preposal-v-fn]
          (if requested-preposal?
            "PrePosal Requested"
            [:<>
@@ -184,19 +176,8 @@
                                  (.stopPropagation e)
                                  (rf/dispatch [:b/create-preposal-req product vendor]))}
              "Request a PrePosal"]]))]
-      [:> ui/ItemDescription
-       (util/truncate-text (or  (docs/get-field-value-from-response-prompt
-                                 product-profile-responses
-                                 "Describe your product or service"
-                                 "value"
-                                 :sval)
-                                "No description available.")
-                           175)]
-      [:> ui/ItemExtra
-       [bc/c-categories product]
-       (when (= "Yes" (docs/get-field-value-from-response-prompt
-                       product-profile-responses "Do you offer a free trial?" "value" :sval))
-         [bc/c-free-trial-tag])]]
+      [:> ui/ItemDescription (bc/product-description product-v-fn)]
+      [:> ui/ItemExtra [bc/c-tags product product-v-fn]]]
      (when (not-empty rounds)
        [bc/c-round-in-progress {:round-idstr (-> rounds first :idstr)
                                 :props {:ribbon "right"
@@ -208,7 +189,7 @@
   [:> ui/ItemGroup {:class "results"}
    (for [product products]
      ^{:key (:id product)}
-     [c-product-search-result product])])
+     [c-product-list-item product])])
 
 (defn c-category-search-results
   [{:keys [cname id idstr rounds] :as cat}]
@@ -253,11 +234,10 @@
                                                    :_limit 1
                                                    :doc-deleted nil}
                                        [:id
-                                        [:response-prompts
-                                         {:prompt-prompt ["Describe your product or service"
-                                                          "Do you offer a free trial?"]
-                                          :ref_deleted nil}
-                                         [:id :prompt-id :notes :prompt-prompt
+                                        [:response-prompts {:prompt-term ["product/description"
+                                                                          "product/free-trial?"]
+                                                            :ref_deleted nil}
+                                         [:id :prompt-id :notes :prompt-prompt :prompt-term
                                           [:response-prompt-fields
                                            [:id :prompt-field-fname :idx :sval :nval :dval]]]]]]
                                       [:forms {:ftype "preposal" ; preposal requests
@@ -270,13 +250,10 @@
                                         [:from-user [:id :uname]]
                                         [:to-org [:id :oname]]
                                         [:to-user [:id :uname]]
-                                        [:responses
-                                         [:id :prompt-id :notes
-                                          [:prompt
-                                           [:id :prompt]]
-                                          [:fields
-                                           [:id :pf-id :idx :sval :nval :dval :jval
-                                            [:prompt-field [:id :fname]]]]]]]]
+                                        [:response-prompts {:ref_deleted nil}
+                                         [:id :prompt-id :notes :prompt-prompt :prompt-term
+                                          [:response-prompt-fields
+                                           [:id :prompt-field-fname :idx :sval :nval :dval]]]]]]
                                       [:rounds {:buyer-id org-id
                                                 :deleted nil}
                                        [:id :idstr :created :status]]

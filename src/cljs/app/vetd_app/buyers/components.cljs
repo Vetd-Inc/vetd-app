@@ -338,6 +338,34 @@
                 :tag true}
    "Free Trial"])
 
+(defn c-product-logo
+  [filename] ; TODO make config var 's3-base-url'
+  [:div.product-logo {:style {:background-image (str "url('https://s3.amazonaws.com/vetd-logos/" filename "')")}}])
+
+(defn c-pricing-estimate
+  [v-fn]
+  (let [value (v-fn :preposal/pricing-estimate "value" :nval)
+        unit (v-fn :preposal/pricing-estimate "unit")
+        details (v-fn :preposal/pricing-estimate "details")]
+    (if value
+      [:span (util/currency-format value) " / " unit " " [:small "(estimate) " details]]
+      details)))
+
+(defn product-description
+  [v-fn]
+  (-> (v-fn :product/description)
+      (or "No description available.")
+      (util/truncate-text 175)))
+
+(defn c-tags
+  [product v-fn]
+  [:<>
+   [c-categories product]
+   (when (some-> (v-fn :product/free-trial?)
+                 s/lower-case
+                 (= "yes"))
+     [c-free-trial-tag])])
+
 (defn has-data?
   [value]
   (not-empty (str value)))

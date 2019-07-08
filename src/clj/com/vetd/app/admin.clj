@@ -11,19 +11,27 @@
 (defn search-orgs->ids
   [q]
   (if (not-empty q)
-    (let [ids (db/hs-query {:select [[:o.id :oid]]
+    (let [;; exact match
+          id (db/hs-query {:select [[:o.id :oid]]
+                           :from [[:orgs :o]]
+                           :where [:and
+                                   [:= :o.deleted nil]
+                                   [:= :o.oname q]]
+                           :limit 1})
+          ;; regex
+          ids (db/hs-query {:select [[:o.id :oid]]
                             :from [[:orgs :o]]
                             :where [:and
                                     [:= :o.deleted nil]
                                     [(keyword "~*") :o.oname (str ".*?\\m" q ".*")]]
-                            :limit 30})
+                            :limit 20})
+          ;; make sure exact match (if exists) is at the top
           vids (->> ids
+                    (concat id)
                     (map :oid)
                     distinct)]
       {:org-ids vids})
     {:org-ids []}))
-
-
 
 (defn delete-product-id-from-round
   [product-id round-id]

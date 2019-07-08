@@ -47,7 +47,7 @@
      [:div {:style {:display "inline-block"
                     :height 26}}
       [bc/c-categories product]]
-     (when (some-> (v-fn :product/free-trial?)
+     (when (some-> (product-v-fn :product/free-trial?)
                    s/lower-case
                    (= "yes"))
        [bc/c-free-trial-tag])
