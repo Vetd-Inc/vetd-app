@@ -79,39 +79,25 @@
  :preposals-filter)
 
 ;;;; Components
-#_(defn c-preposal
-  "Component to display Preposal as a list item."
-  [{:keys [id idstr result product from-org responses]}]
-  (let [preposal-v-fn (partial docs/get-value-by-term response-prompts)
-        product-v-fn (partial docs/get-value-by-term (-> product
-                                                         :form-docs
-                                                         first
-                                                         :response-prompts))
-        pricing-estimate-value (preposal-v-fn :preposal/pricing-estimate "value" :nval)
-        pricing-estimate-unit (preposal-v-fn :preposal/pricing-estimate "unit")
-        pricing-estimate-details (preposal-v-fn :preposal/pricing-estimate "details")
-        product-profile-responses (-> product :form-docs first :response-prompts)
-        rejected? (= 0 result)]
-    [:> ui/Item {:onClick #(rf/dispatch [:b/nav-preposal-detail idstr])}
-     [bc/c-product-logo (:logo product)]
+(defn c-preposal-list-item
+  [{:keys [id idstr result response-prompts product from-org] :as preposal}]
+  (let [{:keys [pname logo rounds]} product
+        {:keys [oname]} from-org
+        rejected? (= 0 result)
+        preposal-v-fn (partial docs/get-value-by-term response-prompts)
+        product-v-fn (->> product
+                          :form-docs
+                          first
+                          :response-prompts
+                          (partial docs/get-value-by-term))]
+    [:> ui/Item {:on-click #(rf/dispatch [:b/nav-preposal-detail idstr])}
+     [bc/c-product-logo logo]
      [:> ui/ItemContent
-      [:> ui/ItemHeader
-       (:pname product) " " [:small " by " (:oname from-org)]
-       (when (empty? (:rounds product)) 
+      [:> ui/ItemHeader pname " " [:small " by " oname]
+       (when (empty? rounds) 
          [bc/c-reject-preposal-button id rejected? {:icon? true}])]
-      [:> ui/ItemMeta
-       (if pricing-estimate-value
-         [:span
-          (util/currency-format pricing-estimate-value)
-          " / "
-          pricing-estimate-unit
-          " "
-          [:small "(estimate) " pricing-estimate-details]]
-         pricing-estimate-details)]
-      [:> ui/ItemDescription
-       (util/truncate-text (or (product-v-fn :product/description)
-                               "No description available.")
-                           175)]
+      [:> ui/ItemMeta [bc/c-pricing-estimate preposal-v-fn]]
+      [:> ui/ItemDescription (bc/product-description product-v-fn)]
       [:> ui/ItemExtra
        (when (and (empty? (:rounds product))
                   (not rejected?))
@@ -120,11 +106,7 @@
                                    :ename (:pname product)
                                    :props {:floated "right"}
                                    :popup-props {:position "bottom right"}}])
-       [bc/c-categories product]
-       (when (-> (product-v-fn :product/free-trial?)
-                 s/lower-case
-                 (= "yes"))
-         [bc/c-free-trial-tag])]]
+       [bc/c-tags product product-v-fn]]]
      (when (not-empty (:rounds product))
        [bc/c-round-in-progress {:round-idstr (-> product :rounds first :idstr)
                                 :props {:ribbon "right"
@@ -190,13 +172,10 @@
                                       [:from-user [:id :uname]]
                                       [:to-org [:id :oname]]
                                       [:to-user [:id :uname]]
-                                      [:responses {:ref-deleted nil}
-                                       [:id :prompt-id :notes
-                                        [:prompt 
-                                         [:id :prompt]]
-                                        [:fields {:deleted nil}
-                                         [:id :pf-id :idx :sval :nval :dval :jval
-                                          [:prompt-field [:id :fname]]]]]]]]]}])]
+                                      [:response-prompts {:ref_deleted nil}
+                                       [:id :prompt-id :notes :prompt-prompt :prompt-term
+                                        [:response-prompt-fields
+                                         [:id :prompt-field-fname :idx :sval :nval :dval]]]]]]]}])]
         (fn []
           (if (= :loading @preps&)
             [cc/c-loader]
@@ -257,7 +236,7 @@
                     (if (seq preposals)
                       (for [preposal preposals]
                         ^{:key (:id preposal)}
-                        [bc/c-preposal-list-item preposal])
+                        [c-preposal-list-item preposal])
                       [:> ui/Segment {:placeholder true}
                        [:> ui/Header {:icon true}
                         [:> ui/Icon {:name "wpforms"}]
