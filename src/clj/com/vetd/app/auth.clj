@@ -83,6 +83,13 @@
     (when (bhsh/check pwd pwd-hsh)
       user)))
 
+(defn valid-creds-by-id?
+  "If valid email / password combination, return that user map."
+  [user-id pwd]
+  (when-let [{pwd-hsh :pwd :as user} (select-user-by-id user-id :id :uname :email :pwd)]
+    (when (bhsh/check pwd pwd-hsh)
+      user)))
+
 (defn select-memb-by-ids
   [user-id org-id]
   (-> [[:memberships
@@ -295,6 +302,15 @@
   (db/update-any! {:id user-id
                    :uname uname}
                   :users))
+
+(defmethod com/handle-ws-inbound :update-user-password
+  [{:keys [user-id pwd new-pwd]} ws-id sub-fn]
+  (if (valid-creds-by-id? user-id pwd)
+    (do (db/update-any! {:id user-id
+                         :pwd (bhsh/derive new-pwd)}
+                        :users)
+        {:success? true})
+    {:success? false}))
 
 ;; TODO logout!!!!!!!!!!!!!!!
 
