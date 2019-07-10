@@ -290,6 +290,12 @@
     (delete-memb id))
   (create-or-find-memb user-id org-id))
 
+(defmethod com/handle-ws-inbound :update-user
+  [{:keys [user-id uname]} ws-id sub-fn]
+  (db/update-any! {:id user-id
+                   :uname uname}
+                  :users))
+
 ;; TODO logout!!!!!!!!!!!!!!!
 
 ;;;; Link action handlers
