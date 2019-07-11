@@ -13,6 +13,7 @@
 ;; Sendgrid template id's
 (def verify-account-template-id "d-d1f3509a0c664b4d84a54777714d5272")
 (def password-reset-template-id "d-a782e6648d054f34b8453cbf8e14c007")
+(def invite-user-to-org-template-id "d-5c8e34b8db4145d6b443472c5bf03d9c")
 
 (defn select-org-by-name [org-name]
   (-> [[:orgs {:oname org-name}
@@ -195,6 +196,16 @@
         {})
     {:no-account? true}))
 
+(defn send-invite-user-to-org-email
+  [{:keys [email org-id] :as invite}]
+  (let [link-key (l/create {:cmd :invite-user-to-org
+                            :input-data (select-keys invite
+                                                     [:email :org-id])})]
+    (ec/send-template-email
+     email
+     {:invite-link (str l/base-url link-key)}
+     {:template-id invite-user-to-org-template-id})))
+
 (defn select-session-by-id
   [session-token]
   (-> [[:sessions
@@ -306,9 +317,8 @@
 (defmethod com/handle-ws-inbound :update-user-password
   [{:keys [user-id pwd new-pwd]} ws-id sub-fn]
   (if (valid-creds-by-id? user-id pwd)
-    (do (db/update-any! {:id user-id
-                         :pwd (bhsh/derive new-pwd)}
-                        :users)
+    (do (change-password user-id
+                         (bhsh/derive new-pwd))
         {:success? true})
     {:success? false}))
 
@@ -326,6 +336,14 @@
         {:session-token (-> user :id insert-session :token)}))))
 
 (defmethod l/action :password-reset
+  [{:keys [input-data] :as link}]
+  (let [{:keys [email pwd]} input-data]
+    (when-let [{:keys [id]} (select-user-by-email email)]
+      (do (change-password id pwd)
+          (l/update-expires link "read" (+ (ut/now) (* 1000 60 5))) ; allow read for next 5 mins
+          {:session-token (:token (insert-session id))}))))
+
+(defmethod l/action :invite-user-to-org
   [{:keys [input-data] :as link}]
   (let [{:keys [email pwd]} input-data]
     (when-let [{:keys [id]} (select-user-by-email email)]
