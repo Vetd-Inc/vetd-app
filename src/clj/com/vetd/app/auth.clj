@@ -72,6 +72,8 @@
     (-> (db/insert! :users
                     {:id id
                      :idstr idstr
+                     :created (ut/now-ts)
+                     :updated (ut/now-ts)
                      :uname uname
                      :email email
                      :pwd pwd-hash})
@@ -123,6 +125,8 @@
     (-> (db/insert! :memberships
                     {:id id
                      :idstr idstr
+                     :created (ut/now-ts)
+                     :updated (ut/now-ts)
                      :user_id user-id
                      :org_id org-id})
         first)))

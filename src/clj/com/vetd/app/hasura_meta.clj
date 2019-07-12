@@ -96,6 +96,12 @@
            :fields [:admin-groups :admin-orgs]
            :cols [:id :admin_org_id]
            :rel :one-many}
+
+          {:tables [:vetd :orgs
+                    :vetd :group_org_memberships]
+           :fields [:group-memberships :orgs]
+           :cols [:id :org_id]
+           :rel :one-many}
           
           {:tables [:vetd :groups
                     :vetd :orgs_by_group]
