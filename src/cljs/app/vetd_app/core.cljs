@@ -26,6 +26,7 @@
             [vetd-app.common.pages.signup :as p-signup]
             [vetd-app.common.pages.login :as p-login]
             [vetd-app.common.pages.forgot-password :as p-forgot-password]
+            [vetd-app.common.pages.user-profile :as p-user-profile]
             [reagent.core :as r]
             [re-frame.core :as rf]
             [secretary.core :as sec]
@@ -38,6 +39,7 @@
                   {:login #'p-login/c-page
                    :signup #'p-signup/c-page
                    :forgot-password #'p-forgot-password/c-page
+                   :user-profile #'p-user-profile/c-page
                    :b/search #'p-bsearch/c-page
                    :b/preposals #'p-bpreposals/c-page
                    :b/preposal-detail #'p-bpreposal-detail/c-page
@@ -55,6 +57,7 @@
                   {:login #'pub-fix/container
                    :signup #'pub-fix/container
                    :forgot-password #'pub-fix/container
+                   :user-profile #'b-fix/container ;; TODO different container?
                    :b/search #'b-fix/container
                    :b/preposals #'b-fix/container
                    :b/preposal-detail #'b-fix/container
@@ -175,6 +178,11 @@
   (rf/dispatch [:route-forgot-password]))
 (sec/defroute forgot-password-prefill-path "/forgot-password/:email-address" [email-address]
   (rf/dispatch [:route-forgot-password email-address]))
+
+(sec/defroute user-profile-path "/profile" []
+  (rf/dispatch [:route-user-profile]))
+
+
 
 ;; Link - special links for actions such as reset password, or account verification
 (sec/defroute link-path "/l/:k" [k]
