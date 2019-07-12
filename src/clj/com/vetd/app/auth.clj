@@ -206,6 +206,7 @@
                                                       :org-id
                                                       :from-user-id])
                             :max-uses-action 10
+                            :max-uses-read 10                            
                             :expires-action (+ (ut/now) (* 1000 60 60 24 30))})]
     (ec/send-template-email
      email
@@ -356,6 +357,7 @@
 
 (defmethod l/action :invite-user-to-org
   [{:keys [input-data] :as link} account]
+  (l/update-expires link "read" (+ (ut/now) (* 1000 60 5))) ; allow read for next 5 mins
   (let [{:keys [email org-id]} input-data]
     (if (-> account :email nil?)
       (if-let [{:keys [id]} (select-user-by-email email)]

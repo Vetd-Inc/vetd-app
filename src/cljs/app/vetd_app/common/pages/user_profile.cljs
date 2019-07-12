@@ -8,7 +8,7 @@
 (rf/reg-event-fx
  :nav-user-profile
  (fn [_ [_ email-address]]
-   {:nav {:path (str "/profile/" email-address)}}))
+   {:nav {:path "/profile/"}}))
 
 (rf/reg-event-fx
  :route-user-profile

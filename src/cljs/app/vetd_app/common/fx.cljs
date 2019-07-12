@@ -30,6 +30,12 @@
                       :local-store {:session-token (:session-token output-data)}
                       :dispatch-later [{:ms 100 :dispatch [:ws-get-session-user]}
                                        {:ms 200 :dispatch [:nav-home]}]}
+     :invite-user-to-org {:toast {:type "success"
+                                  :title "Invite redeemed"
+                                  :message "If there's no session, then you need to make a login"}
+                          :local-store {:session-token (:session-token output-data)}
+                          :dispatch-later [{:ms 100 :dispatch [:ws-get-session-user]}
+                                           {:ms 200 :dispatch [:nav-home]}]}
      {:toast {:type "error"
               :title "That link is expired or invalid."}
       :dispatch [:nav-home]})))

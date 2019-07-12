@@ -22,6 +22,7 @@
             [vetd-app.vendors.pages.profile :as p-vprofile]
             [vetd-app.vendors.pages.rounds :as p-vrounds]
             [vetd-app.vendors.pages.round-product-detail :as p-vround-product-detail]
+            [vetd-app.orgs.pages.users :as p-ousers]
             [vetd-app.common.fixtures :as pub-fix]
             [vetd-app.common.pages.signup :as p-signup]
             [vetd-app.common.pages.login :as p-login]
@@ -51,7 +52,8 @@
                    :v/product-detail #'p-vprod-detail/c-page
                    :v/profile #'p-vprofile/c-page
                    :v/rounds #'p-vrounds/c-page
-                   :v/round-product-detail #'p-vround-product-detail/c-page})
+                   :v/round-product-detail #'p-vround-product-detail/c-page
+                   :o/users #'p-ousers/c-page})
 
 (hooks/reg-hooks! hooks/c-container
                   {:login #'pub-fix/container
@@ -69,7 +71,8 @@
                    :v/product-detail #'v-fix/container
                    :v/profile #'v-fix/container
                    :v/rounds #'v-fix/container
-                   :v/round-product-detail #'v-fix/container})
+                   :v/round-product-detail #'v-fix/container
+                   :o/users #'b-fix/appendable-container})
 
 
 (rf/reg-event-db
@@ -182,7 +185,8 @@
 (sec/defroute user-profile-path "/profile" []
   (rf/dispatch [:route-user-profile]))
 
-
+(sec/defroute org-users-path "/o/users" []
+  (rf/dispatch [:o/route-users]))
 
 ;; Link - special links for actions such as reset password, or account verification
 (sec/defroute link-path "/l/:k" [k]
