@@ -1508,8 +1508,22 @@
                                       :join [[:orgs :o]
                                              [:= :o.id :gom.group_id]]}
                               :owner :vetd
-                              :grants {:hasura [:SELECT]}}]]])
+                              :grants {:hasura [:SELECT]}}]]
+
+   [[2019 7 12 00 2]
+
+    [:create-table {:schema :vetd
+                    :name :group_discounts
+                    :columns {:id [:bigint :NOT :NULL]
+                              :idstr [:text]
+                              :created [:timestamp :with :time :zone]
+                              :updated [:timestamp :with :time :zone]
+                              :deleted [:timestamp :with :time :zone]
+                              :group_id [:bigint]
+                              :product_id [:bigint]
+                              :descr [:text]}
+                    :owner :vetd
+                    :grants {:hasura [:SELECT]}}]]])
 
 #_(mig/mk-migration-files migrations
                           "migrations")
-

@@ -49,6 +49,32 @@
                      :admin_org_id admin-org-id})
         first)))
 
+(defn delete-group-discount-by-ids
+  [group-id product-id]
+  (db/update-deleted-where
+   :group_discounts
+   [:and
+    [:= :group_id group-id]
+    [:= :product_id product-id]]))
+
+(defn insert-group-discount
+  [group-id product-id descr]
+  (let [[id idstr] (ut/mk-id&str)]
+    (-> (db/insert! :group_discounts
+                    {:id id
+                     :idstr idstr
+                     :created (ut/now-ts)
+                     :updated (ut/now-ts)
+                     :group_id group-id
+                     :product_id product-id
+                     :descr descr})
+        first)))
+
+(defn set-group-discount
+  [group-id product-id descr]
+  (delete-group-discount-by-ids group-id product-id)
+  (insert-group-discount group-id product-id descr))
+
 (defmethod com/handle-ws-inbound :create-group
   [{:keys [group-name admin-org-id]} ws-id sub-fn]
   (insert-group group-name admin-org-id)
@@ -57,4 +83,9 @@
 (defmethod com/handle-ws-inbound :add-org-to-group
   [{:keys [org-id group-id]} ws-id sub-fn]
   (create-or-find-memb org-id group-id)
+  {})
+
+(defmethod com/handle-ws-inbound :set-group-discount
+  [{:keys [group-id product-id descr]} ws-id sub-fn]
+  (set-group-discount group-id product-id descr)
   {})
