@@ -108,6 +108,18 @@
            :fields [:orgs]
            :cols [:id :group_id]
            :rel :many-many}
+
+          {:tables [:vetd :groups
+                    :vetd :products_by_group_discount]
+           :fields [:discounts]
+           :cols [:id :group_id]
+           :rel :one-many}
+
+          {:tables [:vetd :products
+                    :vetd :groups_by_product_discount]
+           :fields [:discounts]
+           :cols [:id :group_id]
+           :rel :one-many}
           
           {:tables [:vetd :products
                     :vetd :rounds_by_product]

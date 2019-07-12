@@ -1523,7 +1523,114 @@
                               :product_id [:bigint]
                               :descr [:text]}
                     :owner :vetd
-                    :grants {:hasura [:SELECT]}}]]])
+                    :grants {:hasura [:SELECT]}}]]
+
+   [[2019 7 12 00 3]
+
+    [:create-or-replace-view {:schema :vetd
+                              :name :orgs_by_group
+                              :honey {:select [[:gom.id :ref_id]
+                                               [:gom.deleted :ref_deleted]
+                                               :gom.group_id
+                                               :o.id
+                                               :o.idstr                                    
+                                               :o.created
+                                               :o.deleted
+                                               :o.oname
+                                               :o.buyer_qm 
+                                               :o.vendor_qm
+                                               :o.short_desc
+                                               :o.long_desc
+                                               :o.url
+                                               :o.vendor_profile_doc_id]
+                                      :from [[:group_org_memberships :gom]]
+                                      :join [[:orgs :o]
+                                             [:= :o.id :gom.org_id]]}
+                              :owner :vetd
+                              :grants {:hasura [:SELECT]}}]
+    
+    [:create-or-replace-view {:schema :vetd
+                              :name :products_by_group_discount
+                              :honey {:select [[:gd.id :ref_id]
+                                               [:gd.deleted :ref_deleted]
+                                               :gd.group_id
+                                               :p.id
+                                               :p.idstr                                    
+                                               :p.created
+                                               :p.deleted
+                                               :p.pname
+                                               :p.vendor_id
+                                               :p.short_desc
+                                               :p.long_desc
+                                               :p.logo
+                                               :p.url
+                                               :p.profile_doc_id]
+                                      :from [[:group_discounts :gd]]
+                                      :join [[:products :p]
+                                             [:= :p.id :gd.product_id]]}
+                              :owner :vetd
+                              :grants {:hasura [:SELECT]}}]
+
+    [:create-or-replace-view {:schema :vetd
+                              :name :groups_by_product_discount
+                              :honey {:select [[:gd.id :ref_id]
+                                               [:gd.deleted :ref_deleted]
+                                               :gd.product_id
+                                               :g.id
+                                               :g.idstr                                    
+                                               :g.created
+                                               :g.deleted
+                                               :g.gname
+                                               :g.admin_org_id]
+                                      :from [[:group_discounts :gd]]
+                                      :join [[:groups :g]
+                                             [:= :g.id :gd.group_id]]}
+                              :owner :vetd
+                              :grants {:hasura [:SELECT]}}]]
+
+   [[2019 7 12 00 4]
+    
+    [:create-or-replace-view {:schema :vetd
+                              :name :products_by_group_discount
+                              :honey {:select [[:gd.id :ref_id]
+                                               [:gd.deleted :ref_deleted]
+                                               [:gd.descr :group_discount_descr]
+                                               :gd.descr
+                                               :gd.group_id
+                                               :p.id
+                                               :p.idstr                                    
+                                               :p.created
+                                               :p.deleted
+                                               :p.pname
+                                               :p.vendor_id
+                                               :p.short_desc
+                                               :p.long_desc
+                                               :p.logo
+                                               :p.url
+                                               :p.profile_doc_id]
+                                      :from [[:group_discounts :gd]]
+                                      :join [[:products :p]
+                                             [:= :p.id :gd.product_id]]}
+                              :owner :vetd
+                              :grants {:hasura [:SELECT]}}]
+
+    [:create-or-replace-view {:schema :vetd
+                              :name :groups_by_product_discount
+                              :honey {:select [[:gd.id :ref_id]
+                                               [:gd.deleted :ref_deleted]
+                                               [:gd.descr :group_discount_descr]
+                                               :gd.product_id
+                                               :g.id
+                                               :g.idstr                                    
+                                               :g.created
+                                               :g.deleted
+                                               :g.gname
+                                               :g.admin_org_id]
+                                      :from [[:group_discounts :gd]]
+                                      :join [[:groups :g]
+                                             [:= :g.id :gd.group_id]]}
+                              :owner :vetd
+                              :grants {:hasura [:SELECT]}}]]])
 
 #_(mig/mk-migration-files migrations
                           "migrations")
