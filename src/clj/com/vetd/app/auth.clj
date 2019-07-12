@@ -109,8 +109,6 @@
       ha/sync-query
       :memberships))
 
-
-
 (defn select-memb-by-id
   [id]
   (-> [[:memberships
@@ -197,10 +195,14 @@
     {:no-account? true}))
 
 (defn send-invite-user-to-org-email
-  [{:keys [email org-id] :as invite}]
+  [{:keys [email org-id from-user-id] :as invite}]
   (let [link-key (l/create {:cmd :invite-user-to-org
                             :input-data (select-keys invite
-                                                     [:email :org-id])})]
+                                                     [:email
+                                                      :org-id
+                                                      :from-user-id])
+                            :max-uses-action 10
+                            :expires-action (+ (ut/now) (* 1000 60 60 24 30))})]
     (ec/send-template-email
      email
      {:invite-link (str l/base-url link-key)}
@@ -294,6 +296,17 @@
   [{:keys [email pwd] :as req} ws-id sub-fn]
   (password-reset-request req))
 
+(defmethod com/handle-ws-inbound :invite-user-to-org
+  [{:keys [email org-id from-user-id] :as req} ws-id sub-fn]
+  (future (send-invite-user-to-org-email req))
+  {})
+
+#_ (com/handle-ws-inbound {:cmd :invite-user-to-org
+                           :email "bill@vetd.com"
+                           :org-id 272814405099
+                           :from-user-id 0}
+                          nil nil)
+
 (defmethod com/handle-ws-inbound :create-membership
   [{:keys [user-id org-id]} ws-id sub-fn]
   (create-or-find-memb user-id org-id))
@@ -326,7 +339,7 @@
 
 ;;;; Link action handlers
 (defmethod l/action :create-verified-account
-  [{:keys [input-data] :as link}]
+  [{:keys [input-data] :as link} _]
   (let [{:keys [uname email pwd org-name org-url org-type]} input-data]
     (when-not (select-user-by-email email) ; rare, but someone created an account with this email sometime after the link was made
       (let [user (insert-user uname email pwd)
@@ -336,7 +349,7 @@
         {:session-token (-> user :id insert-session :token)}))))
 
 (defmethod l/action :password-reset
-  [{:keys [input-data] :as link}]
+  [{:keys [input-data] :as link} _]
   (let [{:keys [email pwd]} input-data]
     (when-let [{:keys [id]} (select-user-by-email email)]
       (do (change-password id pwd)
@@ -344,9 +357,17 @@
           {:session-token (:token (insert-session id))}))))
 
 (defmethod l/action :invite-user-to-org
-  [{:keys [input-data] :as link}]
-  (let [{:keys [email pwd]} input-data]
-    (when-let [{:keys [id]} (select-user-by-email email)]
-      (do (change-password id pwd)
-          (l/update-expires link "read" (+ (ut/now) (* 1000 60 5))) ; allow read for next 5 mins
-          {:session-token (:token (insert-session id))}))))
+  [{:keys [input-data] :as link} account]
+  (let [{:keys [email org-id]} input-data]
+    (if (-> account :email nil?)
+      (if-let [{:keys [id]} (select-user-by-email email)]
+        (do (create-or-find-memb id org-id)
+            {:session-token (-> id insert-session :token)})
+        {:session-token nil})
+      (let [{:keys [uname pwd]} account
+            {:keys [id]} (insert-user uname
+                                      email
+                                      (bhsh/derive pwd))]
+        (when (and id org-id)
+          (create-or-find-memb id org-id)
+          {:session-token (-> id insert-session :token)})))))
