@@ -1436,7 +1436,15 @@
                     :owner :vetd
                     :grants {:hasura [:SELECT]}}]
 
-    [:alter-table {:schema :vetd, :name :links, :pk :id}]]])
+    [:alter-table {:schema :vetd, :name :links, :pk :id}]]
+
+   [[2019 7 12 00 00]
+    
+    [:alter-table {:schema :vetd
+                   :name :memberships
+                   :columns
+                   {:add {:status [:text]}}}]]])
 
 #_(mig/mk-migration-files migrations
                           "migrations")
+
