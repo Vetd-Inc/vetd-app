@@ -16,7 +16,9 @@
               [:vetd :responses_by_doc] [[:vetd :responses]]
               [:vetd :response_prompt_by_doc] [[:vetd :responses]]
               [:vetd :response_prompt] [[:vetd :responses]]
-              [:vetd :form_docs] [[:vetd :forms]]}
+              [:vetd :form_docs] [[:vetd :forms]]
+              [:vetd :groups_by_org] [[:vetd :groups]]
+              [:vetd :orgs_by_group] [[:vetd :orgs]]}
    :rels [{:tables [:vetd :categories
                     :vetd :rounds_by_category]
            :fields [:rounds]
@@ -83,6 +85,24 @@
            :cols [:id :vendor_id]
            :rel :one-many}
 
+          {:tables [:vetd :orgs
+                    :vetd :groups_by_org]
+           :fields [:groups]
+           :cols [:id :org_id]
+           :rel :many-many}
+
+          {:tables [:vetd :orgs
+                    :vetd :groups]
+           :fields [:admin-groups :admin-orgs]
+           :cols [:id :admin_org_id]
+           :rel :one-many}
+          
+          {:tables [:vetd :groups
+                    :vetd :orgs_by_group]
+           :fields [:orgs]
+           :cols [:id :group_id]
+           :rel :many-many}
+          
           {:tables [:vetd :products
                     :vetd :rounds_by_product]
            :fields [:rounds]
@@ -292,8 +312,7 @@
                     :vetd :rounds_by_category]
            :fields [:dummy]
            :cols [:id :category_id]
-           :rel :one-many}
-          ]})
+           :rel :one-many}]})
 
 
 #_

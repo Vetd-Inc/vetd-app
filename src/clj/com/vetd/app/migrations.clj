@@ -1443,7 +1443,72 @@
     [:alter-table {:schema :vetd
                    :name :memberships
                    :columns
-                   {:add {:status [:text]}}}]]])
+                   {:add {:status [:text]}}}]]
+
+   [[2019 7 12 00 1]
+
+    [:create-table {:schema :vetd
+                    :name :groups
+                    :columns {:id [:bigint :NOT :NULL]
+                              :idstr [:text]
+                              :created [:timestamp :with :time :zone]
+                              :updated [:timestamp :with :time :zone]
+                              :deleted [:timestamp :with :time :zone]
+                              :gname [:text]
+                              :admin_org_id [:bigint]}
+                    :owner :vetd
+                    :grants {:hasura [:SELECT]}}]
+
+    [:create-table {:schema :vetd
+                    :name :group_org_memberships
+                    :columns {:id [:bigint :NOT :NULL]
+                              :idstr [:text]
+                              :created [:timestamp :with :time :zone]
+                              :updated [:timestamp :with :time :zone]
+                              :deleted [:timestamp :with :time :zone]
+                              :group_id [:bigint]
+                              :org_id [:bigint]}
+                    :owner :vetd
+                    :grants {:hasura [:SELECT]}}]
+
+    [:create-or-replace-view {:schema :vetd
+                              :name :groups_by_org
+                              :honey {:select [[:gom.id :ref_id]
+                                               [:gom.deleted :ref_deleted]
+                                               :gom.org_id
+                                               :g.id
+                                               :g.idstr                                    
+                                               :g.created
+                                               :g.deleted
+                                               :g.gname
+                                               :g.admin_org_id]
+                                      :from [[:group_org_memberships :gom]]
+                                      :join [[:groups :g]
+                                             [:= :g.id :gom.group_id]]}
+                              :owner :vetd
+                              :grants {:hasura [:SELECT]}}]
+
+    [:create-or-replace-view {:schema :vetd
+                              :name :orgs_by_group
+                              :honey {:select [[:gom.id :ref_id]
+                                               [:gom.deleted :ref_deleted]
+                                               :gom.group_id
+                                               :o.id
+                                               :o.idstr                                    
+                                               :o.created
+                                               :o.deleted
+                                               :o.oname
+                                               :o.buyer_qm 
+                                               :o.vendor_qm
+                                               :o.short_desc
+                                               :o.long_desc
+                                               :o.url
+                                               :o.vendor_profile_doc_id]
+                                      :from [[:group_org_memberships :gom]]
+                                      :join [[:orgs :o]
+                                             [:= :o.id :gom.group_id]]}
+                              :owner :vetd
+                              :grants {:hasura [:SELECT]}}]]])
 
 #_(mig/mk-migration-files migrations
                           "migrations")
