@@ -34,7 +34,8 @@
                                       :deleted nil}
                                [:oname
                                 [:memberships
-                                 [[:user
+                                 [:status
+                                  [:user
                                    [:id :idstr :uname :email]]]]]]]}])
         email& (r/atom "")]
     (fn []
