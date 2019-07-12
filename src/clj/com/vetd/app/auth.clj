@@ -13,6 +13,7 @@
 ;; Sendgrid template id's
 (def verify-account-template-id "d-d1f3509a0c664b4d84a54777714d5272")
 (def password-reset-template-id "d-a782e6648d054f34b8453cbf8e14c007")
+(def invite-user-to-org-template-id "d-5c8e34b8db4145d6b443472c5bf03d9c")
 
 (defn select-org-by-name [org-name]
   (-> [[:orgs {:oname org-name}
@@ -108,8 +109,6 @@
       ha/sync-query
       :memberships))
 
-
-
 (defn select-memb-by-id
   [id]
   (-> [[:memberships
@@ -194,6 +193,20 @@
     (do (future (send-password-reset-email creds))
         {})
     {:no-account? true}))
+
+(defn send-invite-user-to-org-email
+  [{:keys [email org-id from-user-id] :as invite}]
+  (let [link-key (l/create {:cmd :invite-user-to-org
+                            :input-data (select-keys invite
+                                                     [:email
+                                                      :org-id
+                                                      :from-user-id])
+                            :max-uses-action 10
+                            :expires-action (+ (ut/now) (* 1000 60 60 24 30))})]
+    (ec/send-template-email
+     email
+     {:invite-link (str l/base-url link-key)}
+     {:template-id invite-user-to-org-template-id})))
 
 (defn select-session-by-id
   [session-token]
@@ -283,6 +296,11 @@
   [{:keys [email pwd] :as req} ws-id sub-fn]
   (password-reset-request req))
 
+(defmethod com/handle-ws-inbound :invite-user-to-org
+  [{:keys [email org-id from-user-id] :as req} ws-id sub-fn]
+  (future (send-invite-user-to-org-email req))
+  {})
+
 (defmethod com/handle-ws-inbound :create-membership
   [{:keys [user-id org-id]} ws-id sub-fn]
   (create-or-find-memb user-id org-id))
@@ -306,9 +324,8 @@
 (defmethod com/handle-ws-inbound :update-user-password
   [{:keys [user-id pwd new-pwd]} ws-id sub-fn]
   (if (valid-creds-by-id? user-id pwd)
-    (do (db/update-any! {:id user-id
-                         :pwd (bhsh/derive new-pwd)}
-                        :users)
+    (do (change-password user-id
+                         (bhsh/derive new-pwd))
         {:success? true})
     {:success? false}))
 
@@ -316,7 +333,7 @@
 
 ;;;; Link action handlers
 (defmethod l/action :create-verified-account
-  [{:keys [input-data] :as link}]
+  [{:keys [input-data] :as link} _]
   (let [{:keys [uname email pwd org-name org-url org-type]} input-data]
     (when-not (select-user-by-email email) ; rare, but someone created an account with this email sometime after the link was made
       (let [user (insert-user uname email pwd)
@@ -326,9 +343,25 @@
         {:session-token (-> user :id insert-session :token)}))))
 
 (defmethod l/action :password-reset
-  [{:keys [input-data] :as link}]
+  [{:keys [input-data] :as link} _]
   (let [{:keys [email pwd]} input-data]
     (when-let [{:keys [id]} (select-user-by-email email)]
       (do (change-password id pwd)
           (l/update-expires link "read" (+ (ut/now) (* 1000 60 5))) ; allow read for next 5 mins
           {:session-token (:token (insert-session id))}))))
+
+(defmethod l/action :invite-user-to-org
+  [{:keys [input-data] :as link} account]
+  (let [{:keys [email org-id]} input-data]
+    (if (-> account :email nil?)
+      (if-let [{:keys [id]} (select-user-by-email email)]
+        (do (create-or-find-memb id org-id)
+            {:session-token (-> id insert-session :token)})
+        {:session-token nil})
+      (let [{:keys [uname pwd]} account
+            {:keys [id]} (insert-user uname
+                                      email
+                                      (bhsh/derive pwd))]
+        (when (and id org-id)
+          (create-or-find-memb id org-id)
+          {:session-token (-> id insert-session :token)})))))

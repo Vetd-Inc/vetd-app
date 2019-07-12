@@ -88,13 +88,13 @@
 ;; and should return whatever you want to be stored as output data.
 ;; Your return value can be anything that is EDN-encodeable.
 ;; Returning nil has the unique behavior of not setting output data.
-(defmulti action (fn [link]
+(defmulti action (fn [link args]
                    (if (actionable? link)
                      (:cmd link)
                      :invalid)))
 
 ;; called when link does not exist, is expired, or already did maximum action's
-(defmethod action :invalid [link] nil)
+(defmethod action :invalid [link args] nil)
 
 (defn update-output
   "Store the output of a link action."
@@ -124,16 +124,18 @@
                     :links)))
 
 (defn do-action
-  [link]
-  (let [result (action link)]
+  [link & [args]]
+  (let [result (action link args)]
     (when-not (nil? result)
       (update-output link result)
-      (inc-uses link "action"))))
+      (inc-uses link "action"))
+    result))
 
 (defn do-action-by-key
   "Given a link key, try to do its action."
-  [k]
-  (do-action (get-by-key k)))
+  [k & [args]]
+  (do-action (get-by-key k)
+             args))
 
 (defn read-output
   [{:keys [output-data] :as link}]
@@ -154,3 +156,13 @@
        :output-data output-data}
       {:cmd :invalid})
     {:cmd :invalid}))
+
+(defmethod com/handle-ws-inbound :do-link-action
+  [{:keys [link-key] :as req} ws-id sub-fn]
+  (if-let [link (get-by-key link-key)]
+    (if-let [output-data (do-action link req)]
+      {:cmd (:cmd link)
+       :output-data output-data}
+      {:cmd :invalid})
+    {:cmd :invalid}))
+
