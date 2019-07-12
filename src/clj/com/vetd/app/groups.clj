@@ -57,6 +57,11 @@
     [:= :group_id group-id]
     [:= :product_id product-id]]))
 
+(defn delete-group-discount
+  [group-discount-id]
+  (db/update-deleted :group_discounts
+                     group-discount-id))
+
 (defn insert-group-discount
   [group-id product-id descr]
   (let [[id idstr] (ut/mk-id&str)]
@@ -88,4 +93,9 @@
 (defmethod com/handle-ws-inbound :set-group-discount
   [{:keys [group-id product-id descr]} ws-id sub-fn]
   (set-group-discount group-id product-id descr)
+  {})
+
+(defmethod com/handle-ws-inbound :delete-group-discount
+  [{:keys [group-discount-id]} ws-id sub-fn]
+  (delete-group-discount group-discount-id)
   {})
