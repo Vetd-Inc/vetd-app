@@ -52,4 +52,4 @@
                                                     @email&
                                                     @org-id&
                                                     @user-id&])}
-             "Save Name"]]])))))
+             "Invite email"]]])))))
