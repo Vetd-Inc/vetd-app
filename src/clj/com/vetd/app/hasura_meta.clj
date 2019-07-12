@@ -18,7 +18,9 @@
               [:vetd :response_prompt] [[:vetd :responses]]
               [:vetd :form_docs] [[:vetd :forms]]
               [:vetd :groups_by_org] [[:vetd :groups]]
-              [:vetd :orgs_by_group] [[:vetd :orgs]]}
+              [:vetd :orgs_by_group] [[:vetd :orgs]]
+              [:vetd :groups_by_product_discount] [[:vetd :groups]]
+              [:vetd :products_by_group_discount] [[:vetd :products]]}
    :rels [{:tables [:vetd :categories
                     :vetd :rounds_by_category]
            :fields [:rounds]
