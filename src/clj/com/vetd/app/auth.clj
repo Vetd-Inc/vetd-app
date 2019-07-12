@@ -301,12 +301,6 @@
   (future (send-invite-user-to-org-email req))
   {})
 
-#_ (com/handle-ws-inbound {:cmd :invite-user-to-org
-                           :email "bill@vetd.com"
-                           :org-id 272814405099
-                           :from-user-id 0}
-                          nil nil)
-
 (defmethod com/handle-ws-inbound :create-membership
   [{:keys [user-id org-id]} ws-id sub-fn]
   (create-or-find-memb user-id org-id))
