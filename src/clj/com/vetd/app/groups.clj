@@ -87,7 +87,7 @@
 
 (defmethod com/handle-ws-inbound :add-org-to-group
   [{:keys [org-id group-id]} ws-id sub-fn]
-  (create-or-find-memb org-id group-id)
+  (create-or-find-group-org-memb org-id group-id)
   {})
 
 (defmethod com/handle-ws-inbound :set-group-discount

@@ -19,7 +19,8 @@
             [com.vetd.app.auth :as auth]
             com.vetd.app.buyers
             com.vetd.app.vendors
-            com.vetd.app.admin)
+            com.vetd.app.admin
+            com.vetd.app.groups)
   (:import [java.io ByteArrayInputStream ByteArrayOutputStream])
   (:gen-class))
 
