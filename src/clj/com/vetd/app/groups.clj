@@ -99,3 +99,4 @@
   [{:keys [group-discount-id]} ws-id sub-fn]
   (delete-group-discount group-discount-id)
   {})
+
