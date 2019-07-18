@@ -112,6 +112,7 @@
 (def StepDescription (component "Step" "Description"))
 (def Transition (component "Transition"))
 (def TransitionGroup (component "Transition" "Group"))
+(def TransitionablePortal (component "TransitionablePortal"))
 
 ;; Accordion
 (def Accordion (component "Accordion"))

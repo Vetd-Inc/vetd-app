@@ -123,13 +123,16 @@
  :<- [:user] 
  (fn [{:keys [uname]}] uname))
 
+(rf/reg-sub
+ :user-email
+ :<- [:user] 
+ (fn [{:keys [email]}] email))
 
 
 (rf/reg-fx
  :nav
  (fn nav-fx [{:keys [path query]}]
    (acct/navigate! path query)))
-
 
 (defn ->home-url
   [membs admin?]

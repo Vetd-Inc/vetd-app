@@ -14,16 +14,21 @@
 (defn c-account-actions
   [user-name]
   [:div.account-actions 
-   [:h5 {:style {:text-align "right"}}
-    user-name]
-   [:> ui/Button {:color "lightteal"
+   [:h5 user-name]
+   [:> ui/Button {:on-click #(rf/dispatch [:b/nav-settings])
+                  :color "lightteal"
                   :fluid true
-                  :on-click #(rf/dispatch [:b/nav-settings])}
-    "Settings"]
-   [:> ui/Button {:color "white"
+                  :icon true
+                  :labelPosition "left"}
+    "Settings"
+    [:> ui/Icon {:name "setting"}]]
+   [:> ui/Button {:on-click #(rf/dispatch [:logout])
+                  :color "white"
                   :fluid true
-                  :on-click #(rf/dispatch [:logout])}
-    "Log Out"]])
+                  :icon true
+                  :labelPosition "left"}
+    "Log Out"
+    [:> ui/Icon {:name "sign-out"}]]])
 
 (defn c-avatar-initials
   [user-name]
@@ -35,6 +40,7 @@
 
 (defn c-avatar
   [user-name org-name]
+  
   [:> ui/Popup
    {:position "bottom right"
     :on "click"
