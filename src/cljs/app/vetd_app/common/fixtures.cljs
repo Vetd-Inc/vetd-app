@@ -25,17 +25,21 @@
                   :on-click #(rf/dispatch [:logout])}
     "Log Out"]])
 
-(defn c-avatar
+(defn c-avatar-initials
   [user-name]
+  (let [parts (s/split user-name " ")]
+    [:div.avatar-initials (->> (select-keys parts [0 (dec (count parts))])
+                               vals
+                               (map first)
+                               (apply str))]))
+
+(defn c-avatar
+  [user-name org-name]
   [:> ui/Popup
    {:position "bottom right"
     :on "click"
     :content (r/as-element [c-account-actions user-name])
-    :trigger (r/as-element (let [parts (s/split user-name " ")]
-                             [:div.avatar-initials (->> (select-keys parts [0 (dec (count parts))])
-                                                        vals
-                                                        (map first)
-                                                        (apply str))]))}])
+    :trigger (r/as-element [:div.avatar-container org-name [c-avatar-initials user-name]])}])
 
 (defn c-top-nav [top-nav-pages]
   (let [page& (rf/subscribe [:page])
@@ -59,7 +63,7 @@
           ;;    [:> ui/Input {:icon "search"
           ;;                  :placeholder "Search for products & categories..."}]]
           [:> ui/MenuItem {:style {:padding-right 0}}
-           @org-name& (c-avatar @user-name&)]]]))))
+           [c-avatar @user-name& @org-name&]]]]))))
 
 (defn container [body]
   [:<>

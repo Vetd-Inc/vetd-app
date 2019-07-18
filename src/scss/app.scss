@@ -91,6 +91,7 @@ a.teal:hover {
 }
 
 .avatar-initials {
+  display: inline-block;
   width: 40px;
   height: 40px;
   margin-left: 10px;
@@ -103,10 +104,15 @@ a.teal:hover {
   border-radius: 50%;
   background: linear-gradient(to right, #6dccce, #32abde) !important;
   color: white;
+  transition: all 0.1s ease;
+}
+.avatar-container {
   cursor: pointer;
-
+  
   &:hover {
-    filter: brightness(1.1);
+    .avatar-initials {
+      filter: brightness(1.1);
+    }
   }
 }
 
