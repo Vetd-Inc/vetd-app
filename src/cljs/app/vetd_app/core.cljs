@@ -9,6 +9,7 @@
             vetd-app.common.fx
             [vetd-app.hooks :as hooks]
             [vetd-app.buyers.fixtures :as b-fix]
+            [vetd-app.buyers.pages.settings :as p-bsettings]
             [vetd-app.buyers.pages.search :as p-bsearch]
             [vetd-app.buyers.pages.preposals :as p-bpreposals]
             [vetd-app.buyers.pages.preposal-detail :as p-bpreposal-detail]
@@ -38,6 +39,7 @@
                   {:login #'p-login/c-page
                    :signup #'p-signup/c-page
                    :forgot-password #'p-forgot-password/c-page
+                   :b/settings #'p-bsettings/c-page
                    :b/search #'p-bsearch/c-page
                    :b/preposals #'p-bpreposals/c-page
                    :b/preposal-detail #'p-bpreposal-detail/c-page
@@ -55,6 +57,7 @@
                   {:login #'pub-fix/container
                    :signup #'pub-fix/container
                    :forgot-password #'pub-fix/container
+                   :b/settings #'b-fix/container
                    :b/search #'b-fix/container
                    :b/preposals #'b-fix/container
                    :b/preposal-detail #'b-fix/container
@@ -181,6 +184,9 @@
   (rf/dispatch [:read-link k]))
 
 ;; Buyers
+(sec/defroute buyers-settings-root "/b/settings" []
+  (rf/dispatch [:b/route-settings]))
+
 (sec/defroute buyers-search-root "/b/search" []
   (rf/dispatch [:b/route-search]))
 (sec/defroute buyers-search "/b/search/:search-term" [search-term]

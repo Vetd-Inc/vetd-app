@@ -18,7 +18,7 @@
     user-name]
    [:> ui/Button {:color "lightteal"
                   :fluid true
-                  :on-click #(rf/dispatch [:logout])}
+                  :on-click #(rf/dispatch [:b/nav-settings])}
     "Settings"]
    [:> ui/Button {:color "white"
                   :fluid true
