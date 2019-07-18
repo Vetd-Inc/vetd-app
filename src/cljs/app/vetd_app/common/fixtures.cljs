@@ -11,25 +11,31 @@
                    :on-click #(rf/dispatch event)}
    text])
 
+(defn c-account-actions
+  [user-name]
+  [:div.account-actions 
+   [:h5 {:style {:text-align "right"}}
+    user-name]
+   [:> ui/Button {:color "lightteal"
+                  :fluid true
+                  :on-click #(rf/dispatch [:logout])}
+    "Settings"]
+   [:> ui/Button {:color "white"
+                  :fluid true
+                  :on-click #(rf/dispatch [:logout])}
+    "Log Out"]])
+
 (defn c-avatar
   [user-name]
-  (let [parts (s/split user-name " ")]
-    [:> ui/Popup
-     {:position "bottom right"
-      :on "click"
-      :content (r/as-element
-                [:div 
-                 [:h5 {:style {:text-align "right"}}
-                  user-name]
-                 [:> ui/Button {:color "white"
-                                :fluid true
-                                :on-click #(rf/dispatch [:logout])}
-                  "Log Out"]])
-      :trigger (r/as-element
-                [:div.avatar-initials (->> (select-keys parts [0 (dec (count parts))])
-                                           vals
-                                           (map first)
-                                           (apply str))])}]))
+  [:> ui/Popup
+   {:position "bottom right"
+    :on "click"
+    :content (r/as-element [c-account-actions user-name])
+    :trigger (r/as-element (let [parts (s/split user-name " ")]
+                             [:div.avatar-initials (->> (select-keys parts [0 (dec (count parts))])
+                                                        vals
+                                                        (map first)
+                                                        (apply str))]))}])
 
 (defn c-top-nav [top-nav-pages]
   (let [page& (rf/subscribe [:page])

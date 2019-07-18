@@ -110,6 +110,16 @@ a.teal:hover {
   }
 }
 
+.account-actions {
+  .button.fluid {
+    margin-top: 10px;
+
+    &:first-of-type {
+      margin-top: 0;
+    }
+  }
+}
+
 /* used by:
  *   Preposals & Preposal Detail */
 .container-with-sidebar {
