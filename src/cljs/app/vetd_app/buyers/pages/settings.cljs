@@ -54,13 +54,15 @@
 (rf/reg-event-fx
  :update-user
  (fn [{:keys [db]} [_ uname]]
-   {:ws-send {:payload {:cmd :update-user
-                        :return {:handler :update-user-return
-                                 :uname uname}
-                        :user-id (-> db :user :id)
-                        :uname uname}}
-    :analytics/track {:event "Update Name"
-                      :props {:category "Account"}}}))
+   (let [user-id (-> db :user :id)]
+     {:ws-send {:payload {:cmd :update-user
+                          :return {:handler :update-user-return
+                                   :uname uname}
+                          :user-id user-id
+                          :uname uname}}
+      :analytics/track {:event "Update Name"
+                        :props {:category "Account"
+                                :label user-id}}})))
 
 (rf/reg-event-fx
  :update-user-return
@@ -70,6 +72,47 @@
             :title "Name Updated Successfully"
             :message (str "Hello " uname "!")}
     :dispatch [:stop-edit-field "uname"]}))
+
+(rf/reg-event-fx
+ :update-user-password.submit
+ (fn [{:keys [db]} [_ pwd new-pwd confirm-new-pwd]]
+   (let [[bad-input message]
+         (cond
+           (< (count new-pwd) 8) [:new-pwd "Password must be at least 8 characters."]
+           (not= new-pwd confirm-new-pwd) [:confirm-new-pwd "Password and Confirm Password must match."]
+           :else nil)]
+     (if bad-input
+       {:db (assoc-in db [:page-params :bad-input] bad-input)
+        :toast {:type "error" 
+                :title "Error"
+                :message message}}
+       {:db (assoc-in db [:page-params :bad-input] nil)
+        :dispatch [:update-user-password pwd new-pwd]}))))
+
+(rf/reg-event-fx
+ :update-user-password
+ (fn [{:keys [db]} [_ pwd new-pwd]]
+   (let [user-id (-> db :user :id)]
+     {:ws-send {:payload {:cmd :update-user-password
+                          :return {:handler :update-user-password-return}
+                          :user-id user-id
+                          :pwd pwd
+                          :new-pwd new-pwd}}
+      :analytics/track {:event "Update Password"
+                        :props {:category "Account"
+                                :label user-id}}})))
+
+(rf/reg-event-fx
+ :update-user-password-return
+ (fn [{:keys [db]} [_ results]]
+   (if (:success? results)
+     {:toast {:type "success"
+              :title "Password Updated Successfully"}
+      :dispatch [:stop-edit-field "pwd"]}
+     {:db (assoc-in db [:page-params :bad-input] :pwd)
+      :toast {:type "error" 
+              :title "Error"
+              :message "Current Password is incorrect."}})))
 
 ;;;; Subscriptions
 (rf/reg-sub
@@ -93,18 +136,18 @@
         bad-input& (rf/subscribe [:bad-input])]
     (fn []
       [:> ui/Form
-       [:> ui/Input
-        {:default-value @uname&
-         :auto-focus true
-         :fluid true
-         :style {:padding-top 7}
-         :error (= @bad-input& :uname)
-         :placeholder "Enter your full name..."
-         :on-change #(reset! uname& (-> % .-target .-value))
-         :action (r/as-element
-                  [:> ui/Button {:on-click #(rf/dispatch [:update-user-name.submit @uname&])
-                                 :color "blue"}
-                   "Save"])}]])))
+       [:> ui/FormField {:error (= @bad-input& :uname)
+                         :style {:padding-top 7}}
+        [:> ui/Input
+         {:default-value @uname&
+          :auto-focus true
+          :fluid true
+          :placeholder "Enter your full name..."
+          :on-change #(reset! uname& (-> % .-target .-value))
+          :action (r/as-element
+                   [:> ui/Button {:on-click #(rf/dispatch [:update-user-name.submit @uname&])
+                                  :color "blue"}
+                    "Save"])}]]])))
 
 (defn c-editable-field [field-text field-name value edit-text editor]
   (let [fields-editing& (rf/subscribe [:fields-editing])]
@@ -136,48 +179,53 @@
    "Edit Name"
    [c-edit-user-name user-name]])
 
-(defn c-edit-password []
+(defn c-edit-password [email]
   (let [pwd& (r/atom "")
         new-pwd& (r/atom "")
         confirm-new-pwd& (r/atom "")
         bad-input& (rf/subscribe [:bad-input])]
-    (fn []
+    (fn [email]
       [:> ui/Form
-       [:> ui/Input
-        {:type "password"
-         :auto-focus true
-         :placeholder "Current Password"
-         :fluid true
-         :style {:padding-top 7}
-         :error (= @bad-input& :pwd)
-         :on-change #(reset! pwd& (-> % .-target .-value))}]
-       [:> ui/Input
-        {:type "password"
-         :placeholder "New Password"
-         :fluid true
-         :style {:padding-top 7}
-         :error (= @bad-input& :new-pwd)
-         :on-change #(reset! new-pwd& (-> % .-target .-value))}]
-       [:> ui/Input
-        {:type "password"
-         :placeholder "Confirm New Password"
-         :fluid true
-         :style {:padding-top 7}
-         :error (= @bad-input& :confirm-new-pwd)
-         :on-change #(reset! confirm-new-pwd& (-> % .-target .-value))
-         :action (r/as-element
-                  [:> ui/Button {:on-click #(rf/dispatch [:update-user-password.submit @new-pwd&])
-                                 :color "blue"}
-                   "Save"])}]])))
+       [:> ui/FormField {:error (= @bad-input& :pwd)
+                         :style {:padding-top 7}}
+        [:> ui/Input
+         {:type "password"
+          :auto-focus true
+          :placeholder "Current Password"
+          :fluid true
+          :on-change #(reset! pwd& (-> % .-target .-value))}]
+        [:div {:style {:float "right"
+                       :margin-top 5
+                       :margin-bottom 18}}
+         [:a {:on-click #(rf/dispatch [:nav-forgot-password email])
+              :style {:font-size 13
+                      :opacity 0.75}}
+          "Forgot Password?"]]]
+       [:> ui/FormField {:error (= @bad-input& :new-pwd)}
+        [:> ui/Input
+         {:type "password"
+          :placeholder "New Password"
+          :fluid true
+          :on-change #(reset! new-pwd& (-> % .-target .-value))}]]
+       [:> ui/FormField {:error (= @bad-input& :confirm-new-pwd)}
+        [:> ui/Input
+         {:type "password"
+          :placeholder "Confirm New Password"
+          :fluid true
+          :on-change #(reset! confirm-new-pwd& (-> % .-target .-value))
+          :action (r/as-element
+                   [:> ui/Button {:on-click #(rf/dispatch [:update-user-password.submit @pwd& @new-pwd& @confirm-new-pwd&])
+                                  :color "blue"}
+                    "Save"])}]]])))
 
 (defn c-password-field
-  []
+  [email]
   [c-editable-field
    "Password"
    "pwd"
    "**********"
    "Change Password"
-   [c-edit-password]])
+   [c-edit-password email]])
 
 (defn c-page []
   (let [user-name& (rf/subscribe [:user-name])
@@ -192,5 +240,5 @@
           [c-user-name-field @user-name&]
           [c-field "Email" @user-email&]
           [c-field "Organization" @org-name&]
-          [c-password-field]]]
+          [c-password-field @user-email&]]]
         [:> ui/GridColumn {:computer 5 :mobile 0}]]])))
