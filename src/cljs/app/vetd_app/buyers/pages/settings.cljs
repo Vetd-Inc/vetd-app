@@ -37,6 +37,22 @@
    {:db (update-in db [:page-params :fields-editing] disj field)}))
 
 (rf/reg-event-fx
+ :update-user-name.submit
+ (fn [{:keys [db]} [_ uname]]
+   (let [[bad-input message]
+         (cond
+           (not (re-matches #".+\s.+" uname))
+           [:uname "Please enter your full name (first & last)."]
+           
+           :else nil)]
+     (if bad-input
+       {:db (assoc-in db [:page-params :bad-input] bad-input)
+        :toast {:type "error" 
+                :title "Error"
+                :message message}}
+       {:dispatch [:update-user uname]}))))
+
+(rf/reg-event-fx
  :update-user
  (fn [{:keys [db]} [_ uname]]
    {:ws-send {:payload {:cmd :update-user
@@ -74,17 +90,19 @@
 
 (defn c-edit-user-name
   [user-name]
-  (let [uname& (r/atom user-name)]
+  (let [uname& (r/atom user-name)
+        bad-input& (rf/subscribe [:bad-input])]
     (fn []
       [:> ui/Input
        {:default-value @uname&
         :auto-focus true
         :fluid true
         :style {:padding-top 7}
+        :error (= @bad-input& :uname)
         :placeholder "Enter your full name..."
         :on-change #(reset! uname& (-> % .-target .-value))
         :action (r/as-element
-                 [:> ui/Button {:on-click #(rf/dispatch [:update-user @uname&])
+                 [:> ui/Button {:on-click #(rf/dispatch [:update-user-name.submit @uname&])
                                 :color "blue"}
                   "Save"])}])))
 

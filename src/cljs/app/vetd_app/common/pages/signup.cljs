@@ -26,7 +26,7 @@
  (fn [{:keys [db]} [_ {:keys [uname email pwd cpwd org-name terms-agree] :as account}]]
    (let [[bad-input message]
          (cond
-           (not (re-matches #".*\s.*" uname)) [:uname "Please enter your full name (first & last)."]
+           (not (re-matches #".+\s.+" uname)) [:uname "Please enter your full name (first & last)."]
            (not (re-matches #"^\S+@\S+\.\S+$" email)) [:email "Please enter a valid email address."]
            (< (count pwd) 8) [:pwd "Password must be at least 8 characters."]
            (not= pwd cpwd) [:cpwd "Password and Confirm Password must match."]
@@ -70,11 +70,6 @@
  :signup-org-type
  :<- [:page-params] 
  (fn [{:keys [org-type]}] org-type))
-
-(rf/reg-sub
- :bad-input
- :<- [:page-params]
- (fn [{:keys [bad-input]}] bad-input))
 
 ;; Components
 (defn c-page []
