@@ -1,6 +1,7 @@
 (ns vetd-app.buyers.pages.settings
   (:require [vetd-app.buyers.components :as bc]
             [vetd-app.ui :as ui]
+            [vetd-app.util :as util]
             [reagent.core :as r]
             [re-frame.core :as rf]))
 
@@ -116,15 +117,6 @@
  (fn [{:keys [fields-editing]}] fields-editing))
 
 ;;;; Components
-(defn c-field
-  [k v ]
-  [:> ui/GridRow
-   [:> ui/GridColumn {:width 16}
-    [:> ui/Segment {:class "display-field"
-                    :vertical true}
-     [:h3.display-field-key k]
-     [:div.display-field-value v]]]])
-
 (defn c-edit-user-name
   [user-name]
   (let [uname& (r/atom user-name)
@@ -144,34 +136,44 @@
                                   :color "blue"}
                     "Save"])}]]])))
 
-(defn c-editable-field [field-text field-name value edit-text editor]
+(defn c-field-container
+  [& children]
+  [:> ui/GridRow
+   [:> ui/GridColumn {:width 16}
+    [:> ui/Segment {:class "display-field"
+                    :vertical true}
+     (util/augment-with-keys children)]]])
+
+(defn c-field
+  [{:keys [label value]}]
+  [c-field-container
+   [:h3.display-field-key label]
+   [:div.display-field-value value]])
+
+(defn c-editable-field
+  [props edit-cmp]
   (let [fields-editing& (rf/subscribe [:fields-editing])]
-    (fn [field-text field-name value edit-text editor]
-      [:> ui/GridRow
-       [:> ui/GridColumn {:width 16}
-        [:> ui/Segment {:class "display-field"
-                        :vertical true}
-         (if (@fields-editing& field-name)
-           [:> ui/Label {:on-click #(rf/dispatch [:stop-edit-field field-name])
-                         :as "a"
-                         :style {:float "right"}}
-            "Cancel"]
-           [:> ui/Label {:on-click #(rf/dispatch [:edit-field field-name])
-                         :as "a"
-                         :style {:float "right"}}
-            [:> ui/Icon {:name "edit outline"}]
-            edit-text])
-         [:h3.display-field-key field-text]
-         [:div.display-field-value
-          (if (@fields-editing& field-name) editor value)]]]])))
+    (fn [{:keys [label value sym edit-label]} edit-cmp]
+      [c-field-container
+       (if (@fields-editing& sym)
+         [:> ui/Label {:on-click #(rf/dispatch [:stop-edit-field sym])
+                       :as "a"
+                       :style {:float "right"}}
+          "Cancel"]
+         [:> ui/Label {:on-click #(rf/dispatch [:edit-field sym])
+                       :as "a"
+                       :style {:float "right"}}
+          [:> ui/Icon {:name "edit outline"}]
+          edit-label])
+       [:h3.display-field-key label]
+       [:div.display-field-value (if (@fields-editing& sym) edit-cmp value)]])))
 
 (defn c-user-name-field
   [user-name]
-  [c-editable-field
-   "Name"
-   "uname"
-   user-name
-   "Edit Name"
+  [c-editable-field {:label "Name"
+                     :value user-name
+                     :sym "uname"
+                     :edit-label "Edit Name"}
    [c-edit-user-name user-name]])
 
 (defn c-edit-password [email]
@@ -215,11 +217,10 @@
 
 (defn c-password-field
   [email]
-  [c-editable-field
-   "Password"
-   "pwd"
-   "**********"
-   "Change Password"
+  [c-editable-field {:label "Password"
+                     :value "**********"
+                     :sym "pwd"
+                     :edit-label "Change Password"}
    [c-edit-password email]])
 
 (defn c-page []
@@ -233,7 +234,9 @@
         [:> ui/GridColumn {:computer 6 :mobile 16}
          [bc/c-profile-segment {:title "Account Settings"}
           [c-user-name-field @user-name&]
-          [c-field "Email" @user-email&]
-          [c-field "Organization" @org-name&]
+          [c-field {:label "Email"
+                    :value @user-email&}]
+          [c-field {:label "Organization"
+                    :value @org-name&}]
           [c-password-field @user-email&]]]
         [:> ui/GridColumn {:computer 5 :mobile 0}]]])))
