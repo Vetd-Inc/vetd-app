@@ -21,8 +21,46 @@
 (rf/reg-event-fx
  :b/route-settings
  (fn [{:keys [db]}]
-   {:db (assoc db :page :b/settings)
+   {:db (assoc db
+               :page :b/settings
+               :page-params {:fields-editing #{}})
     :analytics/page {:name "Buyers Settings"}}))
+
+(rf/reg-event-fx
+ :edit-field
+ (fn [{:keys [db]} [_ field]]
+   {:db (update-in db [:page-params :fields-editing] conj field)}))
+
+(rf/reg-event-fx
+ :stop-edit-field
+ (fn [{:keys [db]} [_ field]]
+   {:db (update-in db [:page-params :fields-editing] disj field)}))
+
+(rf/reg-event-fx
+ :update-user
+ (fn [{:keys [db]} [_ uname]]
+   {:ws-send {:payload {:cmd :update-user
+                        :return {:handler :update-user-return
+                                 :uname uname}
+                        :user-id (-> db :user :id)
+                        :uname uname}}
+    :analytics/track {:event "Update Name"
+                      :props {:category "Account"}}}))
+
+(rf/reg-event-fx
+ :update-user-return
+ (fn [{:keys [db]} [_ _ {{:keys [uname]} :return}]]
+   {:db (assoc-in db [:user :uname] uname)
+    :toast {:type "success"
+            :title "Name Updated Successfully"
+            :message (str "Hello " uname "!")}
+    :dispatch [:stop-edit-field "uname"]}))
+
+;;;; Subscriptions
+(rf/reg-sub
+ :fields-editing
+ :<- [:page-params]
+ (fn [{:keys [fields-editing]}] fields-editing))
 
 ;;;; Components
 (defn c-field
@@ -36,17 +74,17 @@
 
 (defn c-edit-user-name
   [user-name]
-  (let [uname (r/atom user-name)]
+  (let [uname& (r/atom user-name)]
     (fn []
       [:> ui/Input
-       {:default-value @uname
+       {:default-value @uname&
         :auto-focus true
         :fluid true
         :style {:padding-top 7}
         :placeholder "Enter your full name..."
-        :on-change #(reset! uname (-> % .-target .-value))
+        :on-change #(reset! uname& (-> % .-target .-value))
         :action (r/as-element
-                 [:> ui/Button {:on-click #()
+                 [:> ui/Button {:on-click #(rf/dispatch [:update-user @uname&])
                                 :color "blue"}
                   "Save"])}])))
 
@@ -54,7 +92,7 @@
   (let [user-name& (rf/subscribe [:user-name])
         user-email& (rf/subscribe [:user-email])
         org-name& (rf/subscribe [:org-name])
-        edit-mode& (r/atom #{})]
+        fields-editing& (rf/subscribe [:fields-editing])]
     (fn []
       [:> ui/Grid
        [:> ui/GridRow
@@ -65,19 +103,19 @@
            [:> ui/GridColumn {:width 16}
             [:> ui/Segment {:class "display-field"
                             :vertical true}
-             (if (@edit-mode& "uname")
-               [:> ui/Label {:on-click #(swap! edit-mode& disj "uname")
+             (if (@fields-editing& "uname")
+               [:> ui/Label {:on-click #(rf/dispatch [:stop-edit-field "uname"])
                              :as "a"
                              :style {:float "right"}}
                 "Cancel"]
-               [:> ui/Label {:on-click #(swap! edit-mode& conj "uname")
+               [:> ui/Label {:on-click #(rf/dispatch [:edit-field "uname"])
                              :as "a"
                              :style {:float "right"}}
                 [:> ui/Icon {:name "edit outline"}]
                 "Edit Name"])
              [:h3.display-field-key "Name"]
              [:div.display-field-value
-              (if (@edit-mode& "uname")
+              (if (@fields-editing& "uname")
                 [c-edit-user-name @user-name&]
                 @user-name&)]]]]
           [c-field "Email" @user-email&]
