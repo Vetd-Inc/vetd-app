@@ -1,13 +1,8 @@
 (ns vetd-app.buyers.pages.settings
   (:require [vetd-app.buyers.components :as bc]
-            [vetd-app.common.components :as cc]
             [vetd-app.ui :as ui]
-            [vetd-app.util :as util]
-            [vetd-app.docs :as docs]
             [reagent.core :as r]
-            [re-frame.core :as rf]
-            [re-com.core :as rc]
-            [clojure.string :as s]))
+            [re-frame.core :as rf]))
 
 ;;;; Events
 (rf/reg-event-fx
