@@ -32,20 +32,25 @@
  (fn [{:keys [db]} [_ field]]
    {:db (update-in db [:page-params :fields-editing] disj field)}))
 
+(defn validated-dispatch-fx
+  [db event validator-fn]
+  (let [[bad-input message] (validator-fn)]
+    (if bad-input
+      {:db (assoc-in db [:page-params :bad-input] bad-input)
+       :toast {:type "error" 
+               :title "Error"
+               :message message}}
+      {:db (assoc-in db [:page-params :bad-input] nil)
+       :dispatch event})))
+
 (rf/reg-event-fx
  :update-user-name.submit
  (fn [{:keys [db]} [_ uname]]
-   (let [[bad-input message]
-         (cond
-           (not (re-matches #".+\s.+" uname)) [:uname "Please enter your full name (first & last)."]
-           :else nil)]
-     (if bad-input
-       {:db (assoc-in db [:page-params :bad-input] bad-input)
-        :toast {:type "error" 
-                :title "Error"
-                :message message}}
-       {:db (assoc-in db [:page-params :bad-input] nil)
-        :dispatch [:update-user uname]}))))
+   (validated-dispatch-fx db
+                          [:update-user uname]
+                          #(cond
+                             (not (re-matches #".+\s.+" uname)) [:uname "Please enter your full name (first & last)."]
+                             :else nil))))
 
 (rf/reg-event-fx
  :update-user
@@ -72,18 +77,12 @@
 (rf/reg-event-fx
  :update-user-password.submit
  (fn [{:keys [db]} [_ pwd new-pwd confirm-new-pwd]]
-   (let [[bad-input message]
-         (cond
-           (< (count new-pwd) 8) [:new-pwd "Password must be at least 8 characters."]
-           (not= new-pwd confirm-new-pwd) [:confirm-new-pwd "Password and Confirm Password must match."]
-           :else nil)]
-     (if bad-input
-       {:db (assoc-in db [:page-params :bad-input] bad-input)
-        :toast {:type "error" 
-                :title "Error"
-                :message message}}
-       {:db (assoc-in db [:page-params :bad-input] nil)
-        :dispatch [:update-user-password pwd new-pwd]}))))
+   (validated-dispatch-fx db
+                          [:update-user-password pwd new-pwd]
+                          #(cond
+                             (< (count new-pwd) 8) [:new-pwd "Password must be at least 8 characters."]
+                             (not= new-pwd confirm-new-pwd) [:confirm-new-pwd "Password and Confirm Password must match."]
+                             :else nil))))
 
 (rf/reg-event-fx
  :update-user-password
