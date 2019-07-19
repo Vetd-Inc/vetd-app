@@ -40,7 +40,6 @@
 
 (defn c-avatar
   [user-name org-name]
-  
   [:> ui/Popup
    {:position "bottom right"
     :on "click"

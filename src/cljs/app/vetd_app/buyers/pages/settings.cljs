@@ -106,48 +106,91 @@
                                  :color "blue"}
                    "Save"])}]])))
 
+(defn c-editable-field [field-text field-name value edit-text editor]
+  (let [fields-editing& (rf/subscribe [:fields-editing])]
+    (fn [field-text field-name value edit-text editor]
+      [:> ui/GridRow
+       [:> ui/GridColumn {:width 16}
+        [:> ui/Segment {:class "display-field"
+                        :vertical true}
+         (if (@fields-editing& field-name)
+           [:> ui/Label {:on-click #(rf/dispatch [:stop-edit-field field-name])
+                         :as "a"
+                         :style {:float "right"}}
+            "Cancel"]
+           [:> ui/Label {:on-click #(rf/dispatch [:edit-field field-name])
+                         :as "a"
+                         :style {:float "right"}}
+            [:> ui/Icon {:name "edit outline"}]
+            edit-text])
+         [:h3.display-field-key field-text]
+         [:div.display-field-value
+          (if (@fields-editing& field-name) editor value)]]]])))
+
+(defn c-user-name-field
+  [user-name]
+  [c-editable-field
+   "Name"
+   "uname"
+   user-name
+   "Edit Name"
+   [c-edit-user-name user-name]])
+
+(defn c-edit-password []
+  (let [pwd& (r/atom "")
+        new-pwd& (r/atom "")
+        confirm-new-pwd& (r/atom "")
+        bad-input& (rf/subscribe [:bad-input])]
+    (fn []
+      [:> ui/Form
+       [:> ui/Input
+        {:type "password"
+         :auto-focus true
+         :placeholder "Current Password"
+         :fluid true
+         :style {:padding-top 7}
+         :error (= @bad-input& :pwd)
+         :on-change #(reset! pwd& (-> % .-target .-value))}]
+       [:> ui/Input
+        {:type "password"
+         :placeholder "New Password"
+         :fluid true
+         :style {:padding-top 7}
+         :error (= @bad-input& :new-pwd)
+         :on-change #(reset! new-pwd& (-> % .-target .-value))}]
+       [:> ui/Input
+        {:type "password"
+         :placeholder "Confirm New Password"
+         :fluid true
+         :style {:padding-top 7}
+         :error (= @bad-input& :confirm-new-pwd)
+         :on-change #(reset! confirm-new-pwd& (-> % .-target .-value))
+         :action (r/as-element
+                  [:> ui/Button {:on-click #(rf/dispatch [:update-user-password.submit @new-pwd&])
+                                 :color "blue"}
+                   "Save"])}]])))
+
+(defn c-password-field
+  []
+  [c-editable-field
+   "Password"
+   "pwd"
+   "**********"
+   "Change Password"
+   [c-edit-password]])
+
 (defn c-page []
   (let [user-name& (rf/subscribe [:user-name])
         user-email& (rf/subscribe [:user-email])
-        org-name& (rf/subscribe [:org-name])
-        fields-editing& (rf/subscribe [:fields-editing])]
+        org-name& (rf/subscribe [:org-name])]
     (fn []
       [:> ui/Grid
        [:> ui/GridRow
         [:> ui/GridColumn {:computer 5 :mobile 0}]
         [:> ui/GridColumn {:computer 6 :mobile 16}
          [bc/c-profile-segment {:title "Account Settings"}
-          [:> ui/GridRow
-           [:> ui/GridColumn {:width 16}
-            [:> ui/Segment {:class "display-field"
-                            :vertical true}
-             (if (@fields-editing& "uname")
-               [:> ui/Label {:on-click #(rf/dispatch [:stop-edit-field "uname"])
-                             :as "a"
-                             :style {:float "right"}}
-                "Cancel"]
-               [:> ui/Label {:on-click #(rf/dispatch [:edit-field "uname"])
-                             :as "a"
-                             :style {:float "right"}}
-                [:> ui/Icon {:name "edit outline"}]
-                "Edit Name"])
-             [:h3.display-field-key "Name"]
-             [:div.display-field-value
-              (if (@fields-editing& "uname")
-                [c-edit-user-name @user-name&]
-                @user-name&)]]]]
+          [c-user-name-field @user-name&]
           [c-field "Email" @user-email&]
           [c-field "Organization" @org-name&]
-          [:> ui/GridRow
-           [:> ui/GridColumn {:width 16}
-            [:> ui/Segment {:class "display-field"
-                            :vertical true}
-             [:> ui/Label {:as "a"
-                           :style {:float "right"}}
-              [:> ui/Icon {:name "edit outline"}]
-              "Change Password"]
-             [:h3.display-field-key "Password"]
-             [:div.display-field-value [:em "hidden"]]]]]
-          
-          ]]
+          [c-password-field]]]
         [:> ui/GridColumn {:computer 5 :mobile 0}]]])))
