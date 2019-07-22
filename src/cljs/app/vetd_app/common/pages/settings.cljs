@@ -1,4 +1,4 @@
-(ns vetd-app.buyers.pages.settings
+(ns vetd-app.common.pages.settings
   (:require [vetd-app.buyers.components :as bc]
             [vetd-app.ui :as ui]
             [vetd-app.util :as util]
@@ -7,20 +7,20 @@
 
 ;;;; Events
 (rf/reg-event-fx
- :b/nav-settings
+ :nav-settings
  (constantly
-  {:nav {:path "/b/settings"}
+  {:nav {:path "/settings"}
    :analytics/track {:event "Navigate"
                      :props {:category "Navigation"
-                             :label "Buyers Settings"}}}))
+                             :label "Settings"}}}))
 
 (rf/reg-event-fx
- :b/route-settings
+ :route-settings
  (fn [{:keys [db]}]
    {:db (assoc db
-               :page :b/settings
+               :page :settings
                :page-params {:fields-editing #{}})
-    :analytics/page {:name "Buyers Settings"}}))
+    :analytics/page {:name "Settings"}}))
 
 (rf/reg-event-fx
  :edit-field

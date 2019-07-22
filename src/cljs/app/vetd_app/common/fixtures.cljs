@@ -15,7 +15,7 @@
   [user-name]
   [:div.account-actions 
    [:h5 user-name]
-   [:> ui/Button {:on-click #(rf/dispatch [:b/nav-settings])
+   [:> ui/Button {:on-click #(rf/dispatch [:nav-settings])
                   :color "lightteal"
                   :fluid true
                   :icon true

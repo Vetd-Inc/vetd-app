@@ -9,7 +9,6 @@
             vetd-app.common.fx
             [vetd-app.hooks :as hooks]
             [vetd-app.buyers.fixtures :as b-fix]
-            [vetd-app.buyers.pages.settings :as p-bsettings]
             [vetd-app.buyers.pages.search :as p-bsearch]
             [vetd-app.buyers.pages.preposals :as p-bpreposals]
             [vetd-app.buyers.pages.preposal-detail :as p-bpreposal-detail]
@@ -30,7 +29,7 @@
             [vetd-app.common.pages.signup :as p-signup]
             [vetd-app.common.pages.login :as p-login]
             [vetd-app.common.pages.forgot-password :as p-forgot-password]
-            [vetd-app.common.pages.user-profile :as p-user-profile]
+            [vetd-app.common.pages.settings :as p-settings]
             [reagent.core :as r]
             [re-frame.core :as rf]
             [secretary.core :as sec]
@@ -43,7 +42,7 @@
                   {:login #'p-login/c-page
                    :signup #'p-signup/c-page
                    :forgot-password #'p-forgot-password/c-page
-                   :b/settings #'p-bsettings/c-page
+                   :settings #'p-settings/c-page
                    :b/search #'p-bsearch/c-page
                    :b/preposals #'p-bpreposals/c-page
                    :b/preposal-detail #'p-bpreposal-detail/c-page
@@ -64,7 +63,7 @@
                   {:login #'pub-fix/container
                    :signup #'pub-fix/container
                    :forgot-password #'pub-fix/container
-                   :b/settings #'b-fix/container
+                   :settings #'b-fix/container ; TODO fragile, misuse of buyer fixtures
                    :b/search #'b-fix/container
                    :b/preposals #'b-fix/container
                    :b/preposal-detail #'b-fix/container
@@ -192,8 +191,8 @@
 (sec/defroute forgot-password-prefill-path "/forgot-password/:email-address" [email-address]
   (rf/dispatch [:route-forgot-password email-address]))
 
-(sec/defroute user-profile-path "/profile" []
-  (rf/dispatch [:route-user-profile]))
+(sec/defroute settings-root "/settings" []
+  (rf/dispatch [:route-settings]))
 
 (sec/defroute org-users-path "/o/users" []
   (rf/dispatch [:o/route-users]))
@@ -209,9 +208,6 @@
   (rf/dispatch [:read-link k]))
 
 ;; Buyers
-(sec/defroute buyers-settings-root "/b/settings" []
-  (rf/dispatch [:b/route-settings]))
-
 (sec/defroute buyers-search-root "/b/search" []
   (rf/dispatch [:b/route-search]))
 (sec/defroute buyers-search "/b/search/:search-term" [search-term]
