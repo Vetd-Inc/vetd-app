@@ -244,6 +244,7 @@
                         :as "a"
                         :style {:float "right"
                                 :margin-top 5}}
+           [:> ui/Icon {:name "remove"}]
            "Remove"]
           [:div {:style {:display "inline-block"
                          :float "left"
@@ -266,7 +267,7 @@
           "Cancel"]
          [:> ui/Label {:on-click #(reset! inviting?& true)
                        :as "a"
-                       :color "blue"
+                       :color "teal"
                        :style {:float "right"}}
           [:> ui/Icon {:name "add user"}]
           "Invite New Member"])
