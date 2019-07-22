@@ -8,7 +8,7 @@
 (rf/reg-event-fx
  :g/nav-orgs
  (fn [_ [_ email-address]]
-   {:nav {:path "/g/orgs/"}}))
+   {:nav {:path "/c/orgs"}}))
 
 (rf/reg-event-fx
  :g/route-orgs

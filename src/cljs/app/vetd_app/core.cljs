@@ -76,9 +76,9 @@
                    :v/profile #'v-fix/container
                    :v/rounds #'v-fix/container
                    :v/round-product-detail #'v-fix/container
-                   :o/users #'b-fix/appendable-container
-                   :g/discounts #'b-fix/appendable-container
-                   :g/orgs #'b-fix/appendable-container})
+                   :o/users #'b-fix/container
+                   :g/discounts #'b-fix/container
+                   :g/orgs #'b-fix/container})
 
 
 (rf/reg-event-db
@@ -197,10 +197,10 @@
 (sec/defroute org-users-path "/o/users" []
   (rf/dispatch [:o/route-users]))
 
-(sec/defroute group-discounts-path "/g/discounts" []
+(sec/defroute group-discounts-path "/c/discounts" []
   (rf/dispatch [:g/route-discounts]))
 
-(sec/defroute group-orgs-path "/g/orgs" []
+(sec/defroute group-orgs-path "/c/orgs" []
   (rf/dispatch [:g/route-orgs]))
 
 ;; Link - special links for actions such as reset password, or account verification

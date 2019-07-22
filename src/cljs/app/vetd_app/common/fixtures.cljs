@@ -1,5 +1,6 @@
 (ns vetd-app.common.fixtures
   (:require [vetd-app.ui :as ui]
+            [vetd-app.common.components :as cc]
             [clojure.string :as s]
             [reagent.core :as r]
             [re-frame.core :as rf]))
@@ -30,26 +31,27 @@
     "Log Out"
     [:> ui/Icon {:name "sign-out"}]]])
 
-(defn c-avatar-initials
-  [user-name]
-  (let [parts (s/split user-name " ")]
-    [:div.avatar-initials (->> (select-keys parts [0 (dec (count parts))])
-                               vals
-                               (map first)
-                               (apply str))]))
-
 (defn c-avatar
   [user-name org-name]
   [:> ui/Popup
    {:position "bottom right"
     :on "click"
     :content (r/as-element [c-account-actions user-name])
-    :trigger (r/as-element [:div.avatar-container org-name [c-avatar-initials user-name]])}])
+    :trigger (r/as-element
+              [:div.avatar-container
+               [:span {:style {:padding-right 12}}
+                org-name]
+               [cc/c-avatar-initials user-name]])}])
 
 (defn c-top-nav [top-nav-pages]
   (let [page& (rf/subscribe [:page])
         user-name& (rf/subscribe [:user-name])
-        org-name& (rf/subscribe [:org-name])]
+        org-name& (rf/subscribe [:org-name])
+        ;; append "Community" menu item if accessible
+        pages (conj top-nav-pages
+                    {:text "Community"
+                     :pages #{:g/orgs}
+                     :event [:g/nav-orgs]})]
     (fn []
       (when (and @page& @user-name&)
         [:> ui/Menu {:class "top-nav"
@@ -60,7 +62,7 @@
           ;; todo: use a config var for base url
           [:img {:src "https://s3.amazonaws.com/vetd-logos/vetd.svg"}]]
          (doall
-          (for [item top-nav-pages]
+          (for [item pages]
             (c-top-nav-page-link (assoc item :active (boolean ((:pages item) @page&))))))
          [:> ui/MenuMenu {:position "right"}
           ;; Consider having search bar in top nav?

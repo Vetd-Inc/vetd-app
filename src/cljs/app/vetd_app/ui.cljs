@@ -35,6 +35,11 @@
 (def ItemDescription (component "ItemDescription"))
 (def ItemExtra (component "ItemExtra"))
 
+;; List
+(def List (component "List"))
+(def ListItem (component "List" "Item"))
+(def ListContent (component "List" "Content"))
+
 ;; Label
 (def Label (component "Label"))
 (def LabelDetail (component "Label" "Detail"))

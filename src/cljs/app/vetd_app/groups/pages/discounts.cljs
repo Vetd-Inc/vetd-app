@@ -9,7 +9,7 @@
 (rf/reg-event-fx
  :g/nav-discounts
  (fn [_ [_ email-address]]
-   {:nav {:path "/g/discounts/"}}))
+   {:nav {:path "/c/discounts/"}}))
 
 (rf/reg-event-fx
  :g/route-discounts

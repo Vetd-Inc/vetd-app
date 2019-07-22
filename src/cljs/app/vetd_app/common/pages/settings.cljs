@@ -1,5 +1,6 @@
 (ns vetd-app.common.pages.settings
   (:require [vetd-app.buyers.components :as bc]
+            [vetd-app.common.components :as cc]
             [vetd-app.ui :as ui]
             [vetd-app.util :as util]
             [reagent.core :as r]
@@ -222,20 +223,93 @@
                      :edit-label "Change Password"}
    [c-edit-password email]])
 
-(defn c-page []
+(defn c-account-settings []
   (let [user-name& (rf/subscribe [:user-name])
-        user-email& (rf/subscribe [:user-email])
-        org-name& (rf/subscribe [:org-name])]
+        user-email& (rf/subscribe [:user-email])]
     (fn []
-      [:> ui/Grid
-       [:> ui/GridRow
-        [:> ui/GridColumn {:computer 5 :mobile 0}]
-        [:> ui/GridColumn {:computer 6 :mobile 16}
-         [bc/c-profile-segment {:title "Account Settings"}
-          [c-user-name-field @user-name&]
-          [c-field {:label "Email"
-                    :value @user-email&}]
-          [c-field {:label "Organization"
-                    :value @org-name&}]
-          [c-password-field @user-email&]]]
-        [:> ui/GridColumn {:computer 5 :mobile 0}]]])))
+      [bc/c-profile-segment {:title "Account Settings"}
+       [c-user-name-field @user-name&]
+       [c-field {:label "Email"
+                 :value @user-email&}]
+       [c-password-field @user-email&]])))
+
+(defn c-org-member
+  [member]
+  (let [curr-user-id& (rf/subscribe [:user-id])]
+    (fn [{:keys [user status]}]
+      (let [{:keys [id uname email]} user]
+        [:> ui/ListItem
+         [:> ui/ListContent {:floated "right"}
+          [:> ui/Label { ;; :on-click #(rf/dispatch [:stop-edit-field sym])
+                        :as "a"}
+           "Remove"]]
+         [:div {:style {:display "inline-block"
+                        :float "left"
+                        :margin-right 7}}
+          [cc/c-avatar-initials uname]]
+         [:> ui/ListContent uname (when (= id @curr-user-id&) " (you)")]
+         [:> ui/ListContent email]]))))
+
+(defn c-org-members
+  [memberships]
+  (let [inviting?& (r/atom false)
+        email& (r/atom "")
+        bad-input& (rf/subscribe [:bad-input])]
+    (fn [memberships]
+      [c-field-container
+       (if @inviting?&
+         [:> ui/Label {:on-click #(reset! inviting?& false)
+                       :as "a"
+                       :style {:float "right"}}
+          "Cancel"]
+         [:> ui/Label {:on-click #(reset! inviting?& true)
+                       :as "a"
+                       :style {:float "right"}}
+          [:> ui/Icon {:name "add user"}]
+          "Invite New Member"])
+       [:h3.display-field-key "Members"]
+       (when @inviting?&
+         [:> ui/Form
+          [:> ui/FormField {:error (= @bad-input& :email)}
+           [:> ui/Input
+            {:placeholder "Enter email address..."
+             :fluid true
+             :auto-focus true
+             :on-change #(reset! email& (-> % .-target .-value))
+             :action (r/as-element
+                      [:> ui/Button {;; :on-click #(rf/dispatch [:update-user-password.submit @email&])
+                                     :color "blue"}
+                       "Invite"])}]]])
+       [:> ui/List {:verticalAlign "middle"} ; the align doesn't seem to work
+        (for [member memberships]
+          ^{:key (-> member :user :id)}
+          [c-org-member member])]])))
+
+(defn c-orgs-settings []
+  (let [org-id& (rf/subscribe [:org-id])
+        org& (rf/subscribe [:gql/q
+                            {:queries
+                             [[:orgs {:id @org-id&
+                                      :_limit 1
+                                      :deleted nil}
+                               [:oname :url
+                                [:memberships
+                                 [:status
+                                  [:user
+                                   [:id :idstr :uname :email]]]]]]]}])]
+    (fn []                              ; TODO handle multiple orgs
+      (let [{:keys [oname url memberships] :as org} (-> @org& :orgs first)]
+        [bc/c-profile-segment {:title "Organization Settings"}
+         [c-field {:label "Name"
+                   :value oname}]
+         [c-field {:label "Website"
+                   :value url}]
+         [c-org-members memberships]]))))
+
+(defn c-page []
+  [:> ui/Grid {:stackable true}
+   [:> ui/GridRow
+    [:> ui/GridColumn {:computer 8 :mobile 16}
+     [c-account-settings]]
+    [:> ui/GridColumn {:computer 8 :mobile 16}
+     [c-orgs-settings]]]])
