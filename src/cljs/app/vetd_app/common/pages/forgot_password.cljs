@@ -65,11 +65,6 @@
  :<- [:page-params] 
  (fn [{:keys [email-address]}] email-address))
 
-(rf/reg-sub
- :bad-input
- :<- [:page-params]
- (fn [{:keys [bad-input]}] bad-input))
-
 ;; Components
 (defn c-page []
   (let [email (r/atom (or @(rf/subscribe [:forgot-password-email-address]) ""))

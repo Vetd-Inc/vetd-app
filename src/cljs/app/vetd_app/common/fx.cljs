@@ -39,3 +39,8 @@
      {:toast {:type "error"
               :title "That link is expired or invalid."}
       :dispatch [:nav-home]})))
+
+(rf/reg-sub
+ :bad-input
+ :<- [:page-params]
+ (fn [{:keys [bad-input]}] bad-input))
