@@ -239,16 +239,18 @@
     (fn [{:keys [user status]}]
       (let [{:keys [id uname email]} user]
         [:> ui/ListItem
-         [:> ui/ListContent {:floated "right"}
-          [:> ui/Label { ;; :on-click #(rf/dispatch [:stop-edit-field sym])
-                        :as "a"}
-           "Remove"]]
-         [:div {:style {:display "inline-block"
-                        :float "left"
-                        :margin-right 7}}
-          [cc/c-avatar-initials uname]]
-         [:> ui/ListContent uname (when (= id @curr-user-id&) " (you)")]
-         [:> ui/ListContent email]]))))
+         [:> ui/ListContent
+          [:> ui/Label {;; :on-click #(rf/dispatch [:stop-edit-field sym])
+                        :as "a"
+                        :style {:float "right"
+                                :margin-top 5}}
+           "Remove"]
+          [:div {:style {:display "inline-block"
+                         :float "left"
+                         :margin-right 7}}
+           [cc/c-avatar-initials uname]]
+          [:> ui/ListHeader uname (when (= id @curr-user-id&) " (you)")]
+          [:> ui/ListDescription email]]]))))
 
 (defn c-org-members
   [memberships]
@@ -264,13 +266,15 @@
           "Cancel"]
          [:> ui/Label {:on-click #(reset! inviting?& true)
                        :as "a"
+                       :color "blue"
                        :style {:float "right"}}
           [:> ui/Icon {:name "add user"}]
           "Invite New Member"])
        [:h3.display-field-key "Members"]
        (when @inviting?&
          [:> ui/Form
-          [:> ui/FormField {:error (= @bad-input& :email)}
+          [:> ui/FormField {:error (= @bad-input& :email)
+                            :style {:padding-top 7}}
            [:> ui/Input
             {:placeholder "Enter email address..."
              :fluid true
@@ -280,7 +284,8 @@
                       [:> ui/Button {;; :on-click #(rf/dispatch [:update-user-password.submit @email&])
                                      :color "blue"}
                        "Invite"])}]]])
-       [:> ui/List {:verticalAlign "middle"} ; the align doesn't seem to work
+       [:> ui/List {:class "members"
+                    :relaxed true}
         (for [member memberships]
           ^{:key (-> member :user :id)}
           [c-org-member member])]])))

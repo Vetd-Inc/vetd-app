@@ -10,7 +10,7 @@
 (defn c-avatar-initials
   [user-name]
   (let [parts (s/split user-name " ")]
-    [:div.avatar-initials (->> (select-keys parts [0 (dec (count parts))])
-                               vals
-                               (map first)
-                               (apply str))]))
+    [:div.avatar.avatar-initials (->> (select-keys parts [0 (dec (count parts))])
+                                      vals
+                                      (map first)
+                                      (apply str))]))

@@ -39,6 +39,8 @@
 (def List (component "List"))
 (def ListItem (component "List" "Item"))
 (def ListContent (component "List" "Content"))
+(def ListHeader (component "List" "Header"))
+(def ListDescription (component "List" "Description"))
 
 ;; Label
 (def Label (component "Label"))

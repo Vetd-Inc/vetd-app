@@ -359,6 +359,20 @@ a.label {
   margin-bottom: 15px;
 }
 
+// Settings page
+.members .item {
+
+  &:hover {
+    .avatar {
+      filter: brightness(1.1);
+    }
+  }
+  
+  .content {
+    line-height: 20px !important;
+  }
+}
+
 
 /* Override basic Semantic UI behavior */
 .ui.fluid[class*="left labeled"].icon.button {

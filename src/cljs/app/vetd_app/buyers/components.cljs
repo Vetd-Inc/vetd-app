@@ -117,7 +117,7 @@
          popup-props)]])))
 
 (defn c-round-in-progress [{:keys [round-idstr props]}]
-  [:> ui/Label (merge {:color "teal"
+  [:> ui/Label (merge {:color "vetd"
                        :size "medium"
                        :as "a"
                        :on-click (fn [e]

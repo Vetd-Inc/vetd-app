@@ -195,7 +195,7 @@
   [{:keys [cname id idstr rounds] :as cat}]
   [:div.category-search-result
    (if-let [round-idstr (some-> rounds first :idstr)]
-     [:> ui/Label {:color "teal"
+     [:> ui/Label {:color "vetd"
                    :size "large"
                    :as "a"
                    :on-click (fn [e]
