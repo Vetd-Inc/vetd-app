@@ -254,11 +254,12 @@
           [:> ui/ListDescription email]]]))))
 
 (defn c-org-members
-  [memberships]
-  (let [inviting?& (r/atom false)
+  [org-id memberships]
+  (let [user-id& (rf/subscribe [:user-id])
+        inviting?& (r/atom false)
         email& (r/atom "")
         bad-input& (rf/subscribe [:bad-input])]
-    (fn [memberships]
+    (fn [org-id memberships]
       [c-field-container
        (if @inviting?&
          [:> ui/Label {:on-click #(reset! inviting?& false)
@@ -282,7 +283,7 @@
              :auto-focus true
              :on-change #(reset! email& (-> % .-target .-value))
              :action (r/as-element
-                      [:> ui/Button {;; :on-click #(rf/dispatch [:update-user-password.submit @email&])
+                      [:> ui/Button {:on-click #(rf/dispatch [:o/invite-user-to-org @email& org-id @user-id&])
                                      :color "blue"}
                        "Invite"])}]]])
        [:> ui/List {:class "members"
@@ -298,19 +299,19 @@
                              [[:orgs {:id @org-id&
                                       :_limit 1
                                       :deleted nil}
-                               [:oname :url
+                               [:id :oname :url
                                 [:memberships
                                  [:status
                                   [:user
                                    [:id :idstr :uname :email]]]]]]]}])]
     (fn []                              ; TODO handle multiple orgs
-      (let [{:keys [oname url memberships] :as org} (-> @org& :orgs first)]
+      (let [{:keys [id oname url memberships] :as org} (-> @org& :orgs first)]
         [bc/c-profile-segment {:title "Organization Settings"}
          [c-field {:label "Name"
                    :value oname}]
          [c-field {:label "Website"
                    :value url}]
-         [c-org-members memberships]]))))
+         [c-org-members id memberships]]))))
 
 (defn c-page []
   [:> ui/Grid {:stackable true}
