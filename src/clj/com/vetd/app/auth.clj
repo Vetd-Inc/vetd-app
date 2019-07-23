@@ -363,25 +363,31 @@
 
 (defmethod l/action :invite-user-to-org
   [{:keys [input-data] :as link} account]
-  (l/update-expires link "read" (+ (ut/now) (* 1000 60 5))) ; allow read for next 5 mins
   (let [{:keys [email org-id]} input-data
         org-name (:oname (select-org-by-id org-id))]
     ;; this link action is 'overloaded'
-    ;; if account is nil, it is the standard usage of the link (i.e., the initial click from email)
-    (if (nil? account)
+    (if (every? (partial contains? account) [:uname :pwd])
+      ;; standard usage of the link (i.e., the initial click from email)
       (if-let [{:keys [id]} (select-user-by-email email)]
+        ;; the account already exists, just add them to org, and give a session token
         (do (create-or-find-memb id org-id)
+            (l/update-expires link "read" (+ (ut/now) (* 1000 60 5))) ; allow read for next 5 mins
             {:user-exists? true
              :org-name org-name
              :session-token (-> id insert-session :token)})
-        {:user-exists? false
-         :org-name org-name})
+        ;; they will need to "signup by invite"
+        (do (l/update-max-uses link "action" 1) ; allow another use (will be via ws :do-link-action)
+            {:user-exists? false
+             :org-name org-name}))
       ;; reusing link action to create account + add to org
       ;; used from ws, :do-link-action cmd
-      (when (= (:email account) email)  ; ensure no frontend hacking
-        (let [{:keys [uname pwd]} account
-              {:keys [id]} (insert-user uname email (bhsh/derive pwd))]
-          (when id
-            (create-or-find-memb id org-id)
-            {:org-name org-name
-             :session-token (-> id insert-session :token)}))))))
+      (let [{:keys [uname pwd]} account
+            {:keys [id]} (insert-user uname email (bhsh/derive pwd))]
+        (when id ; user was successfully created
+          (create-or-find-memb id org-id)
+          ;; this 'output' will be read immediately from the ws results
+          ;; i.e., it won't be read from a link read
+          {:org-name org-name
+           :session-token (-> id insert-session :token)})))))
+
+

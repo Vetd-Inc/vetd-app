@@ -22,12 +22,11 @@
     :analytics/page {:name "Signup By Invite"}}))
 
 (rf/reg-event-fx
- :signup.submit
- (fn [{:keys [db]} [_ {:keys [uname email pwd cpwd org-name terms-agree] :as account}]]
-   (let [[bad-input message]
+ :join-org-signup.submit
+ (fn [{:keys [db]} [_ {:keys [uname pwd cpwd terms-agree] :as account} link-key]]
+   (let [[bad-input message] ; TODO use validated-dispatch-fx
          (cond
            (not (re-matches #".+\s.+" uname)) [:uname "Please enter your full name (first & last)."]
-           (not (re-matches #"^\S+@\S+\.\S+$" email)) [:email "Please enter a valid email address."]
            (< (count pwd) 8) [:pwd "Password must be at least 8 characters."]
            (not= pwd cpwd) [:cpwd "Password and Confirm Password must match."]
            (not terms-agree) [:terms-agree "You must agree to the Terms of Use in order to sign up."]
@@ -37,49 +36,43 @@
         :toast {:type "error" 
                 :title "Error"
                 :message message}}
-       {:dispatch [:create-acct account]}))))
+       {:dispatch [:join-org-signup account link-key]}))))
 
 (rf/reg-event-fx
- :create-acct
- (fn [{:keys [db]} [_ account]]
+ :join-org-signup
+ (fn [{:keys [db]} [_ {:keys [uname pwd] :as account} link-key]]
    {:ws-send {:ws (:ws db)
-              :payload (merge {:cmd :create-acct
-                               :return {:handler :create-acct-return
-                                        :org-type (:org-type account)
-                                        :email (:email account)}}
-                              (select-keys account [:uname :org-name :org-url
-                                                    :org-type :email :pwd]))}}))
+              :payload {:cmd :do-link-action
+                        :return {:handler :join-org-signup-return}
+                        :link-key link-key
+                        :uname uname
+                        :pwd pwd}}}))
 (rf/reg-event-fx
- :create-acct-return
- (fn [{:keys [db]} [_ results {{:keys [org-type email]} :return}]]
-   (if-not (:email-used? results)
-     {:dispatch [:nav-login]
-      :toast {:type "success"
-              :title "Please check your email"
-              :message (str "We've sent an email to " email " with a link to activate your account.")}
-      :analytics/track {:event "Signup Complete"
-                        :props {:category "Accounts"
-                                :label org-type}}}
-     {:db (assoc-in db [:page-params :bad-input] :email)
-      :toast {:type "error" 
-              :title "Error"
-              :message "There is already an account with that email address."}})))
+ :join-org-signup-return
+ (fn [{:keys [db]} [_ {:keys [session-token] :as results}]]
+   {;; TODO possibly add a toast here?
+    :local-store {:session-token session-token}
+    :analytics/track {:event "Signup Complete"
+                      :props {:category "Accounts"
+                              :label "By Invite"}}
+    :dispatch-later [{:ms 100 :dispatch [:ws-get-session-user]}
+                     {:ms 200 :dispatch [:nav-home]}]}))
 
 ;; Subscriptions
 (rf/reg-sub
- :signup-org-type
+ :link-key
  :<- [:page-params] 
- (fn [{:keys [org-type]}] org-type))
+ (fn [{:keys [link-key]}] link-key))
 
 ;; Components
 (defn c-page []
   (let [uname (r/atom "")
-        email (r/atom "")
         pwd (r/atom "")
         cpwd (r/atom "")
         bad-cpwd (r/atom false)
         terms-agree (r/atom false)
-        bad-input& (rf/subscribe [:bad-input])]
+        bad-input& (rf/subscribe [:bad-input])
+        link-key& (rf/subscribe [:link-key])]
     (fn []
       [:div.centerpiece
        [:a {:on-click #(rf/dispatch [:nav-login])}
@@ -125,10 +118,10 @@
           " (read)"]]
         [:> ui/Button {:color "blue"
                        :fluid true
-                       :on-click #(rf/dispatch [:signup.submit
+                       :on-click #(rf/dispatch [:join-org-signup.submit
                                                 {:uname @uname
-                                                 :email @email
                                                  :pwd @pwd
                                                  :cpwd @cpwd
-                                                 :terms-agree @terms-agree}])}
+                                                 :terms-agree @terms-agree}
+                                                @link-key&])}
          "Sign Up"]]])))
