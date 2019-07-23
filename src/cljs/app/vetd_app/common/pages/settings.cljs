@@ -261,12 +261,7 @@
   (let [fields-editing& (rf/subscribe [:fields-editing])
         user-id& (rf/subscribe [:user-id])
         email& (r/atom "")
-        bad-input& (rf/subscribe [:bad-input])
-        submit-fn (fn []
-                    (rf/dispatch [:invite-user-to-org.submit
-                                  @email&
-                                  org-id
-                                  @user-id&]))]
+        bad-input& (rf/subscribe [:bad-input])]
     (fn [org-id]
       (when (@fields-editing& "invite-email-address")
         [:> ui/Form
@@ -279,7 +274,11 @@
             :on-change #(reset! email& (-> % .-target .-value))
             :action (r/as-element
                      [:> ui/Button
-                      {:on-click submit-fn
+                      {:on-click (fn []
+                                   (rf/dispatch [:invite-user-to-org.submit
+                                                 @email&
+                                                 org-id
+                                                 @user-id&]))
                        :color "blue"}
                       "Invite"])}]]]))))
 

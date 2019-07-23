@@ -41,12 +41,15 @@
                       :local-store {:session-token (:session-token output-data)}
                       :dispatch-later [{:ms 100 :dispatch [:ws-get-session-user]}
                                        {:ms 200 :dispatch [:nav-home]}]}
-     :invite-user-to-org {:toast {:type "success"
-                                  :title "Invite redeemed"
-                                  :message "If there's no session, then you need to make a login"}
-                          :local-store {:session-token (:session-token output-data)}
-                          :dispatch-later [{:ms 100 :dispatch [:ws-get-session-user]}
-                                           {:ms 200 :dispatch [:nav-home]}]}
+     :invite-user-to-org (if (:user-exists? output-data)
+                           {:toast {:type "success"
+                                    :title "Organization Joined"
+                                    :message (str "You accepted an invitation to join " (:org-name output-data))
+                                    }
+                            :local-store {:session-token (:session-token output-data)}
+                            :dispatch-later [{:ms 100 :dispatch [:ws-get-session-user]}
+                                             {:ms 200 :dispatch [:nav-home]}]}
+                           {:dispatch [:nav-join-org-signup (:org-name output-data)]})
      {:toast {:type "error"
               :title "That link is expired or invalid."}
       :dispatch [:nav-home]})))

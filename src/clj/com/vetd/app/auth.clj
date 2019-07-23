@@ -204,12 +204,15 @@
                                                      [:email
                                                       :org-id
                                                       :from-user-id])
-                            :max-uses-action 10
-                            :max-uses-read 10                            
-                            :expires-action (+ (ut/now) (* 1000 60 60 24 30))})]
+                            ;; 30 days from now
+                            :expires-action (+ (ut/now) (* 1000 60 60 24 30))})
+        from-user-name (:uname (select-user-by-id from-user-id :uname))
+        from-org-name (:oname (select-org-by-id org-id))]
     (ec/send-template-email
      email
-     {:invite-link (str l/base-url link-key)}
+     {:invite-link (str l/base-url link-key)
+      :from-user-name from-user-name
+      :from-org-name from-org-name}
      {:template-id invite-user-to-org-template-id})))
 
 (defn select-session-by-id
@@ -362,14 +365,22 @@
   [{:keys [input-data] :as link} account]
   (l/update-expires link "read" (+ (ut/now) (* 1000 60 5))) ; allow read for next 5 mins
   (let [{:keys [email org-id]} input-data]
-    (if (-> account :email nil?)
+    ;; this link action is 'overloaded'
+    ;; if account is nil, it is the standard usage of the link (i.e., the initial click from email)
+    (if (nil? account)
       (if-let [{:keys [id]} (select-user-by-email email)]
         (do (create-or-find-memb id org-id)
-            {:session-token (-> id insert-session :token)})
-        {:session-token nil} ; no existing user, may need to change
-        )
-      (let [{:keys [uname pwd]} account
-            {:keys [id]} (insert-user uname email (bhsh/derive pwd))]
-        (when (and id org-id)
-          (create-or-find-memb id org-id)
-          {:session-token (-> id insert-session :token)})))))
+            {:user-exists? true
+             :org-name "TODO ORG NAME"
+             :session-token (-> id insert-session :token)})
+        {:user-exists? false
+         :org-name "TODO ORG NAME"})
+      ;; reusing link action to create account + add to org
+      ;; used from ws, :do-link-action cmd
+      (when (= (:email account) email)  ; ensure no frontend hacking
+        (let [{:keys [uname pwd]} account
+              {:keys [id]} (insert-user uname email (bhsh/derive pwd))]
+          (when id
+            (create-or-find-memb id org-id)
+            {:org-name "TODO ORG NAME"
+             :session-token (-> id insert-session :token)}))))))

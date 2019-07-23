@@ -27,6 +27,7 @@
             [vetd-app.groups.pages.orgs :as p-gorgs]
             [vetd-app.common.fixtures :as pub-fix]
             [vetd-app.common.pages.signup :as p-signup]
+            [vetd-app.common.pages.join-org-signup :as p-join-org-signup]
             [vetd-app.common.pages.login :as p-login]
             [vetd-app.common.pages.forgot-password :as p-forgot-password]
             [vetd-app.common.pages.settings :as p-settings]
@@ -41,6 +42,7 @@
 (hooks/reg-hooks! hooks/c-page
                   {:login #'p-login/c-page
                    :signup #'p-signup/c-page
+                   :join-org-signup #'p-join-org-signup/c-page
                    :forgot-password #'p-forgot-password/c-page
                    :settings #'p-settings/c-page
                    :b/search #'p-bsearch/c-page
@@ -61,6 +63,7 @@
 (hooks/reg-hooks! hooks/c-container
                   {:login #'pub-fix/container
                    :signup #'pub-fix/container
+                   :join-org-signup #'pub-fix/container
                    :forgot-password #'pub-fix/container
                    :settings #'b-fix/container ; TODO fragile, misuse of buyer fixtures
                    :b/search #'b-fix/container
@@ -88,7 +91,7 @@
    :loading? {:products #{}} ; entities (by ID) that are in a loading?=true state (for UI display)
    :round-products-order []}))
 
-(def public-pages #{:login :signup :forgot-password})
+(def public-pages #{:login :signup :join-org-signup :forgot-password})
 
 (rf/reg-sub
  :page
@@ -183,6 +186,9 @@
 
 (sec/defroute signup-path "/signup/:type" [type]
   (rf/dispatch [:route-signup type]))
+
+(sec/defroute join-org-signup-path "/signup-by-invite/:org-name" [org-name]
+  (rf/dispatch [:route-join-org-signup org-name]))
 
 (sec/defroute forgot-password-path "/forgot-password/" []
   (rf/dispatch [:route-forgot-password]))
