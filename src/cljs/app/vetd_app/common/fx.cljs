@@ -49,7 +49,8 @@
                             :local-store {:session-token (:session-token output-data)}
                             :dispatch-later [{:ms 100 :dispatch [:ws-get-session-user]}
                                              {:ms 200 :dispatch [:nav-home]}]}
-                           {:dispatch [:nav-join-org-signup link-key]})
+                           {:db (assoc db :signup-by-link-org-name (:org-name output-data))
+                            :dispatch [:nav-join-org-signup link-key]})
      {:toast {:type "error"
               :title "That link is expired or invalid."}
       :dispatch [:nav-home]})))

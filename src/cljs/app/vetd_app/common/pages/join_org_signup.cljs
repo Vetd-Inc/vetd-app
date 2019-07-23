@@ -70,6 +70,11 @@
  :<- [:page-params] 
  (fn [{:keys [link-key]}] link-key))
 
+;; this is set by the initial link read for :invite-user-to-org
+(rf/reg-sub
+ :signup-by-link-org-name
+ (fn [{:keys [signup-by-link-org-name]}] signup-by-link-org-name))
+
 ;; Components
 (defn c-page []
   (let [uname (r/atom "")
@@ -78,6 +83,7 @@
         bad-cpwd (r/atom false)
         terms-agree (r/atom false)
         bad-input& (rf/subscribe [:bad-input])
+        org-name& (rf/subscribe [:signup-by-link-org-name])
         link-key& (rf/subscribe [:link-key])]
     (fn []
       [:div.centerpiece
@@ -85,7 +91,7 @@
         [:img.logo {:src "https://s3.amazonaws.com/vetd-logos/vetd.svg"}]]
        [:> ui/Header {:as "h2"
                       :class "blue"}
-        "Sign Up to Join ORG on Vetd"]
+        "Join " @org-name& " on Vetd"]
        [:> ui/Form {:style {:margin-top 25}}
         [:> ui/FormField {:error (= @bad-input& :uname)}
          [:label "Full Name"
