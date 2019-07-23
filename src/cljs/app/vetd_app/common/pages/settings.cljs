@@ -105,7 +105,6 @@
 (rf/reg-event-fx
  :invite-user-to-org.submit
  (fn [{:keys [db]} [_ email org-id user-id]]
-   (println email)
    (cfx/validated-dispatch-fx db
                               [:o/invite-user-to-org email org-id user-id]
                               #(cond

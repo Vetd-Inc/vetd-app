@@ -364,9 +364,10 @@
 (defmethod l/action :invite-user-to-org
   [{:keys [input-data] :as link} account]
   (let [{:keys [email org-id]} input-data
-        org-name (:oname (select-org-by-id org-id))]
+        org-name (:oname (select-org-by-id org-id))
+        signup-flow? (every? (partial contains? account) [:uname :pwd])]
     ;; this link action is 'overloaded'
-    (if (every? (partial contains? account) [:uname :pwd])
+    (if-not signup-flow?
       ;; standard usage of the link (i.e., the initial click from email)
       (if-let [{:keys [id]} (select-user-by-email email)]
         ;; the account already exists, just add them to org, and give a session token
@@ -376,7 +377,8 @@
              :org-name org-name
              :session-token (-> id insert-session :token)})
         ;; they will need to "signup by invite"
-        (do (l/update-max-uses link "action" 1) ; allow another use (will be via ws :do-link-action)
+        (do (l/update-max-uses link "action" 2) ; allow another use (will be via ws :do-link-action)
+            (l/update-expires link "read" (+ (ut/now) (* 1000 60 5))) ; allow read for next 5 mins
             {:user-exists? false
              :org-name org-name}))
       ;; reusing link action to create account + add to org
@@ -389,5 +391,3 @@
           ;; i.e., it won't be read from a link read
           {:org-name org-name
            :session-token (-> id insert-session :token)})))))
-
-

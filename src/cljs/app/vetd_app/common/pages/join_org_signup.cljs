@@ -17,7 +17,7 @@
  :route-join-org-signup
  (fn [{:keys [db]} [_ link-key]]
    {:db (assoc db
-               :page :route-join-org-signup
+               :page :join-org-signup
                :page-params {:link-key link-key})
     :analytics/page {:name "Signup By Invite"}}))
 
@@ -49,14 +49,20 @@
                         :pwd pwd}}}))
 (rf/reg-event-fx
  :join-org-signup-return
- (fn [{:keys [db]} [_ {:keys [session-token] :as results}]]
-   {;; TODO possibly add a toast here?
-    :local-store {:session-token session-token}
-    :analytics/track {:event "Signup Complete"
-                      :props {:category "Accounts"
-                              :label "By Invite"}}
-    :dispatch-later [{:ms 100 :dispatch [:ws-get-session-user]}
-                     {:ms 200 :dispatch [:nav-home]}]}))
+ (fn [{:keys [db]} [_ {:keys [cmd output-data] :as results}]]
+   (if (= cmd :invite-user-to-org)
+     {:toast {:type "success"
+              :title "Organization Joined"
+              :message (str "You accepted an invitation to join " (:org-name output-data))}
+      :local-store {:session-token (:session-token output-data)}
+      :analytics/track {:event "Signup Complete"
+                        :props {:category "Accounts"
+                                :label "By Invite"}}
+      :dispatch-later [{:ms 100 :dispatch [:ws-get-session-user]}
+                       {:ms 200 :dispatch [:nav-home]}]}
+     {:toast {:type "error"
+              :title "Sorry, that invitation is invalid or has expired."}
+      :dispatch [:nav-home]})))
 
 ;; Subscriptions
 (rf/reg-sub
@@ -86,13 +92,6 @@
           [:> ui/Input {:class "borderless"
                         :spellCheck false
                         :onChange (fn [_ this] (reset! uname (.-value this)))}]]]
-        [:> ui/FormField {:error (= @bad-input& :email)}
-         [:label "Work Email Address"
-          [:> ui/Input {:class "borderless"
-                        :type "email"
-                        :disabled true
-                        :spellCheck false
-                        :value "PREFILL"}]]]
         [:> ui/FormField {:error (= @bad-input& :pwd)}
          [:label "Password"
           [:> ui/Input {:class "borderless"
