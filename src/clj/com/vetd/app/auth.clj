@@ -95,9 +95,8 @@
 
 (defn select-memb-by-ids
   [user-id org-id]
-  (-> [[:memberships
-        {:user-id user-id
-         :org-id org-id}
+  (-> [[:memberships {:user-id user-id
+                      :org-id org-id}
         [:id :user-id :org-id :created]]]
       ha/sync-query
       vals
@@ -303,8 +302,12 @@
 
 (defmethod com/handle-ws-inbound :invite-user-to-org
   [{:keys [email org-id from-user-id] :as req} ws-id sub-fn]
-  (future (send-invite-user-to-org-email req))
-  {})
+  (let [user (select-user-by-email email)]
+    (if (and user
+             (select-memb-by-ids (:id user) org-id))
+      {:already-member? true}
+      (do (future (send-invite-user-to-org-email req))
+          {}))))
 
 (defmethod com/handle-ws-inbound :create-membership
   [{:keys [user-id org-id]} ws-id sub-fn]
@@ -363,11 +366,10 @@
       (if-let [{:keys [id]} (select-user-by-email email)]
         (do (create-or-find-memb id org-id)
             {:session-token (-> id insert-session :token)})
-        {:session-token nil})
+        {:session-token nil} ; no existing user, may need to change
+        )
       (let [{:keys [uname pwd]} account
-            {:keys [id]} (insert-user uname
-                                      email
-                                      (bhsh/derive pwd))]
+            {:keys [id]} (insert-user uname email (bhsh/derive pwd))]
         (when (and id org-id)
           (create-or-find-memb id org-id)
           {:session-token (-> id insert-session :token)})))))

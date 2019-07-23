@@ -1,6 +1,17 @@
 (ns vetd-app.common.fx
   (:require [re-frame.core :as rf]))
 
+(defn validated-dispatch-fx
+  [db event validator-fn]
+  (let [[bad-input message] (validator-fn)]
+    (if bad-input
+      {:db (assoc-in db [:page-params :bad-input] bad-input)
+       :toast {:type "error" 
+               :title "Error"
+               :message message}}
+      {:db (assoc-in db [:page-params :bad-input] nil)
+       :dispatch event})))
+
 (rf/reg-fx
  :confetti
  (fn [_]

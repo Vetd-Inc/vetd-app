@@ -1,6 +1,7 @@
 (ns vetd-app.common.pages.settings
   (:require [vetd-app.buyers.components :as bc]
             [vetd-app.common.components :as cc]
+            [vetd-app.common.fx :as cfx]
             [vetd-app.ui :as ui]
             [vetd-app.util :as util]
             [reagent.core :as r]
@@ -31,27 +32,18 @@
 (rf/reg-event-fx
  :stop-edit-field
  (fn [{:keys [db]} [_ field]]
-   {:db (update-in db [:page-params :fields-editing] disj field)}))
-
-(defn validated-dispatch-fx
-  [db event validator-fn]
-  (let [[bad-input message] (validator-fn)]
-    (if bad-input
-      {:db (assoc-in db [:page-params :bad-input] bad-input)
-       :toast {:type "error" 
-               :title "Error"
-               :message message}}
-      {:db (assoc-in db [:page-params :bad-input] nil)
-       :dispatch event})))
+   {:db (-> db
+            (update-in [:page-params :fields-editing] disj field)
+            (assoc-in [:page-params :bad-input] nil))}))
 
 (rf/reg-event-fx
  :update-user-name.submit
  (fn [{:keys [db]} [_ uname]]
-   (validated-dispatch-fx db
-                          [:update-user uname]
-                          #(cond
-                             (not (re-matches #".+\s.+" uname)) [:uname "Please enter your full name (first & last)."]
-                             :else nil))))
+   (cfx/validated-dispatch-fx db
+                              [:update-user uname]
+                              #(cond
+                                 (not (re-matches #".+\s.+" uname)) [:uname "Please enter your full name (first & last)."]
+                                 :else nil))))
 
 (rf/reg-event-fx
  :update-user
@@ -78,12 +70,12 @@
 (rf/reg-event-fx
  :update-user-password.submit
  (fn [{:keys [db]} [_ pwd new-pwd confirm-new-pwd]]
-   (validated-dispatch-fx db
-                          [:update-user-password pwd new-pwd]
-                          #(cond
-                             (< (count new-pwd) 8) [:new-pwd "Password must be at least 8 characters."]
-                             (not= new-pwd confirm-new-pwd) [:confirm-new-pwd "Password and Confirm Password must match."]
-                             :else nil))))
+   (cfx/validated-dispatch-fx db
+                              [:update-user-password pwd new-pwd]
+                              #(cond
+                                 (< (count new-pwd) 8) [:new-pwd "Password must be at least 8 characters."]
+                                 (not= new-pwd confirm-new-pwd) [:confirm-new-pwd "Password and Confirm Password must match."]
+                                 :else nil))))
 
 (rf/reg-event-fx
  :update-user-password
@@ -109,6 +101,18 @@
       :toast {:type "error" 
               :title "Error"
               :message "Current Password is incorrect."}})))
+
+(rf/reg-event-fx
+ :invite-user-to-org.submit
+ (fn [{:keys [db]} [_ email org-id user-id]]
+   (println email)
+   (cfx/validated-dispatch-fx db
+                              [:o/invite-user-to-org email org-id user-id]
+                              #(cond
+                                 (not (re-matches #"^\S+@\S+\.\S+$" email))
+                                 [:invite-email-address "Please enter a valid email address."]
+                                 
+                                 :else nil))))
 
 ;;;; Subscriptions
 (rf/reg-sub
@@ -253,39 +257,50 @@
           [:> ui/ListHeader uname (when (= id @curr-user-id&) " (you)")]
           [:> ui/ListDescription email]]]))))
 
+(defn c-invite-member-form [org-id]
+  (let [fields-editing& (rf/subscribe [:fields-editing])
+        user-id& (rf/subscribe [:user-id])
+        email& (r/atom "")
+        bad-input& (rf/subscribe [:bad-input])
+        submit-fn (fn []
+                    (rf/dispatch [:invite-user-to-org.submit
+                                  @email&
+                                  org-id
+                                  @user-id&]))]
+    (fn [org-id]
+      (when (@fields-editing& "invite-email-address")
+        [:> ui/Form
+         [:> ui/FormField {:error (= @bad-input& :invite-email-address)
+                           :style {:padding-top 7}}
+          [:> ui/Input
+           {:placeholder "Enter email address..."
+            :fluid true
+            :auto-focus true
+            :on-change #(reset! email& (-> % .-target .-value))
+            :action (r/as-element
+                     [:> ui/Button
+                      {:on-click submit-fn
+                       :color "blue"}
+                      "Invite"])}]]]))))
+
 (defn c-org-members
   [org-id memberships]
-  (let [user-id& (rf/subscribe [:user-id])
-        inviting?& (r/atom false)
-        email& (r/atom "")
-        bad-input& (rf/subscribe [:bad-input])]
+  (let [fields-editing& (rf/subscribe [:fields-editing])]
     (fn [org-id memberships]
       [c-field-container
-       (if @inviting?&
-         [:> ui/Label {:on-click #(reset! inviting?& false)
+       (if (@fields-editing& "invite-email-address")
+         [:> ui/Label {:on-click #(rf/dispatch [:stop-edit-field "invite-email-address"])
                        :as "a"
                        :style {:float "right"}}
           "Cancel"]
-         [:> ui/Label {:on-click #(reset! inviting?& true)
+         [:> ui/Label {:on-click #(rf/dispatch [:edit-field "invite-email-address"])
                        :as "a"
                        :color "teal"
                        :style {:float "right"}}
           [:> ui/Icon {:name "add user"}]
           "Invite New Member"])
        [:h3.display-field-key "Members"]
-       (when @inviting?&
-         [:> ui/Form
-          [:> ui/FormField {:error (= @bad-input& :email)
-                            :style {:padding-top 7}}
-           [:> ui/Input
-            {:placeholder "Enter email address..."
-             :fluid true
-             :auto-focus true
-             :on-change #(reset! email& (-> % .-target .-value))
-             :action (r/as-element
-                      [:> ui/Button {:on-click #(rf/dispatch [:o/invite-user-to-org @email& org-id @user-id&])
-                                     :color "blue"}
-                       "Invite"])}]]])
+       [c-invite-member-form org-id]
        [:> ui/List {:class "members"
                     :relaxed true}
         (for [member memberships]

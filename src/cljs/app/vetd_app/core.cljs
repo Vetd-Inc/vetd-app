@@ -7,6 +7,7 @@
             vetd-app.url
             vetd-app.debounce
             vetd-app.common.fx
+            vetd-app.orgs.fx
             [vetd-app.hooks :as hooks]
             [vetd-app.buyers.fixtures :as b-fix]
             [vetd-app.buyers.pages.search :as p-bsearch]
@@ -22,7 +23,6 @@
             [vetd-app.vendors.pages.profile :as p-vprofile]
             [vetd-app.vendors.pages.rounds :as p-vrounds]
             [vetd-app.vendors.pages.round-product-detail :as p-vround-product-detail]
-            [vetd-app.orgs.pages.users :as p-ousers]
             [vetd-app.groups.pages.discounts :as p-gdiscounts]
             [vetd-app.groups.pages.orgs :as p-gorgs]
             [vetd-app.common.fixtures :as pub-fix]
@@ -55,7 +55,6 @@
                    :v/profile #'p-vprofile/c-page
                    :v/rounds #'p-vrounds/c-page
                    :v/round-product-detail #'p-vround-product-detail/c-page
-                   :o/users #'p-ousers/c-page
                    :g/discounts #'p-gdiscounts/c-page
                    :g/orgs #'p-gorgs/c-page})
 
@@ -76,7 +75,6 @@
                    :v/profile #'v-fix/container
                    :v/rounds #'v-fix/container
                    :v/round-product-detail #'v-fix/container
-                   :o/users #'b-fix/container
                    :g/discounts #'b-fix/container
                    :g/orgs #'b-fix/container})
 
@@ -193,9 +191,6 @@
 
 (sec/defroute settings-root "/settings" []
   (rf/dispatch [:route-settings]))
-
-(sec/defroute org-users-path "/o/users" []
-  (rf/dispatch [:o/route-users]))
 
 (sec/defroute group-discounts-path "/c/discounts" []
   (rf/dispatch [:g/route-discounts]))
