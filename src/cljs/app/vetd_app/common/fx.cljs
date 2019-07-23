@@ -20,14 +20,15 @@
 
 (rf/reg-event-fx
  :read-link
- (fn [{:keys [db]} [_ k]]
+ (fn [{:keys [db]} [_ link-key]]
    {:ws-send {:payload {:cmd :read-link
-                        :return :read-link-result
-                        :key k}}}))
+                        :return {:handler :read-link-result
+                                 :link-key link-key}
+                        :key link-key}}}))
 
 (rf/reg-event-fx
  :read-link-result
- (fn [{:keys [db]} [_ {:keys [cmd output-data] :as results}]]
+ (fn [{:keys [db]} [_ {:keys [cmd output-data] :as results} {{:keys [link-key]} :return}]]
    (case cmd ; make sure your case nav's the user somewhere (often :nav-home)
      :create-verified-account {:toast {:type "success"
                                        :title "Account Verified"
@@ -44,12 +45,11 @@
      :invite-user-to-org (if (:user-exists? output-data)
                            {:toast {:type "success"
                                     :title "Organization Joined"
-                                    :message (str "You accepted an invitation to join " (:org-name output-data))
-                                    }
+                                    :message (str "You accepted an invitation to join " (:org-name output-data))}
                             :local-store {:session-token (:session-token output-data)}
                             :dispatch-later [{:ms 100 :dispatch [:ws-get-session-user]}
                                              {:ms 200 :dispatch [:nav-home]}]}
-                           {:dispatch [:nav-join-org-signup (:org-name output-data)]})
+                           {:dispatch [:nav-join-org-signup link-key]})
      {:toast {:type "error"
               :title "That link is expired or invalid."}
       :dispatch [:nav-home]})))

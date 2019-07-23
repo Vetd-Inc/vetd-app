@@ -187,8 +187,8 @@
 (sec/defroute signup-path "/signup/:type" [type]
   (rf/dispatch [:route-signup type]))
 
-(sec/defroute join-org-signup-path "/signup-by-invite/:org-name" [org-name]
-  (rf/dispatch [:route-join-org-signup org-name]))
+(sec/defroute join-org-signup-path "/signup-by-invite/:link-key" [link-key]
+  (rf/dispatch [:route-join-org-signup link-key]))
 
 (sec/defroute forgot-password-path "/forgot-password/" []
   (rf/dispatch [:route-forgot-password]))
@@ -205,8 +205,8 @@
   (rf/dispatch [:g/route-orgs]))
 
 ;; Link - special links for actions such as reset password, or account verification
-(sec/defroute link-path "/l/:k" [k]
-  (rf/dispatch [:read-link k]))
+(sec/defroute link-path "/l/:link-key" [link-key]
+  (rf/dispatch [:read-link link-key]))
 
 ;; Buyers
 (sec/defroute buyers-search-root "/b/search" []

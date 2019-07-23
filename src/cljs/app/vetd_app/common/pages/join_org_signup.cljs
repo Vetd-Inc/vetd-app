@@ -7,16 +7,18 @@
 ;; Events
 (rf/reg-event-fx
  :nav-join-org-signup
- (fn [_ [_ org-name]]
-   {:nav {:path (str "/signup-by-invite/" org-name)}
+ (fn [_ [_ link-key]]
+   {:nav {:path (str "/signup-by-invite/" link-key)}
     :analytics/track {:event "Signup Start"
                       :props {:category "Accounts"
                               :label "By Invite"}}}))
 
 (rf/reg-event-fx
  :route-join-org-signup
- (fn [{:keys [db]} [_ org-type]]
-   {:db (assoc db :page :route-join-org-signup)
+ (fn [{:keys [db]} [_ link-key]]
+   {:db (assoc db
+               :page :route-join-org-signup
+               :page-params {:link-key link-key})
     :analytics/page {:name "Signup By Invite"}}))
 
 (rf/reg-event-fx

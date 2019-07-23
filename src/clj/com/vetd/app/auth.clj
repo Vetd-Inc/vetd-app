@@ -364,17 +364,18 @@
 (defmethod l/action :invite-user-to-org
   [{:keys [input-data] :as link} account]
   (l/update-expires link "read" (+ (ut/now) (* 1000 60 5))) ; allow read for next 5 mins
-  (let [{:keys [email org-id]} input-data]
+  (let [{:keys [email org-id]} input-data
+        org-name (:oname (select-org-by-id org-id))]
     ;; this link action is 'overloaded'
     ;; if account is nil, it is the standard usage of the link (i.e., the initial click from email)
     (if (nil? account)
       (if-let [{:keys [id]} (select-user-by-email email)]
         (do (create-or-find-memb id org-id)
             {:user-exists? true
-             :org-name "TODO ORG NAME"
+             :org-name org-name
              :session-token (-> id insert-session :token)})
         {:user-exists? false
-         :org-name "TODO ORG NAME"})
+         :org-name org-name})
       ;; reusing link action to create account + add to org
       ;; used from ws, :do-link-action cmd
       (when (= (:email account) email)  ; ensure no frontend hacking
@@ -382,5 +383,5 @@
               {:keys [id]} (insert-user uname email (bhsh/derive pwd))]
           (when id
             (create-or-find-memb id org-id)
-            {:org-name "TODO ORG NAME"
+            {:org-name org-name
              :session-token (-> id insert-session :token)}))))))
