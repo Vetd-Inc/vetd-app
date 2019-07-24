@@ -115,6 +115,14 @@
                      field (inc curr-uses)}
                     :links)))
 
+(defn update-max-uses
+  "Update the max-uses for a given system (action / read)."
+  [link system max-uses]
+  (let [field (keyword (str "max_uses_" system))]
+    (db/update-any! {:id (:id link)
+                     field max-uses}
+                    :links)))
+
 (defn update-expires
   "Update the expires time for a given system (action / read)."
   [link system expires-unix-ms]

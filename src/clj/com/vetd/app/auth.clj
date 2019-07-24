@@ -95,9 +95,8 @@
 
 (defn select-memb-by-ids
   [user-id org-id]
-  (-> [[:memberships
-        {:user-id user-id
-         :org-id org-id}
+  (-> [[:memberships {:user-id user-id
+                      :org-id org-id}
         [:id :user-id :org-id :created]]]
       ha/sync-query
       vals
@@ -205,11 +204,15 @@
                                                      [:email
                                                       :org-id
                                                       :from-user-id])
-                            :max-uses-action 10
-                            :expires-action (+ (ut/now) (* 1000 60 60 24 30))})]
+                            ;; 30 days from now
+                            :expires-action (+ (ut/now) (* 1000 60 60 24 30))})
+        from-user-name (:uname (select-user-by-id from-user-id :uname))
+        from-org-name (:oname (select-org-by-id org-id))]
     (ec/send-template-email
      email
-     {:invite-link (str l/base-url link-key)}
+     {:invite-link (str l/base-url link-key)
+      :from-user-name from-user-name
+      :from-org-name from-org-name}
      {:template-id invite-user-to-org-template-id})))
 
 (defn select-session-by-id
@@ -302,16 +305,22 @@
 
 (defmethod com/handle-ws-inbound :invite-user-to-org
   [{:keys [email org-id from-user-id] :as req} ws-id sub-fn]
-  (future (send-invite-user-to-org-email req))
-  {})
+  (let [user (select-user-by-email email)]
+    (if (and user
+             (select-memb-by-ids (:id user) org-id))
+      {:already-member? true}
+      (do (future (send-invite-user-to-org-email req))
+          {}))))
 
 (defmethod com/handle-ws-inbound :create-membership
   [{:keys [user-id org-id]} ws-id sub-fn]
-  (create-or-find-memb user-id org-id))
+  (create-or-find-memb user-id org-id)
+  {})
 
 (defmethod com/handle-ws-inbound :delete-membership
   [{:keys [id]} ws-id sub-fn]
-  (delete-memb id))
+  (delete-memb id)
+  {})
 
 (defmethod com/handle-ws-inbound :switch-membership
   [{:keys [user-id org-id]} ws-id sub-fn]
@@ -356,16 +365,31 @@
 
 (defmethod l/action :invite-user-to-org
   [{:keys [input-data] :as link} account]
-  (let [{:keys [email org-id]} input-data]
-    (if (-> account :email nil?)
+  (let [{:keys [email org-id]} input-data
+        org-name (:oname (select-org-by-id org-id))
+        signup-flow? (every? (partial contains? account) [:uname :pwd])]
+    ;; this link action is 'overloaded'
+    (if-not signup-flow?
+      ;; standard usage of the link (i.e., the initial click from email)
       (if-let [{:keys [id]} (select-user-by-email email)]
+        ;; the account already exists, just add them to org, and give a session token
         (do (create-or-find-memb id org-id)
-            {:session-token (-> id insert-session :token)})
-        {:session-token nil})
+            (l/update-expires link "read" (+ (ut/now) (* 1000 60 5))) ; allow read for next 5 mins
+            {:user-exists? true
+             :org-name org-name
+             :session-token (-> id insert-session :token)})
+        ;; they will need to "signup by invite"
+        (do (l/update-max-uses link "action" 2) ; allow another use (will be via ws :do-link-action)
+            (l/update-expires link "read" (+ (ut/now) (* 1000 60 5))) ; allow read for next 5 mins
+            {:user-exists? false
+             :org-name org-name}))
+      ;; reusing link action to create account + add to org
+      ;; used from ws, :do-link-action cmd
       (let [{:keys [uname pwd]} account
-            {:keys [id]} (insert-user uname
-                                      email
-                                      (bhsh/derive pwd))]
-        (when (and id org-id)
+            {:keys [id]} (insert-user uname email (bhsh/derive pwd))]
+        (when id ; user was successfully created
           (create-or-find-memb id org-id)
-          {:session-token (-> id insert-session :token)})))))
+          ;; this 'output' will be read immediately from the ws results
+          ;; i.e., it won't be read from a link read
+          {:org-name org-name
+           :session-token (-> id insert-session :token)})))))

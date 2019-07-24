@@ -23,6 +23,15 @@ a.teal:hover {
   color: $teal-highlight !important;
 }
 
+a.label {
+  -webkit-touch-callout: none; /* iOS Safari */
+  -webkit-user-select: none; /* Safari */
+  -khtml-user-select: none; /* Konqueror HTML */
+  -moz-user-select: none; /* Firefox */
+  -ms-user-select: none; /* Internet Explorer/Edge */
+  user-select: none; /* Non-prefixed version, currently supported by Chrome and Opera */
+}
+
 .button {
   &:active {
     transform: scale(0.98);
@@ -91,10 +100,10 @@ a.teal:hover {
 }
 
 .avatar-initials {
+  display: inline-block;
   width: 40px;
   height: 40px;
-  margin-left: 10px;
-  padding-left: 2px;
+  padding-left: 3px;
   text-transform: uppercase;
   font-size: 15px;
   text-align: center;
@@ -103,10 +112,34 @@ a.teal:hover {
   border-radius: 50%;
   background: linear-gradient(to right, #6dccce, #32abde) !important;
   color: white;
-  cursor: pointer;
+  transition: all 0.1s ease;
 
+  -webkit-touch-callout: none; /* iOS Safari */
+  -webkit-user-select: none; /* Safari */
+  -khtml-user-select: none; /* Konqueror HTML */
+  -moz-user-select: none; /* Firefox */
+  -ms-user-select: none; /* Internet Explorer/Edge */
+  user-select: none; /* Non-prefixed version, currently supported by Chrome and Opera */
+}
+.avatar-container {
+  cursor: pointer;
+  
   &:hover {
-    filter: brightness(1.1);
+    .avatar-initials {
+      filter: brightness(1.1);
+    }
+  }
+}
+
+.account-actions {
+  width: 165px;
+  
+  .button.fluid {
+    margin-top: 10px;
+
+    &:first-of-type {
+      margin-top: 0;
+    }
   }
 }
 
@@ -331,6 +364,28 @@ a.teal:hover {
   width: 100%;
   text-align: center;
   margin-bottom: 15px;
+}
+
+// Settings page
+.members .item {
+  padding-top: 10px !important;
+
+  /* this trick make hover only occur for the item when a child element "label" is being hovered */
+  pointer-events: none;
+  .label {
+    pointer-events: auto;
+  }
+
+  &:hover {
+    opacity: 0.7;
+    .avatar {
+      filter: brightness(1.04);
+    }
+  }
+  
+  .content {
+    line-height: 20px !important;
+  }
 }
 
 

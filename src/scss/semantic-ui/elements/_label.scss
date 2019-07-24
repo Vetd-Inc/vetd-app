@@ -715,7 +715,7 @@ a.ui.basic.green.label:hover {
 
 .ui.teal.labels .label,
 .ui.teal.label {
-  background: linear-gradient(to right, #32abde, #6dccce) !important;
+  background: #6dccce !important;
   border: none !important;
   color: #fff !important;
 }
@@ -746,6 +746,46 @@ a.ui.teal.label:hover {
 }
 .ui.basic.teal.labels a.label:hover,
 a.ui.basic.teal.label:hover {
+  background-color: #FFFFFF !important;
+  color: #009c95 !important;
+  border-color: #009c95 !important;
+}
+
+/*--- Vetd ---*/
+
+.ui.vetd.labels .label,
+.ui.vetd.label {
+  background: linear-gradient(to right, #32abde, #6dccce) !important;
+  border: none !important;
+  color: #fff !important;
+}
+
+/* Link */
+.ui.vetd.labels .label:hover,
+a.ui.vetd.label:hover {
+  filter: brightness(1.1);
+  color: #FFFFFF !important;
+}
+
+/* Corner */
+.ui.vetd.corner.label,
+.ui.vetd.corner.label:hover {
+  background-color: transparent !important;
+}
+
+/* Ribbon */
+.ui.vetd.ribbon.label {
+  border-color: #187399 !important;
+}
+
+/* Basic */
+.ui.basic.vetd.label {
+  background: none #FFFFFF !important;
+  color: #00B5AD !important;
+  border-color: #00B5AD !important;
+}
+.ui.basic.vetd.labels a.label:hover,
+a.ui.basic.vetd.label:hover {
   background-color: #FFFFFF !important;
   color: #009c95 !important;
   border-color: #009c95 !important;

@@ -7,6 +7,7 @@
             vetd-app.url
             vetd-app.debounce
             vetd-app.common.fx
+            vetd-app.orgs.fx
             [vetd-app.hooks :as hooks]
             [vetd-app.buyers.fixtures :as b-fix]
             [vetd-app.buyers.pages.search :as p-bsearch]
@@ -22,10 +23,14 @@
             [vetd-app.vendors.pages.profile :as p-vprofile]
             [vetd-app.vendors.pages.rounds :as p-vrounds]
             [vetd-app.vendors.pages.round-product-detail :as p-vround-product-detail]
+            [vetd-app.groups.pages.discounts :as p-gdiscounts]
+            [vetd-app.groups.pages.orgs :as p-gorgs]
             [vetd-app.common.fixtures :as pub-fix]
             [vetd-app.common.pages.signup :as p-signup]
+            [vetd-app.common.pages.join-org-signup :as p-join-org-signup]
             [vetd-app.common.pages.login :as p-login]
             [vetd-app.common.pages.forgot-password :as p-forgot-password]
+            [vetd-app.common.pages.settings :as p-settings]
             [reagent.core :as r]
             [re-frame.core :as rf]
             [secretary.core :as sec]
@@ -37,7 +42,9 @@
 (hooks/reg-hooks! hooks/c-page
                   {:login #'p-login/c-page
                    :signup #'p-signup/c-page
+                   :join-org-signup #'p-join-org-signup/c-page
                    :forgot-password #'p-forgot-password/c-page
+                   :settings #'p-settings/c-page
                    :b/search #'p-bsearch/c-page
                    :b/preposals #'p-bpreposals/c-page
                    :b/preposal-detail #'p-bpreposal-detail/c-page
@@ -49,12 +56,16 @@
                    :v/product-detail #'p-vprod-detail/c-page
                    :v/profile #'p-vprofile/c-page
                    :v/rounds #'p-vrounds/c-page
-                   :v/round-product-detail #'p-vround-product-detail/c-page})
+                   :v/round-product-detail #'p-vround-product-detail/c-page
+                   :g/discounts #'p-gdiscounts/c-page
+                   :g/orgs #'p-gorgs/c-page})
 
 (hooks/reg-hooks! hooks/c-container
                   {:login #'pub-fix/container
                    :signup #'pub-fix/container
+                   :join-org-signup #'pub-fix/container
                    :forgot-password #'pub-fix/container
+                   :settings #'b-fix/container ; TODO fragile, misuse of buyer fixtures
                    :b/search #'b-fix/container
                    :b/preposals #'b-fix/container
                    :b/preposal-detail #'b-fix/container
@@ -66,7 +77,9 @@
                    :v/product-detail #'v-fix/container
                    :v/profile #'v-fix/container
                    :v/rounds #'v-fix/container
-                   :v/round-product-detail #'v-fix/container})
+                   :v/round-product-detail #'v-fix/container
+                   :g/discounts #'b-fix/container
+                   :g/orgs #'b-fix/container})
 
 
 (rf/reg-event-db
@@ -78,7 +91,7 @@
    :loading? {:products #{}} ; entities (by ID) that are in a loading?=true state (for UI display)
    :round-products-order []}))
 
-(def public-pages #{:login :signup :forgot-password})
+(def public-pages #{:login :signup :join-org-signup :forgot-password})
 
 (rf/reg-sub
  :page
@@ -120,13 +133,16 @@
  :<- [:user] 
  (fn [{:keys [uname]}] uname))
 
+(rf/reg-sub
+ :user-email
+ :<- [:user] 
+ (fn [{:keys [email]}] email))
 
 
 (rf/reg-fx
  :nav
  (fn nav-fx [{:keys [path query]}]
    (acct/navigate! path query)))
-
 
 (defn ->home-url
   [membs admin?]
@@ -171,14 +187,26 @@
 (sec/defroute signup-path "/signup/:type" [type]
   (rf/dispatch [:route-signup type]))
 
+(sec/defroute join-org-signup-path "/signup-by-invite/:link-key" [link-key]
+  (rf/dispatch [:route-join-org-signup link-key]))
+
 (sec/defroute forgot-password-path "/forgot-password/" []
   (rf/dispatch [:route-forgot-password]))
 (sec/defroute forgot-password-prefill-path "/forgot-password/:email-address" [email-address]
   (rf/dispatch [:route-forgot-password email-address]))
 
+(sec/defroute settings-root "/settings" []
+  (rf/dispatch [:route-settings]))
+
+(sec/defroute group-discounts-path "/c/discounts" []
+  (rf/dispatch [:g/route-discounts]))
+
+(sec/defroute group-orgs-path "/c/orgs" []
+  (rf/dispatch [:g/route-orgs]))
+
 ;; Link - special links for actions such as reset password, or account verification
-(sec/defroute link-path "/l/:k" [k]
-  (rf/dispatch [:read-link k]))
+(sec/defroute link-path "/l/:link-key" [link-key]
+  (rf/dispatch [:read-link link-key]))
 
 ;; Buyers
 (sec/defroute buyers-search-root "/b/search" []

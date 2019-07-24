@@ -35,6 +35,13 @@
 (def ItemDescription (component "ItemDescription"))
 (def ItemExtra (component "ItemExtra"))
 
+;; List
+(def List (component "List"))
+(def ListItem (component "List" "Item"))
+(def ListContent (component "List" "Content"))
+(def ListHeader (component "List" "Header"))
+(def ListDescription (component "List" "Description"))
+
 ;; Label
 (def Label (component "Label"))
 (def LabelDetail (component "Label" "Detail"))
@@ -112,6 +119,7 @@
 (def StepDescription (component "Step" "Description"))
 (def Transition (component "Transition"))
 (def TransitionGroup (component "Transition" "Group"))
+(def TransitionablePortal (component "TransitionablePortal"))
 
 ;; Accordion
 (def Accordion (component "Accordion"))
