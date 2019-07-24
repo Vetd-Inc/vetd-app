@@ -113,6 +113,26 @@
                                  
                                  :else nil))))
 
+;; use this to remove a user from an org
+(rf/reg-event-fx
+ :delete-membership
+ (fn [{:keys [db]} [_ memb-id user-name org-id org-name]]
+   {:ws-send {:payload {:cmd :delete-membership
+                        :return {:handler :delete-membership-return
+                                 :user-name user-name
+                                 :org-name org-name}
+                        :id memb-id}}
+    :analytics/track {:event "Remove User From Org"
+                      :props {:category "Account"
+                              :label org-id}}}))
+
+(rf/reg-event-fx
+ :delete-membership-return
+ (fn [{:keys [db]} [_ _ {{:keys [user-name org-name]} :return}]]
+   {:toast {:type "success"
+            :title "Member Removed from Organization"
+            :message (str user-name " has been removed from " org-name)}}))
+
 ;;;; Subscriptions
 (rf/reg-sub
  :fields-editing
@@ -221,7 +241,7 @@
 (defn c-password-field
   [email]
   [c-editable-field {:label "Password"
-                     :value "**********"
+                     :value [:em "hidden"]
                      :sym "pwd"
                      :edit-label "Change Password"}
    [c-edit-password email]])
@@ -237,23 +257,27 @@
        [c-password-field @user-email&]])))
 
 (defn c-org-member
-  [member]
+  [member org-id org-name]
   (let [curr-user-id& (rf/subscribe [:user-id])]
-    (fn [{:keys [user status]}]
-      (let [{:keys [id uname email]} user]
+    (fn [{:keys [id status user]} org-id org-name]
+      (let [{user-id :id
+             user-name :uname
+             email :email} user
+            self? (= user-id @curr-user-id&)]
         [:> ui/ListItem
          [:> ui/ListContent
-          [:> ui/Label {;; :on-click #(rf/dispatch [:stop-edit-field sym])
-                        :as "a"
-                        :style {:float "right"
-                                :margin-top 5}}
-           [:> ui/Icon {:name "remove"}]
-           "Remove"]
+          (when-not self?
+            [:> ui/Label {:on-click #(rf/dispatch [:delete-membership id user-name org-id org-name])
+                          :as "a"
+                          :style {:float "right"
+                                  :margin-top 5}}
+             [:> ui/Icon {:name "remove"}]
+             (if self? "Leave Organization" "Remove")])
           [:div {:style {:display "inline-block"
                          :float "left"
                          :margin-right 7}}
-           [cc/c-avatar-initials uname]]
-          [:> ui/ListHeader uname (when (= id @curr-user-id&) " (you)")]
+           [cc/c-avatar-initials user-name]]
+          [:> ui/ListHeader user-name (when self? " (you)")]
           [:> ui/ListDescription email]]]))))
 
 (defn c-invite-member-form [org-id]
@@ -282,9 +306,9 @@
                       "Invite"])}]]]))))
 
 (defn c-org-members
-  [org-id memberships]
+  [memberships org-id org-name]
   (let [fields-editing& (rf/subscribe [:fields-editing])]
-    (fn [org-id memberships]
+    (fn [memberships org-id org-name]
       [c-field-container
        (if (@fields-editing& "invite-email-address")
          [:> ui/Label {:on-click #(rf/dispatch [:stop-edit-field "invite-email-address"])
@@ -299,32 +323,38 @@
           "Invite New Member"])
        [:h3.display-field-key "Members"]
        [c-invite-member-form org-id]
-       [:> ui/List {:class "members"
-                    :relaxed true}
+       ;; this TransitionGroup doesn't seem to be transitioning...
+       [:> ui/TransitionGroup {:as ui/List
+                               :class "members"
+                               :relaxed true
+                               :duration 500
+                               :animation "scale"}
         (for [member memberships]
           ^{:key (-> member :user :id)}
-          [c-org-member member])]])))
+          [c-org-member member org-id org-name])]])))
 
 (defn c-orgs-settings []
   (let [org-id& (rf/subscribe [:org-id])
-        org& (rf/subscribe [:gql/q
-                            {:queries
-                             [[:orgs {:id @org-id&
-                                      :_limit 1
-                                      :deleted nil}
-                               [:id :oname :url
-                                [:memberships
-                                 [:status
-                                  [:user
-                                   [:id :idstr :uname :email]]]]]]]}])]
-    (fn []                              ; TODO handle multiple orgs
-      (let [{:keys [id oname url memberships] :as org} (-> @org& :orgs first)]
-        [bc/c-profile-segment {:title "Organization Settings"}
-         [c-field {:label "Name"
-                   :value oname}]
-         [c-field {:label "Website"
-                   :value url}]
-         [c-org-members id memberships]]))))
+        orgs& (rf/subscribe [:gql/sub
+                             {:queries
+                              [[:orgs {:id @org-id&
+                                       :_limit 1
+                                       :deleted nil}
+                                [:id :oname :url
+                                 [:memberships
+                                  [:id :status
+                                   [:user
+                                    [:id :idstr :uname :email]]]]]]]}])]
+    (fn [] ; TODO handle multiple orgs
+      (if (= :loading @orgs&)
+        [cc/c-loader]
+        (let [{:keys [id oname url memberships] :as org} (-> @orgs& :orgs first)]
+          [bc/c-profile-segment {:title "Organization Settings"}
+           [c-field {:label "Name"
+                     :value oname}]
+           [c-field {:label "Website"
+                     :value url}]
+           [c-org-members memberships id oname]])))))
 
 (defn c-page []
   [:> ui/Grid {:stackable true}

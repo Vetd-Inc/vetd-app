@@ -48,10 +48,10 @@
         user-name& (rf/subscribe [:user-name])
         org-name& (rf/subscribe [:org-name])
         ;; append "Community" menu item if accessible
-        pages (conj top-nav-pages
-                    {:text "Community"
-                     :pages #{:g/orgs}
-                     :event [:g/nav-orgs]})]
+        pages (cond-> top-nav-pages
+                false (conj {:text "Community"
+                             :pages #{:g/orgs}
+                             :event [:g/nav-orgs]}))]
     (fn []
       (when (and @page& @user-name&)
         [:> ui/Menu {:class "top-nav"

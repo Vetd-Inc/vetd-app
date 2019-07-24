@@ -314,11 +314,13 @@
 
 (defmethod com/handle-ws-inbound :create-membership
   [{:keys [user-id org-id]} ws-id sub-fn]
-  (create-or-find-memb user-id org-id))
+  (create-or-find-memb user-id org-id)
+  {})
 
 (defmethod com/handle-ws-inbound :delete-membership
   [{:keys [id]} ws-id sub-fn]
-  (delete-memb id))
+  (delete-memb id)
+  {})
 
 (defmethod com/handle-ws-inbound :switch-membership
   [{:keys [user-id org-id]} ws-id sub-fn]

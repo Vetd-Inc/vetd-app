@@ -370,9 +370,16 @@ a.label {
 .members .item {
   padding-top: 10px !important;
 
+  /* this trick make hover only occur for the item when a child element "label" is being hovered */
+  pointer-events: none;
+  .label {
+    pointer-events: auto;
+  }
+
   &:hover {
+    opacity: 0.7;
     .avatar {
-      filter: brightness(1.1);
+      filter: brightness(1.04);
     }
   }
   
