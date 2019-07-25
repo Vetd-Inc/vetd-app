@@ -138,6 +138,10 @@
  :<- [:user] 
  (fn [{:keys [email]}] email))
 
+(rf/reg-sub
+ :admin-of-groups
+ (fn [{:keys [admin-of-groups]}] admin-of-groups))
+
 
 (rf/reg-fx
  :nav
@@ -261,7 +265,8 @@
 (rf/reg-event-fx
  :ws/req-session
  [(rf/inject-cofx :local-store [:session-token])]  
- (fn [{:keys [db local-store]} [_ {:keys [logged-in? user memberships admin?]}]]
+ (fn [{:keys [db local-store]} [_ {:keys [logged-in? user memberships
+                                          admin-of-groups admin?]}]]
    (if logged-in?
      (let [org-id (some-> memberships first :org-id)] ; TODO support users with multi-orgs
        {:db (assoc db  
@@ -270,6 +275,8 @@
                    :memberships memberships
                    :active-memb-id (some-> memberships first :id)
                    :org-id org-id
+                   :admin-of-groups admin-of-groups
+                   ;; a Vetd employee with admin access?
                    :admin? admin?)
         :cookies {:admin-token (when admin? [(:session-token local-store)
                                              {:max-age 3600 :path "/"}])}

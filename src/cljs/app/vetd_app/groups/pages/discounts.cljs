@@ -1,44 +1,92 @@
 (ns vetd-app.groups.pages.discounts
   (:require [vetd-app.ui :as ui]
+            [vetd-app.common.components :as cc]
+            [vetd-app.buyers.components :as bc]
             [reagent.core :as r]
             [re-frame.core :as rf]
-            [vetd-app.common.components :as cc]
             [clojure.string :as s]))
 
 
 (rf/reg-event-fx
  :g/nav-discounts
- (fn [_ [_ email-address]]
-   {:nav {:path "/c/discounts/"}}))
+ (constantly
+  {:nav {:path "/c/discounts"}
+   :analytics/track {:event "Navigate"
+                     :props {:category "Navigation"
+                             :label "Groups Discounts"}}}))
 
 (rf/reg-event-fx
  :g/route-discounts
- (fn [{:keys [db]} _]
-   {:db (assoc db
-               :page :g/discounts)
-    :analytics/page {:name "Group Discounts"}}))
+ (fn [{:keys [db]}]
+   {:db (assoc db :page :g/discounts)
+    :analytics/page {:name "Groups Discounts"}}))
 
-(rf/reg-event-fx
- :g/invite-user-to-org
- (fn [{:keys [db]} [_ email org-id from-user-id]]
-   {:ws-send {:payload {:cmd :invite-user-to-org
-                        :email email
-                        :org-id org-id
-                        :from-user-id from-user-id }}}))
+(defn c-org
+  [{:keys [id idstr oname memberships] :as org}]
+  (let [num-members (count memberships)]
+    [cc/c-field {:label oname
+                 :value [:<> (str num-members " member" (when (> num-members 1) "s") " ")
+                         [:> ui/Popup
+                          {:position "bottom left"
+                           :content (s/join ", " (map (comp :uname :user) memberships))
+                           :trigger (r/as-element
+                                     [:> ui/Icon {:name "question circle"}])}]
+                         ]
+                 
+                 }]))
+
+(defn c-discount
+  [{:keys [id idstr pname group-discount-descr vendor] :as discount}]
+  [cc/c-field {:label [:<>
+                       [:a.name {:on-click #(rf/dispatch [:b/nav-product-detail idstr])}
+                        pname]
+                       [:br]
+                       [:small (:oname vendor)]]
+               :value group-discount-descr}])
+
+(defn c-group
+  [{:keys [id gname orgs discounts] :as group}]
+  [:> ui/Grid {:stackable true}
+   [:> ui/GridRow
+    [:> ui/GridColumn {:computer 8 :mobile 16}
+     [bc/c-profile-segment {:title (str gname " - Organizations")}
+      (for [org orgs]
+        ^{:key (:id org)}
+        [c-org org])]]
+    [:> ui/GridColumn {:computer 8 :mobile 16}
+     [bc/c-profile-segment {:title (str gname " - Community Discounts")}
+      (for [discount discounts]
+        ^{:key (:id discount)}
+        [c-discount discount])]]]])
+
+(defn c-groups
+  [groups]
+  [:div
+   (for [group groups]
+     ^{:key (:id group)}
+     [c-group group])])
 
 (defn c-page []
   (let [org-id& (rf/subscribe [:org-id])
-        groups& (rf/subscribe [:gql/q
+        groups& (rf/subscribe [:gql/sub
                                {:queries
                                 [[:groups {:admin-org-id @org-id&
                                            :deleted nil}
-                                  [[:discounts
+                                  [:id :gname
+                                   [:orgs
+                                    [:id :oname
+                                     [:memberships
+                                      [:id
+                                       [:user
+                                        [:id :uname]]]]]]
+                                   [:discounts
+                                    ;; i.e., product 'id' and product 'idstr'
                                     [:id :idstr :pname
-                                     :group-discount-descr]]]]]}])]
+                                     :group-discount-descr
+                                     [:vendor
+                                      [:id :oname]]]]]]]}])]
     (fn []
-      (def g1 @groups&)
       (if (= :loading @groups&)
         [cc/c-loader]
-        (let [discounts (some-> @groups& :groups first :discounts)]
-          [:div (str discounts)])))))
+        [c-groups (:groups @groups&)]))))
 

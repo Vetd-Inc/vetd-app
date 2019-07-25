@@ -10,6 +10,15 @@
             [taoensso.timbre :as log]
             [honeysql.core :as hs]))
 
+(defn select-groups-by-admins
+  "Get all the groups of which any of org-ids is an admin."
+  [org-ids]
+  (-> [[:groups {:admin-org-id org-ids}
+        [:id]]]
+      ha/sync-query
+      vals
+      first))
+
 (defn insert-group-org-membership
   [org-id group-id]
   (let [[id idstr] (ut/mk-id&str)]
