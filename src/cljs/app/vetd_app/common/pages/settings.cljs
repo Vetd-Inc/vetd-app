@@ -258,7 +258,8 @@
 
 (defn c-org-member
   [member org-id org-name]
-  (let [curr-user-id& (rf/subscribe [:user-id])]
+  (let [curr-user-id& (rf/subscribe [:user-id])
+        popup-open? (r/atom false)]
     (fn [{:keys [id status user]} org-id org-name]
       (let [{user-id :id
              user-name :uname
@@ -267,12 +268,29 @@
         [:> ui/ListItem
          [:> ui/ListContent
           (when-not self?
-            [:> ui/Label {:on-click #(rf/dispatch [:delete-membership id user-name org-id org-name])
-                          :as "a"
-                          :style {:float "right"
-                                  :margin-top 5}}
-             [:> ui/Icon {:name "remove"}]
-             (if self? "Leave Organization" "Remove")])
+            [:> ui/Popup
+             {:position "bottom right"
+              :on "click"
+              :open @popup-open?
+              :on-close #(reset! popup-open? false)
+              :content (r/as-element
+                        [:div
+                         [:h5 "Are you sure you want to remove " user-name " from " org-name "?"]
+                         [:> ui/ButtonGroup {:fluid true}
+                          [:> ui/Button {:on-click #(reset! popup-open? false)}
+                           "Cancel"]
+                          [:> ui/Button {:on-click (fn []
+                                                     (reset! popup-open? false)
+                                                     (rf/dispatch [:delete-membership id user-name org-id org-name]))
+                                         :color "red"}
+                           "Remove"]]])
+              :trigger (r/as-element
+                        [:> ui/Label {:on-click #(swap! popup-open? not)
+                                      :as "a"
+                                      :style {:float "right"
+                                              :margin-top 5}}
+                         [:> ui/Icon {:name "remove"}]
+                         (if self? "Leave Organization" "Remove")])}])
           [:div {:style {:display "inline-block"
                          :float "left"
                          :margin-right 7}}
