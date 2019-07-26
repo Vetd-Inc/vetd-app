@@ -23,8 +23,7 @@
             [vetd-app.vendors.pages.profile :as p-vprofile]
             [vetd-app.vendors.pages.rounds :as p-vrounds]
             [vetd-app.vendors.pages.round-product-detail :as p-vround-product-detail]
-            [vetd-app.groups.pages.discounts :as p-gdiscounts]
-            [vetd-app.groups.pages.orgs :as p-gorgs]
+            [vetd-app.groups.pages.settings :as p-gsettings]
             [vetd-app.common.fixtures :as pub-fix]
             [vetd-app.common.pages.signup :as p-signup]
             [vetd-app.common.pages.join-org-signup :as p-join-org-signup]
@@ -57,8 +56,7 @@
                    :v/profile #'p-vprofile/c-page
                    :v/rounds #'p-vrounds/c-page
                    :v/round-product-detail #'p-vround-product-detail/c-page
-                   :g/discounts #'p-gdiscounts/c-page
-                   :g/orgs #'p-gorgs/c-page})
+                   :g/settings #'p-gsettings/c-page})
 
 (hooks/reg-hooks! hooks/c-container
                   {:login #'pub-fix/container
@@ -78,8 +76,7 @@
                    :v/profile #'v-fix/container
                    :v/rounds #'v-fix/container
                    :v/round-product-detail #'v-fix/container
-                   :g/discounts #'b-fix/container
-                   :g/orgs #'b-fix/container})
+                   :g/settings #'b-fix/container})
 
 
 (rf/reg-event-db
@@ -202,11 +199,8 @@
 (sec/defroute settings-root "/settings" []
   (rf/dispatch [:route-settings]))
 
-(sec/defroute group-discounts-path "/c/discounts" []
-  (rf/dispatch [:g/route-discounts]))
-
-(sec/defroute group-orgs-path "/c/orgs" []
-  (rf/dispatch [:g/route-orgs]))
+(sec/defroute group-settings-path "/c/settings" []
+  (rf/dispatch [:g/route-settings]))
 
 ;; Link - special links for actions such as reset password, or account verification
 (sec/defroute link-path "/l/:link-key" [link-key]

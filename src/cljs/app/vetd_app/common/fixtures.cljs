@@ -47,14 +47,13 @@
   (let [page& (rf/subscribe [:page])
         user-name& (rf/subscribe [:user-name])
         org-name& (rf/subscribe [:org-name])
-        admin-of-groups& (rf/subscribe [:admin-of-groups])
-        ]
+        admin-of-groups& (rf/subscribe [:admin-of-groups])]
     (fn [top-nav-pages]
       (let [;; append "Community" menu item if accessible
             pages (cond-> top-nav-pages
                     (not-empty @admin-of-groups&) (conj {:text "Community"
-                                                         :pages #{:g/discounts}
-                                                         :event [:g/nav-discounts]}))]
+                                                         :pages #{:g/settings}
+                                                         :event [:g/nav-settings]}))]
         (when (and @page& @user-name&)
           [:> ui/Menu {:class "top-nav"
                        :secondary true} ; 'secondary' is a misnomer (it's just for styling)

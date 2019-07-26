@@ -99,6 +99,12 @@
   (create-or-find-group-org-memb org-id group-id)
   {})
 
+(defmethod com/handle-ws-inbound :g/add-orgs-to-group
+  [{:keys [org-ids group-id]} ws-id sub-fn]
+  (doseq [org-id org-ids]
+    (create-or-find-group-org-memb org-id group-id))
+  {})
+
 (defmethod com/handle-ws-inbound :set-group-discount
   [{:keys [group-id product-id descr]} ws-id sub-fn]
   (set-group-discount group-id product-id descr)
