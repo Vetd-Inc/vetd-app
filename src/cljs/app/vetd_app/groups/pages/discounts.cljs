@@ -6,7 +6,6 @@
             [re-frame.core :as rf]
             [clojure.string :as s]))
 
-
 (rf/reg-event-fx
  :g/nav-discounts
  (constantly
@@ -28,7 +27,13 @@
                  :value [:<> (str num-members " member" (when (> num-members 1) "s") " ")
                          [:> ui/Popup
                           {:position "bottom left"
-                           :content (s/join ", " (map (comp :uname :user) memberships))
+                           :wide "very"
+                           :content (let [max-members-show 15]
+                                      (str (s/join ", " (->> memberships
+                                                             (map (comp :uname :user))
+                                                             (take max-members-show)))
+                                           (when (> num-members max-members-show)
+                                             (str " and " (- num-members max-members-show) " more."))))
                            :trigger (r/as-element
                                      [:> ui/Icon {:name "question circle"}])}]
                          ]
