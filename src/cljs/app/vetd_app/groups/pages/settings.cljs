@@ -30,35 +30,32 @@
                                  :org-ids org-ids}
                         :group-id group-id
                         :org-ids org-ids}}
-    :analytics/track {:event "Add Organization to Community"
+    :analytics/track {:event "Add Organization"
                       :props {:category "Community"}}}))
 
 (rf/reg-event-fx
  :g/add-orgs-to-group-return
  (fn [{:keys [db]} [_ _ {{:keys [org-ids]} :return}]]
    {:toast {:type "success"
-            :title (str "Organization" (when (> (count org-ids) 1) "s") " Added to Community")}
+            :title (str "Organization" (when (> (count org-ids) 1) "s") " added to your community!")}
     :dispatch [:stop-edit-field "add-orgs-to-group"]}))
 
-;; use this to remove a user from an org
-;; (rf/reg-event-fx
-;;  :delete-membership
-;;  (fn [{:keys [db]} [_ memb-id user-name org-id org-name]]
-;;    {:ws-send {:payload {:cmd :delete-membership
-;;                         :return {:handler :delete-membership-return
-;;                                  :user-name user-name
-;;                                  :org-name org-name}
-;;                         :id memb-id}}
-;;     :analytics/track {:event "Remove User From Org"
-;;                       :props {:category "Account"
-;;                               :label org-id}}}))
+;; remove an org from a group
+(rf/reg-event-fx
+ :g/remove-org
+ (fn [{:keys [db]} [_ group-id org-id]]
+   {:ws-send {:payload {:cmd :g/remove-org
+                        :return {:handler :g/remove-org-return}
+                        :group-id group-id
+                        :org-id org-id}}
+    :analytics/track {:event "Remove Organization"
+                      :props {:category "Community"}}}))
 
-;; (rf/reg-event-fx
-;;  :delete-membership-return
-;;  (fn [{:keys [db]} [_ _ {{:keys [user-name org-name]} :return}]]
-;;    {:toast {:type "success"
-;;             :title "Member Removed from Organization"
-;;             :message (str user-name " has been removed from " org-name)}}))
+(rf/reg-event-fx
+ :g/remove-org-return
+ (fn [{:keys [db]}]
+   {:toast {:type "success"
+            :title "Organization removed from your community."}}))
 
 (defn c-add-orgs-form [group]
   (let [fields-editing& (rf/subscribe [:fields-editing])
@@ -144,7 +141,7 @@
                                             "Cancel"]
                                            [:> ui/Button {:on-click (fn []
                                                                       (reset! popup-open? false)
-                                                                      #_(rf/dispatch [:delete-membership id user-name org-id org-name]))
+                                                                      (rf/dispatch [:g/remove-org (:id group) id]))
                                                           :color "red"}
                                             "Remove"]]])
                                :trigger (r/as-element
@@ -173,8 +170,7 @@
   [cc/c-field {:label [:<>
                        [:a.name {:on-click #(rf/dispatch [:b/nav-product-detail idstr])}
                         pname]
-                       [:br]
-                       [:small (:oname vendor)]]
+                       [:small " by " (:oname vendor)]]
                :value group-discount-descr}])
 
 (defn c-group

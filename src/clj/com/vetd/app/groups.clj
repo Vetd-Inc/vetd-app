@@ -47,6 +47,11 @@
     [false memb]
     [true (insert-group-org-membership org-id group-id)]))
 
+(defn delete-group-org-memb
+  [group-org-memb-id]
+  (db/hs-exe! {:delete-from :group_org_memberships
+               :where [:= :id group-org-memb-id]}))
+
 (defn insert-group [group-name admin-org-id]
   (let [[id idstr] (ut/mk-id&str)]
     (-> (db/insert! :groups
@@ -103,6 +108,12 @@
   [{:keys [org-ids group-id]} ws-id sub-fn]
   (doseq [org-id org-ids]
     (create-or-find-group-org-memb org-id group-id))
+  {})
+
+(defmethod com/handle-ws-inbound :g/remove-org
+  [{:keys [org-id group-id]} ws-id sub-fn]
+  (when-let [{:keys [id]} (select-group-org-memb-by-ids org-id group-id)]
+    (delete-group-org-memb id))
   {})
 
 (defmethod com/handle-ws-inbound :set-group-discount
