@@ -116,13 +116,13 @@
     (delete-group-org-memb id))
   {})
 
-(defmethod com/handle-ws-inbound :set-group-discount
+(defmethod com/handle-ws-inbound :g/set-discount
   [{:keys [group-id product-id descr]} ws-id sub-fn]
   (set-group-discount group-id product-id descr)
   {})
 
-(defmethod com/handle-ws-inbound :delete-group-discount
-  [{:keys [group-discount-id]} ws-id sub-fn]
-  (delete-group-discount group-discount-id)
+(defmethod com/handle-ws-inbound :g/delete-discount
+  [{:keys [discount-id]} ws-id sub-fn]
+  (delete-group-discount discount-id)
   {})
 

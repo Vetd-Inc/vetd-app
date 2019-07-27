@@ -61,7 +61,6 @@
 (rf/reg-event-fx
  :g/add-discount-to-group.submit
  (fn [{:keys [db]} [_ group-id product-id details]]
-   (println product-id)
    (cfx/validated-dispatch-fx db
                               [:g/add-discount-to-group group-id product-id details]
                               #(cond
@@ -72,23 +71,37 @@
 (rf/reg-event-fx
  :g/add-discount-to-group
  (fn [{:keys [db]} [_ group-id product-id details]]
-   {:ws-send {:payload {:cmd :g/add-discount-to-group
-                        :return {:handler :g/add-discount-to-group-return
-                                 :uname uname}
-                        :user-id user-id
-                        :uname uname}}
+   {:ws-send {:payload {:cmd :g/set-discount
+                        :return {:handler :g/add-discount-to-group-return}
+                        :group-id group-id
+                        :product-id product-id
+                        :descr details}}
     :analytics/track {:event "Add Discount"
                       :props {:category "Community"
                               :label product-id}}}))
 
 (rf/reg-event-fx
  :g/add-discount-to-group-return
- (fn [{:keys [db]} [_ _ {{:keys [uname]} :return}]]
-   {:db (assoc-in db [:user :uname] uname)
-    :toast {:type "success"
-            :title "Name Updated Successfully"
-            :message (str "Hello " uname "!")}
-    :dispatch [:stop-edit-field "uname"]}))
+ (fn [{:keys [db]}]
+   {:toast {:type "success"
+            :title "Discount added to community!"}
+    :dispatch [:stop-edit-field "add-discount-to-group"]}))
+
+(rf/reg-event-fx
+ :g/delete-discount
+ (fn [{:keys [db]} [_ discount-id]]
+   {:ws-send {:payload {:cmd :g/delete-discount
+                        :return {:handler :g/delete-discount-return}
+                        :discount-id discount-id}}
+    :analytics/track {:event "Delete Discount"
+                      :props {:category "Community"
+                              :label discount-id}}}))
+
+(rf/reg-event-fx
+ :g/delete-discount-return
+ (fn [{:keys [db]}]
+   {:toast {:type "success"
+            :title "Discount deleted from community."}}))
 
 ;;;; Components
 (defn c-add-orgs-form [group]
@@ -257,12 +270,39 @@
                       "Add"])}]]]))))
 
 (defn c-discount
-  [{:keys [id idstr pname group-discount-descr vendor] :as discount}]
-  [cc/c-field {:label [:<>
-                       [:a.name {:on-click #(rf/dispatch [:b/nav-product-detail idstr])}
-                        pname]
-                       [:small " by " (:oname vendor)]]
-               :value group-discount-descr}])
+  [discount]
+  (let [popup-open? (r/atom false)]
+    (fn [{:keys [id idstr pname
+                 group-discount-descr ref-id ; the discount ID
+                 vendor] :as discount}]
+      [cc/c-field {:label [:<>
+                           [:> ui/Popup
+                            {:position "bottom right"
+                             :on "click"
+                             :open @popup-open?
+                             :on-close #(reset! popup-open? false)
+                             :content (r/as-element
+                                       [:div
+                                        [:h5 "Are you sure you want to delete this discount?"]
+                                        [:> ui/ButtonGroup {:fluid true}
+                                         [:> ui/Button {:on-click #(reset! popup-open? false)}
+                                          "Cancel"]
+                                         [:> ui/Button {:on-click (fn []
+                                                                    (reset! popup-open? false)
+                                                                    (rf/dispatch [:g/delete-discount ref-id]))
+                                                        :color "red"}
+                                          "Delete"]]])
+                             :trigger (r/as-element
+                                       [:> ui/Label {:on-click #(swap! popup-open? not)
+                                                     :as "a"
+                                                     :style {:float "right"
+                                                             :margin-top 5}}
+                                        [:> ui/Icon {:name "remove"}]
+                                        "Delete"])}]
+                           [:a.name {:on-click #(rf/dispatch [:b/nav-product-detail idstr])}
+                            pname]
+                           [:small " by " (:oname vendor)]]
+                   :value group-discount-descr}])))
 
 (defn c-group
   [group]
@@ -341,9 +381,9 @@
                                       [:id
                                        [:user
                                         [:id :uname]]]]]]
-                                   [:discounts
+                                   [:discounts {:ref-deleted nil}
                                     ;; i.e., product 'id' and product 'idstr'
-                                    [:id :idstr :pname
+                                    [:ref-id :id :idstr :pname
                                      :group-discount-descr
                                      [:vendor
                                       [:id :oname]]]]]]]}])]
