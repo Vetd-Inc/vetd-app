@@ -116,7 +116,7 @@
                              :onSearchChange (fn [_ this] (reset! search-query& (aget this "searchQuery")))
                              :onChange (fn [_ this] (reset! value& (.-value this)))}]
             [:> ui/Button
-             {:color "blue"
+             {:color "teal"
               :disabled (empty? @value&)
               :on-click #(rf/dispatch [:g/add-orgs-to-group (:id group) (js->clj @value&)])}
              "Add"]]])))))
@@ -165,6 +165,65 @@
                                :trigger (r/as-element
                                          [:> ui/Icon {:name "question circle"}])}]]}]))))
 
+(defn c-add-discount-form [group]
+  (let [fields-editing& (rf/subscribe [:fields-editing])
+        bad-input& (rf/subscribe [:bad-input])
+        product& (r/atom nil)
+        details& (r/atom "")
+        options& (r/atom []) ; options from search results + current values
+        search-query& (r/atom "")
+        products->options (fn [products]
+                            (for [{:keys [id pname]} products]
+                              {:key id
+                               :text pname
+                               :value id}))]
+    (fn [group]
+      (when (@fields-editing& "add-discount-to-group")
+        (let [products& (rf/subscribe
+                         [:gql/q
+                          {:queries
+                           [[:products {:_where {:pname {:_ilike (str "%" @search-query& "%")}}
+                                        :_limit 100
+                                        :_order_by {:pname :asc}}
+                             [:id :pname]]]}])
+              _ (when-not (= :loading @products&)
+                  (let [options (->> @products&
+                                     :products
+                                     products->options ; now we have options from gql sub
+                                     ;; (this dumbly actually keeps everything, but that seems fine)
+                                     (concat @options&) ; keep options for the current values
+                                     distinct)]
+                    (when-not (= @options& options)
+                      (reset! options& options))))]
+          [:> ui/Form
+           [:> ui/FormField {:error (= @bad-input& :add-discount-to-group.product-id)
+                             :style {:padding-top 7}}
+            [:> ui/Dropdown {:loading (= :loading @products&)
+                             :options @options&
+                             :placeholder "Search products..."
+                             :search true
+                             :selection true
+                             :multiple false
+                             ;; :auto-focus true ;; TODO this doesn't work
+                             :selectOnBlur false
+                             :selectOnNavigation true
+                             :closeOnChange true
+                             :onSearchChange (fn [_ this] (reset! search-query& (aget this "searchQuery")))
+                             :onChange (fn [_ this] (reset! product& (.-value this)))}]]
+           [:> ui/FormField {:error (= @bad-input& :add-discount-to-group.details)}
+            [:> ui/Input
+             {:placeholder "Discount details..."
+              :fluid true
+              :on-change #(reset! details& (-> % .-target .-value))
+              :action (r/as-element
+                       [:> ui/Button {:on-click #(rf/dispatch [:g/add-discount-to-group
+                                                               (:id group)
+                                                               (js->clj @product&)
+                                                               @details&])
+                                      :disabled (nil? @product&) ; TODO that only works the first time... cancelling edit needs to reset product&
+                                      :color "blue"}
+                        "Add"])}]]])))))
+
 (defn c-discount
   [{:keys [id idstr pname group-discount-descr vendor] :as discount}]
   [cc/c-field {:label [:<>
@@ -179,6 +238,11 @@
     (fn [{:keys [id gname orgs discounts] :as group}]
       [:> ui/Grid {:stackable true}
        [:> ui/GridRow
+        [:> ui/GridColumn {:computer 16 :mobile 16}
+         [:h1 {:style {:text-align "center"}}
+          gname]]]
+       [:> ui/GridRow
+        ;; Organizations
         [:> ui/GridColumn {:computer 8 :mobile 16}
          [bc/c-profile-segment
           {:title [:<>
@@ -196,17 +260,29 @@
                       [:> ui/Icon {:name "add group"}]
                       "Add Organization"])
                    "Organizations"
-                   ;; [:br]
-                   ;; [:span {:style {:font-size 16}} gname]
                    [c-add-orgs-form group]]}
           (for [org orgs]
             ^{:key (:id org)}
             [c-org org group])]]
+        ;; Discounts
         [:> ui/GridColumn {:computer 8 :mobile 16}
-         [bc/c-profile-segment {:title [:<> "Discounts"
-                                        ;; [:br]
-                                        ;; [:span {:style {:font-size 16}} gname]
-                                        ]}
+         [bc/c-profile-segment
+          {:title [:<>
+                   (if (@fields-editing& "add-discount-to-group")
+                     [:> ui/Label {:on-click #(rf/dispatch
+                                               [:stop-edit-field "add-discount-to-group"])
+                                   :as "a"
+                                   :style {:float "right"}}
+                      "Cancel"]
+                     [:> ui/Label {:on-click #(rf/dispatch
+                                               [:edit-field "add-discount-to-group"])
+                                   :as "a"
+                                   :color "blue"
+                                   :style {:float "right"}}
+                      [:> ui/Icon {:name "dollar"}]
+                      "Add Discount"])
+                   "Discounts"
+                   [c-add-discount-form group]]}
           (for [discount discounts]
             ^{:key (:id discount)}
             [c-discount discount])]]]])))
