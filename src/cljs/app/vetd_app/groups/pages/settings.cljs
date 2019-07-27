@@ -2,6 +2,7 @@
   (:require [vetd-app.ui :as ui]
             [vetd-app.common.components :as cc]
             [vetd-app.buyers.components :as bc]
+            [vetd-app.common.fx :as cfx]
             [reagent.core :as r]
             [re-frame.core :as rf]
             [clojure.string :as s]))
@@ -57,6 +58,39 @@
    {:toast {:type "success"
             :title "Organization removed from your community."}}))
 
+(rf/reg-event-fx
+ :g/add-discount-to-group.submit
+ (fn [{:keys [db]} [_ group-id product-id details]]
+   (println product-id)
+   (cfx/validated-dispatch-fx db
+                              [:g/add-discount-to-group group-id product-id details]
+                              #(cond
+                                 (s/blank? product-id) [:add-discount-to-group.product-id "You must select a product."]
+                                 (s/blank? details) [:add-discount-to-group.details "Discount details cannot be blank."]
+                                 :else nil))))
+
+(rf/reg-event-fx
+ :g/add-discount-to-group
+ (fn [{:keys [db]} [_ group-id product-id details]]
+   {:ws-send {:payload {:cmd :g/add-discount-to-group
+                        :return {:handler :g/add-discount-to-group-return
+                                 :uname uname}
+                        :user-id user-id
+                        :uname uname}}
+    :analytics/track {:event "Add Discount"
+                      :props {:category "Community"
+                              :label product-id}}}))
+
+(rf/reg-event-fx
+ :g/add-discount-to-group-return
+ (fn [{:keys [db]} [_ _ {{:keys [uname]} :return}]]
+   {:db (assoc-in db [:user :uname] uname)
+    :toast {:type "success"
+            :title "Name Updated Successfully"
+            :message (str "Hello " uname "!")}
+    :dispatch [:stop-edit-field "uname"]}))
+
+;;;; Components
 (defn c-add-orgs-form [group]
   (let [fields-editing& (rf/subscribe [:fields-editing])
         bad-input& (rf/subscribe [:bad-input])
@@ -69,57 +103,56 @@
                            :text oname
                            :value id}))]
     (fn [group]
-      (when (@fields-editing& "add-orgs-to-group")
-        (let [orgs& (rf/subscribe
-                     [:gql/q
-                      {:queries
-                       [[:orgs {:_where {:oname {:_ilike (str "%" @search-query& "%")}}
-                                :_limit 25
-                                :_order_by {:oname :asc}}
-                         [:id :oname]]]}])
-              org-ids-already-in-group (set (map :id (:orgs group)))
-              _ (when-not (= :loading @orgs&)
-                  (let [options (->> @orgs&
-                                     :orgs
-                                     orgs->options ; now we have options from gql sub
-                                     ;; (this dumbly actually keeps everything, but that seems fine)
-                                     (concat @options&) ; keep options for the current values
-                                     distinct
-                                     (remove (comp (partial contains? org-ids-already-in-group) :value)))]
-                    (when-not (= @options& options)
-                      (reset! options& options))))]
-          [:> ui/Form {:as "div"
-                       :class "popup-dropdown-form"} ;; popup is a misnomer here
-           [:> ui/FormField {:error (= @bad-input& :add-orgs-to-group)
-                             :style {:padding-top 7
-                                     :width "100%"}
-                             ;; this class combo w/ width 100% is a hack
-                             :class "ui action input"}
-            [:> ui/Dropdown {:loading (= :loading @orgs&)
-                             :options @options&
-                             :placeholder "Search organizations..."
-                             :search true
-                             :selection true
-                             :multiple true
-                             ;; :auto-focus true ;; TODO this doesn't work
-                             :selectOnBlur false
-                             :selectOnNavigation true
-                             :closeOnChange true
-                             :allowAdditions false ;; TODO this should be changed to true when we allow invites of new orgs
-                             ;; :additionLabel "Hit 'Enter' to Add "
-                             ;; :onAddItem (fn [_ this]
-                             ;;              (->> this
-                             ;;                   .-value
-                             ;;                   vector
-                             ;;                   ui/as-dropdown-options
-                             ;;                   (swap! options& concat)))
-                             :onSearchChange (fn [_ this] (reset! search-query& (aget this "searchQuery")))
-                             :onChange (fn [_ this] (reset! value& (.-value this)))}]
-            [:> ui/Button
-             {:color "teal"
-              :disabled (empty? @value&)
-              :on-click #(rf/dispatch [:g/add-orgs-to-group (:id group) (js->clj @value&)])}
-             "Add"]]])))))
+      (let [orgs& (rf/subscribe
+                   [:gql/q
+                    {:queries
+                     [[:orgs {:_where {:oname {:_ilike (str "%" @search-query& "%")}}
+                              :_limit 25
+                              :_order_by {:oname :asc}}
+                       [:id :oname]]]}])
+            org-ids-already-in-group (set (map :id (:orgs group)))
+            _ (when-not (= :loading @orgs&)
+                (let [options (->> @orgs&
+                                   :orgs
+                                   orgs->options ; now we have options from gql sub
+                                   ;; (this dumbly actually keeps everything, but that seems fine)
+                                   (concat @options&) ; keep options for the current values
+                                   distinct
+                                   (remove (comp (partial contains? org-ids-already-in-group) :value)))]
+                  (when-not (= @options& options)
+                    (reset! options& options))))]
+        [:> ui/Form {:as "div"
+                     :class "popup-dropdown-form"} ;; popup is a misnomer here
+         [:> ui/FormField {:error (= @bad-input& :add-orgs-to-group)
+                           :style {:padding-top 7
+                                   :width "100%"}
+                           ;; this class combo w/ width 100% is a hack
+                           :class "ui action input"}
+          [:> ui/Dropdown {:loading (= :loading @orgs&)
+                           :options @options&
+                           :placeholder "Search organizations..."
+                           :search true
+                           :selection true
+                           :multiple true
+                           ;; :auto-focus true ;; TODO this doesn't work
+                           :selectOnBlur false
+                           :selectOnNavigation true
+                           :closeOnChange true
+                           :allowAdditions false ;; TODO this should be changed to true when we allow invites of new orgs
+                           ;; :additionLabel "Hit 'Enter' to Add "
+                           ;; :onAddItem (fn [_ this]
+                           ;;              (->> this
+                           ;;                   .-value
+                           ;;                   vector
+                           ;;                   ui/as-dropdown-options
+                           ;;                   (swap! options& concat)))
+                           :onSearchChange (fn [_ this] (reset! search-query& (aget this "searchQuery")))
+                           :onChange (fn [_ this] (reset! value& (.-value this)))}]
+          [:> ui/Button
+           {:color "teal"
+            :disabled (empty? @value&)
+            :on-click #(rf/dispatch [:g/add-orgs-to-group (:id group) (js->clj @value&)])}
+           "Add"]]]))))
 
 (defn c-org
   [org group]
@@ -178,51 +211,50 @@
                                :text pname
                                :value id}))]
     (fn [group]
-      (when (@fields-editing& "add-discount-to-group")
-        (let [products& (rf/subscribe
-                         [:gql/q
-                          {:queries
-                           [[:products {:_where {:pname {:_ilike (str "%" @search-query& "%")}}
-                                        :_limit 100
-                                        :_order_by {:pname :asc}}
-                             [:id :pname]]]}])
-              _ (when-not (= :loading @products&)
-                  (let [options (->> @products&
-                                     :products
-                                     products->options ; now we have options from gql sub
-                                     ;; (this dumbly actually keeps everything, but that seems fine)
-                                     (concat @options&) ; keep options for the current values
-                                     distinct)]
-                    (when-not (= @options& options)
-                      (reset! options& options))))]
-          [:> ui/Form
-           [:> ui/FormField {:error (= @bad-input& :add-discount-to-group.product-id)
-                             :style {:padding-top 7}}
-            [:> ui/Dropdown {:loading (= :loading @products&)
-                             :options @options&
-                             :placeholder "Search products..."
-                             :search true
-                             :selection true
-                             :multiple false
-                             ;; :auto-focus true ;; TODO this doesn't work
-                             :selectOnBlur false
-                             :selectOnNavigation true
-                             :closeOnChange true
-                             :onSearchChange (fn [_ this] (reset! search-query& (aget this "searchQuery")))
-                             :onChange (fn [_ this] (reset! product& (.-value this)))}]]
-           [:> ui/FormField {:error (= @bad-input& :add-discount-to-group.details)}
-            [:> ui/Input
-             {:placeholder "Discount details..."
-              :fluid true
-              :on-change #(reset! details& (-> % .-target .-value))
-              :action (r/as-element
-                       [:> ui/Button {:on-click #(rf/dispatch [:g/add-discount-to-group
-                                                               (:id group)
-                                                               (js->clj @product&)
-                                                               @details&])
-                                      :disabled (nil? @product&) ; TODO that only works the first time... cancelling edit needs to reset product&
-                                      :color "blue"}
-                        "Add"])}]]])))))
+      (let [products& (rf/subscribe
+                       [:gql/q
+                        {:queries
+                         [[:products {:_where {:pname {:_ilike (str "%" @search-query& "%")}}
+                                      :_limit 100
+                                      :_order_by {:pname :asc}}
+                           [:id :pname]]]}])
+            _ (when-not (= :loading @products&)
+                (let [options (->> @products&
+                                   :products
+                                   products->options ; now we have options from gql sub
+                                   ;; (this dumbly actually keeps everything, but that seems fine)
+                                   (concat @options&) ; keep options for the current values
+                                   distinct)]
+                  (when-not (= @options& options)
+                    (reset! options& options))))]
+        [:> ui/Form
+         [:> ui/FormField {:error (= @bad-input& :add-discount-to-group.product-id)
+                           :style {:padding-top 7}}
+          [:> ui/Dropdown {:loading (= :loading @products&)
+                           :options @options&
+                           :placeholder "Search products..."
+                           :search true
+                           :selection true
+                           :multiple false
+                           ;; :auto-focus true ;; TODO this doesn't work
+                           :selectOnBlur false
+                           :selectOnNavigation true
+                           :closeOnChange true
+                           :onSearchChange (fn [_ this] (reset! search-query& (aget this "searchQuery")))
+                           :onChange (fn [_ this] (reset! product& (.-value this)))}]]
+         [:> ui/FormField {:error (= @bad-input& :add-discount-to-group.details)}
+          [:> ui/Input
+           {:placeholder "Discount details..."
+            :fluid true
+            :on-change #(reset! details& (-> % .-target .-value))
+            :action (r/as-element
+                     [:> ui/Button {:on-click #(rf/dispatch [:g/add-discount-to-group.submit
+                                                             (:id group)
+                                                             (js->clj @product&)
+                                                             @details&])
+                                    :disabled (nil? @product&)
+                                    :color "blue"}
+                      "Add"])}]]]))))
 
 (defn c-discount
   [{:keys [id idstr pname group-discount-descr vendor] :as discount}]
@@ -260,7 +292,8 @@
                       [:> ui/Icon {:name "add group"}]
                       "Add Organization"])
                    "Organizations"
-                   [c-add-orgs-form group]]}
+                   (when (@fields-editing& "add-orgs-to-group")
+                     [c-add-orgs-form group])]}
           (for [org orgs]
             ^{:key (:id org)}
             [c-org org group])]]
@@ -282,7 +315,8 @@
                       [:> ui/Icon {:name "dollar"}]
                       "Add Discount"])
                    "Discounts"
-                   [c-add-discount-form group]]}
+                   (when (@fields-editing& "add-discount-to-group")
+                     [c-add-discount-form group])]}
           (for [discount discounts]
             ^{:key (:id discount)}
             [c-discount discount])]]]])))
