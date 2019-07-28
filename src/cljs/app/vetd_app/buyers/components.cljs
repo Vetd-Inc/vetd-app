@@ -358,13 +358,19 @@
       (util/truncate-text 175)))
 
 (defn c-tags
-  [product v-fn]
+  [product v-fn & [discounts]]
   [:<>
    [c-categories product]
    (when (some-> (v-fn :product/free-trial?)
                  s/lower-case
                  (= "yes"))
-     [c-free-trial-tag])])
+     [c-free-trial-tag])
+   (when-not (empty? discounts)
+     [:> ui/Label {:class "free-trial-tag"
+                   :color "gray"
+                   :size "small"
+                   :tag true}
+      "DISCOUNT!!!!!!!"])])
 
 (defn has-data?
   [value]
