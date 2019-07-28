@@ -85,8 +85,6 @@
 (defn c-preposal
   "Component to display Preposal details."
   [{:keys [product response-prompts] :as preposal}]
-  (def d1 product)
-  #_(cljs.pprint/pprint d1)
   (let [preposal-v-fn (partial docs/get-value-by-term response-prompts)
         product-v-fn (partial docs/get-value-by-term (-> product
                                                          :form-docs
@@ -96,10 +94,10 @@
                          (partial bc/c-display-field* {:type :product
                                                        :id (:id product)
                                                        :name (:pname product)}))
-        {:keys [vendor]} product]
+        {:keys [vendor discounts]} product]
     [:<>
      [c-preposal-header-segment product preposal-v-fn product-v-fn]
-     [bc/c-pricing c-display-field product-v-fn]
+     [bc/c-pricing c-display-field product-v-fn discounts]
      [bc/c-vendor-profile (-> vendor :docs-out first) (:id vendor) (:oname vendor)]
      [bc/c-onboarding c-display-field product-v-fn]
      [bc/c-client-service c-display-field product-v-fn]
@@ -142,9 +140,9 @@
                                          [:id :prompt-id :prompt-prompt :prompt-term
                                           [:response-prompt-fields
                                            [:id :prompt-field-fname :idx
-                                            :sval :nval :dval]]]]]]]]]
-                                   [:discounts {:group-id @group-ids&}
-                                    :group-discount-descr]]
+                                            :sval :nval :dval]]]]]]]]
+                                    [:discounts {:id @group-ids&}
+                                     [:group-discount-descr]]]]
                                   [:from-org [:id :oname]]
                                   [:from-user [:id :uname]]
                                   [:to-org [:id :oname]]

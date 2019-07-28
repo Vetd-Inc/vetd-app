@@ -426,8 +426,10 @@
   "Component to display pricing information of a product profile.
   c-display-field - component to display a field (key/value)
   v-fn - function to get value per some prompt term"
-  [c-display-field v-fn]
+  [c-display-field v-fn & [discounts]]
   [c-profile-segment {:title "Pricing"}
+   (when (not-empty discounts)
+     [:> ui/GridRow [:div (str discounts)]])
    [:> ui/GridRow
     [c-display-field 5 "Range"
      (when (has-data? (v-fn :product/price-range))
