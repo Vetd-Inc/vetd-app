@@ -85,6 +85,8 @@
 (defn c-preposal
   "Component to display Preposal details."
   [{:keys [product response-prompts] :as preposal}]
+  (def d1 product)
+  #_(cljs.pprint/pprint d1)
   (let [preposal-v-fn (partial docs/get-value-by-term response-prompts)
         product-v-fn (partial docs/get-value-by-term (-> product
                                                          :form-docs
@@ -107,6 +109,7 @@
 (defn c-page []
   (let [preposal-idstr& (rf/subscribe [:preposal-idstr])
         org-id& (rf/subscribe [:org-id])
+        group-ids& (rf/subscribe [:group-ids])
         preps& (rf/subscribe [:gql/sub
                               {:queries
                                [[:docs {:dtype "preposal"
@@ -139,7 +142,9 @@
                                          [:id :prompt-id :prompt-prompt :prompt-term
                                           [:response-prompt-fields
                                            [:id :prompt-field-fname :idx
-                                            :sval :nval :dval]]]]]]]]]]
+                                            :sval :nval :dval]]]]]]]]]
+                                   [:discounts {:group-id @group-ids&}
+                                    :group-discount-descr]]
                                   [:from-org [:id :oname]]
                                   [:from-user [:id :uname]]
                                   [:to-org [:id :oname]]

@@ -120,6 +120,12 @@
  (fn [{:keys [oname]}] oname))
 
 (rf/reg-sub
+ :group-ids
+ :<- [:active-org] 
+ (fn [{:keys [groups]}]
+   (mapv :id groups)))
+
+(rf/reg-sub
  :user
  (fn [{:keys [user]}] user))
 
