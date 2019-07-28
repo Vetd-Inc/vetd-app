@@ -22,23 +22,27 @@
 
 (rf/reg-event-fx
  :gql/q
- (fn [{:keys [db ws]} [_ q sub-id]]
+  [(rf/inject-cofx :local-store [:session-token])]  
+ (fn [{:keys [db ws local-store]} [_ q sub-id]]
    {:ws-send {:payload {:cmd :graphql
                         :return {:handler :gql/data
                                  :sub-id sub-id}
                         :query q
                         :subscription? false                        
-                        :sub-id sub-id}}}))
+                        :sub-id sub-id
+                        :session-token (:session-token local-store)}}}))
 
 (rf/reg-event-fx
  :gql/sub
- (fn [{:keys [db ws]} [_ q sub-id]]
+ [(rf/inject-cofx :local-store [:session-token])]
+ (fn [{:keys [db ws local-store]} [_ q sub-id]]
    {:ws-send {:payload {:cmd :graphql
                         :return {:handler :gql/data
                                  :sub-id sub-id}
                         :query q
                         :subscription? true
-                        :sub-id sub-id}}}))
+                        :sub-id sub-id
+                        :session-token (:session-token local-store)}}}))
 
 (rf/reg-event-fx
  :gql/data
