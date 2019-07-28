@@ -133,6 +133,9 @@
                                                   (docs/get-value-by-term :product/free-trial?)
                                                   s/lower-case))
                                        true)))
+      (and features
+           (features "discounts-available")) (filter (fn [{:keys [product]}]
+                                                     (-> product :discounts empty? not)))
       (not-empty categories) (#(->> (for [{:keys [product] :as preposal} %
                                           category (:categories product)]
                                       (when (categories (:id category))
@@ -219,6 +222,15 @@
                                                                    :b/preposals-filter.remove)
                                                                  :features
                                                                  "free-trial"]))}]
+                     [:h4 "Discounts"]
+                     [:> ui/Checkbox {:label "Discounts Available"
+                                      :checked (-> @filter& :features (contains? "discounts-available") boolean)
+                                      :on-change (fn [_ this]
+                                                   (rf/dispatch [(if (.-checked this)
+                                                                   :b/preposals-filter.add
+                                                                   :b/preposals-filter.remove)
+                                                                 :features
+                                                                 "discounts-available"]))}]
                      (when (not-empty categories)
                        [:<>
                         [:h4 "Category"]
