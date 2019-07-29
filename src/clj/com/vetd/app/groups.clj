@@ -10,6 +10,15 @@
             [taoensso.timbre :as log]
             [honeysql.core :as hs]))
 
+(defn select-groups-by-admins
+  "Get all the groups of which any of org-ids is an admin."
+  [org-ids]
+  (-> [[:groups {:admin-org-id org-ids}
+        [:id]]]
+      ha/sync-query
+      vals
+      first))
+
 (defn insert-group-org-membership
   [org-id group-id]
   (let [[id idstr] (ut/mk-id&str)]
@@ -37,6 +46,11 @@
   (if-let [memb (select-group-org-memb-by-ids org-id group-id)]
     [false memb]
     [true (insert-group-org-membership org-id group-id)]))
+
+(defn delete-group-org-memb
+  [group-org-memb-id]
+  (db/hs-exe! {:delete-from :group_org_memberships
+               :where [:= :id group-org-memb-id]}))
 
 (defn insert-group [group-name admin-org-id]
   (let [[id idstr] (ut/mk-id&str)]
@@ -90,13 +104,25 @@
   (create-or-find-group-org-memb org-id group-id)
   {})
 
-(defmethod com/handle-ws-inbound :set-group-discount
+(defmethod com/handle-ws-inbound :g/add-orgs-to-group
+  [{:keys [org-ids group-id]} ws-id sub-fn]
+  (doseq [org-id org-ids]
+    (create-or-find-group-org-memb org-id group-id))
+  {})
+
+(defmethod com/handle-ws-inbound :g/remove-org
+  [{:keys [org-id group-id]} ws-id sub-fn]
+  (when-let [{:keys [id]} (select-group-org-memb-by-ids org-id group-id)]
+    (delete-group-org-memb id))
+  {})
+
+(defmethod com/handle-ws-inbound :g/set-discount
   [{:keys [group-id product-id descr]} ws-id sub-fn]
   (set-group-discount group-id product-id descr)
   {})
 
-(defmethod com/handle-ws-inbound :delete-group-discount
-  [{:keys [group-discount-id]} ws-id sub-fn]
-  (delete-group-discount group-discount-id)
+(defmethod com/handle-ws-inbound :g/delete-discount
+  [{:keys [discount-id]} ws-id sub-fn]
+  (delete-group-discount discount-id)
   {})
 
