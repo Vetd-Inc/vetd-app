@@ -94,10 +94,10 @@
                          (partial bc/c-display-field* {:type :product
                                                        :id (:id product)
                                                        :name (:pname product)}))
-        {:keys [vendor]} product]
+        {:keys [vendor discounts]} product]
     [:<>
      [c-preposal-header-segment product preposal-v-fn product-v-fn]
-     [bc/c-pricing c-display-field product-v-fn]
+     [bc/c-pricing c-display-field product-v-fn discounts]
      [bc/c-vendor-profile (-> vendor :docs-out first) (:id vendor) (:oname vendor)]
      [bc/c-onboarding c-display-field product-v-fn]
      [bc/c-client-service c-display-field product-v-fn]
@@ -107,6 +107,7 @@
 (defn c-page []
   (let [preposal-idstr& (rf/subscribe [:preposal-idstr])
         org-id& (rf/subscribe [:org-id])
+        group-ids& (rf/subscribe [:group-ids])
         preps& (rf/subscribe [:gql/sub
                               {:queries
                                [[:docs {:dtype "preposal"
@@ -139,7 +140,10 @@
                                          [:id :prompt-id :prompt-prompt :prompt-term
                                           [:response-prompt-fields
                                            [:id :prompt-field-fname :idx
-                                            :sval :nval :dval]]]]]]]]]]
+                                            :sval :nval :dval]]]]]]]]
+                                    [:discounts {:id @group-ids&
+                                                 :ref-deleted nil}
+                                     [:group-discount-descr :gname]]]]
                                   [:from-org [:id :oname]]
                                   [:from-user [:id :uname]]
                                   [:to-org [:id :oname]]

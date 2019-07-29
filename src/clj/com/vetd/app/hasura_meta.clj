@@ -120,7 +120,7 @@
           {:tables [:vetd :products
                     :vetd :groups_by_product_discount]
            :fields [:discounts]
-           :cols [:id :group_id]
+           :cols [:id :product_id]
            :rel :one-many}
           
           {:tables [:vetd :products

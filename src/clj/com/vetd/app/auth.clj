@@ -107,7 +107,8 @@
   [user-id]
   (-> [[:memberships {:user-id user-id}
         [:id :user-id :org-id
-         [:org [:id :oname :id :created :buyer? :vendor?]]]]]
+         [:org [:id :oname :id :created :buyer? :vendor?
+                [:groups [:id :idstr :gname :admin_org_id]]]]]]]
       ha/sync-query
       :memberships))
 
