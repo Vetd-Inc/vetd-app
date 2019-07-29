@@ -28,6 +28,7 @@
  (fn [{:keys [db]} [_ group-id org-ids]]
    {:ws-send {:payload {:cmd :g/add-orgs-to-group
                         :return {:handler :g/add-orgs-to-group-return
+                                 :group-id group-id
                                  :org-ids org-ids}
                         :group-id group-id
                         :org-ids org-ids}}
@@ -36,10 +37,10 @@
 
 (rf/reg-event-fx
  :g/add-orgs-to-group-return
- (fn [{:keys [db]} [_ _ {{:keys [org-ids]} :return}]]
+ (fn [{:keys [db]} [_ _ {{:keys [group-id org-ids]} :return}]]
    {:toast {:type "success"
             :title (str "Organization" (when (> (count org-ids) 1) "s") " added to your community!")}
-    :dispatch [:stop-edit-field "add-orgs-to-group"]}))
+    :dispatch [:stop-edit-field (str "add-orgs-to-group-" group-id)]}))
 
 ;; remove an org from a group
 (rf/reg-event-fx
@@ -64,15 +65,18 @@
    (cfx/validated-dispatch-fx db
                               [:g/add-discount-to-group group-id product-id details]
                               #(cond
-                                 (s/blank? product-id) [:add-discount-to-group.product-id "You must select a product."]
-                                 (s/blank? details) [:add-discount-to-group.details "Discount details cannot be blank."]
+                                 (s/blank? product-id) [(keyword (str "add-discount-to-group" group-id ".product-id"))
+                                                        "You must select a product."]
+                                 (s/blank? details) [(keyword (str "add-discount-to-group" group-id ".details"))
+                                                     "Discount details cannot be blank."]
                                  :else nil))))
 
 (rf/reg-event-fx
  :g/add-discount-to-group
  (fn [{:keys [db]} [_ group-id product-id details]]
    {:ws-send {:payload {:cmd :g/set-discount
-                        :return {:handler :g/add-discount-to-group-return}
+                        :return {:handler :g/add-discount-to-group-return
+                                 :group-id group-id}
                         :group-id group-id
                         :product-id product-id
                         :descr details}}
@@ -82,10 +86,10 @@
 
 (rf/reg-event-fx
  :g/add-discount-to-group-return
- (fn [{:keys [db]}]
+ (fn [{:keys [db]} [_ _ {{:keys [group-id]} :return}]]
    {:toast {:type "success"
             :title "Discount added to community!"}
-    :dispatch [:stop-edit-field "add-discount-to-group"]}))
+    :dispatch [:stop-edit-field (str "add-discount-to-group-" group-id)]}))
 
 (rf/reg-event-fx
  :g/delete-discount
@@ -136,8 +140,7 @@
                     (reset! options& options))))]
         [:> ui/Form {:as "div"
                      :class "popup-dropdown-form"} ;; popup is a misnomer here
-         [:> ui/FormField {:error (= @bad-input& :add-orgs-to-group)
-                           :style {:padding-top 7
+         [:> ui/FormField {:style {:padding-top 7
                                    :width "100%"}
                            ;; this class combo w/ width 100% is a hack
                            :class "ui action input"}
@@ -241,7 +244,7 @@
                   (when-not (= @options& options)
                     (reset! options& options))))]
         [:> ui/Form
-         [:> ui/FormField {:error (= @bad-input& :add-discount-to-group.product-id)
+         [:> ui/FormField {:error (= @bad-input& (keyword (str "add-discount-to-group" (:id group) ".product-id")))
                            :style {:padding-top 7}}
           [:> ui/Dropdown {:loading (= :loading @products&)
                            :options @options&
@@ -255,7 +258,7 @@
                            :closeOnChange true
                            :onSearchChange (fn [_ this] (reset! search-query& (aget this "searchQuery")))
                            :onChange (fn [_ this] (reset! product& (.-value this)))}]]
-         [:> ui/FormField {:error (= @bad-input& :add-discount-to-group.details)}
+         [:> ui/FormField {:error (= @bad-input& (keyword (str "add-discount-to-group" (:id group) ".details")))}
           [:> ui/Input
            {:placeholder "Discount details..."
             :fluid true
@@ -304,64 +307,69 @@
                            [:small " by " (:oname vendor)]]
                    :value group-discount-descr}])))
 
-(defn c-group
+(defn c-orgs
   [group]
   (let [fields-editing& (rf/subscribe [:fields-editing])]
-    (fn [{:keys [id gname orgs discounts] :as group}]
-      [:> ui/Grid {:stackable true
-                   :style {:padding-bottom 35 ; in case they are admin of multiple communities
-                           }}
-       [:> ui/GridRow
-        [:> ui/GridColumn {:computer 16 :mobile 16}
-         [:h1 {:style {:text-align "center"}}
-          gname]]]
-       [:> ui/GridRow
-        ;; Organizations
-        [:> ui/GridColumn {:computer 8 :mobile 16}
-         [bc/c-profile-segment
-          {:title [:<>
-                   (if (@fields-editing& "add-orgs-to-group")
-                     [:> ui/Label {:on-click #(rf/dispatch
-                                               [:stop-edit-field "add-orgs-to-group"])
-                                   :as "a"
-                                   :style {:float "right"}}
-                      "Cancel"]
-                     [:> ui/Label {:on-click #(rf/dispatch
-                                               [:edit-field "add-orgs-to-group"])
-                                   :as "a"
-                                   :color "teal"
-                                   :style {:float "right"}}
-                      [:> ui/Icon {:name "add group"}]
-                      "Add Organization"])
-                   "Organizations"
-                   (when (@fields-editing& "add-orgs-to-group")
-                     [c-add-orgs-form group])]}
-          (for [org orgs]
-            ^{:key (:id org)}
-            [c-org org group])]]
-        ;; Discounts
-        [:> ui/GridColumn {:computer 8 :mobile 16}
-         [bc/c-profile-segment
-          {:title [:<>
-                   (if (@fields-editing& "add-discount-to-group")
-                     [:> ui/Label {:on-click #(rf/dispatch
-                                               [:stop-edit-field "add-discount-to-group"])
-                                   :as "a"
-                                   :style {:float "right"}}
-                      "Cancel"]
-                     [:> ui/Label {:on-click #(rf/dispatch
-                                               [:edit-field "add-discount-to-group"])
-                                   :as "a"
-                                   :color "blue"
-                                   :style {:float "right"}}
-                      [:> ui/Icon {:name "dollar"}]
-                      "Add Discount"])
-                   "Discounts"
-                   (when (@fields-editing& "add-discount-to-group")
-                     [c-add-discount-form group])]}
-          (for [discount discounts]
-            ^{:key (:id discount)}
-            [c-discount discount])]]]])))
+    (fn [{:keys [id orgs] :as group}]
+      (let [field-name (str "add-orgs-to-group-" id)]
+        [bc/c-profile-segment
+         {:title [:<>
+                  (if (@fields-editing& field-name)
+                    [:> ui/Label {:on-click #(rf/dispatch [:stop-edit-field field-name])
+                                  :as "a"
+                                  :style {:float "right"}}
+                     "Cancel"]
+                    [:> ui/Label {:on-click #(rf/dispatch [:edit-field field-name])
+                                  :as "a"
+                                  :color "teal"
+                                  :style {:float "right"}}
+                     [:> ui/Icon {:name "add group"}]
+                     "Add Organization"])
+                  "Organizations"
+                  (when (@fields-editing& field-name)
+                    [c-add-orgs-form group])]}
+         (for [org orgs]
+           ^{:key (:id org)}
+           [c-org org group])]))))
+
+(defn c-discounts
+  [group]
+  (let [fields-editing& (rf/subscribe [:fields-editing])]
+    (fn [{:keys [id discounts] :as group}]
+      (let [field-name (str "add-discount-to-group-" id)]
+        [bc/c-profile-segment
+         {:title [:<>
+                  (if (@fields-editing& field-name)
+                    [:> ui/Label {:on-click #(rf/dispatch [:stop-edit-field field-name])
+                                  :as "a"
+                                  :style {:float "right"}}
+                     "Cancel"]
+                    [:> ui/Label {:on-click #(rf/dispatch [:edit-field field-name])
+                                  :as "a"
+                                  :color "blue"
+                                  :style {:float "right"}}
+                     [:> ui/Icon {:name "dollar"}]
+                     "Add Discount"])
+                  "Discounts"
+                  (when (@fields-editing& field-name)
+                    [c-add-discount-form group])]}
+         (for [discount discounts]
+           ^{:key (:id discount)}
+           [c-discount discount])]))))
+
+(defn c-group
+  [{:keys [gname] :as group}]
+  [:> ui/Grid {:stackable true
+               :style {:padding-bottom 35}} ; in case they are admin of multiple communities
+   [:> ui/GridRow
+    [:> ui/GridColumn {:computer 16 :mobile 16}
+     [:h1 {:style {:text-align "center"}}
+      gname]]]
+   [:> ui/GridRow
+    [:> ui/GridColumn {:computer 8 :mobile 16}
+     [c-orgs group]]
+    [:> ui/GridColumn {:computer 8 :mobile 16}
+     [c-discounts group]]]])
 
 (defn c-groups
   [groups]
