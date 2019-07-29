@@ -37,7 +37,8 @@
 
 (rf/reg-event-fx
  :login-result
- (fn [{:keys [db]} [_ {:keys [logged-in? user session-token memberships admin?]
+ (fn [{:keys [db]} [_ {:keys [logged-in? user session-token memberships
+                              admin-of-groups admin?]
                        :as results}]]
    (if logged-in?
      (let [org-id (some-> memberships first :org-id)] ; TODO support users with multi-orgs
@@ -49,6 +50,8 @@
                    :memberships memberships
                    :active-memb-id (some-> memberships first :id)
                    :org-id org-id
+                   :admin-of-groups admin-of-groups
+                   ;; a Vetd employee with admin access?
                    :admin? admin?)
         :local-store {:session-token session-token}
         :cookies {:admin-token (when admin? [session-token {:max-age 60 :path "/"}])}

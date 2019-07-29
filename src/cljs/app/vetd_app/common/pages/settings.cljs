@@ -159,25 +159,11 @@
                                   :color "blue"}
                     "Save"])}]]])))
 
-(defn c-field-container
-  [& children]
-  [:> ui/GridRow
-   [:> ui/GridColumn {:width 16}
-    [:> ui/Segment {:class "display-field"
-                    :vertical true}
-     (util/augment-with-keys children)]]])
-
-(defn c-field
-  [{:keys [label value]}]
-  [c-field-container
-   [:h3.display-field-key label]
-   [:div.display-field-value value]])
-
 (defn c-editable-field
   [props edit-cmp]
   (let [fields-editing& (rf/subscribe [:fields-editing])]
     (fn [{:keys [label value sym edit-label]} edit-cmp]
-      [c-field-container
+      [cc/c-field-container
        (if (@fields-editing& sym)
          [:> ui/Label {:on-click #(rf/dispatch [:stop-edit-field sym])
                        :as "a"
@@ -252,8 +238,8 @@
     (fn []
       [bc/c-profile-segment {:title "Account Settings"}
        [c-user-name-field @user-name&]
-       [c-field {:label "Email"
-                 :value @user-email&}]
+       [cc/c-field {:label "Email"
+                    :value @user-email&}]
        [c-password-field @user-email&]])))
 
 (defn c-org-member
@@ -327,7 +313,7 @@
   [memberships org-id org-name]
   (let [fields-editing& (rf/subscribe [:fields-editing])]
     (fn [memberships org-id org-name]
-      [c-field-container
+      [cc/c-field-container
        (if (@fields-editing& "invite-email-address")
          [:> ui/Label {:on-click #(rf/dispatch [:stop-edit-field "invite-email-address"])
                        :as "a"
@@ -368,10 +354,10 @@
         [cc/c-loader]
         (let [{:keys [id oname url memberships] :as org} (-> @orgs& :orgs first)]
           [bc/c-profile-segment {:title "Organization Settings"}
-           [c-field {:label "Name"
-                     :value oname}]
-           [c-field {:label "Website"
-                     :value url}]
+           [cc/c-field {:label "Name"
+                        :value oname}]
+           [cc/c-field {:label "Website"
+                        :value url}]
            [c-org-members memberships id oname]])))))
 
 (defn c-page []
