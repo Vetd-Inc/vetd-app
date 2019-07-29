@@ -308,7 +308,9 @@
   [group]
   (let [fields-editing& (rf/subscribe [:fields-editing])]
     (fn [{:keys [id gname orgs discounts] :as group}]
-      [:> ui/Grid {:stackable true}
+      [:> ui/Grid {:stackable true
+                   :style {:padding-bottom 35 ; in case they are admin of multiple communities
+                           }}
        [:> ui/GridRow
         [:> ui/GridColumn {:computer 16 :mobile 16}
          [:h1 {:style {:text-align "center"}}
