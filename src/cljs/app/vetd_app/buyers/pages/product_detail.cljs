@@ -198,8 +198,9 @@
                                            :ref-deleted nil}
                                           [:id :prompt-field-fname :idx
                                            :sval :nval :dval]]]]]]
-                                     [:discounts {:id @group-ids&}
-                                      [:group-discount-descr]]
+                                     [:discounts {:id @group-ids&
+                                                  :ref-deleted nil}
+                                      [:group-discount-descr :gname]]
                                      [:vendor
                                       [:id :oname :url
                                        [:docs-out {:dtype "vendor-profile"

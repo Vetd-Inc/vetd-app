@@ -392,7 +392,8 @@
                                        [:user
                                         [:id :uname]]]]]]
                                    [:discounts {:ref-deleted nil}
-                                    ;; i.e., product 'id' and product 'idstr'
+                                    ;; NOTE :id is product id and idstr
+                                    ;; ref-id is the id of the discount
                                     [:ref-id :id :idstr :pname
                                      :group-discount-descr
                                      [:vendor
