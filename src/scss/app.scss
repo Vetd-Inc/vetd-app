@@ -346,15 +346,37 @@ a.label {
       > .description {
         flex: 1 !important;
       }
-      > .extra > .category-tag {
-        margin-top: 11px; /* todo: this is kind of hacky */
-      }
     }
   }
 }
 
-.free-trial-tag {
-  margin-left: 15px !important;
+
+.product-tags {
+  .label {
+    margin: 0 10px 0 0 !important;
+
+    &.tag {
+      margin: 0 10px 0 10px !important;
+    }
+
+    &:last-child {
+      margin-right: 0 !important;
+    }
+  }
+}
+.item {
+  .extra {
+    .product-tags {
+      padding-top: 11px;
+    }
+  }
+}
+
+.ui.tag.label:before {
+  height: 17px;
+}
+.ui.tag.label.small {
+  font-size: 11px;
 }
 
 .categories {

@@ -127,13 +127,14 @@
    (when (not-empty (:rounds product))
      [bc/c-round-in-progress {:round-idstr (-> rounds first :idstr)
                               :props {:ribbon "left"}}])
-   [:div {:style {:display "inline-block"
-                  :height 26}}
-    [bc/c-categories product]]
-   (when (some-> (v-fn :product/free-trial?)
-                 s/lower-case
-                 (= "yes"))
-     [bc/c-free-trial-tag])
+   ;; [:div {:style {:display "inline-block"
+   ;;                :height 26}}
+   ;;  [bc/c-categories product]]
+   ;; (when (some-> (v-fn :product/free-trial?)
+   ;;               s/lower-case
+   ;;               (= "yes"))
+   ;;   [bc/c-free-trial-tag])
+   [bc/c-tags product v-fn]
    [:> ui/Grid {:columns "equal"
                 :style {:margin-top 4}}
     [:> ui/GridRow
