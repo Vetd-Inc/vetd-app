@@ -141,8 +141,9 @@
                                           [:response-prompt-fields
                                            [:id :prompt-field-fname :idx
                                             :sval :nval :dval]]]]]]]]
-                                    [:discounts {:id @group-ids&}
-                                     [:group-discount-descr]]]]
+                                    [:discounts {:id @group-ids&
+                                                 :ref-deleted nil}
+                                     [:group-discount-descr :gname]]]]
                                   [:from-org [:id :oname]]
                                   [:from-user [:id :uname]]
                                   [:to-org [:id :oname]]
