@@ -117,25 +117,22 @@
   "Filter map contains sets that define the included values for a certain group/trait.
   An empty set makes all values included for a certain group."
   [preposals filter-map]
-  (let [status (:status filter-map)
-        features (:features filter-map)
-        categories (:categories filter-map)]
+  (let [status (or (:status filter-map) #{})
+        features (or (:features filter-map) #{})
+        categories (or (:categories filter-map) #{})]
     (cond->> preposals
       (not-empty status) (filter (fn [{:keys [result]}]
                                    (or (and (status "live")
                                             (= result nil))
                                        (and (status "rejected")
                                             (= result 0)))))
-      (not-empty features) (filter (fn [{:keys [product]}]
-                                     (if (features "free-trial")
-                                       (= "yes"
-                                          (some-> product :form-docs first :response-prompts
-                                                  (docs/get-value-by-term :product/free-trial?)
-                                                  s/lower-case))
-                                       true)))
-      (and features
-           (features "discounts-available")) (filter (fn [{:keys [product]}]
-                                                     (-> product :discounts empty? not)))
+      (features "free-trial") (filter (fn [{:keys [product]}]
+                                        (= "yes"
+                                           (some-> product :form-docs first :response-prompts
+                                                   (docs/get-value-by-term :product/free-trial?)
+                                                   s/lower-case))))
+      (features "discounts-available") (filter (fn [{:keys [product]}]
+                                                 (-> product :discounts seq)))
       (not-empty categories) (#(->> (for [{:keys [product] :as preposal} %
                                           category (:categories product)]
                                       (when (categories (:id category))
@@ -222,15 +219,17 @@
                                                                    :b/preposals-filter.remove)
                                                                  :features
                                                                  "free-trial"]))}]
-                     [:h4 "Discounts"]
-                     [:> ui/Checkbox {:label "Discounts Available"
-                                      :checked (-> @filter& :features (contains? "discounts-available") boolean)
-                                      :on-change (fn [_ this]
-                                                   (rf/dispatch [(if (.-checked this)
-                                                                   :b/preposals-filter.add
-                                                                   :b/preposals-filter.remove)
-                                                                 :features
-                                                                 "discounts-available"]))}]
+                     (when (not-empty @group-ids&)
+                       [:<>
+                        [:h4 "Discounts"]
+                        [:> ui/Checkbox {:label "Discounts Available"
+                                         :checked (-> @filter& :features (contains? "discounts-available") boolean)
+                                         :on-change (fn [_ this]
+                                                      (rf/dispatch [(if (.-checked this)
+                                                                      :b/preposals-filter.add
+                                                                      :b/preposals-filter.remove)
+                                                                    :features
+                                                                    "discounts-available"]))}]])
                      (when (not-empty categories)
                        [:<>
                         [:h4 "Category"]
