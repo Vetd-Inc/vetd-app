@@ -81,7 +81,7 @@
 ;;;; Components
 (defn c-preposal-list-item
   [{:keys [id idstr result response-prompts product from-org] :as preposal}]
-  (let [{:keys [pname logo rounds]} product
+  (let [{:keys [pname logo rounds discounts]} product
         {:keys [oname]} from-org
         rejected? (= 0 result)
         preposal-v-fn (partial docs/get-value-by-term response-prompts)
@@ -106,7 +106,7 @@
                                    :ename (:pname product)
                                    :props {:floated "right"}
                                    :popup-props {:position "bottom right"}}])
-       [bc/c-tags product product-v-fn]]]
+       [bc/c-tags product product-v-fn discounts]]]
      (when (not-empty (:rounds product))
        [bc/c-round-in-progress {:round-idstr (-> product :rounds first :idstr)
                                 :props {:ribbon "right"
@@ -144,6 +144,7 @@
   (let [org-id& (rf/subscribe [:org-id])]
     (when @org-id&
       (let [filter& (rf/subscribe [:preposals-filter])
+            group-ids& (rf/subscribe [:group-ids])
             preps& (rf/subscribe [:gql/sub
                                   {:queries
                                    [[:docs {:dtype "preposal"
@@ -151,23 +152,26 @@
                                             :_order_by {:created :desc}
                                             :deleted nil}
                                      [:id :idstr :title :result :reason
-                                      [:product [:id :pname :logo
-                                                 [:form-docs {:doc-deleted nil
-                                                              :ftype "product-profile"
-                                                              :_order_by {:created :desc}
-                                                              :_limit 1}
-                                                  [:id
-                                                   [:response-prompts {:prompt-term ["product/description"
-                                                                                     "product/free-trial?"]
-                                                                       :ref_deleted nil}
-                                                    [:id :prompt-id :notes :prompt-prompt :prompt-term
-                                                     [:response-prompt-fields
-                                                      [:id :prompt-field-fname :idx :sval :nval :dval]]]]]]
-                                                 [:rounds {:buyer-id @org-id&
-                                                           :deleted nil}
-                                                  [:id :idstr :created :status]]
-                                                 [:categories {:ref-deleted nil}
-                                                  [:id :idstr :cname]]]]
+                                      [:product
+                                       [:id :pname :logo
+                                        [:form-docs {:doc-deleted nil
+                                                     :ftype "product-profile"
+                                                     :_order_by {:created :desc}
+                                                     :_limit 1}
+                                         [:id
+                                          [:response-prompts {:prompt-term ["product/description"
+                                                                            "product/free-trial?"]
+                                                              :ref_deleted nil}
+                                           [:id :prompt-id :notes :prompt-prompt :prompt-term
+                                            [:response-prompt-fields
+                                             [:id :prompt-field-fname :idx :sval :nval :dval]]]]]]
+                                        [:rounds {:buyer-id @org-id&
+                                                  :deleted nil}
+                                         [:id :idstr :created :status]]
+                                        [:categories {:ref-deleted nil}
+                                         [:id :idstr :cname]]
+                                        [:discounts {:id @group-ids&}
+                                         [:group-discount-descr]]]]
                                       [:from-org [:id :oname]]
                                       [:from-user [:id :uname]]
                                       [:to-org [:id :oname]]
