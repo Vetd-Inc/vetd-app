@@ -118,7 +118,7 @@
                  [:> ui/Icon {:name "wpforms"}]])}]))
 
 (defn c-product-header-segment
-  [{:keys [vendor rounds pname logo] :as product} v-fn]
+  [{:keys [vendor rounds pname logo] :as product} v-fn discounts]
   [:> ui/Segment {:class "detail-container"}
    [:h1.product-title
     pname " " [:small " by " (:oname vendor)]]
@@ -127,14 +127,7 @@
    (when (not-empty (:rounds product))
      [bc/c-round-in-progress {:round-idstr (-> rounds first :idstr)
                               :props {:ribbon "left"}}])
-   ;; [:div {:style {:display "inline-block"
-   ;;                :height 26}}
-   ;;  [bc/c-categories product]]
-   ;; (when (some-> (v-fn :product/free-trial?)
-   ;;               s/lower-case
-   ;;               (= "yes"))
-   ;;   [bc/c-free-trial-tag])
-   [bc/c-tags product v-fn]
+   [bc/c-tags product v-fn discounts]
    [:> ui/Grid {:columns "equal"
                 :style {:margin-top 4}}
     [:> ui/GridRow
@@ -170,7 +163,7 @@
                                                        :id id
                                                        :name pname}))]
     [:<>
-     [c-product-header-segment product v-fn]
+     [c-product-header-segment product v-fn discounts]
      [bc/c-pricing c-display-field v-fn discounts]
      [bc/c-vendor-profile (-> vendor :docs-out first) (:id vendor) (:oname vendor)]
      [bc/c-onboarding c-display-field v-fn]

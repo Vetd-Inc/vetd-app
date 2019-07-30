@@ -146,8 +146,8 @@
 
 ;;;; Components
 (defn c-product-list-item
-  [{:keys [id idstr pname short-desc logo 
-           rounds form-docs forms docs vendor] :as product}]
+  [{:keys [id idstr pname short-desc logo rounds
+           form-docs forms docs vendor discounts] :as product}]
   (let [requested-preposal? (not-empty forms)
         preposal-responses (-> docs
                                first
@@ -177,7 +177,7 @@
                                  (rf/dispatch [:b/create-preposal-req product vendor]))}
              "Request a PrePosal"]]))]
       [:> ui/ItemDescription (bc/product-description product-v-fn)]
-      [:> ui/ItemExtra [bc/c-tags product product-v-fn]]]
+      [:> ui/ItemExtra [bc/c-tags product product-v-fn discounts]]]
      (when (not-empty rounds)
        [bc/c-round-in-progress {:round-idstr (-> rounds first :idstr)
                                 :props {:ribbon "right"
@@ -221,6 +221,7 @@
 (defn c-search-results
   [search-query]
   (let [org-id @(rf/subscribe [:org-id])
+        group-ids& (rf/subscribe [:group-ids])
         {:keys [product-ids vendor-ids category-ids] :as ids} @(rf/subscribe [:b/search-result-ids])
         prods (if (not-empty (concat product-ids vendor-ids))
                 @(rf/subscribe [:gql/sub
@@ -258,7 +259,10 @@
                                                 :deleted nil}
                                        [:id :idstr :created :status]]
                                       [:categories {:ref-deleted nil}
-                                       [:id :idstr :cname]]]]]]]}])
+                                       [:id :idstr :cname]]
+                                      [:discounts {:id @group-ids&
+                                                   :ref-deleted nil}
+                                       [:group-discount-descr :gname]]]]]]]}])
                 [])
         prods-sorted (sort-products-by-score (:orgs prods))
         categories (if (not-empty category-ids)

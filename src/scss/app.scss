@@ -352,6 +352,8 @@ a.label {
 
 
 .product-tags {
+  display: inline-block;
+  
   .label {
     margin: 0 10px 0 0 !important;
 
@@ -372,11 +374,19 @@ a.label {
   }
 }
 
-.ui.tag.label:before {
-  height: 17px;
-}
 .ui.tag.label.small {
   font-size: 11px;
+  border-radius: 3px 4px 4px 3px;
+
+  &:before {
+    width: 16px;
+    height: 16px;
+  }
+  &:after {
+    top: 9px;
+    left: -1px;
+    margin-top: 0;
+  }
 }
 
 .categories {

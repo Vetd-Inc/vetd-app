@@ -337,11 +337,25 @@
                 :tag true}
    "Free Trial"])
 
-(defn c-discount-tag []
-  [:> ui/Label {:color "blue"
-                :size "small"
-                :tag true}
-   "Discount"])
+(defn c-discount-details
+  "Get hiccup for displaying all the details about a discount(s)."
+  [discounts]
+  (util/augment-with-keys
+   (for [{:keys [gname group-discount-descr]} discounts]
+     [:div group-discount-descr
+      (when (> (count discounts) 1)
+        (str " (" gname ")"))])))
+
+(defn c-discount-tag [discounts]
+  [:> ui/Popup
+   {:content (r/as-element (c-discount-details discounts))
+    :header "Community Discount"
+    :position "bottom center"
+    :trigger (r/as-element
+              [:> ui/Label {:color "blue"
+                            :size "small"
+                            :tag true}
+               "Discount"])}])
 
 (defn c-tags
   [product v-fn & [discounts]]
@@ -352,7 +366,7 @@
                  (= "yes"))
      [c-free-trial-tag])
    (when (seq discounts)
-     [c-discount-tag])])
+     [c-discount-tag discounts])])
 
 (defn c-product-logo
   [filename]                      ; TODO make config var 's3-base-url'
@@ -447,11 +461,7 @@
      [:> ui/GridRow
       (when (not-empty discounts)
         [c-display-field 8 "Community Discount"
-         (util/augment-with-keys
-          (for [{:keys [gname group-discount-descr]} discounts]
-            [:div group-discount-descr
-             (when (> (count discounts) 1)
-               (str " (" gname ")"))]))])
+         (c-discount-details discounts)])
       [c-display-field 8 "Free Trial"
        (when (has-data? (v-fn :product/free-trial?))
          (if (some-> (v-fn :product/free-trial?)
