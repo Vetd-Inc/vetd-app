@@ -332,14 +332,44 @@
       c])])
 
 (defn c-free-trial-tag []
-  [:> ui/Label {:class "free-trial-tag"
-                :color "gray"
+  [:> ui/Label {:color "teal"
                 :size "small"
                 :tag true}
    "Free Trial"])
 
+(defn c-discount-details
+  "Get hiccup for displaying all the details about a discount(s)."
+  [discounts]
+  (util/augment-with-keys
+   (for [{:keys [gname group-discount-descr]} discounts]
+     [:div group-discount-descr
+      (when (> (count discounts) 1)
+        (str " (" gname ")"))])))
+
+(defn c-discount-tag [discounts]
+  [:> ui/Popup
+   {:content (r/as-element (c-discount-details discounts))
+    :header "Community Discount"
+    :position "bottom center"
+    :trigger (r/as-element
+              [:> ui/Label {:color "blue"
+                            :size "small"
+                            :tag true}
+               "Discount"])}])
+
+(defn c-tags
+  [product v-fn & [discounts]]
+  [:div.product-tags
+   [c-categories product]
+   (when (some-> (v-fn :product/free-trial?)
+                 s/lower-case
+                 (= "yes"))
+     [c-free-trial-tag])
+   (when (seq discounts)
+     [c-discount-tag discounts])])
+
 (defn c-product-logo
-  [filename] ; TODO make config var 's3-base-url'
+  [filename]                      ; TODO make config var 's3-base-url'
   [:div.product-logo {:style {:background-image (str "url('https://s3.amazonaws.com/vetd-logos/" filename "')")}}])
 
 (defn c-pricing-estimate
@@ -356,21 +386,6 @@
   (-> (v-fn :product/description)
       (or "No description available.")
       (util/truncate-text 175)))
-
-(defn c-tags
-  [product v-fn & [discounts]]
-  [:<>
-   [c-categories product]
-   (when (some-> (v-fn :product/free-trial?)
-                 s/lower-case
-                 (= "yes"))
-     [c-free-trial-tag])
-   (when-not (empty? discounts)
-     [:> ui/Label {:class "free-trial-tag"
-                   :color "gray"
-                   :size "small"
-                   :tag true}
-      "DISCOUNT!!!!!!!"])])
 
 (defn has-data?
   [value]
@@ -434,29 +449,34 @@
   v-fn - function to get value per some prompt term"
   [c-display-field v-fn & [discounts]]
   [c-profile-segment {:title "Pricing"}
-   (when (not-empty discounts)
-     [:> ui/GridRow [:div (str discounts)]])
    [:> ui/GridRow
-    [c-display-field 5 "Range"
+    [c-display-field 16 "Range"
      (when (has-data? (v-fn :product/price-range))
        [:<>
         (v-fn :product/price-range)
         [:br]
-        "Request a PrePosal to get a personalized estimate."])]
-    [c-display-field 6 "Model" (v-fn :product/pricing-model) :has-markdown? true]
-    [c-display-field 5 "Free Trial"
-     (when (has-data? (v-fn :product/free-trial?))
-       (if (some-> (v-fn :product/free-trial?)
-                   s/lower-case
-                   (= "yes"))
-         (if (has-data? (v-fn :product/free-trial-terms))
-           (v-fn :product/free-trial-terms)
-           "Yes")
-         "No"))]]
+        "Request a PrePosal to get a personalized estimate."])]]
+   (when (or (not-empty discounts)
+             (has-data? (v-fn :product/free-trial?)))
+     [:> ui/GridRow
+      (when (not-empty discounts)
+        [c-display-field 8 "Community Discount"
+         (c-discount-details discounts)])
+      [c-display-field 8 "Free Trial"
+       (when (has-data? (v-fn :product/free-trial?))
+         (if (some-> (v-fn :product/free-trial?)
+                     s/lower-case
+                     (= "yes"))
+           (if (has-data? (v-fn :product/free-trial-terms))
+             (v-fn :product/free-trial-terms)
+             "Yes")
+           "No"))]])
    [:> ui/GridRow
-    [c-display-field 5 "Payment Options" (v-fn :product/payment-options)]
-    [c-display-field 6 "Minimum Contract Length" (v-fn :product/minimum-contract)]
-    [c-display-field 5 "Cancellation Process" (v-fn :product/cancellation-process)]]])
+    [c-display-field 8 "Model" (v-fn :product/pricing-model) :has-markdown? true]
+    [c-display-field 8 "Payment Options" (v-fn :product/payment-options)]]
+   [:> ui/GridRow
+    [c-display-field 8 "Minimum Contract Length" (v-fn :product/minimum-contract)]
+    [c-display-field 8 "Cancellation Process" (v-fn :product/cancellation-process)]]])
 
 (defn c-onboarding
   "Component to display onboarding information of a product profile.

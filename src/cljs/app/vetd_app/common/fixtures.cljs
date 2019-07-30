@@ -47,30 +47,31 @@
   (let [page& (rf/subscribe [:page])
         user-name& (rf/subscribe [:user-name])
         org-name& (rf/subscribe [:org-name])
-        ;; append "Community" menu item if accessible
-        pages (cond-> top-nav-pages
-                false (conj {:text "Community"
-                             :pages #{:g/orgs}
-                             :event [:g/nav-orgs]}))]
-    (fn []
-      (when (and @page& @user-name&)
-        [:> ui/Menu {:class "top-nav"
-                     :secondary true} ; 'secondary' is a misnomer (it's just for styling)
-         [:> ui/MenuItem {:class "logo"
-                          :on-click #(do (rf/dispatch [:b/update-search-term ""])
-                                         (rf/dispatch [:nav-home]))}
-          ;; todo: use a config var for base url
-          [:img {:src "https://s3.amazonaws.com/vetd-logos/vetd.svg"}]]
-         (doall
-          (for [item pages]
-            (c-top-nav-page-link (assoc item :active (boolean ((:pages item) @page&))))))
-         [:> ui/MenuMenu {:position "right"}
-          ;; Consider having search bar in top nav?
-          ;; [:> ui/MenuItem
-          ;;    [:> ui/Input {:icon "search"
-          ;;                  :placeholder "Search for products & categories..."}]]
-          [:> ui/MenuItem {:style {:padding-right 0}}
-           [c-avatar @user-name& @org-name&]]]]))))
+        admin-of-groups& (rf/subscribe [:admin-of-groups])]
+    (fn [top-nav-pages]
+      (let [;; append "Community" menu item if accessible
+            pages (cond-> top-nav-pages
+                    (not-empty @admin-of-groups&) (conj {:text "Community"
+                                                         :pages #{:g/settings}
+                                                         :event [:g/nav-settings]}))]
+        (when (and @page& @user-name&)
+          [:> ui/Menu {:class "top-nav"
+                       :secondary true} ; 'secondary' is a misnomer (it's just for styling)
+           [:> ui/MenuItem {:class "logo"
+                            :on-click #(do (rf/dispatch [:b/update-search-term ""])
+                                           (rf/dispatch [:nav-home]))}
+            ;; todo: use a config var for base url
+            [:img {:src "https://s3.amazonaws.com/vetd-logos/vetd.svg"}]]
+           (doall
+            (for [item pages]
+              (c-top-nav-page-link (assoc item :active (boolean ((:pages item) @page&))))))
+           [:> ui/MenuMenu {:position "right"}
+            ;; Consider having search bar in top nav?
+            ;; [:> ui/MenuItem
+            ;;    [:> ui/Input {:icon "search"
+            ;;                  :placeholder "Search for products & categories..."}]]
+            [:> ui/MenuItem {:style {:padding-right 0}}
+             [c-avatar @user-name& @org-name&]]]])))))
 
 (defn container [body]
   [:<>

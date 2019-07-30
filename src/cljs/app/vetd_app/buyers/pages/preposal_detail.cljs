@@ -31,7 +31,7 @@
 
 ;; Components
 (defn c-preposal-header-segment
-  [{:keys [vendor rounds pname logo] :as product} preposal-v-fn product-v-fn]
+  [{:keys [vendor rounds pname logo discounts] :as product} preposal-v-fn product-v-fn]
   (let [pricing-estimate-value (preposal-v-fn :preposal/pricing-estimate "value" :nval)
         pricing-estimate-unit (preposal-v-fn :preposal/pricing-estimate "unit")
         pricing-estimate-details (preposal-v-fn :preposal/pricing-estimate "details")
@@ -44,13 +44,7 @@
      (when (not-empty rounds)
        [bc/c-round-in-progress {:round-idstr (-> rounds first :idstr)
                                 :props {:ribbon "left"}}])
-     [:div {:style {:display "inline-block"
-                    :height 26}}
-      [bc/c-categories product]]
-     (when (some-> (product-v-fn :product/free-trial?)
-                   s/lower-case
-                   (= "yes"))
-       [bc/c-free-trial-tag])
+     [bc/c-tags product product-v-fn discounts]
      [:> ui/Grid {:columns "equal"
                   :style {:margin-top 4}}
       [:> ui/GridRow
@@ -141,8 +135,9 @@
                                           [:response-prompt-fields
                                            [:id :prompt-field-fname :idx
                                             :sval :nval :dval]]]]]]]]
-                                    [:discounts {:id @group-ids&}
-                                     [:group-discount-descr]]]]
+                                    [:discounts {:id @group-ids&
+                                                 :ref-deleted nil}
+                                     [:group-discount-descr :gname]]]]
                                   [:from-org [:id :oname]]
                                   [:from-user [:id :uname]]
                                   [:to-org [:id :oname]]

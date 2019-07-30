@@ -5,6 +5,7 @@
             [com.vetd.app.hasura :as ha]
             [com.vetd.app.email-client :as ec]
             [com.vetd.app.links :as l]
+            [com.vetd.app.groups :as g]
             [clojure.string :as st]
             [buddy.hashers :as bhsh]
             [taoensso.timbre :as log]
@@ -277,7 +278,8 @@
              :session-token (-> id insert-session :token)
              :user (dissoc user :pwd)
              :admin? admin?
-             :memberships memberships})))
+             :memberships memberships
+             :admin-of-groups (g/select-groups-by-admins (map :org-id memberships))})))
       {:logged-in? false
        :login-failed? true}))
 
@@ -293,11 +295,13 @@
 (defmethod com/handle-ws-inbound :auth-by-session
   [{:keys [session-token] :as req} ws-id sub-fn]
   (if-let [{:keys [user-id]} (select-active-session-by-token session-token)]
-    {:logged-in? true
-     :session-token session-token
-     :user (select-user-by-id user-id)
-     :admin? (is-admin? user-id)     
-     :memberships (select-memb-org-by-user-id user-id)}
+    (let [memberships (select-memb-org-by-user-id user-id)]
+      {:logged-in? true
+       :session-token session-token
+       :user (select-user-by-id user-id)
+       :admin? (is-admin? user-id)
+       :memberships memberships
+       :admin-of-groups (g/select-groups-by-admins (map :org-id memberships))})
     {:logged-in? false}))
 
 (defmethod com/handle-ws-inbound :forgot-password.request-reset
