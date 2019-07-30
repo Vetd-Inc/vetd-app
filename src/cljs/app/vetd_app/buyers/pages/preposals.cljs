@@ -114,31 +114,33 @@
                                                 :marginLeft -14}}}])]))
 
 (defn filter-preposals
-  "Filter map contains sets that define the included values for a certain group/trait.
-  An empty set makes all values included for a certain group."
-  [preposals filter-map]
-  (let [status (or (:status filter-map) #{})
-        features (or (:features filter-map) #{})
-        categories (or (:categories filter-map) #{})]
-    (cond->> preposals
-      (not-empty status) (filter (fn [{:keys [result]}]
-                                   (or (and (status "live")
-                                            (= result nil))
-                                       (and (status "rejected")
-                                            (= result 0)))))
-      (features "free-trial") (filter (fn [{:keys [product]}]
-                                        (= "yes"
-                                           (some-> product :form-docs first :response-prompts
-                                                   (docs/get-value-by-term :product/free-trial?)
-                                                   s/lower-case))))
-      (features "discounts-available") (filter (fn [{:keys [product]}]
-                                                 (-> product :discounts seq)))
-      (not-empty categories) (#(->> (for [{:keys [product] :as preposal} %
-                                          category (:categories product)]
-                                      (when (categories (:id category))
-                                        preposal))
-                                    (remove nil?)
-                                    distinct)))))
+  "filter-map contains sets that define the included values for a certain group/trait.
+  An empty set makes all values be included for a certain group."
+  [preposals {:as filter-map
+              :keys [status features categories]
+              :or {status #{}
+                   features #{}
+                   categories #{}}}]
+  (cond->> preposals ; roughly ordered by how much they slim the threading input
+    (features "discounts-available") (filter (comp seq :discounts :product))
+    (features "free-trial") (filter #(some-> %
+                                             :product
+                                             :form-docs
+                                             first
+                                             :response-prompts
+                                             (docs/get-value-by-term :product/free-trial?)
+                                             s/lower-case
+                                             (= "yes")))
+    (seq status) (filter (fn [{:keys [result]}]
+                           (or (and (status "live")
+                                    (= result nil))
+                               (and (status "rejected")
+                                    (= result 0)))))
+    (seq categories) (#(->> (for [{:keys [product] :as preposal} %
+                                  {:keys [id]} (:categories product)]
+                              (when (categories id) preposal))
+                            (remove nil?)
+                            distinct))))
 
 (defn c-page []
   (let [org-id& (rf/subscribe [:org-id])]
