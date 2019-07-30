@@ -123,7 +123,8 @@
       (let [orgs& (rf/subscribe
                    [:gql/q
                     {:queries
-                     [[:orgs {:_where {:oname {:_ilike (str "%" @search-query& "%")}}
+                     [[:orgs {:_where {:_and [{:oname {:_ilike (str "%" @search-query& "%")}}
+                                              {:deleted {:_is_null true}}]}
                               :_limit 25
                               :_order_by {:oname :asc}}
                        [:id :oname]]]}])
@@ -230,7 +231,8 @@
       (let [products& (rf/subscribe
                        [:gql/q
                         {:queries
-                         [[:products {:_where {:pname {:_ilike (str "%" @search-query& "%")}}
+                         [[:products {:_where {:_and [{:pname {:_ilike (str "%" @search-query& "%")}}
+                                                      {:deleted {:_is_null true}}]}
                                       :_limit 100
                                       :_order_by {:pname :asc}}
                            [:id :pname]]]}])
