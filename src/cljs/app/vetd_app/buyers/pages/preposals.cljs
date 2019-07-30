@@ -114,31 +114,33 @@
                                                 :marginLeft -14}}}])]))
 
 (defn filter-preposals
-  "Filter map contains sets that define the included values for a certain group/trait.
-  An empty set makes all values included for a certain group."
-  [preposals filter-map]
-  (let [status (:status filter-map)
-        features (:features filter-map)
-        categories (:categories filter-map)]
-    (cond->> preposals
-      (not-empty status) (filter (fn [{:keys [result]}]
-                                   (or (and (status "live")
-                                            (= result nil))
-                                       (and (status "rejected")
-                                            (= result 0)))))
-      (not-empty features) (filter (fn [{:keys [product]}]
-                                     (if (features "free-trial")
-                                       (= "yes"
-                                          (some-> product :form-docs first :response-prompts
-                                                  (docs/get-value-by-term :product/free-trial?)
-                                                  s/lower-case))
-                                       true)))
-      (not-empty categories) (#(->> (for [{:keys [product] :as preposal} %
-                                          category (:categories product)]
-                                      (when (categories (:id category))
-                                        preposal))
-                                    (remove nil?)
-                                    distinct)))))
+  "filter-map contains sets that define the included values for a certain group/trait.
+  An empty set makes all values be included for a certain group."
+  [preposals {:as filter-map
+              :keys [status features categories]
+              :or {status #{}
+                   features #{}
+                   categories #{}}}]
+  (cond->> preposals ; roughly ordered by how much they slim the threading input
+    (features "discounts-available") (filter (comp seq :discounts :product))
+    (features "free-trial") (filter #(some-> %
+                                             :product
+                                             :form-docs
+                                             first
+                                             :response-prompts
+                                             (docs/get-value-by-term :product/free-trial?)
+                                             s/lower-case
+                                             (= "yes")))
+    (seq status) (filter (fn [{:keys [result]}]
+                           (or (and (status "live")
+                                    (= result nil))
+                               (and (status "rejected")
+                                    (= result 0)))))
+    (seq categories) (#(->> (for [{:keys [product] :as preposal} %
+                                  {:keys [id]} (:categories product)]
+                              (when (categories id) preposal))
+                            (remove nil?)
+                            distinct))))
 
 (defn c-page []
   (let [org-id& (rf/subscribe [:org-id])]
@@ -219,6 +221,17 @@
                                                                    :b/preposals-filter.remove)
                                                                  :features
                                                                  "free-trial"]))}]
+                     (when (not-empty @group-ids&)
+                       [:<>
+                        [:h4 "Discounts"]
+                        [:> ui/Checkbox {:label "Discounts Available"
+                                         :checked (-> @filter& :features (contains? "discounts-available") boolean)
+                                         :on-change (fn [_ this]
+                                                      (rf/dispatch [(if (.-checked this)
+                                                                      :b/preposals-filter.add
+                                                                      :b/preposals-filter.remove)
+                                                                    :features
+                                                                    "discounts-available"]))}]])
                      (when (not-empty categories)
                        [:<>
                         [:h4 "Category"]
