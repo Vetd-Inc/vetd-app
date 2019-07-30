@@ -91,12 +91,15 @@
                popup-props)]
        [:> ui/Popup
         (merge
-         {:content (case etype
-                     :product (str "Find and compare similar products to \""
-                                   ename "\" that meet your needs.")
-                     :category (str "Find and compare " (util/capitalize-words ename)
-                                    " products that meet your needs.")
-                     :none "Find and compare similar products that meet your needs.")
+         {:content (r/as-element
+                    [:div.content
+                     (case etype
+                       :product [:<>
+                                 "Find and compare similar products to " [:strong ename]
+                                 " that meet your needs."]
+                       :category (str "Find and compare " (util/capitalize-words ename)
+                                      " products that meet your needs.")
+                       :none "Find and compare similar products that meet your needs.")])
           :header "What is a VetdRound?"
           :position "bottom left"
           :context @context-ref&
@@ -265,8 +268,9 @@
    {:keys [oname] :as vendor}
    props]
   [:> ui/Popup
-   {:content (str "Let us set up a call for you with " oname
-                  " to discuss \"" pname "\".")
+   {:content (r/as-element
+              [:div.content
+               "Let us set up a call for you with " oname " to discuss " [:strong pname] "."])
     :header "Set Up a Call"
     :position "bottom left"
     :trigger (r/as-element
@@ -592,7 +596,8 @@
                     :closeIcon true} 
        [:> ui/ModalHeader "Share VetdRound"]
        [:> ui/ModalContent
-        [:p "Share \"" round-title "\" with someone outside your organization via Email"]
+        [:p
+         "Share " [:strong round-title] " with someone outside your organization via email."]
         [:> ui/Form {:as "div"
                      :style {:padding-bottom "1rem"}}
          [:> ui/Dropdown {:style {:width "100%"}

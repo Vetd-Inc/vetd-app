@@ -422,6 +422,9 @@ a.label {
 
 
 /* Override basic Semantic UI behavior */
+b, strong {
+  font-weight: 600;
+}
 .ui.fluid[class*="left labeled"].icon.button {
   padding-left: 44px !important;
   padding-right: 0px !important;
