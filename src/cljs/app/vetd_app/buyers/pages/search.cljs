@@ -14,6 +14,8 @@
 (defn get-next-query-id []
   (swap! last-query-id inc))
 
+(def default-search-filter {:features #{}})
+
 ;;;; Events
 (rf/reg-event-fx
  :b/nav-search
@@ -45,6 +47,19 @@
                                 :timeout 250}]}
           (when-not bypass-url-fx
             {:url (url/replace-end url (:search-term db) search-term)}))))
+
+(rf/reg-event-fx
+ :b/search-filter.add
+ (fn [{:keys [db]} [_ group value & [{:keys [event-label]}]]]
+   {:db (update-in db [:search-filter group] conj value)
+    :analytics/track {:event "Filter"
+                      :props {:category "Search"
+                              :label event-label}}}))
+
+(rf/reg-event-fx
+ :b/search-filter.remove
+ (fn [{:keys [db]} [_ group value]]
+   {:db (update-in db [:search-filter group] disj value)}))
 
 (rf/reg-event-fx
  :b/search
@@ -128,15 +143,19 @@
            :title "Thanks for the suggestion!"
            :message "We'll let you know when we add it."}}))
 
-;; Subscriptions
+;;;; Subscriptions
+(rf/reg-sub
+ :search-term
+ (fn [{:keys [search-term]}] search-term))
+
+(rf/reg-sub
+ :search-filter
+ :search-filter)
+
 (rf/reg-sub
  :b/search-result-ids
  (fn [db _]
    (:b/search-result-ids db)))
-
-(rf/reg-sub
- :search-term
- (fn [{:keys [search-term]}] search-term))
 
 (rf/reg-sub
  :waiting-for-debounce?
@@ -217,10 +236,9 @@
         prods (if (seq product-ids)
                 @(rf/subscribe [:gql/sub
                                 {:queries
-                                 [[:products {:id (subvec (vec product-ids)
-                                                          @page-offset&
-                                                          (min (+ page-size @page-offset&)
-                                                               (count product-ids)))}
+                                 [[:products {:id (->> product-ids
+                                                       (drop @page-offset&)
+                                                       (take page-size))}
                                    [:id :pname :idstr :logo :score
                                     [:vendor
                                      [:id :oname :idstr :short-desc]] 
@@ -325,29 +343,55 @@
 
 (defn c-page []
   (let [search-query& (rf/subscribe [:search-term])
-        search-input& (atom nil)]
+        search-input& (atom nil)
+        filter& (rf/subscribe [:search-filter])
+        group-ids& (rf/subscribe [:group-ids])]
     (fn []
-      [:> ui/Grid
-       [:> ui/GridRow
-        [:> ui/GridColumn {:computer 4 :mobile 0}]
-        [:> ui/GridColumn {:computer 8 :mobile 16}
-         [ui/input {:class "product-search borderless"
-                    :value @search-query&
-                    :size "big"
-                    :icon (r/as-element
-                           [:> ui/Icon
-                            {:name (if (not-empty @search-query&) "delete" "search")
-                             :link true
-                             :on-click #(do (.focus @search-input&)
-                                            (rf/dispatch [:b/update-search-term ""]))}])
-                    :autoFocus true
-                    :spellCheck false
-                    :on-change #(rf/dispatch [:b/update-search-term (-> % .-target .-value)])
-                    :placeholder "Search products & categories..."
-                    :attrs {:ref #(reset! search-input& %)}}]]
-        [:> ui/GridColumn {:computer 4 :mobile 0}]]
-       [:> ui/GridRow
-        [:> ui/GridColumn {:computer 2 :mobile 0}]
-        [:> ui/GridColumn {:computer 12 :mobile 16}
-         [c-search-results search-query&]]
-        [:> ui/GridColumn {:computer 2 :mobile 0}]]])))
+
+      [:div.container-with-sidebar
+       [:div.sidebar
+        [:> ui/Segment
+         [:h2 "Filter"]
+         [:h4 "Trial"]
+         [:> ui/Checkbox {:label "Free Trial"
+                          :checked (-> @filter& :features (contains? "free-trial") boolean)
+                          :on-change (fn [_ this]
+                                       (rf/dispatch [(if (.-checked this)
+                                                       :b/search-filter.add
+                                                       :b/search-filter.remove)
+                                                     :features
+                                                     "free-trial"]))}]
+         (when (not-empty @group-ids&)
+           [:<>
+            [:h4 "Discounts"]
+            [:> ui/Checkbox {:label "Discounts Available"
+                             :checked (-> @filter& :features (contains? "discounts-available") boolean)
+                             :on-change (fn [_ this]
+                                          (rf/dispatch [(if (.-checked this)
+                                                          :b/search-filter.add
+                                                          :b/search-filter.remove)
+                                                        :features
+                                                        "discounts-available"]))}]])
+
+         ;; TODO filter for compelted profile or not
+         ]]
+       [:div.inner-container
+        ;; :> ui/ItemGroup {:class "inner-container results"}
+
+
+        [ui/input {:class "product-search borderless"
+                   :value @search-query&
+                   :size "big"
+                   :icon (r/as-element
+                          [:> ui/Icon
+                           {:name (if (not-empty @search-query&) "delete" "search")
+                            :link true
+                            :on-click #(do (.focus @search-input&)
+                                           (rf/dispatch [:b/update-search-term ""]))}])
+                   :autoFocus true
+                   :spellCheck false
+                   :on-change #(rf/dispatch [:b/update-search-term (-> % .-target .-value)])
+                   :placeholder "Search products & categories..."
+                   :attrs {:ref #(reset! search-input& %)}}]
+        [c-search-results search-query&]]]
+      )))

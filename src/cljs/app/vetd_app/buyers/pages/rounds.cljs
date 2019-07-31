@@ -153,6 +153,7 @@
                    [bc/c-start-round-button {:etype :none
                                              :props {:fluid true}}]]
                   [:> ui/Segment
+                   [:h2 "Filter"]
                    [:h4 "Status"]
                    [c-status-filter-checkboxes unfiltered-rounds @selected-statuses&]]]
                  [:> ui/ItemGroup {:class "inner-container results"}
