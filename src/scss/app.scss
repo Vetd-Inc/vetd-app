@@ -299,13 +299,24 @@ a.label {
 .product-search {
   width: 100%;
 }
-
+.categories {
+  margin-bottom: 20px;
+}
+.category-search-result {
+  width: 100%;
+  text-align: center;
+  margin-bottom: 15px;
+}
+.search-results-container {
+  margin-top: 14px;
+}
 
 /* Search Results
  * used by: Preposals page
  *          Products & Categories page
  */
 .results {
+  margin: 0 !important;
 
   > .item  {
     padding: 15px !important;
@@ -391,15 +402,6 @@ a.label {
     left: -1px;
     margin-top: 0;
   }
-}
-
-.categories {
-  margin-bottom: 20px;
-}
-.category-search-result {
-  width: 100%;
-  text-align: center;
-  margin-bottom: 15px;
 }
 
 // Settings page

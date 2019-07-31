@@ -292,7 +292,7 @@
     (if loading?
       [cc/c-loader {:style {:margin-top 20}}]
       (if (not-empty product-ids)
-        [:div
+        [:div.search-results-container
          [:div.categories
           (for [c (:categories categories)]
             ^{:key (:id c)}
