@@ -21,7 +21,7 @@
 (defn search-prods-vendors->ids
   [q cat-ids]
   (if (not-empty q)
-    (let [ids (db/hs-query {:select [[:p.id :pid] [:o.id :vid]
+    (let [ids (db/hs-query {:select [[:p.id :pid]
                                      [(honeysql.core/raw "coalesce(p.score, 1.0)") :nscore]]
                             :from [[:products :p]]
                             :join [[:orgs :o] [:= :o.id :p.vendor_id]]
@@ -30,20 +30,18 @@
                                     [:= :p.deleted nil]
                                     [:= :o.deleted nil]
                                     [:or
+                                     ;; ilike will provide slightly different results
+                                     ;; [:ilike :p.pname (str "%" q "%")]
+                                     ;; [:ilike :o.oname (str "%" q "%")]
                                      [(keyword "~*") :p.pname (str ".*?\\m" q ".*")]
                                      [(keyword "~*") :o.oname (str ".*?\\m" q ".*")]
                                      (when (not-empty cat-ids)
                                        [:in :pc.cat_id cat-ids])]]
                             :order-by [[:nscore :desc]]
-                            :limit 30})
-          pids (map :pid ids)
-          vids (->> ids
-                    (map :vid)
-                    distinct)]
-      {:product-ids pids
-       :vendor-ids vids})
-    {:product-ids []
-     :vendor-ids []}))
+                            :limit 500})
+          pids (map :pid ids)]
+      {:product-ids pids})
+    {:product-ids []}))
 
 (defn search-category-ids
   [q]
@@ -52,7 +50,7 @@
                      [(keyword "~*") :cname
                       (apply str (for [c q]
                                    (str "\\m" c ".*?")))])
-          wh [(keyword "~*") :cname (str ".*?\\m" q ".*")]
+          wh [(keyword "~*") :cname (str ".*?\\m" q ".*")]          
           wh' (if initials
                 [:or wh initials]
                 wh)]

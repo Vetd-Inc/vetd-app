@@ -207,64 +207,55 @@
                                :ename cname
                                :popup-props {:position "bottom center"}}])])
 
-(defn sort-products-by-score [vendors]
-  (when (sequential? vendors)
-    (->> vendors
-         (map (fn [{:keys [products] :as v}]
-                (let [v' (dissoc v :products)]
-                  (map #(assoc % :vendor v)
-                       products))))
-         flatten
-         (sort-by :score)
-         reverse)))
-
 (defn c-search-results
   [search-query]
   (let [org-id @(rf/subscribe [:org-id])
         group-ids& (rf/subscribe [:group-ids])
-        {:keys [product-ids vendor-ids category-ids] :as ids} @(rf/subscribe [:b/search-result-ids])
-        prods (if (not-empty (concat product-ids vendor-ids))
+        {:keys [product-ids category-ids] :as ids} @(rf/subscribe [:b/search-result-ids])
+        ;; page-size 3
+        ;; page-offset& (r/atom 0)
+        ;; stuff (subvec (vec product-ids) @page-offset& page-size)
+        prods (if (seq product-ids)
                 @(rf/subscribe [:gql/sub
                                 {:queries
-                                 [[:orgs {:id vendor-ids}
-                                   [:id :oname :idstr :short-desc
-                                    [:products {:id product-ids}
-                                     [:id :pname :idstr :logo :score
-                                      [:form-docs {:ftype "product-profile"
-                                                   :_order_by {:created :desc}
-                                                   :_limit 1
-                                                   :doc-deleted nil}
-                                       [:id
-                                        [:response-prompts {:prompt-term ["product/description"
-                                                                          "product/free-trial?"]
-                                                            :ref_deleted nil}
-                                         [:id :prompt-id :notes :prompt-prompt :prompt-term
-                                          [:response-prompt-fields
-                                           [:id :prompt-field-fname :idx :sval :nval :dval]]]]]]
-                                      [:forms {:ftype "preposal" ; preposal requests
-                                               :from-org-id org-id}
-                                       [:id]]
-                                      [:docs {:dtype "preposal" ; completed preposals
-                                              :to-org-id org-id}
-                                       [:id :idstr :title
-                                        [:from-org [:id :oname]]
-                                        [:from-user [:id :uname]]
-                                        [:to-org [:id :oname]]
-                                        [:to-user [:id :uname]]
-                                        [:response-prompts {:ref_deleted nil}
-                                         [:id :prompt-id :notes :prompt-prompt :prompt-term
-                                          [:response-prompt-fields
-                                           [:id :prompt-field-fname :idx :sval :nval :dval]]]]]]
-                                      [:rounds {:buyer-id org-id
-                                                :deleted nil}
-                                       [:id :idstr :created :status]]
-                                      [:categories {:ref-deleted nil}
-                                       [:id :idstr :cname]]
-                                      [:discounts {:id @group-ids&
-                                                   :ref-deleted nil}
-                                       [:group-discount-descr :gname]]]]]]]}])
+                                 [[:products {:id (take 5 product-ids)}
+                                   [:id :pname :idstr :logo :score
+                                    [:vendor
+                                     [:id :oname :idstr :short-desc]] 
+                                    [:form-docs {:ftype "product-profile"
+                                                 :_order_by {:created :desc}
+                                                 :_limit 1
+                                                 :doc-deleted nil}
+                                     [:id
+                                      [:response-prompts {:prompt-term ["product/description"
+                                                                        "product/free-trial?"]
+                                                          :ref_deleted nil}
+                                       [:id :prompt-id :notes :prompt-prompt :prompt-term
+                                        [:response-prompt-fields
+                                         [:id :prompt-field-fname :idx :sval :nval :dval]]]]]]
+                                    [:forms {:ftype "preposal" ; preposal requests
+                                             :from-org-id org-id}
+                                     [:id]]
+                                    [:docs {:dtype "preposal" ; completed preposals
+                                            :to-org-id org-id}
+                                     [:id :idstr :title
+                                      [:from-org [:id :oname]]
+                                      [:from-user [:id :uname]]
+                                      [:to-org [:id :oname]]
+                                      [:to-user [:id :uname]]
+                                      [:response-prompts {:ref_deleted nil}
+                                       [:id :prompt-id :notes :prompt-prompt :prompt-term
+                                        [:response-prompt-fields
+                                         [:id :prompt-field-fname :idx :sval :nval :dval]]]]]]
+                                    [:rounds {:buyer-id org-id
+                                              :deleted nil}
+                                     [:id :idstr :created :status]]
+                                    [:categories {:ref-deleted nil}
+                                     [:id :idstr :cname]]
+                                    [:discounts {:id @group-ids&
+                                                 :ref-deleted nil}
+                                     [:group-discount-descr :gname]]]]]}])
                 [])
-        prods-sorted (sort-products-by-score (:orgs prods))
         categories (if (not-empty category-ids)
                      @(rf/subscribe [:gql/sub
                                      {:queries
@@ -280,13 +271,13 @@
         prod-cat-suggestion (r/atom "")]
     (if loading?
       [cc/c-loader {:style {:margin-top 20}}]
-      (if (not-empty (concat product-ids vendor-ids))
+      (if (not-empty product-ids)
         [:div
          [:div.categories
           (for [c (:categories categories)]
             ^{:key (:id c)}
             [c-category-search-results c])]
-         [c-product-search-results prods-sorted]]
+         [c-product-search-results (:products prods)]]
         (if (= (count @search-query) 0)
           [:> ui/Segment {:placeholder true
                           :class "how-vetd-works"}
