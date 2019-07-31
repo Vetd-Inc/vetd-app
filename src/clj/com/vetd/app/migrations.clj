@@ -1643,12 +1643,12 @@
                               :deleted [:timestamp :with :time :zone]
                               :product_id [:bigint]
                               :buyer_id [:bigint]
-                              :statue [:text]
-                              :price_amount [:integer]
+                              :status [:text]
+                              :price_amount [[:numeric 12 2]]
                               :price_period [:text]
                               :renewal_date [:timestamp :with :time :zone]
                               :renewal_reminder [:bool]
-                              :rating [:integer]}
+                              :rating [[:numeric 12 2]]}
                     :owner :vetd
                     :grants {:hasura [:SELECT]}}]]])
 
