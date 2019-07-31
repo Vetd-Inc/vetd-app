@@ -1630,7 +1630,28 @@
                                       :join [[:groups :g]
                                              [:= :g.id :gd.group_id]]}
                               :owner :vetd
-                              :grants {:hasura [:SELECT]}}]]])
+                              :grants {:hasura [:SELECT]}}]]
+
+   [[2019 7 31 0 0]
+    
+    [:create-table {:schema :vetd
+                    :name :stack_items
+                    :columns {:id [:bigint :NOT :NULL]
+                              :idstr [:text]
+                              :created [:timestamp :with :time :zone]
+                              :updated [:timestamp :with :time :zone]
+                              :deleted [:timestamp :with :time :zone]
+                              :product_id [:bigint]
+                              :buyer_id [:bigint]
+                              :statue [:text]
+                              :price_amount [:integer]
+                              :price_period [:text]
+                              :renewal_date [:timestamp :with :time :zone]
+                              :renewal_reminder [:bool]
+                              :rating [:integer]}
+                    :owner :vetd
+                    :grants {:hasura [:SELECT]}}]]])
 
 #_(mig/mk-migration-files migrations
                           "migrations")
+

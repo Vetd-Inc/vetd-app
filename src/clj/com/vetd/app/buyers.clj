@@ -502,3 +502,27 @@ Round URL: https://app.vetd.com/b/rounds/%s"
         "\nRound Title: " round-title
         "\nEmail Addresses: " (s/join ", " email-addresses)))
   {})
+
+
+(defn insert-stack-item
+  [{:keys [product-id buyer-id status price-amount price-period
+           renewal-date renewal-reminder rating]}]
+  (let [[id idstr] (ut/mk-id&str)]
+    (-> (db/insert! :rounds
+                    {:id id
+                     :idstr idstr
+                     :created (ut/now-ts)
+                     :updated (ut/now-ts)
+                     :product_id product-id
+                     :buyer_id buyer-id
+                     :status status
+                     :price_amount price-amount
+                     :price_period price-period
+                     :renewal_date renewal-date
+                     :renewal_reminder renewal-reminder
+                     :rating rating})
+        first)))
+
+(defmethod com/handle-ws-inbound :create-stack-item
+  [req ws-id sub-fn]
+)
