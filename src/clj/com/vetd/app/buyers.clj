@@ -25,19 +25,27 @@
                                      [(honeysql.core/raw "coalesce(p.score, 1.0)") :nscore]]
                             :from [[:products :p]]
                             :join [[:orgs :o] [:= :o.id :p.vendor_id]]
-                            :left-join [[:product_categories :pc] [:= :p.id :pc.prod_id]]
+                            :left-join [[:product_categories :pc] [:= :p.id :pc.prod_id]
+                                        
+                                        ;; used by free trial filter
+                                        [:form_docs :fd] [:= :p.id :fd.doc_subject]
+
+                                        ]
                             :where [:and
                                     [:= :p.deleted nil]
                                     [:= :o.deleted nil]
+                                    
+                                    ;; filter only that have free trial
+                                    [:= :fd.doc_deleted nil]
+                                    [:= :fd.doc_dtype "product-profile"]
+                                    
                                     [:or
-                                     ;; ilike will provide slightly different results
-                                     ;; [:ilike :p.pname (str "%" q "%")]
-                                     ;; [:ilike :o.oname (str "%" q "%")]
                                      [(keyword "~*") :p.pname (str ".*?\\m" q ".*")]
                                      [(keyword "~*") :o.oname (str ".*?\\m" q ".*")]
                                      (when (not-empty cat-ids)
                                        [:in :pc.cat_id cat-ids])]]
                             :order-by [[:nscore :desc]]
+                            ;; this will be paginated on the frontend
                             :limit 500})
           pids (map :pid ids)]
       {:product-ids pids})
