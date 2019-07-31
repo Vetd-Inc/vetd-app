@@ -212,13 +212,15 @@
   (let [org-id @(rf/subscribe [:org-id])
         group-ids& (rf/subscribe [:group-ids])
         {:keys [product-ids category-ids] :as ids} @(rf/subscribe [:b/search-result-ids])
-        ;; page-size 3
-        ;; page-offset& (r/atom 0)
-        ;; stuff (subvec (vec product-ids) @page-offset& page-size)
+        page-size 10
+        page-offset& (r/atom 0)
         prods (if (seq product-ids)
                 @(rf/subscribe [:gql/sub
                                 {:queries
-                                 [[:products {:id (take 5 product-ids)}
+                                 [[:products {:id (subvec (vec product-ids)
+                                                          @page-offset&
+                                                          (min (+ page-size @page-offset&)
+                                                               (count product-ids)))}
                                    [:id :pname :idstr :logo :score
                                     [:vendor
                                      [:id :oname :idstr :short-desc]] 
