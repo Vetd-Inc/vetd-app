@@ -344,7 +344,13 @@
                     :vetd :orgs]
            :fields [:buyer :stack-items]
            :cols [:buyer_id :id]
-           :rel :many-one}]})
+           :rel :many-one}
+
+          {:tables [:vetd :products
+                    :vetd :agg_group_prod_rating]
+           :fields [:agg_group_prod_rating]
+           :cols [:id :product_id]
+           :rel :many-many}]})
 
 
 #_

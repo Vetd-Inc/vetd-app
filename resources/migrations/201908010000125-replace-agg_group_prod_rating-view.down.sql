@@ -1,0 +1,1 @@
+DROP VIEW IF EXISTS vetd.agg_group_prod_rating;
