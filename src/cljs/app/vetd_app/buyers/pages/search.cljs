@@ -30,7 +30,7 @@
    (merge
     {:db (assoc db :page :b/search)
      :analytics/page {:name "Buyers Products & Categories"}}
-    (when search-term
+    (when false ;; search-term  ;; DEBUG always false
       {:dispatch [:b/update-search-term search-term :bypass-url-fx true]}))))
 
 (rf/reg-event-fx
@@ -75,9 +75,14 @@
    {:db (assoc-in db [:search :page-offset] value)}))
 
 (rf/reg-event-fx
+ :b/search-page-offset.add
+ (fn [{:keys [db]} [_ value]]
+   {:db (update-in db [:search :page-offset] + value)}))
+
+(rf/reg-event-fx
  :b/search-loading?.set
  (fn [{:keys [db]} [_ value]]
-   {:db (assoc-in db [:search :loading??] value)}))
+   {:db (assoc-in db [:search :loading?] value)}))
 
 (rf/reg-event-fx
  :b/search-fully-loaded?.set
@@ -215,6 +220,11 @@
  (fn [{:keys [results]}]
    (-> results :data :products)))
 
+(rf/reg-sub
+ :search-page-offset
+ :<- [:search]
+ (fn [{:keys [page-offset]}]
+   page-offset))
 
 ;;;; Components
 (defn c-product-list-item
@@ -399,7 +409,7 @@
                   (rf/dispatch [:b/search-results-products.set total-products])
                   (when (= (count total-products)
                            (count (:product-ids @search-result-ids&)))
-                    (reset! fully-loaded?& true))))
+                    (rf/dispatch [:b/search-fully-loaded?.set true]))))
               (if some-products?
                 [:div.search-results-container
                  (when some-categories?
@@ -417,10 +427,11 @@
     (with-meta c-search-results*
       {:component-did-mount
        (fn [this]
-         (let [page-offset& (-> this r/props :page-offset&)
+         (let [page-offset& (-> this r/props :page-offset&) ; use subscribe for these instead of passing refs as props? or will that cause unwanted refreshes?
                page-size (-> this r/props :page-size)
                loading?& (-> this r/props :loading?&)
                fully-loaded?& (-> this r/props :fully-loaded?&)
+               
                ;; TODO would there be any issue if screen size was less than this??
                load-more-trigger-height 400 ; enough to make the load more ***seamless***
                window-scroll (fn []
@@ -430,7 +441,8 @@
                                              (- (.-scrollHeight (.-documentElement js/document))
                                                 (.-innerHeight js/window)
                                                 load-more-trigger-height)))
-                                 (swap! page-offset& + page-size)))
+                                 ;; should be sync or no?
+                                 (rf/dispatch-sync [:b/search-page-offset.add page-size])))
                _ (reset! window-scroll-fn-ref window-scroll)]
            (.addEventListener js/window "scroll" window-scroll)))
 
@@ -441,11 +453,9 @@
 
 (defn c-page []
   (let [search-query& (rf/subscribe [:search-term])
-        products& (rf/subscribe [:search-results-products]) ;; (r/atom {})
-        page-offset& (r/atom 0)
-        ;; loading?& (atom true)
+        products& (rf/subscribe [:search-results-products])
+        page-offset& (rf/subscribe [:search-page-offset])
         loading?& (rf/subscribe [:search-loading?])
-        ;; fully-loaded?& (atom false)
         fully-loaded?& (rf/subscribe [:search-fully-loaded?])
         search-input-ref& (atom nil)
         filter& (rf/subscribe [:search-filter])
