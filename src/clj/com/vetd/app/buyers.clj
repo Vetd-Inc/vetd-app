@@ -18,51 +18,10 @@
       ffirst
       :pname))
 
-
-#_
-(println
- (identity #_db/query
-  (honeysql.core/format
-   {:select [[:d.id :doc_id]
-             [:d.dtype :doc_dtype]
-             [:d.dsubtype :doc_dsubtype]
-             [:d.title :doc_title]
-             [:d.from_user_id :doc_from_user_id]
-             [:d.to_org_id :doc_to_org_id]
-             [:d.from_org_id :doc_from_org_id]
-             [:d.to_user_id :doc_to_user_id]
-             [:d.subject :doc_subject]
-             [:d.result :doc_result]
-             [:d.reason :doc_reason]
-             [:r.subject :response_subject]
-             [:r.subject_type :response_subject_type]
-             [:rf.id :resp_field_id]
-             [:rf.nval :resp_field_nval]
-             [:rf.sval :resp_field_sval]
-             [:rf.dval :resp_field_dval]
-             [:rf.jval :resp_field_jval]
-             [:rf.idx :resp_field_idx]
-             [:p.id :prompt_id]
-             [:p.prompt :prompt_prompt]
-             [:p.term :prompt_term]
-             [:pf.id :prompt_field_id]
-             [:pf.fname :prompt_field_fname]
-             [:pf.list_qm :prompt_field_list_qm]
-             [:pf.ftype :prompt_field_ftype]
-             [:pf.fsubtype :prompt_field_fsubtype]            
-             [:pf.sort :prompt_field_sort]]
-    :from [[:docs :d]]
-    :join [[:doc_resp :dr] [:and [:= :d.id :dr.doc_id] [:= :dr.deleted nil]]
-           [:responses :r] [:and [:= :dr.resp_id :r.id] [:= :r.deleted nil]]
-           [:resp_fields :rf] [:and [:= :rf.resp_id :r.id] [:= :rf.deleted nil]]
-           [:prompts :p] [:and [:= :r.prompt_id :p.id] [:= :p.deleted nil]]
-           [:prompt_fields :pf] [:and [:= :pf.id :rf.pf_id] [:= :pf.deleted nil]]]
-    :limit 10})))
-
 (defn search-prods-vendors->ids
-  [q cat-ids]
+  [q cat-ids filter-map]
   (if (not-empty q)
-    (let [filter-map {:require-free-trial? true}
+    (let [{:keys [require-free-trial? require-use-by-group-ids require-discount-from-group-ids]} filter-map
           ids (db/hs-query {:select [[:p.id :pid]
                                      [(honeysql.core/raw "coalesce(p.score, 1.0)") :nscore]]
                             :from [[:products :p]]
@@ -72,12 +31,19 @@
                                       [[:product_categories :pc] [:and
                                                                   [:= :p.id :pc.prod_id]
                                                                   [:in :pc.cat_id cat-ids]]])
-                                    (when (:require-free-trial? filter-map)
+                                    (when require-free-trial?
                                       [[:docs_to_fields :d2f] [:and
                                                                [:= :d2f.doc_subject :p.id]
                                                                [:= :d2f.doc_dtype "product-profile"]
                                                                [:= :d2f.prompt_term "product/free-trial?"]
-                                                               [:= :d2f.response_field_ "product/free-trial?"]]]))
+                                                               [:= :d2f.resp_field_sval "yes"]]])
+                                    (when (not-empty require-use-by-group-ids)
+                                      [[:group_org_memberships :gom] [:in :gom.group_id require-use-by-group-ids]
+                                       [:stack_items :si] [:= :gom.org_id :si.buyer_id]])
+                                    (when (not-empty require-discount-from-group-ids)
+                                      [[:group_discounts :gd] [:and
+                                                               [:in :gd.group_id require-discount-from-group-ids]
+                                                               [:= :gd.product_id :p.id]]]))
                             :where [:and
                                     [:= :p.deleted nil]
                                     [:= :o.deleted nil]
@@ -90,13 +56,6 @@
           pids (map :pid ids)]
       {:product-ids pids})
     {:product-ids []}))
-
-
-
-;; [:and
-;;  [:= :fd.response_prompts.prompt_term "product/free-trial?"]
-;;  [:= :fd.response_prompts.response_prompt_fields
-;;   "product/free-trial?"]]
 
 (defn search-category-ids
   [q]
