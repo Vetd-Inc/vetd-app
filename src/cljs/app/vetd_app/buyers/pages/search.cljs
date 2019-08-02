@@ -30,21 +30,22 @@
    (merge
     {:db (assoc db :page :b/search)
      :analytics/page {:name "Buyers Products & Categories"}}
-    (when false ;; search-term  ;; DEBUG always false
+    (when search-term
       {:dispatch [:b/update-search-term search-term :bypass-url-fx true]}))))
 
 (rf/reg-event-fx
  :b/update-search-term
  [(rf/inject-cofx :url)]
  (fn [{:keys [db url]} [_ search-term & {:keys [bypass-url-fx]}]]
-   (merge {:db (-> db
-                   (assoc-in [:search :term] search-term)
-                   (assoc-in [:search :waiting-for-debounce?] true))
-           :dispatch-debounce [{:id :b/search
-                                :dispatch [:b/search search-term]
-                                :timeout 250}]}
-          (when-not bypass-url-fx
-            {:url (url/replace-end url (-> db :search :term) search-term)}))))
+   (when-not (= search-term (-> db :search :term)) ; only if it really changed (this makes back button behavior better)
+     (merge {:db (-> db
+                     (assoc-in [:search :term] search-term)
+                     (assoc-in [:search :waiting-for-debounce?] true))
+             :dispatch-debounce [{:id :b/search
+                                  :dispatch [:b/search search-term]
+                                  :timeout 250}]}
+            (when-not bypass-url-fx
+              {:url (url/replace-end url (-> db :search :term) search-term)})))))
 
 (rf/reg-event-fx
  :b/search-filter.add
@@ -386,7 +387,6 @@
                                                 [:discounts {:id @group-ids&
                                                              :ref-deleted nil}
                                                  [:group-discount-descr :gname]]]]]}]))
-            _ (println @page-offset& page-size (count @products&))
             categories-data (when some-categories?
                               @(rf/subscribe [:gql/q
                                               {:queries
@@ -399,7 +399,9 @@
                                                        (= :loading products-data)
                                                        (= :loading categories-data))])]
         (if (or @waiting-for-debounce?& ; "(= :loading products-data)" is purposefully missing
-                (= :loading categories-data))
+                (= :loading categories-data)
+                (and (zero? @page-offset&)
+                     (= :loading products-data)))
           [cc/c-loader {:style {:margin-top 20}}]
           (do (when-not @loading?&
                 (let [new-products (into {}
