@@ -204,11 +204,11 @@
                                                 :marginLeft -14}}}])]))
 
 (defn c-product-search-results
-  [products]
+  [ordered-product-ids products]
   [:> ui/ItemGroup {:class "results"}
-   (for [product products]
-     ^{:key (:id product)}
-     [c-product-list-item product])])
+   (for [id (take (count products) ordered-product-ids)]
+     ^{:key id}
+     [c-product-list-item (products id)])])
 
 (defn c-category-search-result
   [{:keys [cname id idstr rounds] :as cat}]
@@ -274,76 +274,90 @@
 (defn c-search-results*
   [props]
   (let [search-result-ids& (rf/subscribe [:b/search-result-ids])
+        previous-search-result-ids& (atom nil)
         waiting-for-debounce?& (rf/subscribe [:waiting-for-debounce?])
         org-id& (rf/subscribe [:org-id])
         group-ids& (rf/subscribe [:group-ids])]
-    (fn [{:keys [search-query& page-offset& page-size]}]
+    (fn [{:keys [search-query& products& page-offset& page-size loading?&]}]
       (let [some-products? (seq (:product-ids @search-result-ids&))
             some-categories? (seq (:category-ids @search-result-ids&))
-            products (when some-products?
-                       @(rf/subscribe [:gql/q
-                                       {:queries
-                                        [[:products {:id (->> @search-result-ids&
-                                                              :product-ids
-                                                              (drop @page-offset&)
-                                                              (take page-size))}
-                                          [:id :pname :idstr :logo :score
-                                           [:vendor
-                                            [:id :oname :idstr :short-desc]] 
-                                           [:form-docs {:ftype "product-profile"
-                                                        :_order_by {:created :desc}
-                                                        :_limit 1
-                                                        :doc-deleted nil}
-                                            [:id
-                                             [:response-prompts {:prompt-term ["product/description"
-                                                                               "product/free-trial?"]
-                                                                 :ref_deleted nil}
-                                              [:id :prompt-id :notes :prompt-prompt :prompt-term
-                                               [:response-prompt-fields
-                                                [:id :prompt-field-fname :idx :sval :nval :dval]]]]]]
-                                           [:forms {:ftype "preposal" ; preposal requests
-                                                    :from-org-id @org-id&}
-                                            [:id]]
-                                           [:docs {:dtype "preposal" ; completed preposals
-                                                   :to-org-id @org-id&}
-                                            [:id :idstr :title
-                                             [:from-org [:id :oname]]
-                                             [:from-user [:id :uname]]
-                                             [:to-org [:id :oname]]
-                                             [:to-user [:id :uname]]
-                                             [:response-prompts {:ref_deleted nil}
-                                              [:id :prompt-id :notes :prompt-prompt :prompt-term
-                                               [:response-prompt-fields
-                                                [:id :prompt-field-fname :idx :sval :nval :dval]]]]]]
-                                           [:rounds {:buyer-id @org-id&
-                                                     :deleted nil}
-                                            [:id :idstr :created :status]]
-                                           [:categories {:ref-deleted nil}
-                                            [:id :idstr :cname]]
-                                           [:discounts {:id @group-ids&
-                                                        :ref-deleted nil}
-                                            [:group-discount-descr :gname]]]]]}]))
-            categories (when some-categories?
-                         @(rf/subscribe [:gql/q
-                                         {:queries
-                                          [[:categories {:id (:category-ids @search-result-ids&)}
-                                            [:id :idstr :cname
-                                             [:rounds {:buyer-id @org-id&
-                                                       :deleted nil}
-                                              [:id :idstr :created :status]]]]]}]))]
-        (if (or @waiting-for-debounce?&
-                (= :loading products)
-                (= :loading categories))
+            products-data (when (seq (:product-ids @search-result-ids&))
+                            @(rf/subscribe [:gql/q
+                                            {:queries
+                                             [[:products {:id (->> @search-result-ids&
+                                                                   :product-ids
+                                                                   (drop @page-offset&)
+                                                                   (take page-size))}
+                                               [:id :pname :idstr :logo :score
+                                                [:vendor
+                                                 [:id :oname :idstr :short-desc]] 
+                                                [:form-docs {:ftype "product-profile"
+                                                             :_order_by {:created :desc}
+                                                             :_limit 1
+                                                             :doc-deleted nil}
+                                                 [:id
+                                                  [:response-prompts {:prompt-term ["product/description"
+                                                                                    "product/free-trial?"]
+                                                                      :ref_deleted nil}
+                                                   [:id :prompt-id :notes :prompt-prompt :prompt-term
+                                                    [:response-prompt-fields
+                                                     [:id :prompt-field-fname :idx :sval :nval :dval]]]]]]
+                                                [:forms {:ftype "preposal" ; preposal requests
+                                                         :from-org-id @org-id&}
+                                                 [:id]]
+                                                [:docs {:dtype "preposal" ; completed preposals
+                                                        :to-org-id @org-id&}
+                                                 [:id :idstr :title
+                                                  [:from-org [:id :oname]]
+                                                  [:from-user [:id :uname]]
+                                                  [:to-org [:id :oname]]
+                                                  [:to-user [:id :uname]]
+                                                  [:response-prompts {:ref_deleted nil}
+                                                   [:id :prompt-id :notes :prompt-prompt :prompt-term
+                                                    [:response-prompt-fields
+                                                     [:id :prompt-field-fname :idx :sval :nval :dval]]]]]]
+                                                [:rounds {:buyer-id @org-id&
+                                                          :deleted nil}
+                                                 [:id :idstr :created :status]]
+                                                [:categories {:ref-deleted nil}
+                                                 [:id :idstr :cname]]
+                                                [:discounts {:id @group-ids&
+                                                             :ref-deleted nil}
+                                                 [:group-discount-descr :gname]]]]]}]))
+            _ (when (not= @search-result-ids& @previous-search-result-ids&)
+                (reset! previous-search-result-ids& @search-result-ids&)
+                (reset! products& {})
+                (reset! page-offset& 0))
+            
+            _ (println @page-offset& page-size (count @products&))
+            categories-data (when some-categories?
+                              @(rf/subscribe [:gql/q
+                                              {:queries
+                                               [[:categories {:id (:category-ids @search-result-ids&)}
+                                                 [:id :idstr :cname
+                                                  [:rounds {:buyer-id @org-id&
+                                                            :deleted nil}
+                                                   [:id :idstr :created :status]]]]]}]))
+            _ (reset! loading?& (or @waiting-for-debounce?&
+                                    (= :loading products-data)
+                                    (= :loading categories-data)))]
+        (if (or @waiting-for-debounce?& ; "(= :loading products-data)" is purposefully missing
+                (= :loading categories-data))
           [cc/c-loader {:style {:margin-top 20}}]
-          (if some-products?
-            [:div.search-results-container
-             (when some-categories?
-               [c-category-search-results (:categories categories)])
-             [c-product-search-results (:products products)]]
-            (if (= (count @search-query&) 0)
-              [c-explainer]
-              (when (> (count @search-query&) 2)
-                [c-no-results]))))))))
+          (do (when-not @loading?&
+                (->> (for [{:keys [id] :as m} (:products products-data)]
+                       [id m])
+                     (into {})
+                     (swap! products& merge)))
+              (if some-products?
+                [:div.search-results-container
+                 (when some-categories?
+                   [c-category-search-results (:categories categories-data)])
+                 [c-product-search-results (:product-ids @search-result-ids&) @products&]]
+                (if (= (count @search-query&) 0)
+                  [c-explainer]
+                  (when (> (count @search-query&) 2)
+                    [c-no-results])))))))))
 
 (def c-search-results
   (let [;; keep a reference to the window-scroll fn (will be created on mount)
@@ -354,12 +368,15 @@
        (fn [this]
          (let [page-offset& (-> this r/props :page-offset&)
                page-size (-> this r/props :page-size)
-               load-more-trigger-height 100
+               loading?& (-> this r/props :loading?&)
+               ;; TODO would there be any issue if screen size was less than this??
+               load-more-trigger-height 400 ; enough to make the load more ***seamless***
                window-scroll (fn []
-                               (when (> (.-scrollY js/window)
-                                        (- (.-scrollHeight (.-documentElement js/document))
-                                           (.-innerHeight js/window)
-                                           load-more-trigger-height))
+                               (when (and (not @loading?&)
+                                          (> (.-scrollY js/window)
+                                             (- (.-scrollHeight (.-documentElement js/document))
+                                                (.-innerHeight js/window)
+                                                load-more-trigger-height)))
                                  (swap! page-offset& + page-size)))
                _ (reset! window-scroll-fn-ref window-scroll)]
            (.addEventListener js/window "scroll" window-scroll)))
@@ -371,7 +388,9 @@
 
 (defn c-page []
   (let [search-query& (rf/subscribe [:search-term])
+        products& (r/atom {})
         page-offset& (r/atom 0)
+        loading?& (atom true)
         search-input-ref& (atom nil)
         filter& (rf/subscribe [:search-filter])
         group-ids& (rf/subscribe [:group-ids])]
@@ -422,6 +441,10 @@
                    :placeholder "Search products & categories..."
                    :attrs {:ref #(reset! search-input-ref& %)}}]
         [c-search-results {:search-query& search-query&
+                           :products& products&
                            :page-offset& page-offset&
-                           :page-size 10}]]]
-      )))
+                           ;; you probably want page-size big enough to make the page initially
+                           ;; scrollable (assuming there are more results). otherwise you have
+                           ;; a situation where they can't cause a scroll event to trigger a load more
+                           :page-size 15
+                           :loading?& loading?&}]]])))

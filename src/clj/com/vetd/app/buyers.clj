@@ -37,7 +37,8 @@
                             :order-by [[:nscore :desc]]
                             ;; this will be paginated on the frontend
                             :limit 500})
-          pids (map :pid ids)]
+          ;; could not the above be written to avoid the need for 'distinct'
+          pids (distinct (map :pid ids))]
       {:product-ids pids})
     {:product-ids []}))
 
