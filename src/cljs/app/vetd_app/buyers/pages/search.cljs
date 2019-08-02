@@ -271,15 +271,13 @@
                        :onClick #(rf/dispatch [:b/req-new-prod-cat @prod-cat-suggestion])}
          "Request It"]]])))
 
-(defn c-search-results
-  [search-query]
+(defn c-search-results*
+  [props]
   (let [search-result-ids& (rf/subscribe [:b/search-result-ids])
         waiting-for-debounce?& (rf/subscribe [:waiting-for-debounce?])
         org-id& (rf/subscribe [:org-id])
-        group-ids& (rf/subscribe [:group-ids])
-        page-size 10
-        page-offset& (r/atom 0)]
-    (fn [search-query]
+        group-ids& (rf/subscribe [:group-ids])]
+    (fn [{:keys [search-query& page-offset& page-size]}]
       (let [some-products? (seq (:product-ids @search-result-ids&))
             some-categories? (seq (:category-ids @search-result-ids&))
             products (when some-products?
@@ -342,14 +340,39 @@
              (when some-categories?
                [c-category-search-results (:categories categories)])
              [c-product-search-results (:products products)]]
-            (if (= (count @search-query) 0)
+            (if (= (count @search-query&) 0)
               [c-explainer]
-              (when (> (count @search-query) 2)
+              (when (> (count @search-query&) 2)
                 [c-no-results]))))))))
+
+(def c-search-results
+  (let [;; keep a reference to the window-scroll fn (will be created on mount)
+        ;; so we can remove the event listener upon unmount
+        window-scroll-fn-ref (atom nil)]
+    (with-meta c-search-results*
+      {:component-did-mount
+       (fn [this]
+         (let [page-offset& (-> this r/props :page-offset&)
+               page-size (-> this r/props :page-size)
+               load-more-trigger-height 100
+               window-scroll (fn []
+                               (when (> (.-scrollY js/window)
+                                        (- (.-scrollHeight (.-documentElement js/document))
+                                           (.-innerHeight js/window)
+                                           load-more-trigger-height))
+                                 (swap! page-offset& + page-size)))
+               _ (reset! window-scroll-fn-ref window-scroll)]
+           (.addEventListener js/window "scroll" window-scroll)))
+
+       :component-will-unmount
+       (fn [this]
+         (when @window-scroll-fn-ref
+           (.removeEventListener js/window "scroll" @window-scroll-fn-ref)))})))
 
 (defn c-page []
   (let [search-query& (rf/subscribe [:search-term])
-        search-input& (atom nil)
+        page-offset& (r/atom 0)
+        search-input-ref& (atom nil)
         filter& (rf/subscribe [:search-filter])
         group-ids& (rf/subscribe [:group-ids])]
     (fn []
@@ -391,12 +414,14 @@
                           [:> ui/Icon
                            {:name (if (not-empty @search-query&) "delete" "search")
                             :link true
-                            :on-click #(do (.focus @search-input&)
+                            :on-click #(do (.focus @search-input-ref&)
                                            (rf/dispatch [:b/update-search-term ""]))}])
                    :autoFocus true
                    :spellCheck false
                    :on-change #(rf/dispatch [:b/update-search-term (-> % .-target .-value)])
                    :placeholder "Search products & categories..."
-                   :attrs {:ref #(reset! search-input& %)}}]
-        [c-search-results search-query&]]]
+                   :attrs {:ref #(reset! search-input-ref& %)}}]
+        [c-search-results {:search-query& search-query&
+                           :page-offset& page-offset&
+                           :page-size 10}]]]
       )))
