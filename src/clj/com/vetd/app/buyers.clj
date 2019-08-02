@@ -21,36 +21,25 @@
 (defn search-prods-vendors->ids
   [q cat-ids]
   (if (not-empty q)
-    (let [filter-map {:must-have-free-trial true}
-          ids (db/hs-query {:select [[:p.id :pid]
+    (let [ids (db/hs-query {:select [[:p.id :pid]
                                      [(honeysql.core/raw "coalesce(p.score, 1.0)") :nscore]]
                             :from [[:products :p]]
                             :join [[:orgs :o] [:= :o.id :p.vendor_id]]
-                            :left-join (concat [[:product_categories :pc] [:= :p.id :pc.prod_id]]
-                                               (when (:must-have-free-trial filter-map)
-                                                 [[:form_docs :fd] [:= :p.id :fd.doc_subject]]))
-                            :where (concat [:and
-                                            [:= :p.deleted nil]
-                                            [:= :o.deleted nil]
-                                            [:or
-                                             [(keyword "~*") :p.pname (str ".*?\\m" q ".*")]
-                                             [(keyword "~*") :o.oname (str ".*?\\m" q ".*")]
-                                             (when (not-empty cat-ids)
-                                               [:in :pc.cat_id cat-ids])]]
-                                           (when (:must-have-free-trial filter-map)
-                                             [[:= :fd.doc_deleted nil]
-                                              [:= :fd.doc_dtype "product-profile"]]))
+                            :left-join [[:product_categories :pc] [:= :p.id :pc.prod_id]]        
+                            :where [:and
+                                    [:= :p.deleted nil]
+                                    [:= :o.deleted nil]
+                                    [:or
+                                     [(keyword "~*") :p.pname (str ".*?\\m" q ".*")]
+                                     [(keyword "~*") :o.oname (str ".*?\\m" q ".*")]
+                                     (when (not-empty cat-ids)
+                                       [:in :pc.cat_id cat-ids])]]
                             :order-by [[:nscore :desc]]
                             ;; this will be paginated on the frontend
                             :limit 500})
           pids (map :pid ids)]
       {:product-ids pids})
     {:product-ids []}))
-
-;; [:and
-;;  [:= :fd.response_prompts.prompt_term "product/free-trial?"]
-;;  [:= :fd.response_prompts.response_prompt_fields
-;;   "product/free-trial?"]]
 
 (defn search-category-ids
   [q]

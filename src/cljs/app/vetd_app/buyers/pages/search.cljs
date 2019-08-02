@@ -210,7 +210,7 @@
      ^{:key (:id product)}
      [c-product-list-item product])])
 
-(defn c-category-search-results
+(defn c-category-search-result
   [{:keys [cname id idstr rounds] :as cat}]
   [:div.category-search-result
    (if-let [round-idstr (some-> rounds first :idstr)]
@@ -226,120 +226,126 @@
                                :ename cname
                                :popup-props {:position "bottom center"}}])])
 
+(defn c-category-search-results
+  [categories]
+  [:div.categories
+   (for [c categories]
+     ^{:key (:id c)}
+     [c-category-search-result c])])
+
+(defn c-explainer []
+  [:> ui/Segment {:placeholder true
+                  :class "how-vetd-works"}
+   [:h2 "How Vetd Works . . ."]
+   [:> ui/Grid {:columns "equal"
+                :style {:margin-top 4}}
+    [:> ui/GridRow
+     [:> ui/GridColumn
+      [:h3 "Products & Categories"]
+      "Search for products or product categories to find products that meet your needs."]
+     [:> ui/GridColumn
+      [:h3 "PrePosals"]
+      "Review PrePosals (personalized pricing estimate and product pitch) you have received from vendors. Don't have any PrePosals yet? Request one by searching above or simply forward vendor emails to forward@vetd.com."]
+     [:> ui/GridColumn
+      [:h3 "VetdRounds"]
+      "Compare similar products side-by-side based on your unique requirements, and make an informed buying decision in a fraction of the time."]]]])
+
+(defn c-no-results []
+  (let [prod-cat-suggestion (r/atom "")]
+    (fn []
+      [:> ui/Segment {:placeholder true}
+       [:> ui/Header {:icon true}
+        [:> ui/Icon {:name "search"}]
+        "We could not find any matching products or categories."]
+       [:> ui/SegmentInline
+        [:> ui/Input {:label {:icon "asterisk"}
+                      :labelPosition "left corner"
+                      :placeholder "Product / Category . . ."
+                      :style {:position "relative"
+                              :top 1
+                              :width 240
+                              :margin-right 15}
+                      :onChange (fn [_ this]
+                                  (reset! prod-cat-suggestion (.-value this)))}]
+        [:> ui/Button {:color "blue"
+                       :onClick #(rf/dispatch [:b/req-new-prod-cat @prod-cat-suggestion])}
+         "Request It"]]])))
+
 (defn c-search-results
   [search-query]
-  (let [org-id @(rf/subscribe [:org-id])
+  (let [search-result-ids& (rf/subscribe [:b/search-result-ids])
+        waiting-for-debounce?& (rf/subscribe [:waiting-for-debounce?])
+        org-id& (rf/subscribe [:org-id])
         group-ids& (rf/subscribe [:group-ids])
-        {:keys [product-ids category-ids] :as ids} @(rf/subscribe [:b/search-result-ids])
         page-size 10
-        page-offset& (r/atom 0)
-        prods (if (seq product-ids)
-                @(rf/subscribe [:gql/sub
-                                {:queries
-                                 [[:products {:id (->> product-ids
-                                                       (drop @page-offset&)
-                                                       (take page-size))}
-                                   [:id :pname :idstr :logo :score
-                                    [:vendor
-                                     [:id :oname :idstr :short-desc]] 
-                                    [:form-docs {:ftype "product-profile"
-                                                 :_order_by {:created :desc}
-                                                 :_limit 1
-                                                 :doc-deleted nil}
-                                     [:id
-                                      [:response-prompts {:prompt-term ["product/description"
-                                                                        "product/free-trial?"]
-                                                          :ref_deleted nil}
-                                       [:id :prompt-id :notes :prompt-prompt :prompt-term
-                                        [:response-prompt-fields
-                                         [:id :prompt-field-fname :idx :sval :nval :dval]]]]]]
-                                    [:forms {:ftype "preposal" ; preposal requests
-                                             :from-org-id org-id}
-                                     [:id]]
-                                    [:docs {:dtype "preposal" ; completed preposals
-                                            :to-org-id org-id}
-                                     [:id :idstr :title
-                                      [:from-org [:id :oname]]
-                                      [:from-user [:id :uname]]
-                                      [:to-org [:id :oname]]
-                                      [:to-user [:id :uname]]
-                                      [:response-prompts {:ref_deleted nil}
-                                       [:id :prompt-id :notes :prompt-prompt :prompt-term
-                                        [:response-prompt-fields
-                                         [:id :prompt-field-fname :idx :sval :nval :dval]]]]]]
-                                    [:rounds {:buyer-id org-id
-                                              :deleted nil}
-                                     [:id :idstr :created :status]]
-                                    [:categories {:ref-deleted nil}
-                                     [:id :idstr :cname]]
-                                    [:discounts {:id @group-ids&
-                                                 :ref-deleted nil}
-                                     [:group-discount-descr :gname]]]]]}])
-                [])
-        categories (if (not-empty category-ids)
-                     @(rf/subscribe [:gql/sub
-                                     {:queries
-                                      [[:categories {:id category-ids}
-                                        [:id :idstr :cname
-                                         [:rounds {:buyer-id org-id
-                                                   :deleted nil}
-                                          [:id :idstr :created :status]]]]]}])
-                     [])
-        loading? (or @(rf/subscribe [:waiting-for-debounce?])
-                     (= :loading prods)
-                     (= :loading categories))
-        prod-cat-suggestion (r/atom "")]
-    (if loading?
-      [cc/c-loader {:style {:margin-top 20}}]
-      (if (not-empty product-ids)
-        [:div.search-results-container
-         [:div.categories
-          (for [c (:categories categories)]
-            ^{:key (:id c)}
-            [c-category-search-results c])]
-         [c-product-search-results (:products prods)]]
-        (if (= (count @search-query) 0)
-          [:> ui/Segment {:placeholder true
-                          :class "how-vetd-works"}
-           [:h2 "How Vetd Works . . ."]
-           [:> ui/Grid {:columns "equal"
-                        :style {:margin-top 4}}
-            [:> ui/GridRow
-             [:> ui/GridColumn
-              [:h3 "Products & Categories"]
-              "Search for products or product categories to find products that meet your needs."]
-             [:> ui/GridColumn
-              [:h3 "PrePosals"]
-              "Review PrePosals (personalized pricing estimate and product pitch) you have received from vendors. Don't have any PrePosals yet? Request one by searching above or simply forward vendor emails to forward@vetd.com."]
-             [:> ui/GridColumn
-              [:h3 "VetdRounds"]
-              "Compare similar products side-by-side based on your unique requirements, and make an informed buying decision in a fraction of the time."]]]]
-          (when (> (count @search-query) 2)
-            [:> ui/Segment {:placeholder true}
-             [:> ui/Header {:icon true}
-              [:> ui/Icon {:name "search"}]
-              "We could not find any matching products or categories."]
-             [:> ui/SegmentInline
-              [:> ui/Input {:label {:icon "asterisk"}
-                            :labelPosition "left corner"
-                            :placeholder "Product / Category . . ."
-                            :style {:position "relative"
-                                    :top 1
-                                    :width 240
-                                    :margin-right 15}
-                            :onChange (fn [_ this]
-                                        (reset! prod-cat-suggestion (.-value this)))}]
-              #_[:> ui/Select {:compact true
-                               :options [{:text "Product"
-                                          :value "product"
-                                          :key "product"}
-                                         {:text "Category"
-                                          :value "category"
-                                          :key "category"}]
-                               :defaultValue "product"}]
-              [:> ui/Button {:color "blue"
-                             :onClick #(rf/dispatch [:b/req-new-prod-cat @prod-cat-suggestion])}
-               "Request It"]]]))))))
+        page-offset& (r/atom 0)]
+    (fn [search-query]
+      (let [some-products? (seq (:product-ids @search-result-ids&))
+            some-categories? (seq (:category-ids @search-result-ids&))
+            products (when some-products?
+                       @(rf/subscribe [:gql/q
+                                       {:queries
+                                        [[:products {:id (->> @search-result-ids&
+                                                              :product-ids
+                                                              (drop @page-offset&)
+                                                              (take page-size))}
+                                          [:id :pname :idstr :logo :score
+                                           [:vendor
+                                            [:id :oname :idstr :short-desc]] 
+                                           [:form-docs {:ftype "product-profile"
+                                                        :_order_by {:created :desc}
+                                                        :_limit 1
+                                                        :doc-deleted nil}
+                                            [:id
+                                             [:response-prompts {:prompt-term ["product/description"
+                                                                               "product/free-trial?"]
+                                                                 :ref_deleted nil}
+                                              [:id :prompt-id :notes :prompt-prompt :prompt-term
+                                               [:response-prompt-fields
+                                                [:id :prompt-field-fname :idx :sval :nval :dval]]]]]]
+                                           [:forms {:ftype "preposal" ; preposal requests
+                                                    :from-org-id @org-id&}
+                                            [:id]]
+                                           [:docs {:dtype "preposal" ; completed preposals
+                                                   :to-org-id @org-id&}
+                                            [:id :idstr :title
+                                             [:from-org [:id :oname]]
+                                             [:from-user [:id :uname]]
+                                             [:to-org [:id :oname]]
+                                             [:to-user [:id :uname]]
+                                             [:response-prompts {:ref_deleted nil}
+                                              [:id :prompt-id :notes :prompt-prompt :prompt-term
+                                               [:response-prompt-fields
+                                                [:id :prompt-field-fname :idx :sval :nval :dval]]]]]]
+                                           [:rounds {:buyer-id @org-id&
+                                                     :deleted nil}
+                                            [:id :idstr :created :status]]
+                                           [:categories {:ref-deleted nil}
+                                            [:id :idstr :cname]]
+                                           [:discounts {:id @group-ids&
+                                                        :ref-deleted nil}
+                                            [:group-discount-descr :gname]]]]]}]))
+            categories (when some-categories?
+                         @(rf/subscribe [:gql/q
+                                         {:queries
+                                          [[:categories {:id (:category-ids @search-result-ids&)}
+                                            [:id :idstr :cname
+                                             [:rounds {:buyer-id @org-id&
+                                                       :deleted nil}
+                                              [:id :idstr :created :status]]]]]}]))]
+        (if (or @waiting-for-debounce?&
+                (= :loading products)
+                (= :loading categories))
+          [cc/c-loader {:style {:margin-top 20}}]
+          (if some-products?
+            [:div.search-results-container
+             (when some-categories?
+               [c-category-search-results (:categories categories)])
+             [c-product-search-results (:products products)]]
+            (if (= (count @search-query) 0)
+              [c-explainer]
+              (when (> (count @search-query) 2)
+                [c-no-results]))))))))
 
 (defn c-page []
   (let [search-query& (rf/subscribe [:search-term])
@@ -347,7 +353,6 @@
         filter& (rf/subscribe [:search-filter])
         group-ids& (rf/subscribe [:group-ids])]
     (fn []
-
       [:div.container-with-sidebar
        [:div.sidebar
         [:> ui/Segment
