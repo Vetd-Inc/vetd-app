@@ -56,6 +56,27 @@
   {:toast {:type "success"
            :title "VetdRound Shared!"}}))
 
+(rf/reg-event-fx
+ :b/start-round
+ (fn [{:keys [db]} [_ title etype eid]]
+   {:ws-send {:payload {:cmd :b/start-round
+                        :return {:handler :b/start-round-return}
+                        :title title
+                        :etype etype
+                        :eid eid
+                        :buyer-id (util/db->current-org-id db)}}
+    :analytics/track {:event "Start"
+                      :props {:category "Round"
+                              :label etype}}}))
+
+(rf/reg-event-fx
+ :b/start-round-return
+ (fn [_ [_ {:keys [idstr] :as results}]]
+   {:dispatch [:b/nav-round-detail idstr]
+    :toast {:type "success"
+            :title "New VetdRound created!"
+            :message "Please define your requirements."}}))
+
 ;;;; Subscriptions
 (rf/reg-sub
  :rounds-filter

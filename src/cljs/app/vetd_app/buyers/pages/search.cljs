@@ -9,12 +9,101 @@
             [re-frame.core :as rf]
             [re-com.core :as rc]))
 
-(def last-query-id (atom 0))
+(def init-db
+  {:term ""
+   :filter {:features #{}}
+   :waiting-for-debounce? false
+   :loading? true
+   :infinite-scroll {:more-results? false
+                     :triggered? false
+                     :page-offset 0}
+   :results {:ids {:product-ids []
+                   :category-ids []}
+             :data {:products {}
+                    ;; :categories [] ; consider keeping cat results cached as well?
+                    }}})
 
+;;;; Subscriptions
+(rf/reg-sub
+ :b/search
+ (fn [{:keys [search]}] search))
+
+(rf/reg-sub
+ :b/search.term
+ :<- [:b/search]
+ (fn [{:keys [term]}] term))
+
+(rf/reg-sub
+ :b/search.filter
+ :<- [:b/search]
+ (fn [{:keys [filter]}]
+   filter))
+
+(rf/reg-sub
+ :b/search.loading?
+ :<- [:b/search]
+ (fn [{:keys [loading?]}]
+   loading?))
+
+(rf/reg-sub
+ :b/search.results.ids
+ :<- [:b/search]
+ (fn [{:keys [results]}]
+   (-> results :ids)))
+
+(rf/reg-sub
+ :b/search.some-products?
+ :<- [:b/search.results.ids]
+ (fn [{:keys [product-ids]}]
+   (boolean (seq product-ids))))
+
+(rf/reg-sub
+ :b/search.some-categories?
+ :<- [:b/search.results.ids]
+ (fn [{:keys [category-ids]}]
+   (boolean (seq category-ids))))
+
+(rf/reg-sub
+ :b/search.results.data.products
+ :<- [:b/search]
+ (fn [{:keys [results]}]
+   (-> results :data :products)))
+
+(rf/reg-sub
+ :b/search.waiting-for-debounce?
+ :<- [:b/search]
+ (fn [{:keys [waiting-for-debounce?]}]
+   waiting-for-debounce?))
+
+(rf/reg-sub
+ :b/search.infinite-scroll
+ :<- [:b/search]
+ (fn [{:keys [infinite-scroll]}] infinite-scroll))
+
+(rf/reg-sub
+ :b/search.infinite-scroll.more-results?
+ :<- [:b/search.infinite-scroll]
+ (fn [{:keys [more-results?]}]
+   more-results?))
+
+(rf/reg-sub
+ :b/search.infinite-scroll.page-offset
+ :<- [:b/search.infinite-scroll]
+ (fn [{:keys [page-offset]}]
+   page-offset))
+
+(rf/reg-sub
+ :b/search.infinite-scroll.triggered?
+ :<- [:b/search.infinite-scroll]
+ (fn [{:keys [triggered?]}]
+   triggered?))
+
+
+;;;; Events
+(def last-query-id (atom 0))
 (defn get-next-query-id []
   (swap! last-query-id inc))
 
-;;;; Events
 (rf/reg-event-fx
  :b/nav-search
  (fn [_ [_ search-term]]
@@ -31,13 +120,14 @@
     {:db (assoc db :page :b/search)
      :analytics/page {:name "Buyers Products & Categories"}}
     (when search-term
-      {:dispatch [:b/update-search-term search-term :bypass-url-fx true]}))))
+      {:dispatch [:b/search.term.update search-term :bypass-url-fx true]}))))
 
 (rf/reg-event-fx
- :b/update-search-term
+ :b/search.term.update
  [(rf/inject-cofx :url)]
  (fn [{:keys [db url]} [_ search-term & {:keys [bypass-url-fx]}]]
-   (when-not (= search-term (-> db :search :term)) ; only if it really changed (this makes back button behavior better)
+   (when (-> db :search :term
+             (not= search-term)) ; only if it really changed (this makes back button behavior better)
      (merge {:db (-> db
                      (assoc-in [:search :term] search-term)
                      (assoc-in [:search :waiting-for-debounce?] true))
@@ -48,7 +138,7 @@
               {:url (url/replace-end url (-> db :search :term) search-term)})))))
 
 (rf/reg-event-fx
- :b/search-filter.add
+ :b/search.filter.add
  (fn [{:keys [db]} [_ group value & [{:keys [event-label]}]]]
    {:db (update-in db [:search :filter group] conj value)
     :analytics/track {:event "Filter"
@@ -56,39 +146,39 @@
                               :label event-label}}}))
 
 (rf/reg-event-fx
- :b/search-filter.remove
+ :b/search.filter.remove
  (fn [{:keys [db]} [_ group value]]
    {:db (update-in db [:search :filter group] disj value)}))
 
 (rf/reg-event-fx
- :b/search-results-products.empty
+ :b/search.results.data.products.empty
  (fn [{:keys [db]}]
    {:db (assoc-in db [:search :results :data :products] {})}))
 
 (rf/reg-event-fx
- :b/search-results-products.set
+ :b/search.results.data.products.set
  (fn [{:keys [db]} [_ value]]
    {:db (assoc-in db [:search :results :data :products] value)}))
 
 (rf/reg-event-fx
- :b/search-page-offset.set
+ :b/search.infinite-scroll.page-offset.set
  (fn [{:keys [db]} [_ value]]
-   {:db (assoc-in db [:search :page-offset] value)}))
+   {:db (assoc-in db [:search :infinite-scroll :page-offset] value)}))
 
 (rf/reg-event-fx
- :b/search-page-offset.add
+ :b/search.infinite-scroll.page-offset.add
  (fn [{:keys [db]} [_ value]]
-   {:db (update-in db [:search :page-offset] + value)}))
+   {:db (update-in db [:search :infinite-scroll :page-offset] + value)}))
 
 (rf/reg-event-fx
- :b/search-loading?.set
+ :b/search.loading?.set
  (fn [{:keys [db]} [_ value]]
    {:db (assoc-in db [:search :loading?] value)}))
 
 (rf/reg-event-fx
- :b/search-fully-loaded?.set
+ :b/search.infinite-scroll.more-results?.set
  (fn [{:keys [db]} [_ value]]
-   {:db (assoc-in db [:search :fully-loaded?] value)}))
+   {:db (assoc-in db [:search :infinite-scroll :more-results?] value)}))
 
 (rf/reg-event-fx
  :b/search
@@ -96,68 +186,23 @@
    (let [qid (get-next-query-id)]
      {:db (assoc db :buyer-qid qid)
       :ws-send {:payload {:cmd :b/search
-                          :return {:handler :b/ws-search-result-ids
+                          :return {:handler :b/search.return
                                    :qid qid}
                           :query q-str
                           :buyer-id (util/db->current-org-id db)
                           :qid qid}}})))
 
 (rf/reg-event-fx
- :b/ws-search-result-ids
+ :b/search.return
  (fn [{:keys [db]} [_ results {:keys [return]}]]
    (if (= (:buyer-qid db) (:qid return))
      {:db (-> db
               (assoc-in [:search :results :ids] results)
               (assoc-in [:search :waiting-for-debounce?] false))
-      :dispatch-n [[:b/search-results-products.empty]
-                   [:b/search-page-offset.set 0]
-                   [:b/search-fully-loaded?.set false]]}
+      :dispatch-n [[:b/search.results.data.products.empty]
+                   [:b/search.infinite-scroll.page-offset.set 0]
+                   [:b/search.infinite-scroll.more-results?.set true]]}
      {})))
-
-(rf/reg-event-fx
- :b/start-round
- (fn [{:keys [db]} [_ title etype eid]]
-   {:ws-send {:payload {:cmd :b/start-round
-                        :return {:handler :b/start-round-return}
-                        :title title
-                        :etype etype
-                        :eid eid
-                        :buyer-id (util/db->current-org-id db)}}
-    :analytics/track {:event "Start"
-                      :props {:category "Round"
-                              :label etype}}}))
-
-(rf/reg-event-fx
- :b/start-round-return
- (fn [_ [_ {:keys [idstr] :as results}]]
-   {:dispatch [:b/nav-round-detail idstr]
-    :toast {:type "success"
-            :title "New VetdRound created!"
-            :message "Please define your requirements."}}))
-
-(rf/reg-event-fx
- :b/create-preposal-req
- (fn [{:keys [db]} [_ product vendor]]
-   {:ws-send {:payload {:cmd :b/create-preposal-req
-                        :return {:handler :b/create-preposal-req-return
-                                 :product product
-                                 :vendor vendor}
-                        :prep-req {:from-org-id (->> (:active-memb-id db)
-                                                     (get (group-by :id (:memberships db)))
-                                                     first
-                                                     :org-id)
-                                   :from-user-id (-> db :user :id)
-                                   :prod-id (:id product)}}}}))
-
-(rf/reg-event-fx
- :b/create-preposal-req-return
- (fn [_ [_ _ {{:keys [product vendor]} :return}]]
-   {:toast {:type "success"
-            :title "PrePosal Requested"
-            :message "We'll be in touch with next steps."}
-    :analytics/track {:event "Request"
-                      :props {:category "Preposals"
-                              :label (str (:pname product) " by " (:oname vendor))}}}))
 
 (rf/reg-event-fx
  :b/req-new-prod-cat
@@ -175,57 +220,6 @@
            :title "Thanks for the suggestion!"
            :message "We'll let you know when we add it."}}))
 
-;;;; Subscriptions
-(rf/reg-sub
- :search
- (fn [{:keys [search]}] search))
-
-(rf/reg-sub
- :search-term
- :<- [:search]
- (fn [{:keys [term]}] term))
-
-(rf/reg-sub
- :search-filter
- :<- [:search]
- (fn [{:keys [filter]}]
-   filter))
-
-(rf/reg-sub
- :search-loading?
- :<- [:search]
- (fn [{:keys [loading?]}]
-   loading?))
-
-(rf/reg-sub
- :search-fully-loaded?
- :<- [:search]
- (fn [{:keys [fully-loaded?]}]
-   fully-loaded?))
-
-(rf/reg-sub
- :b/search-result-ids
- :<- [:search]
- (fn [{:keys [results]}]
-   (-> results :ids)))
-
-(rf/reg-sub
- :waiting-for-debounce?
- :<- [:search]
- (fn [{:keys [waiting-for-debounce?]}]
-   waiting-for-debounce?))
-
-(rf/reg-sub
- :search-results-products
- :<- [:search]
- (fn [{:keys [results]}]
-   (-> results :data :products)))
-
-(rf/reg-sub
- :search-page-offset
- :<- [:search]
- (fn [{:keys [page-offset]}]
-   page-offset))
 
 ;;;; Components
 (defn c-product-list-item
@@ -268,6 +262,8 @@
                                                 :marginLeft -14}}}])]))
 
 (defn c-product-search-results
+  "Given a list product IDs in order, and an indexed map of products by id,
+  return products as list items."
   [ordered-product-ids products]
   [:> ui/ItemGroup {:class "results"}
    (for [id (take (count products) ordered-product-ids)]
@@ -337,65 +333,72 @@
 
 (defn c-search-results*
   [props]
-  (let [search-result-ids& (rf/subscribe [:b/search-result-ids])
-        waiting-for-debounce?& (rf/subscribe [:waiting-for-debounce?])
+  (let [search-result-ids& (rf/subscribe [:b/search.results.ids])
+        some-products?& (rf/subscribe [:b/search.some-products?])
+        some-categories?& (rf/subscribe [:b/search.some-categories?])
+        waiting-for-debounce?& (rf/subscribe [:b/search.waiting-for-debounce?])
+        search-query& (rf/subscribe [:b/search.term])
+        products& (rf/subscribe [:b/search.results.data.products])
+        page-offset& (rf/subscribe [:b/search.infinite-scroll.page-offset])
+        loading?& (rf/subscribe [:b/search.loading?])
         org-id& (rf/subscribe [:org-id])
         group-ids& (rf/subscribe [:group-ids])]
-    (fn [{:keys [search-query& products& page-offset& page-size loading?& fully-loaded?&]}]
-      (let [some-products? (seq (:product-ids @search-result-ids&))
-            some-categories? (seq (:category-ids @search-result-ids&))
-            products-data (when (seq (:product-ids @search-result-ids&))
-                            @(rf/subscribe [:gql/sub
-                                            {:queries
-                                             [[:products {:id (->> @search-result-ids&
-                                                                   :product-ids
-                                                                   (drop @page-offset&)
-                                                                   (take page-size))}
-                                               [:id :pname :idstr :logo :score
-                                                [:vendor
-                                                 [:id :oname :idstr :short-desc]] 
-                                                [:form-docs {:ftype "product-profile"
-                                                             :_order_by {:created :desc}
-                                                             :_limit 1
-                                                             :doc-deleted nil}
-                                                 [:id
-                                                  [:response-prompts {:prompt-term ["product/description"
-                                                                                    "product/free-trial?"]
-                                                                      :ref_deleted nil}
-                                                   [:id :prompt-id :notes :prompt-prompt :prompt-term
-                                                    [:response-prompt-fields
-                                                     [:id :prompt-field-fname :idx :sval :nval :dval]]]]]]
-                                                [:forms {:ftype "preposal" ; preposal requests
-                                                         :from-org-id @org-id&}
-                                                 [:id]]
-                                                [:docs {:dtype "preposal" ; completed preposals
-                                                        :to-org-id @org-id&}
-                                                 [:id :idstr :title
-                                                  [:from-org [:id :oname]]
-                                                  [:from-user [:id :uname]]
-                                                  [:to-org [:id :oname]]
-                                                  [:to-user [:id :uname]]
-                                                  [:response-prompts {:ref_deleted nil}
-                                                   [:id :prompt-id :notes :prompt-prompt :prompt-term
-                                                    [:response-prompt-fields
-                                                     [:id :prompt-field-fname :idx :sval :nval :dval]]]]]]
-                                                [:rounds {:buyer-id @org-id&
-                                                          :deleted nil}
-                                                 [:id :idstr :created :status]]
-                                                [:categories {:ref-deleted nil}
-                                                 [:id :idstr :cname]]
-                                                [:discounts {:id @group-ids&
-                                                             :ref-deleted nil}
-                                                 [:group-discount-descr :gname]]]]]}]))
-            categories-data (when some-categories?
-                              @(rf/subscribe [:gql/q
-                                              {:queries
-                                               [[:categories {:id (:category-ids @search-result-ids&)}
-                                                 [:id :idstr :cname
-                                                  [:rounds {:buyer-id @org-id&
-                                                            :deleted nil}
-                                                   [:id :idstr :created :status]]]]]}]))
-            _ (rf/dispatch [:b/search-loading?.set (or @waiting-for-debounce?&
+    (fn [{:keys [page-size]}]
+      (let [products-data (when @some-products?&
+                            @(rf/subscribe
+                              [:gql/sub
+                               {:queries
+                                [[:products {:id (->> @search-result-ids&
+                                                      :product-ids
+                                                      (drop @page-offset&)
+                                                      (take page-size))}
+                                  [:id :pname :idstr :logo :score
+                                   [:vendor
+                                    [:id :oname :idstr :short-desc]] 
+                                   [:form-docs {:ftype "product-profile"
+                                                :_order_by {:created :desc}
+                                                :_limit 1
+                                                :doc-deleted nil}
+                                    [:id
+                                     [:response-prompts {:prompt-term ["product/description"
+                                                                       "product/free-trial?"]
+                                                         :ref_deleted nil}
+                                      [:id :prompt-id :notes :prompt-prompt :prompt-term
+                                       [:response-prompt-fields
+                                        [:id :prompt-field-fname :idx :sval :nval :dval]]]]]]
+                                   [:forms {:ftype "preposal" ; preposal requests
+                                            :from-org-id @org-id&}
+                                    [:id]]
+                                   [:docs {:dtype "preposal" ; completed preposals
+                                           :to-org-id @org-id&}
+                                    [:id :idstr :title
+                                     [:from-org [:id :oname]]
+                                     [:from-user [:id :uname]]
+                                     [:to-org [:id :oname]]
+                                     [:to-user [:id :uname]]
+                                     [:response-prompts {:ref_deleted nil}
+                                      [:id :prompt-id :notes :prompt-prompt :prompt-term
+                                       [:response-prompt-fields
+                                        [:id :prompt-field-fname :idx :sval :nval :dval]]]]]]
+                                   [:rounds {:buyer-id @org-id&
+                                             :deleted nil}
+                                    [:id :idstr :created :status]]
+                                   [:categories {:ref-deleted nil}
+                                    [:id :idstr :cname]]
+                                   [:discounts {:id @group-ids&
+                                                :ref-deleted nil}
+                                    [:group-discount-descr :gname]]]]]}]))
+            categories-data (when @some-categories?&
+                              @(rf/subscribe
+                                [:gql/q
+                                 {:queries
+                                  [[:categories {:id (:category-ids @search-result-ids&)}
+                                    [:id :idstr :cname
+                                     [:rounds {:buyer-id @org-id&
+                                               :deleted nil}
+                                      [:id :idstr :created :status]]]]]}]))
+            ;; this is suspect...
+            _ (rf/dispatch [:b/search.loading?.set (or @waiting-for-debounce?&
                                                        (= :loading products-data)
                                                        (= :loading categories-data))])]
         (if (or @waiting-for-debounce?& ; "(= :loading products-data)" is purposefully missing
@@ -403,18 +406,18 @@
                 (and (zero? @page-offset&)
                      (= :loading products-data)))
           [cc/c-loader {:style {:margin-top 20}}]
-          (do (when-not @loading?&
+          (do (when-not @loading?& ;; sketchy
                 (let [new-products (into {}
                                          (for [{:keys [id] :as m} (:products products-data)]
                                            [id m]))
                       total-products (merge @products& new-products)]
-                  (rf/dispatch [:b/search-results-products.set total-products])
+                  (rf/dispatch [:b/search.results.data.products.set total-products])
                   (when (= (count total-products)
                            (count (:product-ids @search-result-ids&)))
-                    (rf/dispatch [:b/search-fully-loaded?.set true]))))
-              (if some-products?
+                    (rf/dispatch [:b/search.infinite-scroll.more-results?.set false]))))
+              (if @some-products?&
                 [:div.search-results-container
-                 (when some-categories?
+                 (when @some-categories?&
                    [c-category-search-results (:categories categories-data)])
                  [c-product-search-results (:product-ids @search-result-ids&) @products&]]
                 (if (= (count @search-query&) 0)
@@ -429,22 +432,22 @@
     (with-meta c-search-results*
       {:component-did-mount
        (fn [this]
-         (let [page-offset& (-> this r/props :page-offset&) ; use subscribe for these instead of passing refs as props? or will that cause unwanted refreshes?
-               page-size (-> this r/props :page-size)
-               loading?& (-> this r/props :loading?&)
-               fully-loaded?& (-> this r/props :fully-loaded?&)
-               
-               ;; TODO would there be any issue if screen size was less than this??
-               load-more-trigger-height 400 ; enough to make the load more ***seamless***
+         (let [page-size (-> this r/props :page-size)
+               loading?& (rf/subscribe [:b/search.loading?])
+               more-results?& (rf/subscribe [:b/search.infinite-scroll.more-results?])
+               page-offset& (rf/subscribe [:b/search.infinite-scroll.page-offset])
+               triggered?& (rf/subscribe [:b/search.infinite-scroll.triggered?])
+               load-more-trigger-height 400 ; enough to make the load more SEAMLESS
                window-scroll (fn []
                                (when (and (not @loading?&)
-                                          (not @fully-loaded?&)
+                                          @more-results?&
+                                          (not @triggered?&)
                                           (> (.-scrollY js/window)
                                              (- (.-scrollHeight (.-documentElement js/document))
                                                 (.-innerHeight js/window)
                                                 load-more-trigger-height)))
                                  ;; should be sync or no?
-                                 (rf/dispatch-sync [:b/search-page-offset.add page-size])))
+                                 (rf/dispatch-sync [:b/search.infinite-scroll.page-offset.add page-size])))
                _ (reset! window-scroll-fn-ref window-scroll)]
            (.addEventListener js/window "scroll" window-scroll)))
 
@@ -454,13 +457,9 @@
            (.removeEventListener js/window "scroll" @window-scroll-fn-ref)))})))
 
 (defn c-page []
-  (let [search-query& (rf/subscribe [:search-term])
-        products& (rf/subscribe [:search-results-products])
-        page-offset& (rf/subscribe [:search-page-offset])
-        loading?& (rf/subscribe [:search-loading?])
-        fully-loaded?& (rf/subscribe [:search-fully-loaded?])
+  (let [search-query& (rf/subscribe [:b/search.term])
         search-input-ref& (atom nil)
-        filter& (rf/subscribe [:search-filter])
+        filter& (rf/subscribe [:b/search.filter])
         group-ids& (rf/subscribe [:group-ids])]
     (fn []
       [:div.container-with-sidebar
@@ -499,18 +498,13 @@
                            {:name (if (not-empty @search-query&) "delete" "search")
                             :link true
                             :on-click #(do (.focus @search-input-ref&)
-                                           (rf/dispatch [:b/update-search-term ""]))}])
+                                           (rf/dispatch [:b/search.term.update ""]))}])
                    :autoFocus true
                    :spellCheck false
-                   :on-change #(rf/dispatch [:b/update-search-term (-> % .-target .-value)])
+                   :on-change #(rf/dispatch [:b/search.term.update (-> % .-target .-value)])
                    :placeholder "Search products & categories..."
                    :attrs {:ref #(reset! search-input-ref& %)}}]
-        [c-search-results {:search-query& search-query&
-                           :products& products&
-                           :page-offset& page-offset&
-                           ;; you probably want page-size big enough to make the page initially
-                           ;; scrollable (assuming there are more results). otherwise you have
-                           ;; a situation where they can't cause a scroll event to trigger a load more
-                           :page-size 15
-                           :loading?& loading?&
-                           :fully-loaded?& fully-loaded?&}]]])))
+        ;; you probably want page-size big enough to make the page initially
+        ;; scrollable (assuming there are more results). otherwise you have
+        ;; a situation where they can't cause a scroll event to trigger a load more
+        [c-search-results {:page-size 15}]]])))
