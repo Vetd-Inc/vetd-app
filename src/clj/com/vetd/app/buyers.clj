@@ -310,10 +310,10 @@ Round URL: https://app.vetd.com/b/rounds/%s"
 
 ;; TODO use session-id to verify permissions!!!!!!!!!!!!!
 (defmethod com/handle-ws-inbound :b/search
-  [{:keys [buyer-id query]} ws-id sub-fn]
+  [{:keys [buyer-id query filter-map]} ws-id sub-fn]
   (let [cat-ids (search-category-ids query)]
     (ut/$- -> query
-           (search-prods-vendors->ids $ cat-ids)
+           (search-prods-vendors->ids $ cat-ids filter-map)
            (assoc :category-ids cat-ids))))
 
 ;; Start a round for either a Product or a Category

@@ -156,9 +156,19 @@
    {:db (assoc-in db [:search :results :data :products] {})}))
 
 (rf/reg-event-fx
- :b/search.results.data.products.set
- (fn [{:keys [db]} [_ value]]
-   {:db (assoc-in db [:search :results :data :products] value)}))
+ :b/search.infinite-scroll.add-products
+ (fn [{:keys [db]} [_ products]]
+   (let [;; todo find out how often this is running
+         _ (println "add products called")
+         total-products (merge (get-in db [:search :results :data :products])
+                               (into {} (for [{:keys [id] :as m} products]
+                                          [id m])))]
+     {:db (-> db
+              (assoc-in [:search :results :data :products] total-products)
+              (assoc-in [:search :infinite-scroll :triggered?] false)
+              (assoc-in [:search :infinite-scroll :more-results?]
+                        (< (count total-products)
+                           (count (get-in db [:search :results :ids :product-ids])))))})))
 
 (rf/reg-event-fx
  :b/search.infinite-scroll.page-offset.set
@@ -166,14 +176,21 @@
    {:db (assoc-in db [:search :infinite-scroll :page-offset] value)}))
 
 (rf/reg-event-fx
- :b/search.infinite-scroll.page-offset.add
+ :b/search.infinite-scroll.load-more
  (fn [{:keys [db]} [_ value]]
-   {:db (update-in db [:search :infinite-scroll :page-offset] + value)}))
+   {:db (-> db
+            (assoc-in [:search :infinite-scroll :triggered?] true)
+            (update-in [:search :infinite-scroll :page-offset] + value))}))
 
 (rf/reg-event-fx
  :b/search.loading?.set
  (fn [{:keys [db]} [_ value]]
    {:db (assoc-in db [:search :loading?] value)}))
+
+(rf/reg-event-fx
+ :b/search.infinite-scroll.triggered?.set
+ (fn [{:keys [db]} [_ value]]
+   {:db (assoc-in db [:search :infinite-scroll :triggered?] value)}))
 
 (rf/reg-event-fx
  :b/search.infinite-scroll.more-results?.set
@@ -189,6 +206,7 @@
                           :return {:handler :b/search.return
                                    :qid qid}
                           :query q-str
+                          ;; :filter-map {:require-free-trial? true}
                           :buyer-id (util/db->current-org-id db)
                           :qid qid}}
       :dispatch-n [[:b/search.results.data.products.empty]
@@ -398,23 +416,16 @@
                                                :deleted nil}
                                       [:id :idstr :created :status]]]]]}]))
             ;; this is suspect...
-            _ (rf/dispatch [:b/search.loading?.set (or @waiting-for-debounce?&
-                                                       (= :loading products-data)
-                                                       (= :loading categories-data))])]
-        (if (or @waiting-for-debounce?& ; "(= :loading products-data)" is purposefully missing
+            _ (rf/dispatch-sync [:b/search.loading?.set (or @waiting-for-debounce?&
+                                                            (= :loading products-data)
+                                                            (= :loading categories-data))])]
+        (if (or @waiting-for-debounce?&
                 (= :loading categories-data)
                 (and (zero? @page-offset&)
                      (= :loading products-data)))
           [cc/c-loader {:style {:margin-top 20}}]
-          (do (when-not @loading?& ;; sketchy
-                (let [new-products (into {}
-                                         (for [{:keys [id] :as m} (:products products-data)]
-                                           [id m]))
-                      total-products (merge @products& new-products)]
-                  (rf/dispatch [:b/search.results.data.products.set total-products])
-                  (when (= (count total-products)
-                           (count (:product-ids @search-result-ids&)))
-                    (rf/dispatch [:b/search.infinite-scroll.more-results?.set false]))))
+          (do (when-not (= :loading products-data) ;; @loading?& ;; sketchy
+                (rf/dispatch-sync [:b/search.infinite-scroll.add-products (:products products-data)]))
               (if @some-products?&
                 [:div.search-results-container
                  (when @some-categories?&
@@ -447,7 +458,7 @@
                                                 (.-innerHeight js/window)
                                                 load-more-trigger-height)))
                                  ;; should be sync or no?
-                                 (rf/dispatch-sync [:b/search.infinite-scroll.page-offset.add page-size])))
+                                 (rf/dispatch-sync [:b/search.infinite-scroll.load-more page-size])))
                _ (reset! window-scroll-fn-ref window-scroll)]
            (.addEventListener js/window "scroll" window-scroll)))
 
@@ -488,6 +499,11 @@
                                                         "discounts-available"]))}]])
 
          ;; TODO filter for compelted profile or not
+         ]
+        [:> ui/Segment
+         [:h2 "Top Categories"]
+         ;; [:h4 "Trial"]
+         "CRM"
          ]]
        [:div.inner-container
         [ui/input {:class "product-search borderless"
