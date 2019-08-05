@@ -190,7 +190,10 @@
                                    :qid qid}
                           :query q-str
                           :buyer-id (util/db->current-org-id db)
-                          :qid qid}}})))
+                          :qid qid}}
+      :dispatch-n [[:b/search.results.data.products.empty]
+                   [:b/search.infinite-scroll.page-offset.set 0]
+                   [:b/search.infinite-scroll.more-results?.set true]]})))
 
 (rf/reg-event-fx
  :b/search.return
@@ -198,10 +201,7 @@
    (if (= (:buyer-qid db) (:qid return))
      {:db (-> db
               (assoc-in [:search :results :ids] results)
-              (assoc-in [:search :waiting-for-debounce?] false))
-      :dispatch-n [[:b/search.results.data.products.empty]
-                   [:b/search.infinite-scroll.page-offset.set 0]
-                   [:b/search.infinite-scroll.more-results?.set true]]}
+              (assoc-in [:search :waiting-for-debounce?] false))}
      {})))
 
 (rf/reg-event-fx
