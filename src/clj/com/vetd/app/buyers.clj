@@ -49,7 +49,7 @@
                      [(keyword "~*") :cname
                       (apply str (for [c q]
                                    (str "\\m" c ".*?")))])
-          wh [(keyword "~*") :cname (str ".*?\\m" q ".*")]          
+          wh [(keyword "~*") :cname (str ".*?\\m" q ".*")]
           wh' (if initials
                 [:or wh initials]
                 wh)]

@@ -9,14 +9,11 @@
             [taoensso.timbre :as log]
             [honeysql.core :as hs]
             [honeysql.format :as hsfmt]
-
-
+            ;; simply requiring these allows use of e.g. [:ilike] in honeysql forms
             [honeysql-postgres.format :as hspgfmt]
             [honeysql-postgres.helpers :as hspgh]
-            
             [clojure.walk :as w]
             clojure.edn))
-
 
 #_(mig/migrate
    {:store :database
