@@ -19,21 +19,37 @@
       :pname))
 
 (defn search-prods-vendors->ids
-  [q cat-ids]
+  [q cat-ids filter-map]
   (if (not-empty q)
-    (let [ids (db/hs-query {:select [[:p.id :pid]
+    (let [{:keys [require-free-trial? require-use-by-group-ids require-discount-from-group-ids]} filter-map
+          ids (db/hs-query {:select [[:p.id :pid]
                                      [(honeysql.core/raw "coalesce(p.score, 1.0)") :nscore]]
                             :from [[:products :p]]
-                            :join [[:orgs :o] [:= :o.id :p.vendor_id]]
-                            :left-join [[:product_categories :pc] [:= :p.id :pc.prod_id]]        
+                            :join
+                            (concat [[:orgs :o] [:= :o.id :p.vendor_id]]
+                                    (when (not-empty cat-ids)
+                                      [[:product_categories :pc] [:and
+                                                                  [:= :p.id :pc.prod_id]
+                                                                  [:in :pc.cat_id cat-ids]]])
+                                    (when require-free-trial?
+                                      [[:docs_to_fields :d2f] [:and
+                                                               [:= :d2f.doc_subject :p.id]
+                                                               [:= :d2f.doc_dtype "product-profile"]
+                                                               [:= :d2f.prompt_term "product/free-trial?"]
+                                                               [:= :d2f.resp_field_sval "yes"]]])
+                                    (when (not-empty require-use-by-group-ids)
+                                      [[:group_org_memberships :gom] [:in :gom.group_id require-use-by-group-ids]
+                                       [:stack_items :si] [:= :gom.org_id :si.buyer_id]])
+                                    (when (not-empty require-discount-from-group-ids)
+                                      [[:group_discounts :gd] [:and
+                                                               [:in :gd.group_id require-discount-from-group-ids]
+                                                               [:= :gd.product_id :p.id]]]))
                             :where [:and
                                     [:= :p.deleted nil]
                                     [:= :o.deleted nil]
                                     [:or
                                      [(keyword "~*") :p.pname (str ".*?\\m" q ".*")]
-                                     [(keyword "~*") :o.oname (str ".*?\\m" q ".*")]
-                                     (when (not-empty cat-ids)
-                                       [:in :pc.cat_id cat-ids])]]
+                                     [(keyword "~*") :o.oname (str ".*?\\m" q ".*")]]]
                             :order-by [[:nscore :desc]]
                             ;; this will be paginated on the frontend
                             :limit 500})

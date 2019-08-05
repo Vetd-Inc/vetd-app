@@ -1,0 +1,1 @@
+DROP VIEW IF EXISTS vetd.docs_to_fields;
