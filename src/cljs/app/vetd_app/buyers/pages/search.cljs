@@ -419,7 +419,9 @@
                               @(rf/subscribe
                                 [:gql/q
                                  {:queries
-                                  [[:categories {:id (:category-ids @search-result-ids&)}
+                                  [[:categories {:id (->> @search-result-ids&
+                                                          :category-ids
+                                                          (take 3))}
                                     [:id :idstr :cname
                                      [:rounds {:buyer-id @org-id&
                                                :deleted nil}
