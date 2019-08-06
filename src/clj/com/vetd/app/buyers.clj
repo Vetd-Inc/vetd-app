@@ -21,25 +21,25 @@
 (defn search-prods-vendors->ids
   [q cat-ids filter-map]
   (if (not-empty q)
-    (let [{:keys [require-free-trial? require-use-by-group-ids
-                  require-discount-from-group-ids]} filter-map
+    (let [{:keys [features groups discounts-available-to-groups]} filter-map
+          {:keys [free-trial]} features
           ids (db/hs-query
                {:select [[:p.id :pid]
                          [(honeysql.core/raw "coalesce(p.score, 1.0)") :nscore]]
                 :from [[:products :p]]
                 :join (concat [[:orgs :o] [:= :o.id :p.vendor_id]]
-                              (when require-free-trial?
+                              (when free-trial
                                 [[:docs_to_fields :d2f] [:and
                                                          [:= :d2f.doc_subject :p.id]
                                                          [:= :d2f.doc_dtype "product-profile"]
                                                          [:= :d2f.prompt_term "product/free-trial?"]
                                                          [:= :d2f.resp_field_sval "yes"]]])
-                              (when (not-empty require-use-by-group-ids)
-                                [[:group_org_memberships :gom] [:in :gom.group_id require-use-by-group-ids]
+                              (when (not-empty groups)
+                                [[:group_org_memberships :gom] [:in :gom.group_id groups]
                                  [:stack_items :si] [:= :gom.org_id :si.buyer_id]])
-                              (when (not-empty require-discount-from-group-ids)
+                              (when (not-empty discounts-available-to-groups)
                                 [[:group_discounts :gd] [:and
-                                                         [:in :gd.group_id require-discount-from-group-ids]
+                                                         [:in :gd.group_id discounts-available-to-groups]
                                                          [:= :gd.product_id :p.id]]]))
                 :left-join (when (not-empty cat-ids)
                              [[:product_categories :pc] [:= :p.id :pc.prod_id]])

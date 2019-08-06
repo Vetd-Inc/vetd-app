@@ -11,7 +11,7 @@
 
 (def init-db
   {:term ""
-   :filter {:features #{}}
+   :filter {:features #{} :groups #{}}
    :waiting-for-debounce? false
    :loading? true
    :infinite-scroll {:more-results? false
@@ -205,7 +205,11 @@
                           :return {:handler :b/search.return
                                    :qid qid}
                           :query q-str
-                          ;; :filter-map {:require-free-trial? true}
+                          :filter-map
+                          (let [filter-map (-> db :search :filter)]
+                            (cond-> filter-map
+                              ((:features filter-map) "discounts-available") (assoc :discounts-available-to-groups
+                                                                                    @(rf/subscribe [:group-ids]))))
                           :buyer-id (util/db->current-org-id db)
                           :qid qid}}
       :dispatch-n [[:b/search.results.data.products.empty]
@@ -481,8 +485,8 @@
                           :checked (-> @filter& :features (contains? "free-trial") boolean)
                           :on-change (fn [_ this]
                                        (rf/dispatch [(if (.-checked this)
-                                                       :b/search-filter.add
-                                                       :b/search-filter.remove)
+                                                       :b/search.filter.add
+                                                       :b/search.filter.remove)
                                                      :features
                                                      "free-trial"]))}]
          (when (not-empty @group-ids&)
@@ -492,11 +496,24 @@
                              :checked (-> @filter& :features (contains? "discounts-available") boolean)
                              :on-change (fn [_ this]
                                           (rf/dispatch [(if (.-checked this)
-                                                          :b/search-filter.add
-                                                          :b/search-filter.remove)
+                                                          :b/search.filter.add
+                                                          :b/search.filter.remove)
                                                         :features
                                                         "discounts-available"]))}]])
-
+         (when (not-empty @group-ids&)
+           [:<>
+            [:h4 "Community"]
+            (doall
+             (for [group-id @group-ids&]
+               ^{:key group-id}
+               [:> ui/Checkbox {:label group-id
+                                :checked (-> @filter& :groups (contains? group-id) boolean)
+                                :on-change (fn [_ this]
+                                             (rf/dispatch [(if (.-checked this)
+                                                             :b/search.filter.add
+                                                             :b/search.filter.remove)
+                                                           :groups
+                                                           group-id]))}]))])
          ;; TODO filter for compelted profile or not
          ]
         [:> ui/Segment
