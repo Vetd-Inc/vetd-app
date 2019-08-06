@@ -158,8 +158,7 @@
 (rf/reg-event-fx
  :b/search.infinite-scroll.add-products
  (fn [{:keys [db]} [_ products]]
-   (let [;; todo find out how often this is running
-         _ (println "add products called")
+   (let [;; _ (println "add products called") ; this is getting called twice every load?!
          total-products (merge (get-in db [:search :results :data :products])
                                (into {} (for [{:keys [id] :as m} products]
                                           [id m])))]
@@ -333,7 +332,7 @@
     (fn []
       [:> ui/Segment {:placeholder true}
        [:> ui/Header {:icon true}
-        [:> ui/Icon {:name "search"}]
+        [:> ui/Icon {:name "search"}] ;; TODO different message if they have filters on (let them know filters may be limiting results)
         "We could not find any matching products or categories."]
        [:> ui/SegmentInline
         [:> ui/Input {:label {:icon "asterisk"}
