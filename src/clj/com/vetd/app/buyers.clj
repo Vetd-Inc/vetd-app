@@ -19,16 +19,15 @@
       :pname))
 
 (defn search-prods-vendors->ids
-  [q cat-ids filter-map]
-  (if (not-empty q)
-    (let [{:keys [features groups discounts-available-to-groups]} filter-map
-          {:keys [free-trial]} features
-          ids (db/hs-query
+  [q cat-ids {:keys [features groups discounts-available-to-groups] :as filter-map}]
+  (if (or (not-empty q)
+          (some seq (vals filter-map)))
+    (let [ids (db/hs-query
                {:select [[:p.id :pid]
                          [(honeysql.core/raw "coalesce(p.score, 1.0)") :nscore]]
                 :from [[:products :p]]
                 :join (concat [[:orgs :o] [:= :o.id :p.vendor_id]]
-                              (when free-trial
+                              (when (features "free-trial")
                                 [[:docs_to_fields :d2f] [:and
                                                          [:= :d2f.doc_subject :p.id]
                                                          [:= :d2f.doc_dtype "product-profile"]
@@ -36,10 +35,12 @@
                                                          [:= :d2f.resp_field_sval "yes"]]])
                               (when (not-empty groups)
                                 [[:group_org_memberships :gom] [:in :gom.group_id groups]
+                                 ;; need to check deleted nil?
                                  [:stack_items :si] [:= :gom.org_id :si.buyer_id]])
                               (when (not-empty discounts-available-to-groups)
                                 [[:group_discounts :gd] [:and
                                                          [:in :gd.group_id discounts-available-to-groups]
+                                                         [:= :gd.deleted nil]
                                                          [:= :gd.product_id :p.id]]]))
                 :left-join (when (not-empty cat-ids)
                              [[:product_categories :pc] [:= :p.id :pc.prod_id]])
@@ -516,3 +517,46 @@ Round URL: https://app.vetd.com/b/rounds/%s"
         "\nRound Title: " round-title
         "\nEmail Addresses: " (s/join ", " email-addresses)))
   {})
+
+
+(defn insert-stack-item
+  [{:keys [product-id buyer-id status price-amount price-period
+           renewal-date renewal-reminder rating]}]
+  (let [[id idstr] (ut/mk-id&str)]
+    (-> (db/insert! :stack_items
+                    {:id id
+                     :idstr idstr
+                     :created (ut/now-ts)
+                     :updated (ut/now-ts)
+                     :product_id product-id
+                     :buyer_id buyer-id
+                     :status status
+                     :price_amount price-amount
+                     :price_period price-period
+                     :renewal_date renewal-date
+                     :renewal_reminder renewal-reminder
+                     :rating rating})
+        first)))
+
+(defmethod com/handle-ws-inbound :create-stack-item
+  [req ws-id sub-fn]
+  (insert-stack-item req))
+
+(defmethod com/handle-ws-inbound :delete-stack-item
+  [{:keys [stack-item-id]} ws-id sub-fn]
+  (db/update-deleted :stack_items stack-item-id))
+
+
+(defmethod com/handle-ws-inbound :update-stack-item
+  [{:keys [stack-item-id status
+           price-amount price-period renewal-date
+           renewal-reminder rating]}
+   ws-id sub-fn]
+  (db/update-any! {:id stack-item-id
+                   :status status
+                   :price_amount price-amount
+                   :price_period price-period
+                   :renewal_date renewal-date
+                   :renewal_reminder renewal-reminder
+                   :rating rating}
+                  :stack_items))

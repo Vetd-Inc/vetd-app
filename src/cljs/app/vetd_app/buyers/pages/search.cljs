@@ -132,7 +132,7 @@
                      (assoc-in [:search :term] search-term)
                      (assoc-in [:search :waiting-for-debounce?] true))
              :dispatch-debounce [{:id :b/search
-                                  :dispatch [:b/search search-term]
+                                  :dispatch [:b/search]
                                   :timeout 250}]}
             (when-not bypass-url-fx
               {:url (url/replace-end url (-> db :search :term) search-term)})))))
@@ -141,6 +141,9 @@
  :b/search.filter.add
  (fn [{:keys [db]} [_ group value & [{:keys [event-label]}]]]
    {:db (update-in db [:search :filter group] conj value)
+    :dispatch-debounce [{:id :b/search
+                         :dispatch [:b/search]
+                         :timeout 0}]
     :analytics/track {:event "Filter"
                       :props {:category "Search"
                               :label event-label}}}))
@@ -148,7 +151,10 @@
 (rf/reg-event-fx
  :b/search.filter.remove
  (fn [{:keys [db]} [_ group value]]
-   {:db (update-in db [:search :filter group] disj value)}))
+   {:db (update-in db [:search :filter group] disj value)
+    :dispatch-debounce [{:id :b/search
+                         :dispatch [:b/search]
+                         :timeout 0}]}))
 
 (rf/reg-event-fx
  :b/search.results.data.products.empty
@@ -198,13 +204,13 @@
 
 (rf/reg-event-fx
  :b/search
- (fn [{:keys [db ws]} [_ q-str]]
+ (fn [{:keys [db ws]}]
    (let [qid (get-next-query-id)]
      {:db (assoc db :buyer-qid qid)
       :ws-send {:payload {:cmd :b/search
                           :return {:handler :b/search.return
                                    :qid qid}
-                          :query q-str
+                          :query (-> db :search :term)
                           :filter-map
                           (let [filter-map (-> db :search :filter)]
                             (cond-> filter-map
@@ -358,7 +364,7 @@
         some-products?& (rf/subscribe [:b/search.some-products?])
         some-categories?& (rf/subscribe [:b/search.some-categories?])
         waiting-for-debounce?& (rf/subscribe [:b/search.waiting-for-debounce?])
-        search-query& (rf/subscribe [:b/search.term])
+        search-term& (rf/subscribe [:b/search.term])
         products& (rf/subscribe [:b/search.results.data.products])
         page-offset& (rf/subscribe [:b/search.infinite-scroll.page-offset])
         loading?& (rf/subscribe [:b/search.loading?])
@@ -434,10 +440,9 @@
                  (when @some-categories?&
                    [c-category-search-results (:categories categories-data)])
                  [c-product-search-results (:product-ids @search-result-ids&) @products&]]
-                (if (= (count @search-query&) 0)
+                (if (= (count @search-term&) 0)
                   [c-explainer]
-                  (when (> (count @search-query&) 2)
-                    [c-no-results])))))))))
+                  [c-no-results]))))))))
 
 (def c-search-results
   (let [;; keep a reference to the window-scroll fn (will be created on mount)
@@ -471,7 +476,7 @@
            (.removeEventListener js/window "scroll" @window-scroll-fn-ref)))})))
 
 (defn c-page []
-  (let [search-query& (rf/subscribe [:b/search.term])
+  (let [search-term& (rf/subscribe [:b/search.term])
         search-input-ref& (atom nil)
         filter& (rf/subscribe [:b/search.filter])
         group-ids& (rf/subscribe [:group-ids])
@@ -503,7 +508,7 @@
                                                         "discounts-available"]))}]])
          (when (not-empty @group-ids&)
            [:<>
-            [:h4 "Community"]
+            [:h4 "Community Usage"]
             (doall
              (for [{group-id :id
                     group-name :gname} (:groups @active-org&)]
@@ -516,7 +521,7 @@
                                                              :b/search.filter.remove)
                                                            :groups
                                                            group-id]))}]))])
-         ;; TODO filter for compelted profile or not
+         ;; TODO filter for completed profile or not
          ]
         [:> ui/Segment
          [:h2 "Top Categories"]
@@ -525,11 +530,11 @@
          ]]
        [:div.inner-container
         [ui/input {:class "product-search borderless"
-                   :value @search-query&
+                   :value @search-term&
                    :size "big"
                    :icon (r/as-element
                           [:> ui/Icon
-                           {:name (if (not-empty @search-query&) "delete" "search")
+                           {:name (if (not-empty @search-term&) "delete" "search")
                             :link true
                             :on-click #(do (.focus @search-input-ref&)
                                            (rf/dispatch [:b/search.term.update ""]))}])

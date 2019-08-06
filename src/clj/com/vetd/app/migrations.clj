@@ -1632,7 +1632,41 @@
                               :owner :vetd
                               :grants {:hasura [:SELECT]}}]]
 
+   [[2019 7 31 0 0]
+    
+    [:create-table {:schema :vetd
+                    :name :stack_items
+                    :columns {:id [:bigint :NOT :NULL]
+                              :idstr [:text]
+                              :created [:timestamp :with :time :zone]
+                              :updated [:timestamp :with :time :zone]
+                              :deleted [:timestamp :with :time :zone]
+                              :product_id [:bigint]
+                              :buyer_id [:bigint]
+                              :status [:text]
+                              :price_amount [[:numeric 12 2]]
+                              :price_period [:text]
+                              :renewal_date [:timestamp :with :time :zone]
+                              :renewal_reminder [:bool]
+                              :rating [[:numeric 12 2]]}
+                    :owner :vetd
+                    :grants {:hasura [:SELECT]}}]]
 
+   [[2019 8 1 0 0]
+    
+    [:create-or-replace-view {:schema :vetd
+                              :name :agg_group_prod_rating
+                              :honey {:select [[:gom.group_id :group_id]
+                                               [:si.product_id :product_id]
+                                               [:%count.si.id :count_stack_items]
+                                               [:si.rating :rating]]
+                                      :from [[:group_org_memberships :gom]]
+                                      :join [[:stack_items :si]
+                                             [:= :si.buyer_id :gom.org_id]]
+                                      :group-by [:gom.group_id :si.product_id :si.rating]}
+                              :owner :vetd
+                              :grants {:hasura [:SELECT]}}]]
+   
    [[2019 8 2 00 4]
     
     [:create-or-replace-view {:schema :vetd

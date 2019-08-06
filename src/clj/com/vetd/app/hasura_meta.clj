@@ -332,9 +332,26 @@
                     :vetd :rounds_by_category]
            :fields [:dummy]
            :cols [:id :category_id]
-           :rel :one-many}]})
+           :rel :one-many}
+
+          {:tables [:vetd :stack_items
+                    :vetd :products]
+           :fields [:product :stack-items]
+           :cols [:product_id :id]
+           :rel :many-one}
+
+          {:tables [:vetd :stack_items
+                    :vetd :orgs]
+           :fields [:buyer :stack-items]
+           :cols [:buyer_id :id]
+           :rel :many-one}
+
+          {:tables [:vetd :products
+                    :vetd :agg_group_prod_rating]
+           :fields [:agg_group_prod_rating]
+           :cols [:id :product_id]
+           :rel :many-many}]})
 
 
 #_
 (mig/proc-hasura-meta-cfg2 hasura-meta-cfg)
-
