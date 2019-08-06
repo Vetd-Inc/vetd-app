@@ -276,9 +276,9 @@
            "PrePosal Requested"
            [:<>
             "Pricing Unavailable "
-            [:a.teal {:onClick (fn [e]
-                                 (.stopPropagation e)
-                                 (rf/dispatch [:b/create-preposal-req product vendor]))}
+            [:a.teal {:on-click (fn [e]
+                                  (.stopPropagation e)
+                                  (rf/dispatch [:b/create-preposal-req product vendor]))}
              "Request a PrePosal"]]))]
       [:> ui/ItemDescription (bc/product-description product-v-fn)]
       [:> ui/ItemExtra [bc/c-tags product product-v-fn discounts]]]
@@ -525,11 +525,24 @@
                                                            group-id]))}]))])
          ;; TODO filter for completed profile or not
          ]
-        [:> ui/Segment
-         [:h2 "Top Categories"]
-         ;; [:h4 "Trial"]
-         "CRM"
-         ]]
+        [:> ui/Segment {:class "top-categories"}
+         [:h4 "Top Categories"]
+         (let [top-categories ["CRM"
+                               "Applicant Tracking"
+                               "Live Chat"
+                               "Human Resource"
+                               "Board Management"
+                               "Email Marketing"
+                               "Project Management"
+                               "Data Visualization"]]
+           (doall
+            (for [category top-categories]
+              ^{:key category}
+              [:div
+               [:a.blue {:on-click (fn [e]
+                                     (.stopPropagation e)
+                                     (rf/dispatch [:b/nav-search category]))}
+                category]])))]]
        [:div.inner-container
         [ui/input {:class "product-search borderless"
                    :value @search-term&

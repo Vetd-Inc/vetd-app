@@ -191,6 +191,20 @@ a.label {
       margin-top: 16px;
     }
   }
+
+  &.top-categories {
+    h4 {
+      &:first-of-type {
+        margin-top: 0;
+      }
+    }
+
+    a {
+      &:hover {
+        filter: brightness(1.2);
+      }
+    }
+  }
 }
 .sidebar .segment > .button:not(:first-of-type),
 .sidebar .segment > .label {
