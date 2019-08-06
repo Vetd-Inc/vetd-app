@@ -474,7 +474,8 @@
   (let [search-query& (rf/subscribe [:b/search.term])
         search-input-ref& (atom nil)
         filter& (rf/subscribe [:b/search.filter])
-        group-ids& (rf/subscribe [:group-ids])]
+        group-ids& (rf/subscribe [:group-ids])
+        active-org& (rf/subscribe [:active-org])]
     (fn []
       [:div.container-with-sidebar
        [:div.sidebar
@@ -504,9 +505,10 @@
            [:<>
             [:h4 "Community"]
             (doall
-             (for [group-id @group-ids&]
+             (for [{group-id :id
+                    group-name :gname} (:groups @active-org&)]
                ^{:key group-id}
-               [:> ui/Checkbox {:label group-id
+               [:> ui/Checkbox {:label group-name
                                 :checked (-> @filter& :groups (contains? group-id) boolean)
                                 :on-change (fn [_ this]
                                              (rf/dispatch [(if (.-checked this)
