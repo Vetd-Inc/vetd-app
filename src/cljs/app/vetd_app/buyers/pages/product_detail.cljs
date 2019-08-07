@@ -218,8 +218,7 @@
       [:div.container-with-sidebar
        [:div.sidebar
         [:div {:style {:padding "0 15px"}}
-         [bc/c-back-button {:on-click #(rf/dispatch [:b/nav-search])}
-          "Back to Search"]]
+         [bc/c-back-button "Back to Search"]]
         (when-not (= :loading @products&)
           (let [{:keys [vendor rounds] :as product} (-> @products& :products first)]
             (when (empty? (:rounds product))

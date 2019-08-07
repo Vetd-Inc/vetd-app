@@ -82,9 +82,10 @@
 (rf/reg-event-db
  :init-db
  (constantly
-  {:search-term ""
+  {:search p-bsearch/init-db
    :preposals-filter p-bpreposals/default-preposals-filter
    :rounds-filter {:selected-statuses #{}}
+   ;; it think this for within the round grid, not sure if it's currently being used
    :loading? {:products #{}} ; entities (by ID) that are in a loading?=true state (for UI display)
    :round-products-order []}))
 

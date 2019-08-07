@@ -19,31 +19,47 @@
       :pname))
 
 (defn search-prods-vendors->ids
-  [q cat-ids]
-  (if (not-empty q)
-    (let [ids (db/hs-query {:select [[:p.id :pid] [:o.id :vid]
-                                     [(honeysql.core/raw "coalesce(p.score, 1.0)") :nscore]]
-                            :from [[:products :p]]
-                            :join [[:orgs :o] [:= :o.id :p.vendor_id]]
-                            :left-join [[:product_categories :pc] [:= :p.id :pc.prod_id]]
-                            :where [:and
-                                    [:= :p.deleted nil]
-                                    [:= :o.deleted nil]
-                                    [:or
-                                     [(keyword "~*") :p.pname (str ".*?\\m" q ".*")]
-                                     [(keyword "~*") :o.oname (str ".*?\\m" q ".*")]
-                                     (when (not-empty cat-ids)
-                                       [:in :pc.cat_id cat-ids])]]
-                            :order-by [[:nscore :desc]]
-                            :limit 30})
-          pids (map :pid ids)
-          vids (->> ids
-                    (map :vid)
-                    distinct)]
-      {:product-ids pids
-       :vendor-ids vids})
-    {:product-ids []
-     :vendor-ids []}))
+  "Get product ID's based on search query and filter (and union with related categories)."
+  [q cat-ids {:keys [features groups discounts-available-to-groups] :as filter-map}]
+  (if (or (not-empty q)
+          (some seq (vals filter-map)))
+    (let [ids (db/hs-query
+               {:select [[:p.id :pid]
+                         [(honeysql.core/raw "coalesce(p.score, 1.0)") :nscore]]
+                :modifiers [:distinct]
+                :from [[:products :p]]
+                :join (concat [[:orgs :o] [:= :o.id :p.vendor_id]]
+                              (when (features "free-trial")
+                                [[:docs_to_fields :d2f] [:and
+                                                         [:= :d2f.doc_subject :p.id]
+                                                         [:= :d2f.doc_dtype "product-profile"]
+                                                         [:= :d2f.prompt_term "product/free-trial?"]
+                                                         [:= :d2f.resp_field_sval "yes"]]])
+                              (when (not-empty groups)
+                                [[:group_org_memberships :gom] [:in :gom.group_id groups]
+                                 ;; need to check deleted nil?
+                                 [:stack_items :si] [:= :gom.org_id :si.buyer_id]])
+                              (when (not-empty discounts-available-to-groups)
+                                [[:group_discounts :gd] [:and
+                                                         [:in :gd.group_id discounts-available-to-groups]
+                                                         [:= :gd.deleted nil]
+                                                         [:= :gd.product_id :p.id]]]))
+                :left-join (when (not-empty cat-ids)
+                             [[:product_categories :pc] [:= :p.id :pc.prod_id]])
+                :where [:and
+                        [:= :p.deleted nil]
+                        [:= :o.deleted nil]
+                        [:or
+                         [(keyword "~*") :p.pname (str ".*?\\m" q ".*")]
+                         [(keyword "~*") :o.oname (str ".*?\\m" q ".*")]
+                         (when (not-empty cat-ids)	
+                           [:in :pc.cat_id cat-ids])]]
+                :order-by [[:nscore :desc]]
+                ;; this will be paginated on the frontend
+                :limit 500})
+          pids (map :pid ids)]
+      {:product-ids pids})
+    {:product-ids []}))
 
 (defn search-category-ids
   [q]
@@ -297,10 +313,10 @@ Round URL: https://app.vetd.com/b/rounds/%s"
 
 ;; TODO use session-id to verify permissions!!!!!!!!!!!!!
 (defmethod com/handle-ws-inbound :b/search
-  [{:keys [buyer-id query]} ws-id sub-fn]
+  [{:keys [buyer-id query filter-map]} ws-id sub-fn]
   (let [cat-ids (search-category-ids query)]
     (ut/$- -> query
-           (search-prods-vendors->ids $ cat-ids)
+           (search-prods-vendors->ids $ cat-ids filter-map)
            (assoc :category-ids cat-ids))))
 
 ;; Start a round for either a Product or a Category

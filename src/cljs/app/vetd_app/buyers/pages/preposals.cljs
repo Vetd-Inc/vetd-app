@@ -73,6 +73,30 @@
                       :props {:category "Preposal"
                               :label id}}}))
 
+(rf/reg-event-fx
+ :b/create-preposal-req
+ (fn [{:keys [db]} [_ product vendor]]
+   {:ws-send {:payload {:cmd :b/create-preposal-req
+                        :return {:handler :b/create-preposal-req-return
+                                 :product product
+                                 :vendor vendor}
+                        :prep-req {:from-org-id (->> (:active-memb-id db)
+                                                     (get (group-by :id (:memberships db)))
+                                                     first
+                                                     :org-id)
+                                   :from-user-id (-> db :user :id)
+                                   :prod-id (:id product)}}}}))
+
+(rf/reg-event-fx
+ :b/create-preposal-req-return
+ (fn [_ [_ _ {{:keys [product vendor]} :return}]]
+   {:toast {:type "success"
+            :title "PrePosal Requested"
+            :message "We'll be in touch with next steps."}
+    :analytics/track {:event "Request"
+                      :props {:category "Preposals"
+                              :label (str (:pname product) " by " (:oname vendor))}}}))
+
 ;;;; Subscriptions
 (rf/reg-sub
  :preposals-filter
@@ -195,6 +219,7 @@
                                        (group-by :id))]
                    [:div.sidebar
                     [:> ui/Segment
+                     [:h2 "Filter"]
                      [:h4 "Status"]
                      [:> ui/Checkbox {:label "Live"
                                       :checked (-> @filter& :status (contains? "live") boolean)
