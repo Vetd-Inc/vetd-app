@@ -19,12 +19,14 @@
       :pname))
 
 (defn search-prods-vendors->ids
+  "Get product ID's based on search query and filter (and union with related categories)."
   [q cat-ids {:keys [features groups discounts-available-to-groups] :as filter-map}]
   (if (or (not-empty q)
           (some seq (vals filter-map)))
     (let [ids (db/hs-query
                {:select [[:p.id :pid]
                          [(honeysql.core/raw "coalesce(p.score, 1.0)") :nscore]]
+                :modifiers [:distinct]
                 :from [[:products :p]]
                 :join (concat [[:orgs :o] [:= :o.id :p.vendor_id]]
                               (when (features "free-trial")
@@ -55,8 +57,7 @@
                 :order-by [[:nscore :desc]]
                 ;; this will be paginated on the frontend
                 :limit 500})
-          ;; could not the above be written to avoid the need for 'distinct'
-          pids (distinct (map :pid ids))]
+          pids (map :pid ids)]
       {:product-ids pids})
     {:product-ids []}))
 
