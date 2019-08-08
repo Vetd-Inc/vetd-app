@@ -10,7 +10,9 @@
 
 (def init-db
   {:filter {:status #{}}
-   :loading? true})
+   :loading? true
+   ;; ID's of stack items that are in edit mode
+   :items-editing #{}})
 
 ;;;; Subscriptions
 (rf/reg-sub
@@ -22,6 +24,12 @@
  :<- [:b/stack]
  (fn [{:keys [filter]}]
    filter))
+
+(rf/reg-sub
+ :b/stack.items-editing
+ :<- [:b/stack]
+ (fn [{:keys [items-editing]}]
+   items-editing))
 
 ;;;; Events
 (rf/reg-event-fx
@@ -48,24 +56,150 @@
  (fn [{:keys [db]} [_ group value]]
    {:db (update-in db [:stack :filter group] disj value)}))
 
+(rf/reg-event-fx
+ :b/stack.add-items
+ (fn [{:keys [db]} [_ product-ids]]
+   (let [buyer-id (util/db->current-org-id db)]
+     {:ws-send {:payload {:cmd :b/stack.add-items
+                          :buyer-id buyer-id
+                          :product-ids product-ids}}
+      :analytics/track {:event "Products Added"
+                        :props {:category "Stack"
+                                :label buyer-id}}})))
+
+
 ;;;; Components
+(defn c-add-product-form
+  [stack popup-open?&]
+  (let [value& (r/atom [])
+        options& (r/atom []) ; options from search results + current values
+        search-query& (r/atom "")
+        products->options (fn [products]
+                            (for [{:keys [id pname]} products]
+                              {:key id
+                               :text pname
+                               :value id}))]
+    (fn [stack popup-open?&]
+      (let [products& (rf/subscribe
+                       [:gql/q
+                        {:queries
+                         [[:products {:_where {:_and [{:pname {:_ilike (str "%" @search-query& "%")}}
+                                                      {:deleted {:_is_null true}}]}
+                                      :_limit 100
+                                      :_order_by {:pname :asc}}
+                           [:id :pname]]]}])
+            _ (when-not (= :loading @products&)
+                (let [options (->> @products&
+                                   :products
+                                   products->options ; now we have options from gql sub
+                                   ;; (this dumbly actually keeps everything, but that seems fine)
+                                   (concat @options&) ; keep options for the current values
+                                   distinct)]
+                  (when-not (= @options& options)
+                    (reset! options& options))))]
+        [:> ui/Form {:as "div"
+                     :class "popup-dropdown-form"}
+         [:> ui/Dropdown {:loading (= :loading @products&)
+                          :options @options&
+                          :placeholder "Search products..."
+                          :search true
+                          :selection true
+                          :multiple true
+                          :selectOnBlur false
+                          :selectOnNavigation true
+                          :closeOnChange true
+                          ;; :allowAdditions true
+                          ;; :additionLabel "Hit 'Enter' to Add "
+                          ;; :onAddItem (fn [_ this]
+                          ;;              (->> this
+                          ;;                   .-value
+                          ;;                   vector
+                          ;;                   ui/as-dropdown-options
+                          ;;                   (swap! options& concat)))
+                          :onSearchChange (fn [_ this] (reset! search-query& (aget this "searchQuery")))
+                          :onChange (fn [_ this] (reset! value& (.-value this)))}]
+         [:> ui/Button
+          {:color "blue"
+           :disabled (empty? @value&)
+           :on-click #(do (reset! popup-open?& false)
+                          (rf/dispatch [:b/stack.add-items (js->clj @value&)]))}
+          "Add"]]))))
+
+(defn c-add-product-button
+  [stack]
+  (let [popup-open? (r/atom false)]
+    (fn [stack]
+      [:> ui/Popup
+       {:position "bottom left"
+        :on "click"
+        :open @popup-open?
+        :onOpen #(reset! popup-open? true)
+        :onClose #(reset! popup-open? false)
+        :hideOnScroll false
+        :flowing true
+        :content (r/as-element [c-add-product-form stack popup-open?])
+        :trigger (r/as-element
+                  [:> ui/Button {:color "teal"
+                                 :fluid true
+                                 :icon true
+                                 :labelPosition "left"}
+                   "Add Products"
+                   [:> ui/Icon {:name "plus"}]])}])))
+
+
+(defn c-current-toggle
+  [stack-item]
+  [:> ui/Checkbox
+   {:label {:text "Current"
+            :position "right"}
+    :toggle true
+    :style {:position "absolute"
+            :right 7}
+    ;; :checked (boolean (selected-statuses status))
+    ;; :on-change (fn [_ this]
+    ;;              (if (.-checked this)
+    ;;                (rf/dispatch [:b/stack.filter.add "status" status])
+    ;;                (rf/dispatch [:b/stack.filter.remove "status" status])))
+    }])
+
 (defn c-stack-item
-  [{:keys [product] :as stack-item}]
-  (let [{:keys [id idstr pname short-desc logo 
-                form-docs vendor ]} product
-        product-v-fn (->> form-docs
-                          first
-                          :response-prompts
-                          (partial docs/get-value-by-term))]
-    [:> ui/Item {:on-click #(rf/dispatch [:b/nav-product-detail idstr])}
-     [bc/c-product-logo logo]
-     [:> ui/ItemContent
-      [:> ui/ItemHeader
-       pname " " [:small " by " (:oname vendor)]]
-      [:> ui/ItemMeta
-       "Something in meta"]
-      [:> ui/ItemDescription (bc/product-description product-v-fn)]
-      [:> ui/ItemExtra "some tags here?"]]]))
+  [stack-item]
+  (let [stack-items-editing?& (rf/subscribe [:b/stack.items-editing])
+        bad-input& (rf/subscribe [:bad-input])]
+    (fn [{:keys [id product] :as stack-item}]
+      (let [{product-id :id
+             product-idstr :idstr
+             :keys [pname short-desc logo 
+                    form-docs vendor]} product
+            product-v-fn (->> form-docs
+                              first
+                              :response-prompts
+                              (partial docs/get-value-by-term))]
+        [:> ui/Item {:on-click #(rf/dispatch [:b/nav-product-detail product-idstr])}
+         [bc/c-product-logo logo]
+         [:> ui/ItemContent
+          [:> ui/ItemHeader
+           pname " " [:small " by " (:oname vendor)]
+           [c-current-toggle stack-item]]
+          (if (@stack-items-editing?& product-id)
+            [:> ui/Form
+             [:> ui/FormField {:error (= @bad-input& (keyword (str "edit-stack-item-" id ".price")))}
+              [:> ui/Input
+               {:placeholder "Price"
+                :fluid true
+                ;; :on-change #(reset! details& (-> % .-target .-value))
+                :action (r/as-element
+                         [:> ui/Button { ;; :on-click #(rf/dispatch [:g/add-discount-to-group.submit
+                                        ;;                          (:id group)
+                                        ;;                          (js->clj @product&)
+                                        ;;                          @details&])
+                                        :color "blue"}
+                          "Save"])}]]]
+            [:<>
+             [:> ui/ItemMeta
+              "Something in meta"]
+             [:> ui/ItemDescription (bc/product-description product-v-fn)]
+             [:> ui/ItemExtra "some tags here?"]])]]))))
 
 (defn c-status-filter-checkboxes
   [stack selected-statuses]
@@ -90,6 +224,20 @@
 (defn filter-stack
   [stack selected-statuses]
   (filter #(selected-statuses (:status %)) stack))
+
+(defn c-no-stack-items []
+  (let [group-ids& (rf/subscribe [:group-ids])]
+    (fn []
+      [:> ui/Segment {:placeholder true}
+       [:> ui/Header {:icon true}
+        [:> ui/Icon {:name "grid layout"}]
+        "You don't have any products in your stack."]
+       [:> ui/SegmentInline
+        "Add products to your stack to keep track of renewals, get recommendations, and share with "
+        (if (not-empty @group-ids&)
+          "your community"
+          "others")
+        "."]])))
 
 (defn c-page []
   (let [org-id& (rf/subscribe [:org-id])]
@@ -123,37 +271,20 @@
             [cc/c-loader]
             (let [unfiltered-stack (:stack-items @stack&)
                   selected-statuses (:status @filter&)]
-              (if (seq unfiltered-stack)
-                [:div.container-with-sidebar
-                 [:div.sidebar
-                  [:> ui/Segment
-                   [bc/c-start-round-button {:etype :none
-                                             :props {:fluid true}}]]
-                  [:> ui/Segment
-                   [:h2 "Filter"]
-                   [:h4 "Status"]
-                   [c-status-filter-checkboxes unfiltered-stack selected-statuses]]]
-                 [:> ui/ItemGroup {:class "inner-container results"}
+              
+              [:div.container-with-sidebar
+               [:div.sidebar
+                [:> ui/Segment
+                 [c-add-product-button]]
+                [:> ui/Segment
+                 [:h2 "Filter"]
+                 [:h4 "Status"]
+                 [c-status-filter-checkboxes unfiltered-stack selected-statuses]]]
+               [:> ui/ItemGroup {:class "inner-container results"}
+                (if (seq unfiltered-stack)
                   (let [stack unfiltered-stack #_(cond-> unfiltered-stack
                                                    (seq selected-statuses) (filter-stack selected-statuses))]
                     (for [stack-item stack]
                       ^{:key (:id stack-item)}
-                      [c-stack-item stack-item]))]
-                 ]
-                [:> ui/Grid
-                 [:> ui/GridRow
-                  [:> ui/GridColumn {:computer 2 :mobile 0}]
-                  [:> ui/GridColumn {:computer 12 :mobile 16}
-                   [:> ui/Segment {:placeholder true}
-                    [:> ui/Header {:icon true}
-                     [:> ui/Icon {:name "grid layout"}]
-                     "Your stack is empty."]
-                    [:> ui/Button {;; :on-click (fn [e] )
-                                   :color "teal" ; yellow ?
-                                   :icon true
-                                   :labelPosition "left"
-                                   :fluid true
-                                   :style {:margin-top 15}}
-                     "Add a Product"
-                     [:> ui/Icon {:name "add"}]]]]
-                  [:> ui/GridColumn {:computer 2 :mobile 0}]]]))))))))
+                      [c-stack-item stack-item]))
+                  [c-no-stack-items])]])))))))

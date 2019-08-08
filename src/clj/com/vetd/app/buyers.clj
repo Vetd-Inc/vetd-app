@@ -543,6 +543,15 @@ Round URL: https://app.vetd.com/b/rounds/%s"
   [req ws-id sub-fn]
   (insert-stack-item req))
 
+(defmethod com/handle-ws-inbound :b/stack.add-items
+  [{:keys [buyer-id product-ids]} ws-id sub-fn]
+  (when-not (empty? product-ids)
+    (doseq [product-id product-ids]
+      (insert-stack-item {:buyer-id buyer-id
+                          :product-id product-id
+                          :status "current"})))
+  {})
+
 (defmethod com/handle-ws-inbound :delete-stack-item
   [{:keys [stack-item-id]} ws-id sub-fn]
   (db/update-deleted :stack_items stack-item-id))
