@@ -146,9 +146,14 @@
                   [:> ui/GridColumn {:computer 12 :mobile 16}
                    [:> ui/Segment {:placeholder true}
                     [:> ui/Header {:icon true}
-                     [:> ui/Icon {:name "vetd"}]
-                     "You don't have any active VetdRounds."]
-                    [bc/c-start-round-button {:etype :none
-                                              :props {:fluid true
-                                                      :style {:margin-top 15}}}]]]
+                     [:> ui/Icon {:name "grid layout"}]
+                     "Your stack is empty."]
+                    [:> ui/Button {;; :on-click (fn [e] )
+                                   :color "teal" ; yellow ?
+                                   :icon true
+                                   :labelPosition "left"
+                                   :fluid true
+                                   :style {:margin-top 15}}
+                     "Add a Product"
+                     [:> ui/Icon {:name "add"}]]]]
                   [:> ui/GridColumn {:computer 2 :mobile 0}]]]))))))))
