@@ -522,9 +522,7 @@
                                                              :b/search.filter.add
                                                              :b/search.filter.remove)
                                                            :groups
-                                                           group-id]))}]))])
-         ;; TODO filter for completed profile or not
-         ]
+                                                           group-id]))}]))])]
         [:> ui/Segment {:class "top-categories"}
          [:h4 "Top Categories"]
          (let [top-categories ["CRM"
