@@ -128,7 +128,7 @@
  (fn [{:keys [db url]} [_ search-term & {:keys [bypass-url-fx force-refresh]}]]
    (when (or (-> db :search :term ; only if it really changed (this makes back button behavior better)
                  (not= search-term))
-             force-refresh) 
+             force-refresh)
      (merge {:db (-> db
                      (assoc-in [:search :term] search-term)
                      (assoc-in [:search :waiting-for-debounce?] true))
