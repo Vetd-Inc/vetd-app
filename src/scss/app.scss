@@ -418,6 +418,14 @@ a.label {
   }
 }
 
+.ui.rating {
+  i {
+    &:focus {
+      outline: 0;
+    }
+  }
+}
+
 // Settings page
 .members .item {
   padding-top: 10px !important;
@@ -443,7 +451,10 @@ a.label {
 
 /* Override basic Semantic UI behavior */
 b, strong {
-  font-weight: 600;
+  font-weight: 600 !important;
+}
+.item .content .header {
+  margin-top: 0 !important;
 }
 .ui.fluid[class*="left labeled"].icon.button {
   padding-left: 44px !important;
@@ -931,6 +942,22 @@ $cell-height: 201px;
   margin-left: 20px;
   margin-bottom: 0;
 }
+
+
+/* Stacks */
+.stack-item-grid {
+  margin: 0 !important;
+  
+  .row {
+    padding: 0 !important;
+
+    .column {
+      padding: 0 !important;
+    }
+  }
+}
+
+
 
 /* Loading Spinner */
 div.spinner {

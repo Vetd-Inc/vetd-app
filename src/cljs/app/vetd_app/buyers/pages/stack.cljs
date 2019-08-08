@@ -146,22 +146,6 @@
                    "Add Products"
                    [:> ui/Icon {:name "plus"}]])}])))
 
-
-(defn c-current-toggle
-  [stack-item]
-  [:> ui/Checkbox
-   {:label {:text "Current"
-            :position "right"}
-    :toggle true
-    :style {:position "absolute"
-            :right 7}
-    ;; :checked (boolean (selected-statuses status))
-    ;; :on-change (fn [_ this]
-    ;;              (if (.-checked this)
-    ;;                (rf/dispatch [:b/stack.filter.add "status" status])
-    ;;                (rf/dispatch [:b/stack.filter.remove "status" status])))
-    }])
-
 (defn c-stack-item
   [stack-item]
   (let [stack-items-editing?& (rf/subscribe [:b/stack.items-editing])
@@ -179,8 +163,7 @@
          [bc/c-product-logo logo]
          [:> ui/ItemContent
           [:> ui/ItemHeader
-           pname " " [:small " by " (:oname vendor)]
-           [c-current-toggle stack-item]]
+           pname " " [:small " by " (:oname vendor)]]
           (if (@stack-items-editing?& product-id)
             [:> ui/Form
              [:> ui/FormField {:error (= @bad-input& (keyword (str "edit-stack-item-" id ".price")))}
@@ -196,10 +179,53 @@
                                         :color "blue"}
                           "Save"])}]]]
             [:<>
-             [:> ui/ItemMeta
-              "Something in meta"]
-             [:> ui/ItemDescription (bc/product-description product-v-fn)]
-             [:> ui/ItemExtra "some tags here?"]])]]))))
+             
+             ;; [:> ui/ItemMeta
+             ;;  ]
+             ;; [:> ui/ItemDescription (bc/product-description product-v-fn)]
+             [:> ui/ItemExtra {:style {:color "rgba(0, 0, 0, 0.85)"
+                                       :font-size 14
+                                       :line-height "14px"}}
+              [:> ui/Grid {:class "stack-item-grid"
+                           :columns 2}
+               [:> ui/GridRow {:style {:font-weight 700
+                                       :margin-top 7}}
+                [:> ui/GridColumn "Price"]
+                [:> ui/GridColumn "Annual Renewal"]]
+               [:> ui/GridRow {:style {:margin-top 6}}
+                [:> ui/GridColumn "$90 / year"]
+                [:> ui/GridColumn "2020-03-24"
+                 [:> ui/Checkbox {:style {:margin-left 15
+                                          :font-size 12}
+                                  :label "Remind me two months before"}]]]
+               [:> ui/GridRow {:style {:font-weight 700
+                                       :margin-top 17
+                                       }}
+                
+                [:> ui/GridColumn "Your Rating"]
+                [:> ui/GridColumn "Currently Using?"]]
+               [:> ui/GridRow {:style {:margin-top 6}}
+                [:> ui/GridColumn
+                 [:> ui/Rating {:maxRating 5
+                                :size "huge"
+                                ;; :icon "star"
+                                :on-click (fn [e] (.stopPropagation e))
+                                :onRate (fn [_ this]
+                                          (println (.-rating this)))}]]
+                [:> ui/GridColumn
+                 [:> ui/Checkbox
+                  {:toggle true
+                   ;; :checked (boolean (selected-statuses status))
+                   :on-click (fn [e] (.stopPropagation e))
+                   :on-change (fn [_ this]
+                                
+                                #_(if (.-checked this)
+                                    (rf/dispatch [:b/stack.filter.add "status" status])
+                                    (rf/dispatch [:b/stack.filter.remove "status" status])))
+                   }]]
+                ]]
+              
+              ]])]]))))
 
 (defn c-status-filter-checkboxes
   [stack selected-statuses]

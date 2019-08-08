@@ -120,6 +120,7 @@
 (def Transition (component "Transition"))
 (def TransitionGroup (component "Transition" "Group"))
 (def TransitionablePortal (component "TransitionablePortal"))
+(def Rating (component "Rating"))
 
 ;; Accordion
 (def Accordion (component "Accordion"))
