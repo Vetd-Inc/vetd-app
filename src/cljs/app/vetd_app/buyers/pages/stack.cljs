@@ -119,7 +119,7 @@
                           :onSearchChange (fn [_ this] (reset! search-query& (aget this "searchQuery")))
                           :onChange (fn [_ this] (reset! value& (.-value this)))}]
          [:> ui/Button
-          {:color "blue"
+          {:color "teal"
            :disabled (empty? @value&)
            :on-click #(do (reset! popup-open?& false)
                           (rf/dispatch [:b/stack.add-items (js->clj @value&)]))}
@@ -130,7 +130,7 @@
   (let [popup-open? (r/atom false)]
     (fn [stack]
       [:> ui/Popup
-       {:position "bottom left"
+       {:position "bottom right"
         :on "click"
         :open @popup-open?
         :onOpen #(reset! popup-open? true)
@@ -139,11 +139,13 @@
         :flowing true
         :content (r/as-element [c-add-product-form stack popup-open?])
         :trigger (r/as-element
-                  [:> ui/Button {:color "teal"
-                                 :fluid true
+                  [:> ui/Button {:color "white"
                                  :icon true
-                                 :labelPosition "left"}
-                   "Add Products"
+                                 :labelPosition "left"
+                                 :fluid true
+                                 :size "tiny"
+                                 :style {:float "right"}}
+                   "Add Product"
                    [:> ui/Icon {:name "plus"}]])}])))
 
 (defn c-stack-item
@@ -265,6 +267,7 @@
 
 (defn c-page []
   (let [org-id& (rf/subscribe [:org-id])
+        group-ids& (rf/subscribe [:group-ids])
         departments [{:dname "Marketing"
                       :roles [{:rname "Marketing Automation"}
                               {:rname "Email Marketing"}
@@ -308,7 +311,10 @@
                               {:rname "Data Visualization"}]}
                      {:dname "Product & Design"
                       :roles [{:rname "Product Management"}
-                              {:rname "Design"}]}]]
+                              {:rname "Design"}]}]
+
+        department-refs (atom {})
+        ]
     (when @org-id&
       (let [filter& (rf/subscribe [:b/stack.filter])
             stack& (rf/subscribe [:gql/sub
@@ -357,28 +363,60 @@
                      [:a.blue {:on-click (fn [e]
                                            (.stopPropagation e)
                                            ;; use scrollIntoView
-                                           (rf/dispatch [:b/nav-search dname]))}
+                                           ;; (rf/dispatch [:b/nav-search dname])
+                                           (.scrollIntoView (get @department-refs dname)
+                                                            (clj->js {:behavior "smooth"
+                                                                      :block "start"}))
+                                           )}
                       dname]]))]
                 ]
                [:div.inner-container
+                [:> ui/Segment {:class "detail-container"}
+                 [:h1 "Chooser's Stack"]
+                 "Add products to your stack to keep track of renewals, get recommendations, and share with "
+                 (if (not-empty @group-ids&)
+                   "your community"
+                   "others")
+                 "."]
                 (doall
                  (for [{:keys [dname roles]} departments]
                    ^{:key dname}
                    [:div.department
                     [:h2 dname]
+                    [:span.scroll-anchor {:ref (fn [this] (swap! department-refs assoc dname this))}] ; anchor
                     (for [{:keys [rname]} roles]
                       ^{:key rname}
                       [:div.role
-                       [:h4 rname]
+                       [:h4
+                        
+                        [bc/c-start-round-button {:etype :product
+                                                  :eid "j"
+                                                  :ename "j"
+                                                  
+                                                  ;; :props {:fluid true}
+                                                  :props {:size "tiny"
+                                                          ;; :color "lightblue"
+                                                          :style {:float "right"}}
+                                                  }]
+                        
+                        rname]
                        [:> ui/ItemGroup {:class "results"}
-                        (if (seq unfiltered-stack)
-                          (let [;; stack (cond-> unfiltered-stack
+                        (if (and (< (rand) 0.2)
+                                 (seq unfiltered-stack))
+                          (let [ ;; stack (cond-> unfiltered-stack
                                 ;;         (seq selected-statuses) (filter-stack selected-statuses))
                                 stack [(rand-nth unfiltered-stack)]
                                 ]
                             (for [stack-item stack]
                               ^{:key (:id stack-item)}
                               [c-stack-item stack-item]))
-                          [c-no-stack-items])]])
+                          ;; [c-no-stack-items]
+                          nil
+                          )]
+
+                       [:div {:style {:padding 14
+                                      :margin-bottom 14}}
+                        [c-add-product-button]]
+                       ])
                     ]))]
                ])))))))

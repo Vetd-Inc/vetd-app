@@ -961,6 +961,11 @@ $cell-height: 201px;
     background-repeat: no-repeat;
     z-index: 1003;
   }
+
+  .scroll-anchor {
+    // position: absolute;
+    // top: -40px;
+  }
 }
 .role {
   padding: 0 0 14px 0;
@@ -969,8 +974,10 @@ $cell-height: 201px;
   border-radius: 4px;
 
   h4 {
-    position: sticky;
-    top: 58px;
+    // position: sticky;
+    // top: 58px;
+    height: 58px;
+    line-height: 30px;
     padding: 14px 14px;
     margin-bottom: 0;
     background: #e0e0e0;
