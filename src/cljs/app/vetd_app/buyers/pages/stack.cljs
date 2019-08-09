@@ -186,33 +186,33 @@
              [:> ui/ItemExtra {:style {:color "rgba(0, 0, 0, 0.85)"
                                        :font-size 14
                                        :line-height "14px"}}
-              [:> ui/Grid {:class "stack-item-grid"
-                           :columns 2}
+              [:> ui/Grid {:class "stack-item-grid"}
                [:> ui/GridRow {:style {:font-weight 700
                                        :margin-top 7}}
-                [:> ui/GridColumn "Price"]
-                [:> ui/GridColumn "Annual Renewal"]]
+                [:> ui/GridColumn {:width 3}
+                 "Price"]
+                [:> ui/GridColumn {:width 5}
+                 "Annual Renewal"]
+                [:> ui/GridColumn {:width 4}
+                 "Your Rating"]
+                [:> ui/GridColumn {:width 4}
+                 "Currently Using?"]]
                [:> ui/GridRow {:style {:margin-top 6}}
-                [:> ui/GridColumn "$90 / year"]
-                [:> ui/GridColumn "2020-03-24"
+                [:> ui/GridColumn {:width 3}
+                 "$90 / year"]
+                [:> ui/GridColumn {:width 5}
+                 "2020-03-24"
                  [:> ui/Checkbox {:style {:margin-left 15
                                           :font-size 12}
-                                  :label "Remind me two months before"}]]]
-               [:> ui/GridRow {:style {:font-weight 700
-                                       :margin-top 17
-                                       }}
-                
-                [:> ui/GridColumn "Your Rating"]
-                [:> ui/GridColumn "Currently Using?"]]
-               [:> ui/GridRow {:style {:margin-top 6}}
-                [:> ui/GridColumn
+                                  :label "Remind?"}]]
+                [:> ui/GridColumn {:width 4}
                  [:> ui/Rating {:maxRating 5
                                 :size "huge"
                                 ;; :icon "star"
                                 :on-click (fn [e] (.stopPropagation e))
                                 :onRate (fn [_ this]
                                           (println (.-rating this)))}]]
-                [:> ui/GridColumn
+                [:> ui/GridColumn {:width 4}
                  [:> ui/Checkbox
                   {:toggle true
                    ;; :checked (boolean (selected-statuses status))
@@ -222,10 +222,8 @@
                                 #_(if (.-checked this)
                                     (rf/dispatch [:b/stack.filter.add "status" status])
                                     (rf/dispatch [:b/stack.filter.remove "status" status])))
-                   }]]
-                ]]
-              
-              ]])]]))))
+                   }]]]
+               ]]])]]))))
 
 (defn c-status-filter-checkboxes
   [stack selected-statuses]
@@ -266,7 +264,51 @@
         "."]])))
 
 (defn c-page []
-  (let [org-id& (rf/subscribe [:org-id])]
+  (let [org-id& (rf/subscribe [:org-id])
+        departments [{:dname "Marketing"
+                      :roles [{:rname "Marketing Automation"}
+                              {:rname "Email Marketing"}
+                              {:rname "Social Media"}
+                              {:rname "Mobile Marketing"}
+                              {:rname "Content Marketing"}
+                              {:rname "Display Advertising"}
+                              {:rname "Attribution Tracking"}
+                              {:rname "Tag Management"}
+                              {:rname "Digital Marketing Services"}
+                              {:rname "SEO"}
+                              {:rname "PPC"}
+                              {:rname "Video Marketing"}
+                              {:rname "Native Advertising"}
+                              {:rname "Loyalty Marketing"}
+                              {:rname "Referral Marketing"}
+                              {:rname "Affiliate Marketing"}
+                              {:rname "PR Marketing"}]}
+                     {:dname "Sales"
+                      :roles [{:rname "CRM"}
+                              {:rname "Lead Generation"}
+                              {:rname "Sales Enablement"}
+                              {:rname "Customer Support"}
+                              {:rname "Customer Success"}]}
+                     {:dname "Engineering"
+                      :roles [{:rname "Developer Tools"}
+                              {:rname "DevOps"}]}
+                     {:dname "Business Operations"
+                      :roles [{:rname "Operations"}
+                              {:rname "Project Management"}
+                              {:rname "Hiring"}
+                              {:rname "Finance"}
+                              {:rname "Accounting"}
+                              {:rname "Payments"}
+                              {:rname "Communications"}
+                              {:rname "Legal"}
+                              {:rname "Productivity"}]}
+                     {:dname "Data"
+                      :roles [{:rname "Analytics"}
+                              {:rname "Data Science"}
+                              {:rname "Data Visualization"}]}
+                     {:dname "Product & Design"
+                      :roles [{:rname "Product Management"}
+                              {:rname "Design"}]}]]
     (when @org-id&
       (let [filter& (rf/subscribe [:b/stack.filter])
             stack& (rf/subscribe [:gql/sub
@@ -300,17 +342,43 @@
               
               [:div.container-with-sidebar
                [:div.sidebar
-                [:> ui/Segment
-                 [c-add-product-button]]
-                [:> ui/Segment
-                 [:h2 "Filter"]
-                 [:h4 "Status"]
-                 [c-status-filter-checkboxes unfiltered-stack selected-statuses]]]
-               [:> ui/ItemGroup {:class "inner-container results"}
-                (if (seq unfiltered-stack)
-                  (let [stack unfiltered-stack #_(cond-> unfiltered-stack
-                                                   (seq selected-statuses) (filter-stack selected-statuses))]
-                    (for [stack-item stack]
-                      ^{:key (:id stack-item)}
-                      [c-stack-item stack-item]))
-                  [c-no-stack-items])]])))))))
+                ;; [:> ui/Segment
+                ;;  [c-add-product-button]]
+                ;; [:> ui/Segment
+                ;;  [:h2 "Filter"]
+                ;;  [:h4 "Status"]
+                ;;  [c-status-filter-checkboxes unfiltered-stack selected-statuses]]
+                [:> ui/Segment {:class "top-categories"}
+                 [:h4 "Departments"]
+                 (doall
+                  (for [{:keys [dname]} departments]
+                    ^{:key dname}
+                    [:div
+                     [:a.blue {:on-click (fn [e]
+                                           (.stopPropagation e)
+                                           ;; use scrollIntoView
+                                           (rf/dispatch [:b/nav-search dname]))}
+                      dname]]))]
+                ]
+               [:div.inner-container
+                (doall
+                 (for [{:keys [dname roles]} departments]
+                   ^{:key dname}
+                   [:div.department
+                    [:h2 dname]
+                    (for [{:keys [rname]} roles]
+                      ^{:key rname}
+                      [:div.role
+                       [:h4 rname]
+                       [:> ui/ItemGroup {:class "results"}
+                        (if (seq unfiltered-stack)
+                          (let [;; stack (cond-> unfiltered-stack
+                                ;;         (seq selected-statuses) (filter-stack selected-statuses))
+                                stack [(rand-nth unfiltered-stack)]
+                                ]
+                            (for [stack-item stack]
+                              ^{:key (:id stack-item)}
+                              [c-stack-item stack-item]))
+                          [c-no-stack-items])]])
+                    ]))]
+               ])))))))
