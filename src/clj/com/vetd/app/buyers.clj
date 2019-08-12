@@ -568,20 +568,36 @@ Round URL: https://app.vetd.com/b/rounds/%s"
        (nil? dval)
        (nil? jval)))
 
-(defn update-product-profile-score [product-profile-doc-id]
-  (db/hs-query
-   {:select [[:prompt_id :prompt-id]
-             [:prompt_term :prompt-term]
-             [:resp_field_nval :nval]
-             [:resp_field_sval :sval]
-             [:resp_field_dval :dval]
-             [:resp_field_jval :jval]]
-    :from [:docs_to_fields]
-    :where [:= :doc_id product-profile-doc-id]}))
+(defn calc-product-profile-score-by-doc-id
+  [product-profile-doc-id]
+  (let [[head :as fields] (db/hs-query
+                           {:select [[:prompt_id :prompt-id]
+                                     [:prompt_term :prompt-term]
+                                     [:prompt_field_fname :prompt-field-fname]
+                                     [:resp_field_nval :nval]
+                                     [:resp_field_sval :sval]
+                                     [:resp_field_dval :dval]
+                                     [:resp_field_jval :jval]]
+                            :from [:docs_to_fields]
+                            :where [:= :doc_id product-profile-doc-id]})
+        {:keys [product-id]} head]
+    (if (->> fields
+             (remove resp-field-empty?)
+             empty?)
+      0.0
+      1.0)))
 
-#_ (clojure.pprint/pprint  (filter (complement resp-field-empty?) (update-product-profile-score 852044264569)))
+(defn update-product-profile-score
+  [product-id product-profile-doc-id]
+  (db/update-any! {:id product-id
+                   :profile_score
+                   (if product-profile-doc-id
+                     (calc-product-profile-score-by-doc-id product-profile-doc-id)
+                     0.0)
+                   :profile_score_updated (ut/now-ts)}
+                  :products))
 
-(defn select-products-to-update-profile-score []
+(defn select-products-to-update-profile-score [limit]
   (db/hs-query
    {:select [[:p.id :product-id]
              [:%max.dtf.doc_id :doc-id]]
@@ -596,5 +612,69 @@ Round URL: https://app.vetd.com/b/rounds/%s"
             [:< :p.profile_score_updated :dtf.response_updated]
             [:< :p.profile_score_updated :dtf.resp_field_updated]]
     :group-by [:p.id]
-    :limit 10}))
+    :limit limit}))
+
+(defn random-select-products-to-update-profile-score
+  [& [n]]
+  (some-> (or n 10)
+          select-products-to-update-profile-score
+          not-empty
+          shuffle
+          first))
+
+(defn random-update-product-profile-score [& [n]]
+  (if-let [{:keys [product-id doc-id]}
+           (-> (or n 10)
+               random-select-products-to-update-profile-score
+               not-empty)]
+    ))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
