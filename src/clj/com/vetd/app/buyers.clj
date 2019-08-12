@@ -561,3 +561,40 @@ Round URL: https://app.vetd.com/b/rounds/%s"
                    :renewal_reminder renewal-reminder
                    :rating rating}
                   :stack_items))
+
+(defn resp-field-empty? [{:keys [nval sval dval jval]}]
+  (and (empty? sval)
+       (nil? nval)
+       (nil? dval)
+       (nil? jval)))
+
+(defn update-product-profile-score [product-profile-doc-id]
+  (db/hs-query
+   {:select [[:prompt_id :prompt-id]
+             [:prompt_term :prompt-term]
+             [:resp_field_nval :nval]
+             [:resp_field_sval :sval]
+             [:resp_field_dval :dval]
+             [:resp_field_jval :jval]]
+    :from [:docs_to_fields]
+    :where [:= :doc_id product-profile-doc-id]}))
+
+#_ (clojure.pprint/pprint  (filter (complement resp-field-empty?) (update-product-profile-score 852044264569)))
+
+(defn select-products-to-update-profile-score []
+  (db/hs-query
+   {:select [[:p.id :product-id]
+             [:%max.dtf.doc_id :doc-id]]
+    :from [[:products :p]]
+    :left-join [[:docs_to_fields :dtf]
+                [:and
+                 [:= :dtf.doc_subject :p.id]
+                 [:= :dtf.doc_dtype "product-profile1"]]]
+    :where [:or
+            [:= :p.profile_score nil]
+            [:< :p.profile_score_updated :dtf.doc_updated]
+            [:< :p.profile_score_updated :dtf.response_updated]
+            [:< :p.profile_score_updated :dtf.resp_field_updated]]
+    :group-by [:p.id]
+    :limit 10}))
+
