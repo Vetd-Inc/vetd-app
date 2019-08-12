@@ -1707,7 +1707,16 @@
                                              [:prompt_fields :pf] [:and [:= :pf.id :rf.pf_id] [:= :pf.deleted nil]]]
                                       :where [:= :d.deleted nil]}
                               :owner :vetd
-                              :grants {:hasura [:SELECT]}}]]])
+                              :grants {:hasura [:SELECT]}}]]
+
+   [[2019 8 12 00 00]
+    
+    [:alter-table {:schema :vetd
+                   :name :products
+                   :columns
+                   {:add {:profile_score [[:numeric 12 2]]
+                          :profile_score_updated [:timestamp :with :time :zone]}}}]]])
+
 
 #_(mig/mk-migration-files migrations
                           "migrations")

@@ -168,11 +168,13 @@
                                  (for [[k vs] add]
                                    (format "ADD COLUMN %s %s"
                                            (name k)
-                                           (st/join " "
-                                                    (map name vs))))
+                                           (->> vs
+                                                convert-numeric-types
+                                                (map name)
+                                                (st/join " "))))
                                  (when pk
                                    [(format "ADD PRIMARY KEY (%s)"
-                                             (name pk))]))
+                                            (name pk))]))
                                 (remove nil?))))]
      :down [(format "ALTER TABLE %s.%s \n%s"
                     schema'
