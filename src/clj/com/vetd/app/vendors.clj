@@ -206,12 +206,14 @@
                                      [:resp_field_jval :jval]]
                             :from [:docs_to_fields]
                             :where [:= :doc_id product-profile-doc-id]})
-        {:keys [product-id]} head]
-    (if (->> fields
-             (remove resp-field-empty?)
-             empty?)
-      0.0
-      1.0)))
+        {:keys [product-id]} head
+        filled-count (->> fields
+                          (remove resp-field-empty?)
+                          count)]
+    (if-not (zero? filled-count)
+      (- 1.0
+         (/ 1.0 filled-count))
+      0.0)))
 
 (defn update-product-profile-score
   [product-id product-profile-doc-id]
