@@ -37,12 +37,14 @@
                                                          [:= :d2f.resp_field_sval "yes"]]])
                               (when (not-empty groups)
                                 [[:group_org_memberships :gom] [:in :gom.group_id groups]
-                                 ;; need to check deleted nil?
-                                 [:stack_items :si] [:= :gom.org_id :si.buyer_id]])
+                                 [:stack_items :si] [:and
+                                                     [:= :si.deleted nil]
+                                                     [:= :si.buyer_id :gom.org_id]
+                                                     [:= :si.product_id :p.id]]])
                               (when (not-empty discounts-available-to-groups)
                                 [[:group_discounts :gd] [:and
-                                                         [:in :gd.group_id discounts-available-to-groups]
                                                          [:= :gd.deleted nil]
+                                                         [:in :gd.group_id discounts-available-to-groups]
                                                          [:= :gd.product_id :p.id]]]))
                 :left-join (when (not-empty cat-ids)
                              [[:product_categories :pc] [:= :p.id :pc.prod_id]])
