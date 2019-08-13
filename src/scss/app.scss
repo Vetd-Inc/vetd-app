@@ -966,6 +966,21 @@ $cell-height: 201px;
     // position: absolute;
     // top: -40px;
   }
+
+  .item {
+    // width: auto !important;
+    // margin-right: 14px !important;
+    // margin-left: 14px !important;
+    padding: 10px !important;
+
+    .product-logo {
+      $edge: 75px;
+      min-width: $edge;
+      min-height: $edge;
+      max-width: $edge;
+      max-height: $edge;
+    }
+  }
 }
 .role {
   padding: 0 0 14px 0;
@@ -984,21 +999,6 @@ $cell-height: 201px;
     z-index: 1002;
     border-top-left-radius: 4px;
     border-top-right-radius: 4px;
-  }
-
-  .item {
-    width: auto !important;
-    margin-right: 14px !important;
-    margin-left: 14px !important;
-    padding: 10px !important;
-
-    .product-logo {
-      $edge: 75px;
-      min-width: $edge;
-      min-height: $edge;
-      max-width: $edge;
-      max-height: $edge;
-    }
   }
 }
 

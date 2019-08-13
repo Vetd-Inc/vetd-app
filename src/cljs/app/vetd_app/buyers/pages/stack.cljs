@@ -130,7 +130,7 @@
   (let [popup-open? (r/atom false)]
     (fn [stack]
       [:> ui/Popup
-       {:position "bottom right"
+       {:position "bottom left"
         :on "click"
         :open @popup-open?
         :onOpen #(reset! popup-open? true)
@@ -139,12 +139,10 @@
         :flowing true
         :content (r/as-element [c-add-product-form stack popup-open?])
         :trigger (r/as-element
-                  [:> ui/Button {:color "white"
+                  [:> ui/Button {:color "teal"
                                  :icon true
                                  :labelPosition "left"
-                                 :fluid true
-                                 :size "tiny"
-                                 :style {:float "right"}}
+                                 :fluid true}
                    "Add Product"
                    [:> ui/Icon {:name "plus"}]])}])))
 
@@ -229,7 +227,7 @@
 
 (defn c-status-filter-checkboxes
   [stack selected-statuses]
-  (let [all-possible-statuses ["current" "past"]
+  (let [all-possible-statuses ["current" "previous"]
         statuses (->> stack
                       (group-by :status)
                       (merge (zipmap all-possible-statuses (repeatedly vec))))]
@@ -268,53 +266,7 @@
 (defn c-page []
   (let [org-id& (rf/subscribe [:org-id])
         group-ids& (rf/subscribe [:group-ids])
-        departments [{:dname "Marketing"
-                      :roles [{:rname "Marketing Automation"}
-                              {:rname "Email Marketing"}
-                              {:rname "Social Media"}
-                              {:rname "Mobile Marketing"}
-                              {:rname "Content Marketing"}
-                              {:rname "Display Advertising"}
-                              {:rname "Attribution Tracking"}
-                              {:rname "Tag Management"}
-                              {:rname "Digital Marketing Services"}
-                              {:rname "SEO"}
-                              {:rname "PPC"}
-                              {:rname "Video Marketing"}
-                              {:rname "Native Advertising"}
-                              {:rname "Loyalty Marketing"}
-                              {:rname "Referral Marketing"}
-                              {:rname "Affiliate Marketing"}
-                              {:rname "PR Marketing"}]}
-                     {:dname "Sales"
-                      :roles [{:rname "CRM"}
-                              {:rname "Lead Generation"}
-                              {:rname "Sales Enablement"}
-                              {:rname "Customer Support"}
-                              {:rname "Customer Success"}]}
-                     {:dname "Engineering"
-                      :roles [{:rname "Developer Tools"}
-                              {:rname "DevOps"}]}
-                     {:dname "Business Operations"
-                      :roles [{:rname "Operations"}
-                              {:rname "Project Management"}
-                              {:rname "Hiring"}
-                              {:rname "Finance"}
-                              {:rname "Accounting"}
-                              {:rname "Payments"}
-                              {:rname "Communications"}
-                              {:rname "Legal"}
-                              {:rname "Productivity"}]}
-                     {:dname "Data"
-                      :roles [{:rname "Analytics"}
-                              {:rname "Data Science"}
-                              {:rname "Data Visualization"}]}
-                     {:dname "Product & Design"
-                      :roles [{:rname "Product Management"}
-                              {:rname "Design"}]}]
-
-        department-refs (atom {})
-        ]
+        jump-link-refs (atom {})]
     (when @org-id&
       (let [filter& (rf/subscribe [:b/stack.filter])
             stack& (rf/subscribe [:gql/sub
@@ -348,28 +300,28 @@
               
               [:div.container-with-sidebar
                [:div.sidebar
-                ;; [:> ui/Segment
-                ;;  [c-add-product-button]]
+                [:> ui/Segment
+                 [c-add-product-button]]
                 ;; [:> ui/Segment
                 ;;  [:h2 "Filter"]
                 ;;  [:h4 "Status"]
                 ;;  [c-status-filter-checkboxes unfiltered-stack selected-statuses]]
                 [:> ui/Segment {:class "top-categories"}
-                 [:h4 "Departments"]
-                 (doall
-                  (for [{:keys [dname]} departments]
-                    ^{:key dname}
-                    [:div
-                     [:a.blue {:on-click (fn [e]
-                                           (.stopPropagation e)
-                                           ;; use scrollIntoView
-                                           ;; (rf/dispatch [:b/nav-search dname])
-                                           (.scrollIntoView (get @department-refs dname)
-                                                            (clj->js {:behavior "smooth"
-                                                                      :block "start"}))
-                                           )}
-                      dname]]))]
-                ]
+                 [:h4 "Jump To"]
+                 [:div
+                  [:a.blue {:on-click (fn [e]
+                                        (.stopPropagation e)
+                                        (.scrollIntoView (get @jump-link-refs "current")
+                                                         (clj->js {:behavior "smooth"
+                                                                   :block "start"})))}
+                   "Current Stack"]]
+                 [:div
+                  [:a.blue {:on-click (fn [e]
+                                        (.stopPropagation e)
+                                        (.scrollIntoView (get @jump-link-refs "previous")
+                                                         (clj->js {:behavior "smooth"
+                                                                   :block "start"})))}
+                   "Previous Stack"]]]]
                [:div.inner-container
                 [:> ui/Segment {:class "detail-container"}
                  [:h1 "Chooser's Stack"]
@@ -378,45 +330,27 @@
                    "your community"
                    "others")
                  "."]
-                (doall
-                 (for [{:keys [dname roles]} departments]
-                   ^{:key dname}
-                   [:div.department
-                    [:h2 dname]
-                    [:span.scroll-anchor {:ref (fn [this] (swap! department-refs assoc dname this))}] ; anchor
-                    (for [{:keys [rname]} roles]
-                      ^{:key rname}
-                      [:div.role
-                       [:h4
-                        
-                        [bc/c-start-round-button {:etype :product
-                                                  :eid "j"
-                                                  :ename "j"
-                                                  
-                                                  ;; :props {:fluid true}
-                                                  :props {:size "tiny"
-                                                          ;; :color "lightblue"
-                                                          :style {:float "right"}}
-                                                  }]
-                        
-                        rname]
-                       [:> ui/ItemGroup {:class "results"}
-                        (if (and (< (rand) 0.2)
-                                 (seq unfiltered-stack))
-                          (let [ ;; stack (cond-> unfiltered-stack
-                                ;;         (seq selected-statuses) (filter-stack selected-statuses))
-                                stack [(rand-nth unfiltered-stack)]
-                                ]
-                            (for [stack-item stack]
-                              ^{:key (:id stack-item)}
-                              [c-stack-item stack-item]))
-                          ;; [c-no-stack-items]
-                          nil
-                          )]
-
-                       [:div {:style {:padding 14
-                                      :margin-bottom 14}}
-                        [c-add-product-button]]
-                       ])
-                    ]))]
+                [:div.department
+                 [:h2 "Current Stack"]
+                 [:span.scroll-anchor {:ref (fn [this] (swap! jump-link-refs assoc "current" this))}] ; anchor
+                 [:> ui/ItemGroup {:class "results"}
+                  (let [ ;; stack (cond-> unfiltered-stack
+                        ;;         (seq selected-statuses) (filter-stack selected-statuses))
+                        stack (take 9 unfiltered-stack)
+                        ]
+                    (for [stack-item stack]
+                      ^{:key (:id stack-item)}
+                      [c-stack-item stack-item]))]]
+                [:div.department
+                 [:h2 "Previous Stack"]
+                 [:span.scroll-anchor {:ref (fn [this] (swap! jump-link-refs assoc "previous" this))}] ; anchor
+                 [:> ui/ItemGroup {:class "results"}
+                  (let [ ;; stack (cond-> unfiltered-stack
+                        ;;         (seq selected-statuses) (filter-stack selected-statuses))
+                        stack (take 9 unfiltered-stack)
+                        ]
+                    (for [stack-item stack]
+                      ^{:key (:id stack-item)}
+                      [c-stack-item stack-item]))]]
+                ]
                ])))))))
