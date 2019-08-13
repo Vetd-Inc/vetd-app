@@ -162,7 +162,18 @@
                                   (rf/dispatch [:b/nav-product-detail product-idstr]))}
          [bc/c-product-logo logo]
          [:> ui/ItemContent
+          
           [:> ui/ItemHeader
+           [:> ui/Label {;; :on-click #(rf/dispatch [:edit-field sym])
+                         :as "a"
+                         :style {:float "right"}}
+            [:> ui/Icon {:name "edit outline"}]
+            "Edit"]
+           [:> ui/Label {;; :on-click #(rf/dispatch [:edit-field sym])
+                         :as "a"
+                         :style {:float "right"}}
+            [:> ui/Icon {:name "edit outline"}]
+            "Move to Previous Stack"]
            pname " " [:small " by " (:oname vendor)]]
           (if (@stack-items-editing?& id)
             [:> ui/Form
