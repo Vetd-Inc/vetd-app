@@ -972,6 +972,7 @@ $cell-height: 201px;
     margin-right: 14px !important;
     margin-left: 14px !important;
     padding: 10px !important;
+    animation: fade-in-down 0.5s ease-out;
 
     .product-logo {
       $edge: 75px;
@@ -980,6 +981,20 @@ $cell-height: 201px;
       max-width: $edge;
       max-height: $edge;
     }
+
+    
+  }
+}
+
+@keyframes fade-in-down {
+  from {
+    opacity: 0;
+    transform: translate3d(0, -54px, 0);
+  }
+  
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
   }
 }
 

@@ -46,9 +46,17 @@
      {:ws-send {:payload {:cmd :b/stack.add-items
                           :buyer-id buyer-id
                           :product-ids product-ids}}
+      :db (assoc-in db
+                    [:stack :items-editing]
+                    (set (concat (get-in db [:stack :items-editing]) product-ids)))
       :analytics/track {:event "Products Added"
                         :props {:category "Stack"
                                 :label buyer-id}}})))
+
+(rf/reg-event-fx
+ :b/stack.edit-item
+ (fn [{:keys [db]} [_ product-id]]
+   {:db (update-in db [:stack :items-editing] conj product-id)}))
 
 ;;;; Components
 (defn c-add-product-form
@@ -226,8 +234,7 @@
         group-ids& (rf/subscribe [:group-ids])
         jump-link-refs (atom {})]
     (when @org-id&
-      (let [filter& (rf/subscribe [:b/stack.filter])
-            stack& (rf/subscribe [:gql/sub
+      (let [stack& (rf/subscribe [:gql/sub
                                   {:queries
                                    [[:stack-items {:buyer-id @org-id&
                                                    :_order_by {:created :desc}
