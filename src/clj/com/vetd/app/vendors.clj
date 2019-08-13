@@ -187,18 +187,125 @@
         (replace-product-categories {:id subject
                                      :categories cats'})))))
 
-(defmethod docs/handle-doc-update :product-profile
-  [{:keys [id]} & _]
+
+(defn resp-field-empty? [{:keys [nval sval dval jval]}]
+  (and (empty? sval)
+       (nil? nval)
+       (nil? dval)
+       (nil? jval)))
+
+(defn calc-product-profile-score-by-doc-id
+  [product-profile-doc-id]
+  (let [[head :as fields] (db/hs-query
+                           {:select [[:prompt_id :prompt-id]
+                                     [:prompt_term :prompt-term]
+                                     [:prompt_field_fname :prompt-field-fname]
+                                     [:resp_field_nval :nval]
+                                     [:resp_field_sval :sval]
+                                     [:resp_field_dval :dval]
+                                     [:resp_field_jval :jval]]
+                            :from [:docs_to_fields]
+                            :where [:= :doc_id product-profile-doc-id]})
+        {:keys [product-id]} head]
+    (if (->> fields
+             (remove resp-field-empty?)
+             empty?)
+      0.0
+      1.0)))
+
+(defn update-product-profile-score
+  [product-id product-profile-doc-id]
+  (db/update-any! {:id product-id
+                   :profile_score
+                   (if product-profile-doc-id
+                     (calc-product-profile-score-by-doc-id product-profile-doc-id)
+                     0.0)
+                   :profile_score_updated (ut/now-ts)}
+                  :products))
+
+(defn select-products-to-update-profile-score [limit]
+  (db/hs-query
+   {:select [[:p.id :product-id]
+             [:%max.dtf.doc_id :doc-id]]
+    :from [[:products :p]]
+    :left-join [[:docs_to_fields :dtf]
+                [:and
+                 [:= :dtf.doc_subject :p.id]
+                 [:= :dtf.doc_dtype "product-profile"]]]
+    :where [:or
+            [:= :p.profile_score nil]
+            [:< :p.profile_score_updated :dtf.doc_updated]
+            [:< :p.profile_score_updated :dtf.response_updated]
+            [:< :p.profile_score_updated :dtf.resp_field_updated]]
+    :group-by [:p.id]
+    :limit limit}))
+
+(defn random-select-products-to-update-profile-score
+  [& [n]]
+  (some-> (or n 10)
+          select-products-to-update-profile-score
+          not-empty
+          shuffle
+          first))
+
+(defn random-update-product-profile-score [& [n]]
+  (if-let [{:keys [product-id doc-id]}
+           (-> (or n 10)
+               random-select-products-to-update-profile-score
+               not-empty)]
+    (first (update-product-profile-score product-id doc-id))
+    0))
+
+(defn update-all-missing-product-profile-scores* [a b]
+  (->> (range a)
+       (pmap (fn [_]
+               (random-update-product-profile-score b)))
+       (reduce + 0)))
+
+;; TODO?? This is crazy slow and could definitely be improved, but... doesn't matter??
+(defn update-all-missing-product-profile-scores []
   (try
-    (process-product-categories id)
+    (loop [done 0
+           n (update-all-missing-product-profile-scores* 100 200)]
+      (log/info (format "Updated %d missing product profile scores so far..." done))
+      (if (zero? n)
+        done
+        (let [n' (try (update-all-missing-product-profile-scores* 100 200)
+                      (catch Throwable e
+                        (Thread/sleep 10000)
+                        (update-all-missing-product-profile-scores* 10 20)))]
+          (recur (+ done n) n'))))
+    (catch Throwable e
+      (com/log-error e))))
+
+#_(update-all-missing-product-profile-scores)
+
+(defmethod docs/handle-doc-update :product-profile
+  [{:keys [id subject]} & _]
+  (try
+    (process-product-categories id)        
+    (catch Throwable e
+      (com/log-error e)))
+  (try
     (process-product-logo id) ;; TODO only if logo url changed???
-    (catch Exception e
+    (catch Throwable e
+      (com/log-error e)))
+  (try
+    (update-product-profile-score subject id)    
+    (catch Throwable e
       (com/log-error e))))
 
 (defmethod docs/handle-doc-creation :product-profile
-  [{:keys [id]} & _]
+  [{:keys [id subject]} & _]
   (try
-    (process-product-categories id)    
-    (process-product-logo id)
-    (catch Exception e
+    (process-product-categories id)        
+    (catch Throwable e
+      (com/log-error e)))
+  (try
+    (process-product-logo id) ;; TODO only if logo url changed???
+    (catch Throwable e
+      (com/log-error e)))
+  (try
+    (update-product-profile-score subject id)    
+    (catch Throwable e
       (com/log-error e))))

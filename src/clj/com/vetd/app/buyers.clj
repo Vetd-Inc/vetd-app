@@ -25,7 +25,8 @@
           (some seq (vals filter-map)))
     (let [ids (db/hs-query
                {:select [[:p.id :pid]
-                         [(honeysql.core/raw "coalesce(p.score, 1.0)") :nscore]]
+                         [(honeysql.core/raw "coalesce(p.score, 1.0)") :nscore]
+                         [(honeysql.core/raw "coalesce(p.profile_score, 0.0)") :pscore]]
                 :modifiers [:distinct]
                 :from [[:products :p]]
                 :join (concat [[:orgs :o] [:= :o.id :p.vendor_id]]
@@ -38,7 +39,10 @@
                               (when (not-empty groups)
                                 [[:group_org_memberships :gom] [:in :gom.group_id groups]
                                  ;; need to check deleted nil?
-                                 [:stack_items :si] [:= :gom.org_id :si.buyer_id]])
+                                 [:stack_items :si] [:and
+                                                     [:= :si.deleted nil]
+                                                     [:= :si.buyer_id :gom.org_id]
+                                                     [:= :si.product_id :p.id]]])
                               (when (not-empty discounts-available-to-groups)
                                 [[:group_discounts :gd] [:and
                                                          [:in :gd.group_id discounts-available-to-groups]
@@ -53,8 +57,10 @@
                          [(keyword "~*") :p.pname (str ".*?\\m" q ".*")]
                          [(keyword "~*") :o.oname (str ".*?\\m" q ".*")]
                          (when (not-empty cat-ids)	
-                           [:in :pc.cat_id cat-ids])]]
-                :order-by [[:nscore :desc]]
+                           [:in :pc.cat_id cat-ids])]
+                        (when (features "product-profile-completed")
+                          [:> :pscore 0])]
+                :order-by [[:pscore :desc] [:nscore :desc]]
                 ;; this will be paginated on the frontend
                 :limit 500})
           pids (map :pid ids)]
@@ -561,92 +567,3 @@ Round URL: https://app.vetd.com/b/rounds/%s"
                    :renewal_reminder renewal-reminder
                    :rating rating}
                   :stack_items))
-
-(defn resp-field-empty? [{:keys [nval sval dval jval]}]
-  (and (empty? sval)
-       (nil? nval)
-       (nil? dval)
-       (nil? jval)))
-
-(defn calc-product-profile-score-by-doc-id
-  [product-profile-doc-id]
-  (let [[head :as fields] (db/hs-query
-                           {:select [[:prompt_id :prompt-id]
-                                     [:prompt_term :prompt-term]
-                                     [:prompt_field_fname :prompt-field-fname]
-                                     [:resp_field_nval :nval]
-                                     [:resp_field_sval :sval]
-                                     [:resp_field_dval :dval]
-                                     [:resp_field_jval :jval]]
-                            :from [:docs_to_fields]
-                            :where [:= :doc_id product-profile-doc-id]})
-        {:keys [product-id]} head]
-    (if (->> fields
-             (remove resp-field-empty?)
-             empty?)
-      0.0
-      1.0)))
-
-(defn update-product-profile-score
-  [product-id product-profile-doc-id]
-  (db/update-any! {:id product-id
-                   :profile_score
-                   (if product-profile-doc-id
-                     (calc-product-profile-score-by-doc-id product-profile-doc-id)
-                     0.0)
-                   :profile_score_updated (ut/now-ts)}
-                  :products))
-
-(defn select-products-to-update-profile-score [limit]
-  (db/hs-query
-   {:select [[:p.id :product-id]
-             [:%max.dtf.doc_id :doc-id]]
-    :from [[:products :p]]
-    :left-join [[:docs_to_fields :dtf]
-                [:and
-                 [:= :dtf.doc_subject :p.id]
-                 [:= :dtf.doc_dtype "product-profile1"]]]
-    :where [:or
-            [:= :p.profile_score nil]
-            [:< :p.profile_score_updated :dtf.doc_updated]
-            [:< :p.profile_score_updated :dtf.response_updated]
-            [:< :p.profile_score_updated :dtf.resp_field_updated]]
-    :group-by [:p.id]
-    :limit limit}))
-
-(defn random-select-products-to-update-profile-score
-  [& [n]]
-  (some-> (or n 10)
-          select-products-to-update-profile-score
-          not-empty
-          shuffle
-          first))
-
-(defn random-update-product-profile-score [& [n]]
-  (if-let [{:keys [product-id doc-id]}
-           (-> (or n 10)
-               random-select-products-to-update-profile-score
-               not-empty)]
-    (first (update-product-profile-score product-id doc-id))
-    0))
-
-(defn update-all-missing-product-profile-scores* [a b]
-  (->> (range a)
-       (pmap (fn [_]
-               (random-update-product-profile-score b)))
-       (reduce + 0)))
-
-(defn update-all-missing-product-profile-scores []
-  (try
-    (loop [done 0
-           n (update-all-missing-product-profile-scores* 1000 50)]
-      (log/info (format "Updated %d missing product profile scores so far..." done))
-      (if (zero? n)
-        done
-        (let [n' (try (update-all-missing-product-profile-scores* 1000 50)
-                      (catch Throwable e
-                        (Thread/sleep 10000)
-                        (update-all-missing-product-profile-scores* 100 10)))]
-          (recur (+ done n) n'))))
-    (catch Throwable e
-      (com/log-error e))))
