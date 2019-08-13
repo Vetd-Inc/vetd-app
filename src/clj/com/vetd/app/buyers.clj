@@ -627,54 +627,7 @@ Round URL: https://app.vetd.com/b/rounds/%s"
            (-> (or n 10)
                random-select-products-to-update-profile-score
                not-empty)]
-    ))
+    (update-product-profile-score product-id doc-id)
+    false))
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#_ (clojure.pprint/pprint (random-update-product-profile-score))
