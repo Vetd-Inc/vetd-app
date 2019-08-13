@@ -946,7 +946,7 @@ $cell-height: 201px;
 
 /* Stacks */
 .department {
-  padding: 0 14px 14px 14px;
+  padding: 4px 0 14px 0;
   margin-bottom: 14px;
   background-image: radial-gradient(at center 100px, #f5f5f5 0px, #eee 120px);
   background-repeat: no-repeat;
@@ -955,7 +955,7 @@ $cell-height: 201px;
   h2 {
     position: sticky;
     top: 0px;
-    padding: 14px 0;
+    padding: 10px 14px 14px 14px;
     margin-bottom: 0;
     background-image: radial-gradient(at center 100px, #f5f5f5 0px, #eee 120px);
     background-repeat: no-repeat;
@@ -963,14 +963,14 @@ $cell-height: 201px;
   }
 
   .scroll-anchor {
-    // position: absolute;
-    // top: -40px;
+    position: relative;
+    top: -73px;
   }
 
   .item {
-    // width: auto !important;
-    // margin-right: 14px !important;
-    // margin-left: 14px !important;
+    width: auto !important;
+    margin-right: 14px !important;
+    margin-left: 14px !important;
     padding: 10px !important;
 
     .product-logo {
@@ -980,25 +980,6 @@ $cell-height: 201px;
       max-width: $edge;
       max-height: $edge;
     }
-  }
-}
-.role {
-  padding: 0 0 14px 0;
-  margin-bottom: 14px;
-  background: #e0e0e0;
-  border-radius: 4px;
-
-  h4 {
-    // position: sticky;
-    // top: 58px;
-    height: 58px;
-    line-height: 30px;
-    padding: 14px 14px;
-    margin-bottom: 0;
-    background: #e0e0e0;
-    z-index: 1002;
-    border-top-left-radius: 4px;
-    border-top-right-radius: 4px;
   }
 }
 
