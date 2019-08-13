@@ -5,4 +5,5 @@
 #_(.setLevel ( org.slf4j.LoggerFactory/getLogger org.slf4j.Logger/ROOT_LOGGER_NAME)
              ch.qos.logback.classic.Level/INFO)
 
-(core/-main)
+(future
+  (core/-main))
