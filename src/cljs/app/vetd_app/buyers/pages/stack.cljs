@@ -9,8 +9,7 @@
             [clojure.string :as s]))
 
 (def init-db
-  {:filter {:status #{}}
-   :loading? true
+  {:loading? true
    ;; ID's of stack items that are in edit mode
    :items-editing #{}})
 
@@ -18,12 +17,6 @@
 (rf/reg-sub
  :b/stack
  (fn [{:keys [stack]}] stack))
-
-(rf/reg-sub
- :b/stack.filter
- :<- [:b/stack]
- (fn [{:keys [filter]}]
-   filter))
 
 (rf/reg-sub
  :b/stack.items-editing
@@ -47,16 +40,6 @@
     :analytics/page {:name "Buyers Stack"}}))
 
 (rf/reg-event-fx
- :b/stack.filter.add
- (fn [{:keys [db]} [_ group value]]
-   {:db (update-in db [:stack :filter group] conj value)}))
-
-(rf/reg-event-fx
- :b/stack.filter.remove
- (fn [{:keys [db]} [_ group value]]
-   {:db (update-in db [:stack :filter group] disj value)}))
-
-(rf/reg-event-fx
  :b/stack.add-items
  (fn [{:keys [db]} [_ product-ids]]
    (let [buyer-id (util/db->current-org-id db)]
@@ -66,7 +49,6 @@
       :analytics/track {:event "Products Added"
                         :props {:category "Stack"
                                 :label buyer-id}}})))
-
 
 ;;;; Components
 (defn c-add-product-form
@@ -225,30 +207,6 @@
                    }]]]
                ]]])]]))))
 
-(defn c-status-filter-checkboxes
-  [stack selected-statuses]
-  (let [all-possible-statuses ["current" "previous"]
-        statuses (->> stack
-                      (group-by :status)
-                      (merge (zipmap all-possible-statuses (repeatedly vec))))]
-    [:<>
-     (for [[status rs] statuses]
-       ^{:key status} 
-       [:> ui/Checkbox
-        {:label (str (-> status
-                         (s/replace  #"-" " ")
-                         util/capitalize-words) 
-                     " (" (count rs) ")")
-         :checked (boolean (selected-statuses status))
-         :on-change (fn [_ this]
-                      (if (.-checked this)
-                        (rf/dispatch [:b/stack.filter.add "status" status])
-                        (rf/dispatch [:b/stack.filter.remove "status" status])))}])]))
-
-(defn filter-stack
-  [stack selected-statuses]
-  (filter #(selected-statuses (:status %)) stack))
-
 (defn c-no-stack-items []
   (let [group-ids& (rf/subscribe [:group-ids])]
     (fn []
@@ -295,17 +253,11 @@
         (fn []
           (if (= :loading @stack&)
             [cc/c-loader]
-            (let [unfiltered-stack (:stack-items @stack&)
-                  selected-statuses (:status @filter&)]
-              
+            (let [unfiltered-stack (:stack-items @stack&)]
               [:div.container-with-sidebar
                [:div.sidebar
                 [:> ui/Segment
                  [c-add-product-button]]
-                ;; [:> ui/Segment
-                ;;  [:h2 "Filter"]
-                ;;  [:h4 "Status"]
-                ;;  [c-status-filter-checkboxes unfiltered-stack selected-statuses]]
                 [:> ui/Segment {:class "top-categories"}
                  [:h4 "Jump To"]
                  [:div
@@ -324,7 +276,8 @@
                    "Previous Stack"]]]]
                [:div.inner-container
                 [:> ui/Segment {:class "detail-container"}
-                 [:h1 "Chooser's Stack"]
+                 [:h1 {:style {:padding-bottom 7}}
+                  "Chooser's Stack"]
                  "Add products to your stack to keep track of renewals, get recommendations, and share with "
                  (if (not-empty @group-ids&)
                    "your community"
@@ -334,23 +287,23 @@
                  [:h2 "Current Stack"]
                  [:span.scroll-anchor {:ref (fn [this] (swap! jump-link-refs assoc "current" this))}] ; anchor
                  [:> ui/ItemGroup {:class "results"}
-                  (let [ ;; stack (cond-> unfiltered-stack
-                        ;;         (seq selected-statuses) (filter-stack selected-statuses))
-                        stack (take 9 unfiltered-stack)
-                        ]
-                    (for [stack-item stack]
-                      ^{:key (:id stack-item)}
-                      [c-stack-item stack-item]))]]
+                  (let [stack (filter (comp (partial = "current") :status) unfiltered-stack)]
+                    (if (seq stack)
+                      (for [stack-item stack]
+                        ^{:key (:id stack-item)}
+                        [c-stack-item stack-item])
+                      [:div {:style {:margin-left 14
+                                     :margin-right 14}}
+                       "You don't have any products in your current stack."]))]]
                 [:div.department
                  [:h2 "Previous Stack"]
                  [:span.scroll-anchor {:ref (fn [this] (swap! jump-link-refs assoc "previous" this))}] ; anchor
                  [:> ui/ItemGroup {:class "results"}
-                  (let [ ;; stack (cond-> unfiltered-stack
-                        ;;         (seq selected-statuses) (filter-stack selected-statuses))
-                        stack (take 9 unfiltered-stack)
-                        ]
-                    (for [stack-item stack]
-                      ^{:key (:id stack-item)}
-                      [c-stack-item stack-item]))]]
-                ]
-               ])))))))
+                  (let [stack (filter (comp (partial = "previous") :status) unfiltered-stack)]
+                    (if (seq stack)
+                      (for [stack-item stack]
+                        ^{:key (:id stack-item)}
+                        [c-stack-item stack-item])
+                      [:div {:style {:margin-left 14
+                                     :margin-right 14}}
+                       "You haven't listed any previously used products."]))]]]])))))))
