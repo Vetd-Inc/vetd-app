@@ -627,7 +627,26 @@ Round URL: https://app.vetd.com/b/rounds/%s"
            (-> (or n 10)
                random-select-products-to-update-profile-score
                not-empty)]
-    (update-product-profile-score product-id doc-id)
-    false))
+    (first (update-product-profile-score product-id doc-id))
+    0))
 
-#_ (clojure.pprint/pprint (random-update-product-profile-score))
+(defn update-all-missing-product-profile-scores* [a b]
+  (->> (range a)
+       (pmap (fn [_]
+               (random-update-product-profile-score b)))
+       (reduce + 0)))
+
+(defn update-all-missing-product-profile-scores []
+  (try
+    (loop [done 0
+           n (update-all-missing-product-profile-scores* 1000 50)]
+      (log/info (format "Updated %d missing product profile scores so far..." done))
+      (if (zero? n)
+        done
+        (let [n' (try (update-all-missing-product-profile-scores* 1000 50)
+                      (catch Throwable e
+                        (Thread/sleep 10000)
+                        (update-all-missing-product-profile-scores* 100 10)))]
+          (recur (+ done n) n'))))
+    (catch Throwable e
+      (com/log-error e))))

@@ -1,5 +1,6 @@
 (ns com.vetd.app.core
   (:require [com.vetd.app.server :as svr]
+            [com.vetd.app.buyers :as buyers]
             [com.vetd.app.env :as env]
             [com.vetd.app.common :as com]
             [clojure.core.async :as a]
@@ -141,6 +142,10 @@
       (com/log-error t)))
   (try
     (try-start-nrepl-server)
+    (catch Throwable t
+      (com/log-error t)))
+  (try
+    (buyers/update-all-missing-product-profile-scores)
     (catch Throwable t
       (com/log-error t))))
 
