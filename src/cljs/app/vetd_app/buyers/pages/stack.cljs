@@ -44,14 +44,19 @@
  (fn [{:keys [db]} [_ product-ids]]
    (let [buyer-id (util/db->current-org-id db)]
      {:ws-send {:payload {:cmd :b/stack.add-items
+                          :return {:handler :b/stack.add-items.return}
                           :buyer-id buyer-id
                           :product-ids product-ids}}
-      :db (assoc-in db
-                    [:stack :items-editing]
-                    (set (concat (get-in db [:stack :items-editing]) product-ids)))
       :analytics/track {:event "Products Added"
                         :props {:category "Stack"
                                 :label buyer-id}}})))
+
+(rf/reg-event-fx
+ :b/stack.add-items.return
+ (fn [{:keys [db]} [_ stack-ids]]
+   {:db (assoc-in db
+                  [:stack :items-editing]
+                  (set (concat (get-in db [:stack :items-editing]) stack-ids)))}))
 
 (rf/reg-event-fx
  :b/stack.edit-item
@@ -139,7 +144,10 @@
 (defn c-stack-item
   [stack-item]
   (let [stack-items-editing?& (rf/subscribe [:b/stack.items-editing])
-        bad-input& (rf/subscribe [:bad-input])]
+        bad-input& (rf/subscribe [:bad-input])
+        subscription-type (r/atom "")
+        price (atom "")
+        renewal-date (atom "")]
     (fn [{:keys [id product] :as stack-item}]
       (let [{product-id :id
              product-idstr :idstr
@@ -149,25 +157,76 @@
                               first
                               :response-prompts
                               (partial docs/get-value-by-term))]
-        [:> ui/Item {:on-click #(rf/dispatch [:b/nav-product-detail product-idstr])}
+        [:> ui/Item {:class (when (@stack-items-editing?& id) "editing")
+                     :on-click #(when-not (@stack-items-editing?& id)
+                                  (rf/dispatch [:b/nav-product-detail product-idstr]))}
          [bc/c-product-logo logo]
          [:> ui/ItemContent
           [:> ui/ItemHeader
            pname " " [:small " by " (:oname vendor)]]
-          (if (@stack-items-editing?& product-id)
+          (if (@stack-items-editing?& id)
             [:> ui/Form
-             [:> ui/FormField {:error (= @bad-input& (keyword (str "edit-stack-item-" id ".price")))}
-              [:> ui/Input
-               {:placeholder "Price"
-                :fluid true
-                ;; :on-change #(reset! details& (-> % .-target .-value))
-                :action (r/as-element
-                         [:> ui/Button { ;; :on-click #(rf/dispatch [:g/add-discount-to-group.submit
-                                        ;;                          (:id group)
-                                        ;;                          (js->clj @product&)
-                                        ;;                          @details&])
-                                        :color "blue"}
-                          "Save"])}]]]
+             [:> ui/FormGroup
+              [:> ui/FormField {:width 4}
+               [:label "Subscription Type"]
+               
+               ;; [:> ui/Checkbox {:radio true
+               ;;                  :label "Annual"
+               ;;                  :name "subscriptionType"
+               ;;                  :value "annual"
+               ;;                  :checked (= @subscription-type "annual")
+               ;;                  :on-change (fn [_ this] (reset! subscription-type (.-value this)))}]
+               ;; [:> ui/Checkbox {:radio true
+               ;;                  :label "Monthly"
+               ;;                  :name "subscriptionType"
+               ;;                  :value "monthly"
+               ;;                  :checked (= @subscription-type "monthly")
+               ;;                  :on-change (fn [_ this] (reset! subscription-type (.-value this)))}]
+               ;; [:> ui/Checkbox {:radio true
+               ;;                  :label "Other"
+               ;;                  :name "subscriptionType"
+               ;;                  :value "other"
+               ;;                  :checked (= @subscription-type "other")
+               ;;                  :on-change (fn [_ this] (reset! subscription-type (.-value this)))}]
+               
+               [:> ui/Dropdown {:selection true
+                                :defaultValue "Monthly"
+                                :options (ui/as-dropdown-options ["Monthly" "Annual"])
+                                :on-change (fn [_ this] (reset! subscription-type (.-value this)))}] 
+               
+               ]
+              [:> ui/FormField {:width 1}]
+              [:> ui/FormField {:width 5}
+               [:label "Price"]
+               [:> ui/Input {:labelPosition "right"}
+                [:> ui/Label {:basic true} "$"]
+                [:input {:type "number"
+                         :style {:width 0} ; idk why 0 width works, but it does
+                         :on-change #(reset! price (-> % .-target .-value))}]
+                [:> ui/Label {:basic true} (str " per " (if (= @subscription-type "Annual") "year" "month"))]
+                ]]
+              [:> ui/FormField {:width 1}]
+              (when (= @subscription-type "Annual")
+                [:> ui/FormField {:width 5}
+                 [:label "Renewal Date"]
+                 [:> ui/Input {:type "number"
+                               :on-change #(reset! renewal-date (-> % .-target .-value))
+                               }
+                  ]])
+              ]
+             ;; [:> ui/FormField ;; {:error (= @bad-input& (keyword (str "edit-stack-item-" id ".price")))}
+             ;;  [:> ui/Input
+             ;;   {:placeholder "Price"
+             ;;    :fluid true
+             ;;    ;; :on-change #(reset! details& (-> % .-target .-value))
+             ;;    :action (r/as-element
+             ;;             [:> ui/Button { ;; :on-click #(rf/dispatch [:g/add-discount-to-group.submit
+             ;;                            ;;                          (:id group)
+             ;;                            ;;                          (js->clj @product&)
+             ;;                            ;;                          @details&])
+             ;;                            :color "blue"}
+             ;;              "Save"])}]]
+             ]
             [:<>
              
              ;; [:> ui/ItemMeta

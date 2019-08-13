@@ -967,15 +967,25 @@ $cell-height: 201px;
     top: -73px;
   }
 
-  .item {
+  & > .results > .item {
     width: auto !important;
     margin-right: 14px !important;
     margin-left: 14px !important;
     padding: 10px !important;
     animation: fade-in-down 0.5s ease-out;
 
+    &.editing {
+      &:hover {
+        transform: none !important;
+        // box-shadow: inherit !important;
+      }
+      &:active {
+        transform: none !important;
+      }
+    }
+
     .product-logo {
-      $edge: 75px;
+      $edge: 90px;
       min-width: $edge;
       min-height: $edge;
       max-width: $edge;

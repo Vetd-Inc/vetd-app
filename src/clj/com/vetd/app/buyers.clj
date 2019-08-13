@@ -526,20 +526,20 @@ Round URL: https://app.vetd.com/b/rounds/%s"
   [{:keys [product-id buyer-id status price-amount price-period
            renewal-date renewal-reminder rating]}]
   (let [[id idstr] (ut/mk-id&str)]
-    (-> (db/insert! :stack_items
-                    {:id id
-                     :idstr idstr
-                     :created (ut/now-ts)
-                     :updated (ut/now-ts)
-                     :product_id product-id
-                     :buyer_id buyer-id
-                     :status status
-                     :price_amount price-amount
-                     :price_period price-period
-                     :renewal_date renewal-date
-                     :renewal_reminder renewal-reminder
-                     :rating rating})
-        first)))
+    (db/insert! :stack_items
+                {:id id
+                 :idstr idstr
+                 :created (ut/now-ts)
+                 :updated (ut/now-ts)
+                 :product_id product-id
+                 :buyer_id buyer-id
+                 :status status
+                 :price_amount price-amount
+                 :price_period price-period
+                 :renewal_date renewal-date
+                 :renewal_reminder renewal-reminder
+                 :rating rating})
+    id))
 
 (defmethod com/handle-ws-inbound :create-stack-item
   [req ws-id sub-fn]
@@ -547,12 +547,13 @@ Round URL: https://app.vetd.com/b/rounds/%s"
 
 (defmethod com/handle-ws-inbound :b/stack.add-items
   [{:keys [buyer-id product-ids]} ws-id sub-fn]
-  (when-not (empty? product-ids)
-    (doseq [product-id product-ids]
-      (insert-stack-item {:buyer-id buyer-id
-                          :product-id product-id
-                          :status "current"})))
-  {})
+  (if-not (empty? product-ids)
+    (doall
+     (map #(insert-stack-item {:buyer-id buyer-id
+                               :product-id %
+                               :status "current"})
+          product-ids))
+    {}))
 
 (defmethod com/handle-ws-inbound :delete-stack-item
   [{:keys [stack-item-id]} ws-id sub-fn]
