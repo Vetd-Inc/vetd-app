@@ -263,7 +263,7 @@
                                    :style {:margin-top 13}}
                   [:label "Renewal Date"]
                   [:> ui/Input {:placeholder "YYYY-MM-DD"
-                                :defaultValue (subs renewal-date 0 10) ; TODO fragile (expects particular string format of date from server)
+                                :defaultValue (when renewal-date (subs renewal-date 0 10)) ; TODO fragile (expects particular string format of date from server)
                                 :on-change #(reset! renewal-date& (-> % .-target .-value))
                                 }
                    ]])
@@ -322,6 +322,10 @@
                     (subs renewal-date 0 10) ; TODO fragile (expects particular string format of date from server)
                     [:> ui/Checkbox {:style {:margin-left 10
                                              :font-size 12}
+                                     :on-click (fn [e]
+                                                 (.stopPropagation e))
+                                     :on-change (fn [_ this]
+                                                  (println (.-checked this)))
                                      :label "Remind?"}]])]
                 [:> ui/GridColumn {:width 5
                                    :style {:text-align "right"}}
