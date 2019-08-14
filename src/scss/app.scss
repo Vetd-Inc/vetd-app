@@ -984,8 +984,19 @@ $cell-height: 201px;
       }
     }
 
+    .fields {
+      margin: 0;
+
+      .field {
+        padding: 0;
+      }
+    }
+    .checkbox {
+      display: block;
+    }
+
     .product-logo {
-      $edge: 90px;
+      $edge: 100px;
       min-width: $edge;
       min-height: $edge;
       max-width: $edge;

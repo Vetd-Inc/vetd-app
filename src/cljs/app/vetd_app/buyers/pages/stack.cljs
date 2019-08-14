@@ -141,13 +141,22 @@
                    "Add Product"
                    [:> ui/Icon {:name "plus"}]])}])))
 
+(defn c-subscription-type-checkbox
+  [s-type subscription-type&]
+  [:> ui/Checkbox {:radio true
+                   :name "subscriptionType"
+                   :label (s/capitalize s-type)
+                   :value s-type
+                   :checked (= @subscription-type& s-type)
+                   :on-change (fn [_ this] (reset! subscription-type& (.-value this)))}])
+
 (defn c-stack-item
   [stack-item]
   (let [stack-items-editing?& (rf/subscribe [:b/stack.items-editing])
         bad-input& (rf/subscribe [:bad-input])
-        subscription-type (r/atom "")
-        price (atom "")
-        renewal-date (atom "")]
+        subscription-type& (r/atom nil)
+        price& (atom "")
+        renewal-date& (atom "")]
     (fn [{:keys [id product] :as stack-item}]
       (let [{product-id :id
              product-idstr :idstr
@@ -164,64 +173,55 @@
          [:> ui/ItemContent
           
           [:> ui/ItemHeader
-           [:> ui/Label {;; :on-click #(rf/dispatch [:edit-field sym])
-                         :as "a"
-                         :style {:float "right"}}
-            [:> ui/Icon {:name "edit outline"}]
-            "Edit"]
-           [:> ui/Label {;; :on-click #(rf/dispatch [:edit-field sym])
-                         :as "a"
-                         :style {:float "right"}}
-            [:> ui/Icon {:name "edit outline"}]
-            "Move to Previous Stack"]
+           (if (@stack-items-editing?& id)
+             [:> ui/Label { ;; :on-click #(rf/dispatch [:edit-field sym])
+                           :color "blue"
+                           :as "a"
+                           :style {:float "right"}}
+              [:> ui/Icon {:name "check"}]
+              "Save Changes"]
+             [:<>
+              [:> ui/Label { ;; :on-click #(rf/dispatch [:edit-field sym])
+                            :as "a"
+                            :style {:float "right"}}
+               [:> ui/Icon {:name "edit outline"}]
+               "Edit"]
+              [:> ui/Label { ;; :on-click #(rf/dispatch [:edit-field sym])
+                            :as "a"
+                            :style {:float "right"}}
+               [:> ui/Icon {:name "caret down"}]
+               "Move"]])
            pname " " [:small " by " (:oname vendor)]]
           (if (@stack-items-editing?& id)
             [:> ui/Form
              [:> ui/FormGroup
-              [:> ui/FormField {:width 4}
+              [:> ui/FormField {:width 3}
                [:label "Subscription Type"]
-               
-               ;; [:> ui/Checkbox {:radio true
-               ;;                  :label "Annual"
-               ;;                  :name "subscriptionType"
-               ;;                  :value "annual"
-               ;;                  :checked (= @subscription-type "annual")
-               ;;                  :on-change (fn [_ this] (reset! subscription-type (.-value this)))}]
-               ;; [:> ui/Checkbox {:radio true
-               ;;                  :label "Monthly"
-               ;;                  :name "subscriptionType"
-               ;;                  :value "monthly"
-               ;;                  :checked (= @subscription-type "monthly")
-               ;;                  :on-change (fn [_ this] (reset! subscription-type (.-value this)))}]
-               ;; [:> ui/Checkbox {:radio true
-               ;;                  :label "Other"
-               ;;                  :name "subscriptionType"
-               ;;                  :value "other"
-               ;;                  :checked (= @subscription-type "other")
-               ;;                  :on-change (fn [_ this] (reset! subscription-type (.-value this)))}]
-               
-               [:> ui/Dropdown {:selection true
-                                :defaultValue "Monthly"
-                                :options (ui/as-dropdown-options ["Monthly" "Annual"])
-                                :on-change (fn [_ this] (reset! subscription-type (.-value this)))}] 
-               
+               (for [s-type ["annual" "monthly" "other"]]
+                 ^{:key s-type}
+                 [c-subscription-type-checkbox s-type subscription-type&])
+               ;; [:> ui/Dropdown {:selection true
+               ;;                  :defaultValue "Monthly"
+               ;;                  :options (ui/as-dropdown-options ["Monthly" "Annual"])
+               ;;                  :on-change (fn [_ this] (reset! subscription-type (.-value this)))}] 
                ]
               [:> ui/FormField {:width 1}]
-              [:> ui/FormField {:width 5}
-               [:label "Price"]
-               [:> ui/Input {:labelPosition "right"}
-                [:> ui/Label {:basic true} "$"]
-                [:input {:type "number"
-                         :style {:width 0} ; idk why 0 width works, but it does
-                         :on-change #(reset! price (-> % .-target .-value))}]
-                [:> ui/Label {:basic true} (str " per " (if (= @subscription-type "Annual") "year" "month"))]
-                ]]
+              (when @subscription-type&
+                [:> ui/FormField {:width 5}
+                 [:label (when (= @subscription-type& "other") "Estimated ") "Price"]
+                 [:> ui/Input {:labelPosition "right"}
+                  [:> ui/Label {:basic true} "$"]
+                  [:input {:type "number"
+                           :style {:width 0} ; idk why 0 width works, but it does
+                           :on-change #(reset! price& (-> % .-target .-value))}]
+                  [:> ui/Label {:basic true}
+                   " per " (if (#{"annual" "other"} @subscription-type&) "year" "month")]]])
               [:> ui/FormField {:width 1}]
-              (when (= @subscription-type "Annual")
+              (when (= @subscription-type& "annual")
                 [:> ui/FormField {:width 5}
                  [:label "Renewal Date"]
                  [:> ui/Input {:type "number"
-                               :on-change #(reset! renewal-date (-> % .-target .-value))
+                               :on-change #(reset! renewal-date& (-> % .-target .-value))
                                }
                   ]])
               ]
@@ -255,8 +255,8 @@
                  "Annual Renewal"]
                 [:> ui/GridColumn {:width 4}
                  "Your Rating"]
-                [:> ui/GridColumn {:width 4}
-                 "Currently Using?"]]
+                #_[:> ui/GridColumn {:width 4}
+                   "Currently Using?"]]
                [:> ui/GridRow {:style {:margin-top 6}}
                 [:> ui/GridColumn {:width 3}
                  "$90 / year"]
@@ -272,17 +272,17 @@
                                 :on-click (fn [e] (.stopPropagation e))
                                 :onRate (fn [_ this]
                                           (println (.-rating this)))}]]
-                [:> ui/GridColumn {:width 4}
-                 [:> ui/Checkbox
-                  {:toggle true
-                   ;; :checked (boolean (selected-statuses status))
-                   :on-click (fn [e] (.stopPropagation e))
-                   :on-change (fn [_ this]
-                                
-                                #_(if (.-checked this)
-                                    (rf/dispatch [:b/stack.filter.add "status" status])
-                                    (rf/dispatch [:b/stack.filter.remove "status" status])))
-                   }]]]
+                #_[:> ui/GridColumn {:width 4}
+                   [:> ui/Checkbox
+                    {:toggle true
+                     ;; :checked (boolean (selected-statuses status))
+                     :on-click (fn [e] (.stopPropagation e))
+                     :on-change (fn [_ this]
+                                  
+                                  #_(if (.-checked this)
+                                      (rf/dispatch [:b/stack.filter.add "status" status])
+                                      (rf/dispatch [:b/stack.filter.remove "status" status])))
+                     }]]]
                ]]])]]))))
 
 (defn c-no-stack-items []
