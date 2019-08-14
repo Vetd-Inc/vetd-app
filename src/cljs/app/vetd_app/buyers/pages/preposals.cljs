@@ -176,6 +176,7 @@
                                    [[:docs {:dtype "preposal"
                                             :to-org-id @org-id&
                                             :_order_by {:created :desc}
+                                            :_limit 15 ;; TODO infinite scrolling
                                             :deleted nil}
                                      [:id :idstr :title :result :reason
                                       [:product
