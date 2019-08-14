@@ -73,7 +73,7 @@
                                  :id id}
                         :stack-item-id id
                         ;; :status status
-                        :price-amount (js/parseFloat price-amount)
+                        :price-amount price-amount
                         :price-period price-period
                         :renewal-date renewal-date
                         ;; :renewal-reminder renewal-reminder
@@ -173,12 +173,14 @@
                    :on-change (fn [_ this] (reset! subscription-type& (.-value this)))}])
 
 (defn c-stack-item
-  [stack-item]
+  [{:keys [id rating price-amount price-period
+           renewal-date renewal-reminder
+           product] :as stack-item}]
   (let [stack-items-editing?& (rf/subscribe [:b/stack.items-editing])
         bad-input& (rf/subscribe [:bad-input])
-        subscription-type& (r/atom nil)
-        price& (atom nil)
-        renewal-date& (atom nil)]
+        subscription-type& (r/atom price-period)
+        price& (atom price-amount)
+        renewal-date& (atom renewal-date)]
     (fn [{:keys [id rating price-amount price-period
                  renewal-date renewal-reminder
                  product] :as stack-item}]
@@ -246,8 +248,9 @@
                   [:label (when (= @subscription-type& "other") "Estimated ") "Price"]
                   [:> ui/Input {:labelPosition "right"}
                    [:> ui/Label {:basic true} "$"]
-                   [:input {:type "number"
+                   [:input {;; :type "number"
                             :style {:width 0} ; idk why 0 width works, but it does
+                            :defaultValue @price&
                             :on-change #(reset! price& (-> % .-target .-value))}]
                    [:> ui/Label {:basic true}
                     " per " (if (#{"annual" "other"} @subscription-type&) "year" "month")]]])

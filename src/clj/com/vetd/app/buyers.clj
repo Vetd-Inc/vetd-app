@@ -570,7 +570,10 @@ Round URL: https://app.vetd.com/b/rounds/%s"
                          (when status
                            {:status status})
                          (when price-amount
-                           {:price_amount price-amount})
+                           {:price_amount (-> price-amount
+                                              str
+                                              (.replaceAll "[^0-9.]" "")
+                                              ut/->double)})
                          (when price-period
                            {:price_period price-period})
                          (when renewal-date
