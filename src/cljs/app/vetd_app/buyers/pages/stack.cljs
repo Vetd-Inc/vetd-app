@@ -180,7 +180,8 @@
         bad-input& (rf/subscribe [:bad-input])
         subscription-type& (r/atom price-period)
         price& (atom price-amount)
-        renewal-date& (atom renewal-date)]
+        renewal-date& (atom renewal-date)
+        rating& (r/atom rating)]
     (fn [{:keys [id rating price-amount price-period
                  renewal-date renewal-reminder
                  product] :as stack-item}]
@@ -217,6 +218,7 @@
                [:> ui/Icon {:name "edit outline"}]
                "Edit"]
               [:> ui/Label { ;; :on-click #(rf/dispatch [:edit-field sym])
+                            :color "white"
                             :as "a"
                             :style {:float "right"}}
                [:> ui/Icon {:name "caret down"}]
@@ -230,7 +232,8 @@
              [:span] ; HACK to avoid flash of Form upon Save Changes
              [:> ui/Form
               [:> ui/FormGroup
-               [:> ui/FormField {:width 4}
+               [:> ui/FormField {:class "subscription-types"
+                                 :width 4}
                 [:label "Subscription Type"]
                 (for [s-type ["annual" "monthly" "other"]]
                   ^{:key s-type}
@@ -260,6 +263,7 @@
                                    :style {:margin-top 13}}
                   [:label "Renewal Date"]
                   [:> ui/Input {:placeholder "YYYY-MM-DD"
+                                :defaultValue (subs renewal-date 0 10) ; TODO fragile (expects particular string format of date from server)
                                 :on-change #(reset! renewal-date& (-> % .-target .-value))
                                 }
                    ]])
@@ -292,10 +296,11 @@
                 [:> ui/GridColumn {:width 3}
                  (when price-amount
                    "Price")]
-                [:> ui/GridColumn {:width 5}
+                [:> ui/GridColumn {:width 8}
                  (when renewal-date
                    "Annual Renewal")]
-                [:> ui/GridColumn {:width 4}
+                [:> ui/GridColumn {:width 5
+                                   :style {:text-align "right"}}
                  "Your Rating"]
                 #_[:> ui/GridColumn {:width 4}
                    "Currently Using?"]]
@@ -311,20 +316,24 @@
                          "annual" "year"
                          "other" "year"
                          "monthly" "month")])])]
-                [:> ui/GridColumn {:width 5}
+                [:> ui/GridColumn {:width 8}
                  (when renewal-date
                    [:<>
-                    renewal-date
-                    [:> ui/Checkbox {:style {:margin-left 15
+                    (subs renewal-date 0 10) ; TODO fragile (expects particular string format of date from server)
+                    [:> ui/Checkbox {:style {:margin-left 10
                                              :font-size 12}
                                      :label "Remind?"}]])]
-                [:> ui/GridColumn {:width 4}
-                 [:> ui/Rating {:maxRating 5
-                                :size "huge"
+                [:> ui/GridColumn {:width 5
+                                   :style {:text-align "right"}}
+                 [:> ui/Rating {:class (when-not @rating& "not-rated")
                                 ;; :icon "star"
-                                :on-click (fn [e] (.stopPropagation e))
+                                :maxRating 5
+                                :size "large"
+                                :rating @rating&
+                                :on-click (fn [e]
+                                            (.stopPropagation e))
                                 :onRate (fn [_ this]
-                                          (println (.-rating this)))}]]
+                                          (reset! rating& (.-rating this)))}]]
                 #_[:> ui/GridColumn {:width 4}
                    [:> ui/Checkbox
                     {:toggle true

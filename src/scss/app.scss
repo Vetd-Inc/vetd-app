@@ -996,6 +996,10 @@ $cell-height: 201px;
       }
     }
 
+    .ui.rating.not-rated .icon:before {
+      font-family: 'outline-icons' !important;
+      // color: #32abde !important;
+    }
     
 
     .fields {
@@ -1006,7 +1010,7 @@ $cell-height: 201px;
         padding: 0;
       }
     }
-    .checkbox {
+    .subscription-types .checkbox {
       display: block;
     }
 

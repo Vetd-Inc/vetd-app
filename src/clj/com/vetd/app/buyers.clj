@@ -7,6 +7,7 @@
             [com.vetd.app.util :as ut]
             [com.vetd.app.docs :as docs]
             [taoensso.timbre :as log]
+            [clj-time.coerce :as tc]
             [clojure.string :as s]))
 
 (defn product-id->name
@@ -577,7 +578,9 @@ Round URL: https://app.vetd.com/b/rounds/%s"
                          (when price-period
                            {:price_period price-period})
                          (when renewal-date
-                           {:renewal_date renewal-date})
+                           {:renewal_date (-> renewal-date
+                                              tc/to-long
+                                              java.sql.Timestamp.)})
                          (when renewal-reminder
                            {:renewal_reminder renewal-reminder})
                          (when rating
