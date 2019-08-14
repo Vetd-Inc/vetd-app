@@ -53,15 +53,37 @@
 
 (rf/reg-event-fx
  :b/stack.add-items.return
- (fn [{:keys [db]} [_ stack-ids]]
+ (fn [{:keys [db]} [_ stack-item-ids]]
    {:db (assoc-in db
                   [:stack :items-editing]
-                  (set (concat (get-in db [:stack :items-editing]) stack-ids)))}))
+                  (set (concat (get-in db [:stack :items-editing]) stack-item-ids)))}))
 
 (rf/reg-event-fx
  :b/stack.edit-item
- (fn [{:keys [db]} [_ product-id]]
-   {:db (update-in db [:stack :items-editing] conj product-id)}))
+ (fn [{:keys [db]} [_ id]]
+   {:db (update-in db [:stack :items-editing] conj id)}))
+
+(rf/reg-event-fx
+ :b/stack.save-item
+ (fn [{:keys [db]} [_ {:keys [id status rating
+                              price-amount price-period
+                              renewal-date renewal-reminder]}]]
+   {:ws-send {:payload {:cmd :b/stack.update-item
+                        :return {:handler :b/stack.save-item.return
+                                 :id id}
+                        :stack-item-id id
+                        ;; :status status
+                        :price-amount (js/parseFloat price-amount)
+                        :price-period price-period
+                        :renewal-date renewal-date
+                        ;; :renewal-reminder renewal-reminder
+                        ;; :rating rating
+                        }}}))
+
+(rf/reg-event-fx
+ :b/stack.save-item.return
+ (fn [{:keys [db]} [_ _ {{:keys [id]} :return}]]
+   {:db (update-in db [:stack :items-editing] disj id)}))
 
 ;;;; Components
 (defn c-add-product-form
@@ -155,9 +177,11 @@
   (let [stack-items-editing?& (rf/subscribe [:b/stack.items-editing])
         bad-input& (rf/subscribe [:bad-input])
         subscription-type& (r/atom nil)
-        price& (atom "")
-        renewal-date& (atom "")]
-    (fn [{:keys [id product] :as stack-item}]
+        price& (atom nil)
+        renewal-date& (atom nil)]
+    (fn [{:keys [id rating price-amount price-period
+                 renewal-date renewal-reminder
+                 product] :as stack-item}]
       (let [{product-id :id
              product-idstr :idstr
              :keys [pname short-desc logo 
@@ -171,17 +195,21 @@
                                   (rf/dispatch [:b/nav-product-detail product-idstr]))}
          [bc/c-product-logo logo]
          [:> ui/ItemContent
-          
           [:> ui/ItemHeader
            (if (@stack-items-editing?& id)
-             [:> ui/Label { ;; :on-click #(rf/dispatch [:edit-field sym])
+             [:> ui/Label {:on-click #(rf/dispatch [:b/stack.save-item {:id id
+                                                                        :price-amount @price&
+                                                                        :price-period @subscription-type&
+                                                                        :renewal-date @renewal-date&}])
                            :color "blue"
                            :as "a"
                            :style {:float "right"}}
               [:> ui/Icon {:name "check"}]
               "Save Changes"]
              [:<>
-              [:> ui/Label { ;; :on-click #(rf/dispatch [:edit-field sym])
+              [:> ui/Label {:on-click (fn [e]
+                                        (.stopPropagation e)
+                                        (rf/dispatch [:b/stack.edit-item id]))
                             :as "a"
                             :style {:float "right"}}
                [:> ui/Icon {:name "edit outline"}]
@@ -192,52 +220,61 @@
                [:> ui/Icon {:name "caret down"}]
                "Move"]])
            pname " " [:small " by " (:oname vendor)]]
-          (if (@stack-items-editing?& id)
-            [:> ui/Form
-             [:> ui/FormGroup
-              [:> ui/FormField {:width 3}
-               [:label "Subscription Type"]
-               (for [s-type ["annual" "monthly" "other"]]
-                 ^{:key s-type}
-                 [c-subscription-type-checkbox s-type subscription-type&])
-               ;; [:> ui/Dropdown {:selection true
-               ;;                  :defaultValue "Monthly"
-               ;;                  :options (ui/as-dropdown-options ["Monthly" "Annual"])
-               ;;                  :on-change (fn [_ this] (reset! subscription-type (.-value this)))}] 
+          [:> ui/Transition {:animation "fade"
+                             :duration {:show 1000
+                                        :hide 0}
+                             :visible (@stack-items-editing?& id)}
+           (if-not (@stack-items-editing?& id)
+             [:span] ; HACK to avoid flash of Form upon Save Changes
+             [:> ui/Form
+              [:> ui/FormGroup
+               [:> ui/FormField {:width 4}
+                [:label "Subscription Type"]
+                (for [s-type ["annual" "monthly" "other"]]
+                  ^{:key s-type}
+                  [c-subscription-type-checkbox s-type subscription-type&])
+                ;; [:> ui/Dropdown {:selection true
+                ;;                  :defaultValue "Monthly"
+                ;;                  :options (ui/as-dropdown-options ["Monthly" "Annual"])
+                ;;                  :on-change (fn [_ this] (reset! subscription-type& (.-value this)))}]
+                
+                ]
+               
+               (when @subscription-type&
+                 [:> ui/FormField {:width 5
+                                   :style {:margin-top 13}}
+                  [:label (when (= @subscription-type& "other") "Estimated ") "Price"]
+                  [:> ui/Input {:labelPosition "right"}
+                   [:> ui/Label {:basic true} "$"]
+                   [:input {:type "number"
+                            :style {:width 0} ; idk why 0 width works, but it does
+                            :on-change #(reset! price& (-> % .-target .-value))}]
+                   [:> ui/Label {:basic true}
+                    " per " (if (#{"annual" "other"} @subscription-type&) "year" "month")]]])
+               [:> ui/FormField {:width 1}]
+               (when (= @subscription-type& "annual")
+                 [:> ui/FormField {:width 3
+                                   :style {:margin-top 13}}
+                  [:label "Renewal Date"]
+                  [:> ui/Input {:placeholder "YYYY-MM-DD"
+                                :on-change #(reset! renewal-date& (-> % .-target .-value))
+                                }
+                   ]])
                ]
-              [:> ui/FormField {:width 1}]
-              (when @subscription-type&
-                [:> ui/FormField {:width 5}
-                 [:label (when (= @subscription-type& "other") "Estimated ") "Price"]
-                 [:> ui/Input {:labelPosition "right"}
-                  [:> ui/Label {:basic true} "$"]
-                  [:input {:type "number"
-                           :style {:width 0} ; idk why 0 width works, but it does
-                           :on-change #(reset! price& (-> % .-target .-value))}]
-                  [:> ui/Label {:basic true}
-                   " per " (if (#{"annual" "other"} @subscription-type&) "year" "month")]]])
-              [:> ui/FormField {:width 1}]
-              (when (= @subscription-type& "annual")
-                [:> ui/FormField {:width 5}
-                 [:label "Renewal Date"]
-                 [:> ui/Input {:type "number"
-                               :on-change #(reset! renewal-date& (-> % .-target .-value))
-                               }
-                  ]])
-              ]
-             ;; [:> ui/FormField ;; {:error (= @bad-input& (keyword (str "edit-stack-item-" id ".price")))}
-             ;;  [:> ui/Input
-             ;;   {:placeholder "Price"
-             ;;    :fluid true
-             ;;    ;; :on-change #(reset! details& (-> % .-target .-value))
-             ;;    :action (r/as-element
-             ;;             [:> ui/Button { ;; :on-click #(rf/dispatch [:g/add-discount-to-group.submit
-             ;;                            ;;                          (:id group)
-             ;;                            ;;                          (js->clj @product&)
-             ;;                            ;;                          @details&])
-             ;;                            :color "blue"}
-             ;;              "Save"])}]]
-             ]
+              ;; [:> ui/FormField ;; {:error (= @bad-input& (keyword (str "edit-stack-item-" id ".price")))}
+              ;;  [:> ui/Input
+              ;;   {:placeholder "Price"
+              ;;    :fluid true
+              ;;    ;; :on-change #(reset! details& (-> % .-target .-value))
+              ;;    :action (r/as-element
+              ;;             [:> ui/Button { ;; :on-click #(rf/dispatch [:g/add-discount-to-group.submit
+              ;;                            ;;                          (:id group)
+              ;;                            ;;                          (js->clj @product&)
+              ;;                            ;;                          @details&])
+              ;;                            :color "blue"}
+              ;;              "Save"])}]]
+              ])]
+          (when-not (@stack-items-editing?& id)
             [:<>
              
              ;; [:> ui/ItemMeta
@@ -250,21 +287,34 @@
                [:> ui/GridRow {:style {:font-weight 700
                                        :margin-top 7}}
                 [:> ui/GridColumn {:width 3}
-                 "Price"]
+                 (when price-amount
+                   "Price")]
                 [:> ui/GridColumn {:width 5}
-                 "Annual Renewal"]
+                 (when renewal-date
+                   "Annual Renewal")]
                 [:> ui/GridColumn {:width 4}
                  "Your Rating"]
                 #_[:> ui/GridColumn {:width 4}
                    "Currently Using?"]]
                [:> ui/GridRow {:style {:margin-top 6}}
                 [:> ui/GridColumn {:width 3}
-                 "$90 / year"]
+                 (when price-amount
+                   [:<>
+                    "$" price-amount
+                    (when price-period
+                      [:<>
+                       " / "
+                       (case price-period
+                         "annual" "year"
+                         "other" "year"
+                         "monthly" "month")])])]
                 [:> ui/GridColumn {:width 5}
-                 "2020-03-24"
-                 [:> ui/Checkbox {:style {:margin-left 15
-                                          :font-size 12}
-                                  :label "Remind?"}]]
+                 (when renewal-date
+                   [:<>
+                    renewal-date
+                    [:> ui/Checkbox {:style {:margin-left 15
+                                             :font-size 12}
+                                     :label "Remind?"}]])]
                 [:> ui/GridColumn {:width 4}
                  [:> ui/Rating {:maxRating 5
                                 :size "huge"

@@ -560,16 +560,24 @@ Round URL: https://app.vetd.com/b/rounds/%s"
   (db/update-deleted :stack_items stack-item-id))
 
 
-(defmethod com/handle-ws-inbound :update-stack-item
+(defmethod com/handle-ws-inbound :b/stack.update-item
   [{:keys [stack-item-id status
            price-amount price-period renewal-date
-           renewal-reminder rating]}
+           renewal-reminder rating]
+    :as req}
    ws-id sub-fn]
-  (db/update-any! {:id stack-item-id
-                   :status status
-                   :price_amount price-amount
-                   :price_period price-period
-                   :renewal_date renewal-date
-                   :renewal_reminder renewal-reminder
-                   :rating rating}
-                  :stack_items))
+  (db/update-any! (merge {:id stack-item-id}
+                         (when status
+                           {:status status})
+                         (when price-amount
+                           {:price_amount price-amount})
+                         (when price-period
+                           {:price_period price-period})
+                         (when renewal-date
+                           {:renewal_date renewal-date})
+                         (when renewal-reminder
+                           {:renewal_reminder renewal-reminder})
+                         (when rating
+                           {:rating rating}))
+                  :stack_items)
+  {})

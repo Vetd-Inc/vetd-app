@@ -973,8 +973,20 @@ $cell-height: 201px;
     margin-left: 14px !important;
     padding: 10px !important;
     animation: fade-in-down 0.5s ease-out;
+    height: 100px;
+    transition: height 0.5s ease-out !important;
 
+    .product-logo {
+      $edge: 77px;
+      min-width: $edge;
+      min-height: $edge;
+      max-width: $edge;
+      max-height: $edge;
+    }
+    
     &.editing {
+      height: 200px;
+      
       &:hover {
         transform: none !important;
         // box-shadow: inherit !important;
@@ -984,10 +996,13 @@ $cell-height: 201px;
       }
     }
 
+    
+
     .fields {
       margin: 0;
 
       .field {
+        position: relative;
         padding: 0;
       }
     }
@@ -995,13 +1010,7 @@ $cell-height: 201px;
       display: block;
     }
 
-    .product-logo {
-      $edge: 100px;
-      min-width: $edge;
-      min-height: $edge;
-      max-width: $edge;
-      max-height: $edge;
-    }
+    
 
     
   }
