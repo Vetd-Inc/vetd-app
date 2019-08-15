@@ -261,7 +261,6 @@
                             :as "a"
                             :style {:float "right"
                                     :margin-right 7}}
-               ;; [:> ui/Icon {:name "check"}]
                "Cancel"]]
              [:<>
               ;; Edit button
