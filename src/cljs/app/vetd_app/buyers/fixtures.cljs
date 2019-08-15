@@ -14,7 +14,10 @@
                    :event [:b/nav-preposals]}
                   {:text "VetdRounds"
                    :pages #{:b/rounds :b/round-detail}
-                   :event [:b/nav-rounds]}]]
+                   :event [:b/nav-rounds]}
+                  {:text "Stack"
+                   :pages #{:b/stack}
+                   :event [:b/nav-stack]}]]
    body
    (when-not no-spacer?
      [:div {:style {:height 100}}])])

@@ -7,6 +7,7 @@
             [com.vetd.app.util :as ut]
             [com.vetd.app.docs :as docs]
             [taoensso.timbre :as log]
+            [clj-time.coerce :as tc]
             [clojure.string :as s]))
 
 (defn product-id->name
@@ -38,15 +39,14 @@
                                                          [:= :d2f.resp_field_sval "yes"]]])
                               (when (not-empty groups)
                                 [[:group_org_memberships :gom] [:in :gom.group_id groups]
-                                 ;; need to check deleted nil?
                                  [:stack_items :si] [:and
                                                      [:= :si.deleted nil]
                                                      [:= :si.buyer_id :gom.org_id]
                                                      [:= :si.product_id :p.id]]])
                               (when (not-empty discounts-available-to-groups)
                                 [[:group_discounts :gd] [:and
-                                                         [:in :gd.group_id discounts-available-to-groups]
                                                          [:= :gd.deleted nil]
+                                                         [:in :gd.group_id discounts-available-to-groups]
                                                          [:= :gd.product_id :p.id]]]))
                 :left-join (when (not-empty cat-ids)
                              [[:product_categories :pc] [:= :p.id :pc.prod_id]])
@@ -530,40 +530,67 @@ Round URL: https://app.vetd.com/b/rounds/%s"
   [{:keys [product-id buyer-id status price-amount price-period
            renewal-date renewal-reminder rating]}]
   (let [[id idstr] (ut/mk-id&str)]
-    (-> (db/insert! :stack_items
-                    {:id id
-                     :idstr idstr
-                     :created (ut/now-ts)
-                     :updated (ut/now-ts)
-                     :product_id product-id
-                     :buyer_id buyer-id
-                     :status status
-                     :price_amount price-amount
-                     :price_period price-period
-                     :renewal_date renewal-date
-                     :renewal_reminder renewal-reminder
-                     :rating rating})
-        first)))
+    (db/insert! :stack_items
+                {:id id
+                 :idstr idstr
+                 :created (ut/now-ts)
+                 :updated (ut/now-ts)
+                 :product_id product-id
+                 :buyer_id buyer-id
+                 :status status
+                 :price_amount price-amount
+                 :price_period price-period
+                 :renewal_date renewal-date
+                 :renewal_reminder renewal-reminder
+                 :rating rating})
+    id))
 
 (defmethod com/handle-ws-inbound :create-stack-item
   [req ws-id sub-fn]
   (insert-stack-item req))
 
-(defmethod com/handle-ws-inbound :delete-stack-item
+(defmethod com/handle-ws-inbound :b/stack.add-items
+  [{:keys [buyer-id product-ids]} ws-id sub-fn]
+  (if-not (empty? product-ids)
+    {:stack-item-ids (doall
+                      (map #(insert-stack-item {:buyer-id buyer-id
+                                                :product-id %
+                                                :status "current"})
+                           product-ids))}
+    {}))
+
+(defmethod com/handle-ws-inbound :b/stack.delete-item
   [{:keys [stack-item-id]} ws-id sub-fn]
   (db/update-deleted :stack_items stack-item-id))
 
 
-(defmethod com/handle-ws-inbound :update-stack-item
+(defmethod com/handle-ws-inbound :b/stack.update-item
   [{:keys [stack-item-id status
            price-amount price-period renewal-date
-           renewal-reminder rating]}
+           renewal-reminder rating]
+    :as req}
    ws-id sub-fn]
-  (db/update-any! {:id stack-item-id
-                   :status status
-                   :price_amount price-amount
-                   :price_period price-period
-                   :renewal_date renewal-date
-                   :renewal_reminder renewal-reminder
-                   :rating rating}
-                  :stack_items))
+  (db/update-any! (merge {:id stack-item-id}
+                         (when-not (nil? status)
+                           {:status status})
+                         (when-not (nil? price-amount)
+                           {:price_amount (-> price-amount
+                                              str
+                                              (.replaceAll "[^0-9.]" "")
+                                              ut/->double)})
+                         (when-not (nil? price-period)
+                           {:price_period price-period})
+                         (when-not (nil? renewal-date)
+                           {:renewal_date (if (s/blank? renewal-date) ; blank string is used to unset renewal-date
+                                            nil
+                                            (-> renewal-date
+                                                tc/to-long
+                                                java.sql.Timestamp.))})
+                         (when-not (nil? renewal-reminder)
+                           {:renewal_reminder renewal-reminder})
+                         (when-not (nil? rating)
+                           {:rating (if (= rating 0) ; rating 0 is used to unset the rating
+                                      nil
+                                      rating)}))
+                  :stack_items)
+  {})

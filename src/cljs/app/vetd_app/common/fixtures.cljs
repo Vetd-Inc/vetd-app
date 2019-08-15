@@ -58,7 +58,7 @@
           [:> ui/Menu {:class "top-nav"
                        :secondary true} ; 'secondary' is a misnomer (it's just for styling)
            [:> ui/MenuItem {:class "logo"
-                            :on-click #(do (rf/dispatch [:b/search.term.update ""])
+                            :on-click #(do (rf/dispatch [:b/search.reset])
                                            (rf/dispatch [:nav-home]))}
             ;; todo: use a config var for base url
             [:img {:src "https://s3.amazonaws.com/vetd-logos/vetd.svg"}]]

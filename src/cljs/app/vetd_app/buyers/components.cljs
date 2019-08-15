@@ -330,9 +330,9 @@
      ^{:key c}
      [:> ui/Label {:class "category-tag"
                    :as "a"
-                   :onClick (fn [e]
-                              (.stopPropagation e)
-                              (rf/dispatch [:b/nav-search c]))}
+                   :on-click (fn [e]
+                               (.stopPropagation e)
+                               (rf/dispatch [:b/nav-search c]))}
       c])])
 
 (defn c-free-trial-tag []

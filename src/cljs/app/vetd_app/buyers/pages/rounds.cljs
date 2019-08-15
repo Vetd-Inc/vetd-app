@@ -6,7 +6,6 @@
             [vetd-app.docs :as docs]
             [reagent.core :as r]
             [re-frame.core :as rf]
-            [re-com.core :as rc]
             [clojure.string :as s]))
 
 ;;;; Events

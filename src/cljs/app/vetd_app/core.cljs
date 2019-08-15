@@ -16,6 +16,7 @@
             [vetd-app.buyers.pages.product-detail :as p-bproduct-detail]
             [vetd-app.buyers.pages.rounds :as p-brounds]
             [vetd-app.buyers.pages.round-detail :as p-bround-detail]
+            [vetd-app.buyers.pages.stack :as p-bstack]
             [vetd-app.vendors.fixtures :as v-fix]
             [vetd-app.vendors.pages.preposals :as p-vpreposals]
             [vetd-app.vendors.pages.products :as p-vprods]
@@ -50,6 +51,7 @@
                    :b/product-detail #'p-bproduct-detail/c-page
                    :b/rounds #'p-brounds/c-page
                    :b/round-detail #'p-bround-detail/c-page
+                   :b/stack #'p-bstack/c-page
                    :v/preposals #'p-vpreposals/c-page
                    :v/products #'p-vprods/c-page
                    :v/product-detail #'p-vprod-detail/c-page
@@ -70,6 +72,7 @@
                    :b/product-detail #'b-fix/container
                    :b/rounds #'b-fix/container
                    :b/round-detail #'b-fix/appendable-container
+                   :b/stack #'b-fix/container
                    :v/preposals #'v-fix/container
                    :v/products #'v-fix/container
                    :v/product-detail #'v-fix/container
@@ -83,6 +86,10 @@
  :init-db
  (constantly
   {:search p-bsearch/init-db
+   :stack p-bstack/init-db
+   ;; stores refs by keywords, that can be used with :scroll-to fx
+   :scroll-to-refs {}
+   ;; TODO refactor these to match the pattern of the above ":search"
    :preposals-filter p-bpreposals/default-preposals-filter
    :rounds-filter {:selected-statuses #{}}
    ;; it think this for within the round grid, not sure if it's currently being used
@@ -231,6 +238,9 @@
   (rf/dispatch [:b/route-rounds query-params]))
 (sec/defroute buyers-round-detail "/b/rounds/:idstr" [idstr]
   (rf/dispatch [:b/route-round-detail idstr]))
+
+(sec/defroute buyers-stack "/b/stack" []
+  (rf/dispatch [:b/route-stack]))
 
 ;; Vendors
 (sec/defroute vendors-preposals "/v/preposals" [query-params]

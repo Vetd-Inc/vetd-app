@@ -418,6 +418,14 @@ a.label {
   }
 }
 
+.ui.rating {
+  i {
+    &:focus {
+      outline: 0;
+    }
+  }
+}
+
 // Settings page
 .members .item {
   padding-top: 10px !important;
@@ -443,7 +451,10 @@ a.label {
 
 /* Override basic Semantic UI behavior */
 b, strong {
-  font-weight: 600;
+  font-weight: 600 !important;
+}
+.item .content .header {
+  margin-top: 0 !important;
 }
 .ui.fluid[class*="left labeled"].icon.button {
   padding-left: 44px !important;
@@ -931,6 +942,137 @@ $cell-height: 201px;
   margin-left: 20px;
   margin-bottom: 0;
 }
+
+
+/* Stacks */
+.stack {
+  padding: 4px 0 14px 0;
+  margin-bottom: 14px;
+  background-image: radial-gradient(at center 100px, #f5f5f5 0px, #eee 120px);
+  background-repeat: no-repeat;
+  border-radius: 4px;
+
+  h2 {
+    position: sticky;
+    top: 0px;
+    padding: 10px 14px 14px 14px;
+    margin-bottom: 0;
+    background-image: radial-gradient(at center 100px, #f5f5f5 0px, #eee 120px);
+    background-repeat: no-repeat;
+    z-index: 1003;
+  }
+
+  .scroll-anchor {
+    position: relative;
+    top: -73px;
+  }
+
+  & > .results > .item {
+    width: auto !important;
+    margin-right: 14px !important;
+    margin-left: 14px !important;
+    padding: 10px !important;
+    animation: fade-in-down 0.5s ease-out;
+    height: 100px;
+    transition: height 0.3s ease-out !important;
+
+    .product-logo {
+      $edge: 77px;
+      min-width: $edge;
+      min-height: $edge;
+      max-width: $edge;
+      max-height: $edge;
+    }
+    
+    &.editing {
+      height: 170px;
+      cursor: default !important;
+      
+      &:hover {
+        transform: none !important;
+      }
+    }
+
+    .ui.rating.not-rated .icon:before {
+      font-family: 'outline-icons' !important;
+      font-size: 14px;
+      position: relative;
+      top: -1px;
+    }
+    .ui.rating .icon.selected:before {
+      color: $blue !important;
+    }
+    .ui.rating:not(.not-rated) .icon.active:before {
+      color: $blue !important;
+    }
+    // this is buggy, maybe come back to this some time
+    // .ui.rating:not(.not-rated):not(:focus):hover .icon:not(.selected):before {
+    //   color: rgba(0, 0, 0, 0.15) !important;
+    // }
+    
+
+    .fields {
+      margin: 0;
+
+      .field {
+        position: relative;
+        padding: 0;
+
+        > label {
+          font-size: 14px;
+          font-weight: 600;
+        }
+      }
+    }
+    .subscription-types .checkbox {
+      display: block;
+      margin-top: 4px;
+
+      &:first-of-type {
+        padding-top: 6px;
+      }
+    }
+
+    
+    &:active {
+      transform: none !important;
+    }
+    
+  }
+}
+
+@keyframes fade-in-down {
+  from {
+    opacity: 0;
+    transform: translate3d(0, -54px, 0);
+  }
+  
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.stack-item-grid {
+  margin: 0 !important;
+  
+  .row {
+    padding: 0 !important;
+
+    &.field-row {
+      font-weight: 400;
+      margin-top: 7px;
+    }
+
+    .column {
+      padding: 0 !important;
+    }
+  }
+}
+
+
+
+
 
 /* Loading Spinner */
 div.spinner {

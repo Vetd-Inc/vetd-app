@@ -125,9 +125,10 @@
 (rf/reg-event-fx
  :b/search.term.update
  [(rf/inject-cofx :url)]
- (fn [{:keys [db url]} [_ search-term & {:keys [bypass-url-fx]}]]
-   (when (-> db :search :term
-             (not= search-term)) ; only if it really changed (this makes back button behavior better)
+ (fn [{:keys [db url]} [_ search-term & {:keys [bypass-url-fx force-refresh]}]]
+   (when (or (-> db :search :term ; only if it really changed (this makes back button behavior better)
+                 (not= search-term))
+             force-refresh)
      (merge {:db (-> db
                      (assoc-in [:search :term] search-term)
                      (assoc-in [:search :waiting-for-debounce?] true))
@@ -155,6 +156,12 @@
     :dispatch-debounce [{:id :b/search
                          :dispatch [:b/search]
                          :timeout 0}]}))
+
+(rf/reg-event-fx
+ :b/search.reset
+ (fn [{:keys [db]}]
+   {:db (assoc-in db [:search :filter] (:filter init-db))
+    :dispatch [:b/search.term.update "" :force-refresh true]}))
 
 (rf/reg-event-fx
  :b/search.results.data.products.empty
@@ -522,9 +529,7 @@
                                                              :b/search.filter.add
                                                              :b/search.filter.remove)
                                                            :groups
-                                                           group-id]))}]))])
-         ;; TODO filter for completed profile or not
-         ]
+                                                           group-id]))}]))])]
         [:> ui/Segment {:class "top-categories"}
          [:h4 "Top Categories"]
          (let [top-categories ["CRM"

@@ -6,8 +6,7 @@
             [vetd-app.docs :as docs]
             [clojure.string :as s]
             [reagent.core :as r]
-            [re-frame.core :as rf]
-            [re-com.core :as rc]))
+            [re-frame.core :as rf]))
 
 (def default-preposals-filter {:status #{"live"}
                                :features #{}
