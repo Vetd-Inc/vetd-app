@@ -403,7 +403,7 @@
                                 :on-click (fn [e]
                                             (.stopPropagation e))
                                 :onRate (fn [_ this]
-                                          (rf/dispatch [:b/stack.rate-item id (.-rating this)]))}]]]]]])]]))))
+                                          (rf/dispatch [:b/stack.rate-item id (aget this "rating")]))}]]]]]])]]))))
 
 (defn c-no-stack-items []
   (let [group-ids& (rf/subscribe [:group-ids])]
