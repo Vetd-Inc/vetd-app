@@ -578,9 +578,11 @@ Round URL: https://app.vetd.com/b/rounds/%s"
                          (when-not (nil? price-period)
                            {:price_period price-period})
                          (when-not (nil? renewal-date)
-                           {:renewal_date (-> renewal-date
-                                              tc/to-long
-                                              java.sql.Timestamp.)})
+                           {:renewal_date (if (s/blank? renewal-date) ; blank string is used to unset renewal-date
+                                            nil
+                                            (-> renewal-date
+                                                tc/to-long
+                                                java.sql.Timestamp.))})
                          (when-not (nil? renewal-reminder)
                            {:renewal_reminder renewal-reminder})
                          (when-not (nil? rating)

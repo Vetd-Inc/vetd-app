@@ -1,6 +1,7 @@
 (ns vetd-app.buyers.pages.stack
   (:require [vetd-app.buyers.components :as bc]
             [vetd-app.common.components :as cc]
+            [vetd-app.common.fx :as cfx]
             [vetd-app.ui :as ui]
             [vetd-app.util :as util]
             [vetd-app.docs :as docs]
@@ -65,26 +66,42 @@
    {:db (update-in db [:stack :items-editing] conj id)}))
 
 (rf/reg-event-fx
+ :b/stack.stop-editing-item
+ (fn [{:keys [db]} [_ id]]
+   {:db (-> db
+            (update-in [:stack :items-editing] disj id)
+            (assoc-in [:page-params :bad-input] nil))}))
+
+(rf/reg-event-fx
+ :b/stack.save-item.submit
+ (fn [{:keys [db]} [_ {:keys [id price-amount price-period renewal-date]
+                       :as input}]]
+   (println renewal-date)
+   (cfx/validated-dispatch-fx db
+                              [:b/stack.save-item input]
+                              #(cond
+                                 (and renewal-date
+                                      (not (s/blank? renewal-date))
+                                      (not (re-matches #"^\d{4}\-(0?[1-9]|1[012])\-(0?[1-9]|[12][0-9]|3[01])$" renewal-date)))
+                                 [:uname "Renewal Date must be in YYYY-MM-DD format, but it is not a required field."]
+                                 
+                                 :else nil))))
+
+(rf/reg-event-fx
  :b/stack.save-item
- (fn [{:keys [db]} [_ {:keys [id status rating
-                              price-amount price-period
-                              renewal-date renewal-reminder]}]]
+ (fn [{:keys [db]} [_ {:keys [id price-amount price-period renewal-date]}]]
    {:ws-send {:payload {:cmd :b/stack.update-item
                         :return {:handler :b/stack.save-item.return
                                  :id id}
                         :stack-item-id id
-                        ;; :status status
                         :price-amount price-amount
                         :price-period price-period
-                        :renewal-date renewal-date
-                        ;; :renewal-reminder renewal-reminder
-                        ;; :rating rating
-                        }}}))
+                        :renewal-date renewal-date}}}))
 
 (rf/reg-event-fx
  :b/stack.save-item.return
  (fn [{:keys [db]} [_ _ {{:keys [id]} :return}]]
-   {:db (update-in db [:stack :items-editing] disj id)}))
+   {:dispatch [:b/stack.stop-editing-item id]}))
 
 (rf/reg-event-fx
  :b/stack.move-item
@@ -206,7 +223,8 @@
         bad-input& (rf/subscribe [:bad-input])
         subscription-type& (r/atom price-period)
         price& (atom price-amount)
-        renewal-date& (atom renewal-date)]
+        ;; TODO fragile (expects particular string format of date from server)
+        renewal-date& (atom (when renewal-date (subs renewal-date 0 10)))]
     (fn [{:keys [id rating price-amount price-period
                  renewal-date renewal-reminder status
                  product] :as stack-item}]
@@ -226,15 +244,25 @@
           [:> ui/ItemHeader
            (if (@stack-items-editing?& id)
              ;; Save Changes button
-             [:> ui/Label {:on-click #(rf/dispatch [:b/stack.save-item {:id id
-                                                                        :price-amount @price&
-                                                                        :price-period @subscription-type&
-                                                                        :renewal-date @renewal-date&}])
-                           :color "blue"
-                           :as "a"
-                           :style {:float "right"}}
-              [:> ui/Icon {:name "check"}]
-              "Save Changes"]
+             [:<>
+              [:> ui/Label {:on-click #(rf/dispatch [:b/stack.save-item.submit
+                                                     {:id id
+                                                      :price-amount @price&
+                                                      :price-period @subscription-type&
+                                                      :renewal-date @renewal-date&}])
+                            :color "blue"
+                            :as "a"
+                            :style {:float "right"}}
+               [:> ui/Icon {:name "check"}]
+               "Save Changes"]
+              [:> ui/Label {:on-click (fn [e]
+                                        (.stopPropagation e)
+                                        (rf/dispatch [:b/stack.stop-editing-item id]))
+                            :as "a"
+                            :style {:float "right"
+                                    :margin-right 7}}
+               ;; [:> ui/Icon {:name "check"}]
+               "Cancel"]]
              [:<>
               ;; Edit button
               [:> ui/Label {:on-click (fn [e]
@@ -313,8 +341,7 @@
                   [:label "Renewal Date"]
                   [:> ui/Input {:placeholder "YYYY-MM-DD"
                                 :defaultValue (when renewal-date (subs renewal-date 0 10)) ; TODO fragile (expects particular string format of date from server)
-                                :on-change #(reset! renewal-date& (-> % .-target .-value))}
-                   ]])]])]
+                                :on-change #(reset! renewal-date& (-> % .-target .-value))}]])]])]
           (when-not (@stack-items-editing?& id)
             [:<>
              [:> ui/ItemExtra {:style {:color "rgba(0, 0, 0, 0.85)"
@@ -340,7 +367,7 @@
                    "Free"
                    (when price-amount
                      [:<>
-                      "$" price-amount
+                      "$" (util/decimal-format price-amount)
                       (when price-period
                         [:<>
                          " / "
@@ -450,7 +477,7 @@
                    "your community"
                    "others")
                  "."]
-                [:div.department
+                [:div.stack
                  [:h2 "Current"]
                  [:span.scroll-anchor {:ref (fn [this]
                                               (rf/dispatch [:reg-scroll-to-ref :current-stack this]))}]
@@ -463,7 +490,7 @@
                       [:div {:style {:margin-left 14
                                      :margin-right 14}}
                        "You don't have any products in your current stack."]))]]
-                [:div.department
+                [:div.stack
                  [:h2 "Previous"]
                  [:span.scroll-anchor {:ref (fn [this]
                                               (rf/dispatch [:reg-scroll-to-ref :previous-stack this]))}]

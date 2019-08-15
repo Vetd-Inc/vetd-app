@@ -76,4 +76,3 @@
  :bad-input
  :<- [:page-params]
  (fn [{:keys [bad-input]}] bad-input))
-
