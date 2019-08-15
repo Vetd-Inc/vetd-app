@@ -47,13 +47,14 @@
                           :return {:handler :b/stack.add-items.return}
                           :buyer-id buyer-id
                           :product-ids product-ids}}
+      :scroll-to (-> db :scroll-to-refs :current-stack)
       :analytics/track {:event "Products Added"
                         :props {:category "Stack"
                                 :label buyer-id}}})))
 
 (rf/reg-event-fx
  :b/stack.add-items.return
- (fn [{:keys [db]} [_ stack-item-ids]]
+ (fn [{:keys [db]} [_ {:keys [stack-item-ids]}]]
    {:db (assoc-in db
                   [:stack :items-editing]
                   (set (concat (get-in db [:stack :items-editing]) stack-item-ids)))}))
@@ -395,8 +396,7 @@
 (defn c-page []
   (let [org-id& (rf/subscribe [:org-id])
         org-name& (rf/subscribe [:org-name])
-        group-ids& (rf/subscribe [:group-ids])
-        jump-link-refs (atom {})]
+        group-ids& (rf/subscribe [:group-ids])]
     (when @org-id&
       (let [stack& (rf/subscribe [:gql/sub
                                   {:queries
@@ -434,16 +434,12 @@
                  [:div
                   [:a.blue {:on-click (fn [e]
                                         (.stopPropagation e)
-                                        (.scrollIntoView (get @jump-link-refs "current")
-                                                         (clj->js {:behavior "smooth"
-                                                                   :block "start"})))}
+                                        (rf/dispatch [:scroll-to :current-stack]))}
                    "Current Stack"]]
                  [:div
                   [:a.blue {:on-click (fn [e]
                                         (.stopPropagation e)
-                                        (.scrollIntoView (get @jump-link-refs "previous")
-                                                         (clj->js {:behavior "smooth"
-                                                                   :block "start"})))}
+                                        (rf/dispatch [:scroll-to :previous-stack]))}
                    "Previous Stack"]]]]
                [:div.inner-container
                 [:> ui/Segment {:class "detail-container"}
@@ -456,7 +452,8 @@
                  "."]
                 [:div.department
                  [:h2 "Current"]
-                 [:span.scroll-anchor {:ref (fn [this] (swap! jump-link-refs assoc "current" this))}] ; anchor
+                 [:span.scroll-anchor {:ref (fn [this]
+                                              (rf/dispatch [:reg-scroll-to-ref :current-stack this]))}]
                  [:> ui/ItemGroup {:class "results"}
                   (let [stack (filter (comp (partial = "current") :status) unfiltered-stack)]
                     (if (seq stack)
@@ -468,7 +465,8 @@
                        "You don't have any products in your current stack."]))]]
                 [:div.department
                  [:h2 "Previous"]
-                 [:span.scroll-anchor {:ref (fn [this] (swap! jump-link-refs assoc "previous" this))}] ; anchor
+                 [:span.scroll-anchor {:ref (fn [this]
+                                              (rf/dispatch [:reg-scroll-to-ref :previous-stack this]))}]
                  [:> ui/ItemGroup {:class "results"}
                   (let [stack (filter (comp (partial = "previous") :status) unfiltered-stack)]
                     (if (seq stack)

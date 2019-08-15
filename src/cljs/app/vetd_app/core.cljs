@@ -87,6 +87,8 @@
  (constantly
   {:search p-bsearch/init-db
    :stack p-bstack/init-db
+   ;; stores refs by keywords, that can be used with :scroll-to fx
+   :scroll-to-refs {}
    
    ;; TODO refactor these to match the pattern of the above ":search"
    :preposals-filter p-bpreposals/default-preposals-filter

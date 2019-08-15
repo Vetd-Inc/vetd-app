@@ -18,6 +18,23 @@
    (.startConfetti js/window)
    (js/setTimeout #(.stopConfetti js/window) 3000)))
 
+;; given a React component ref, scroll to it on the page
+(rf/reg-fx
+ :scroll-to
+ (fn [ref]
+   (.scrollIntoView ref (clj->js {:behavior "smooth"
+                                  :block "start"}))))
+
+(rf/reg-event-fx
+ :scroll-to
+ (fn [{:keys [db]} [_ ref-key]]
+   {:scroll-to (-> db :scroll-to-refs ref-key)}))
+
+(rf/reg-event-fx
+ :reg-scroll-to-ref
+ (fn [{:keys [db]} [_ ref-key ref]]
+   {:db (assoc-in db [:scroll-to-refs ref-key] ref)}))
+
 (rf/reg-event-fx
  :read-link
  (fn [{:keys [db]} [_ link-key]]
@@ -59,3 +76,4 @@
  :bad-input
  :<- [:page-params]
  (fn [{:keys [bad-input]}] bad-input))
+

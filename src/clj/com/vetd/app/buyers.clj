@@ -549,11 +549,11 @@ Round URL: https://app.vetd.com/b/rounds/%s"
 (defmethod com/handle-ws-inbound :b/stack.add-items
   [{:keys [buyer-id product-ids]} ws-id sub-fn]
   (if-not (empty? product-ids)
-    (doall
-     (map #(insert-stack-item {:buyer-id buyer-id
-                               :product-id %
-                               :status "current"})
-          product-ids))
+    {:stack-item-ids (doall
+                      (map #(insert-stack-item {:buyer-id buyer-id
+                                                :product-id %
+                                                :status "current"})
+                           product-ids))}
     {}))
 
 (defmethod com/handle-ws-inbound :b/stack.delete-item
