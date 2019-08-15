@@ -93,6 +93,12 @@
                         :status status}}}))
 
 (rf/reg-event-fx
+ :b/stack.delete-item
+ (fn [{:keys [db]} [_ id]]
+   {:ws-send {:payload {:cmd :b/stack.delete-item
+                        :stack-item-id id}}}))
+
+(rf/reg-event-fx
  :b/stack.rate-item
  (fn [{:keys [db]} [_ id rating]]
    {:ws-send {:payload {:cmd :b/stack.update-item
@@ -239,15 +245,37 @@
                "Edit"]
               ;; Move to (Previous/Current) button
               (let [dest-status (if (= status "current") "previous" "current")]
-                [:> ui/Label {:on-click (fn [e]
-                                          (.stopPropagation e)
-                                          (rf/dispatch [:b/stack.move-item id dest-status]))
-                              :color "white"
-                              :as "a"
-                              :style {:float "right"
-                                      :margin-right 7}}
-                 [:> ui/Icon {:name (str "caret " (if (= dest-status "previous") "down" "up"))}]
-                 "Move to " (s/capitalize dest-status)])])
+                [:> ui/Popup
+                 {:position "bottom right"
+                  :on "click"
+                  :content (r/as-element
+                            [:div.account-actions
+                             [:> ui/Button {:on-click (fn [e]
+                                                        (.stopPropagation e)
+                                                        (rf/dispatch [:b/stack.move-item id dest-status]))
+                                            :color "white"
+                                            :fluid true
+                                            :icon true
+                                            :labelPosition "left"}
+                              (str "To " (s/capitalize dest-status))
+                              [:> ui/Icon {:name (str "angle double " (if (= status "current") "down" "up"))}]]
+                             [:> ui/Button {:on-click (fn [e]
+                                                        (.stopPropagation e)
+                                                        (rf/dispatch [:b/stack.delete-item id]))
+                                            :color "red"
+                                            :fluid true
+                                            :icon true
+                                            :labelPosition "left"}
+                              "Delete"
+                              [:> ui/Icon {:name "x"}]]])
+                  :trigger (r/as-element
+                            [:> ui/Label {:on-click (fn [e] (.stopPropagation e))
+                                          :as "a"
+                                          :style {:float "right"
+                                                  :margin-right 7}}
+                             [:> ui/Icon {:name "caret down"}]
+                             "Move"])}]
+                )])
            ;; Product by Vendor heading
            pname " " [:small " by " (:oname vendor)]]
           [:> ui/Transition {:animation "fade"
@@ -308,7 +336,7 @@
                [:> ui/GridRow {:style {:margin-top 6}}
                 [:> ui/GridColumn {:width 3}
                  (if (= price-period "free")
-                   "$0"
+                   "Free"
                    (when price-amount
                      [:<>
                       "$" price-amount

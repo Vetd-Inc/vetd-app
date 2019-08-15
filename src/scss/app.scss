@@ -986,12 +986,9 @@ $cell-height: 201px;
     
     &.editing {
       height: 170px;
+      cursor: default !important;
       
       &:hover {
-        transform: none !important;
-        // box-shadow: inherit !important;
-      }
-      &:active {
         transform: none !important;
       }
     }

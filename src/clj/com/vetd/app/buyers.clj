@@ -556,7 +556,7 @@ Round URL: https://app.vetd.com/b/rounds/%s"
           product-ids))
     {}))
 
-(defmethod com/handle-ws-inbound :delete-stack-item
+(defmethod com/handle-ws-inbound :b/stack.delete-item
   [{:keys [stack-item-id]} ws-id sub-fn]
   (db/update-deleted :stack_items stack-item-id))
 
