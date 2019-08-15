@@ -974,7 +974,7 @@ $cell-height: 201px;
     padding: 10px !important;
     animation: fade-in-down 0.5s ease-out;
     height: 100px;
-    transition: height 0.5s ease-out !important;
+    transition: height 0.3s ease-out !important;
 
     .product-logo {
       $edge: 77px;
@@ -985,7 +985,7 @@ $cell-height: 201px;
     }
     
     &.editing {
-      height: 200px;
+      height: 170px;
       
       &:hover {
         transform: none !important;
@@ -1008,14 +1008,26 @@ $cell-height: 201px;
       .field {
         position: relative;
         padding: 0;
+
+        > label {
+          font-size: 14px;
+          font-weight: 600;
+        }
       }
     }
     .subscription-types .checkbox {
       display: block;
+      margin-top: 4px;
+
+      &:first-of-type {
+        padding-top: 6px;
+      }
     }
 
     
-
+    &:active {
+      transform: none !important;
+    }
     
   }
 }
@@ -1037,6 +1049,11 @@ $cell-height: 201px;
   
   .row {
     padding: 0 !important;
+
+    &.field-row {
+      font-weight: 400;
+      margin-top: 7px;
+    }
 
     .column {
       padding: 0 !important;
