@@ -296,7 +296,7 @@
                                          (ui/get-text-from-opt-by-value (.-options %2)
                                                                         (.-value %2))})
                         :onSearchChange #(swap! state&
-                                                assoc :text (.-searchQuery %2))
+                                                assoc :text (aget %2 "searchQuery"))
                         :selection true
                         :search true
                         :searchQuery (:text @state&)
@@ -343,6 +343,7 @@
                     :wide true}
        descr])
     (for [[k f] actions]
+      ^{:key (str "prompt-action" id)}
       [:a {:on-click (partial f p)
            :style {:margin-left "10px"}} k])]
    (for [{:keys [idstr ftype fsubtype] :as f} fields]

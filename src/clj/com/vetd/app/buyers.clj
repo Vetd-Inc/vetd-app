@@ -26,7 +26,8 @@
           (some seq (vals filter-map)))
     (let [ids (db/hs-query
                {:select [[:p.id :pid]
-                         [(honeysql.core/raw "coalesce(p.score, 1.0)") :nscore]]
+                         [(honeysql.core/raw "coalesce(p.score, 1.0)") :nscore]
+                         [(honeysql.core/raw "coalesce(p.profile_score, 0.0)") :pscore]]
                 :modifiers [:distinct]
                 :from [[:products :p]]
                 :join (concat [[:orgs :o] [:= :o.id :p.vendor_id]]
@@ -56,8 +57,10 @@
                          [(keyword "~*") :p.pname (str ".*?\\m" q ".*")]
                          [(keyword "~*") :o.oname (str ".*?\\m" q ".*")]
                          (when (not-empty cat-ids)	
-                           [:in :pc.cat_id cat-ids])]]
-                :order-by [[:nscore :desc]]
+                           [:in :pc.cat_id cat-ids])]
+                        (when (features "product-profile-completed")
+                          [:> :pscore 0])]
+                :order-by [[:pscore :desc] [:nscore :desc]]
                 ;; this will be paginated on the frontend
                 :limit 500})
           pids (map :pid ids)]
