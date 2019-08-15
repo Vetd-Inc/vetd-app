@@ -92,6 +92,13 @@
                         :stack-item-id id
                         :status status}}}))
 
+(rf/reg-event-fx
+ :b/stack.rate-item
+ (fn [{:keys [db]} [_ id rating]]
+   {:ws-send {:payload {:cmd :b/stack.update-item
+                        :stack-item-id id
+                        :rating rating}}}))
+
 ;;;; Components
 (defn c-add-product-form
   [stack popup-open?&]
@@ -180,10 +187,9 @@
                    :on-change (fn [_ this] (reset! subscription-type& (.-value this)))}])
 
 (defn c-stack-item
-  [{:keys [rating price-amount price-period renewal-date] :as stack-item}]
+  [{:keys [price-amount price-period renewal-date] :as stack-item}]
   (let [stack-items-editing?& (rf/subscribe [:b/stack.items-editing])
         bad-input& (rf/subscribe [:bad-input])
-        rating& (r/atom rating)
         subscription-type& (r/atom price-period)
         price& (atom price-amount)
         renewal-date& (atom renewal-date)]
@@ -324,27 +330,14 @@
                                                  :label "Remind?"}])}]])]
                 [:> ui/GridColumn {:width 5
                                    :style {:text-align "right"}}
-                 [:> ui/Rating {:class (when-not @rating& "not-rated")
-                                ;; :icon "star"
+                 [:> ui/Rating {:class (when-not rating "not-rated")
                                 :maxRating 5
                                 :size "large"
-                                :rating @rating&
+                                :defaultRating rating
                                 :on-click (fn [e]
                                             (.stopPropagation e))
                                 :onRate (fn [_ this]
-                                          (reset! rating& (.-rating this)))}]]
-                #_[:> ui/GridColumn {:width 4}
-                   [:> ui/Checkbox
-                    {:toggle true
-                     ;; :checked (boolean (selected-statuses status))
-                     :on-click (fn [e] (.stopPropagation e))
-                     :on-change (fn [_ this]
-                                  
-                                  #_(if (.-checked this)
-                                      (rf/dispatch [:b/stack.filter.add "status" status])
-                                      (rf/dispatch [:b/stack.filter.remove "status" status])))
-                     }]]]
-               ]]])]]))))
+                                          (rf/dispatch [:b/stack.rate-item id (.-rating this)]))}]]]]]])]]))))
 
 (defn c-no-stack-items []
   (let [group-ids& (rf/subscribe [:group-ids])]
