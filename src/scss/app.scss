@@ -1008,9 +1008,10 @@ $cell-height: 201px;
     .ui.rating:not(.not-rated) .icon.active:before {
       color: $blue !important;
     }
-    .ui.rating:not(.not-rated):hover .icon:not(.selected):before {
-      color: rgba(0, 0, 0, 0.15) !important;
-    }
+    // this is buggy, maybe come back to this some time
+    // .ui.rating:not(.not-rated):not(:focus):hover .icon:not(.selected):before {
+    //   color: rgba(0, 0, 0, 0.15) !important;
+    // }
     
 
     .fields {

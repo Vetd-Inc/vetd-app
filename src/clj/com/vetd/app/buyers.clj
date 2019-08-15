@@ -568,22 +568,24 @@ Round URL: https://app.vetd.com/b/rounds/%s"
     :as req}
    ws-id sub-fn]
   (db/update-any! (merge {:id stack-item-id}
-                         (when status
+                         (when-not (nil? status)
                            {:status status})
-                         (when price-amount
+                         (when-not (nil? price-amount)
                            {:price_amount (-> price-amount
                                               str
                                               (.replaceAll "[^0-9.]" "")
                                               ut/->double)})
-                         (when price-period
+                         (when-not (nil? price-period)
                            {:price_period price-period})
-                         (when renewal-date
+                         (when-not (nil? renewal-date)
                            {:renewal_date (-> renewal-date
                                               tc/to-long
                                               java.sql.Timestamp.)})
-                         (when renewal-reminder
+                         (when-not (nil? renewal-reminder)
                            {:renewal_reminder renewal-reminder})
-                         (when rating
-                           {:rating rating}))
+                         (when-not (nil? rating)
+                           {:rating (if (= rating 0) ; rating 0 is used to unset the rating
+                                      nil
+                                      rating)}))
                   :stack_items)
   {})

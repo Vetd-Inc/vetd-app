@@ -99,6 +99,13 @@
                         :stack-item-id id
                         :rating rating}}}))
 
+(rf/reg-event-fx
+ :b/stack.set-item-renewal-reminder
+ (fn [{:keys [db]} [_ id renewal-reminder]]
+   {:ws-send {:payload {:cmd :b/stack.update-item
+                        :stack-item-id id
+                        :renewal-reminder renewal-reminder}}}))
+
 ;;;; Components
 (defn c-add-product-form
   [stack popup-open?&]
@@ -323,10 +330,13 @@
                       :trigger (r/as-element
                                 [:> ui/Checkbox {:style {:margin-left 10
                                                          :font-size 12}
+                                                 :defaultChecked renewal-reminder
                                                  :on-click (fn [e]
                                                              (.stopPropagation e))
                                                  :on-change (fn [_ this]
-                                                              (println (.-checked this)))
+                                                              (rf/dispatch [:b/stack.set-item-renewal-reminder id (.-checked this)])
+                                                              ;; return 'this' to keep it as an uncontrolled component
+                                                              this)
                                                  :label "Remind?"}])}]])]
                 [:> ui/GridColumn {:width 5
                                    :style {:text-align "right"}}
@@ -334,6 +344,7 @@
                                 :maxRating 5
                                 :size "large"
                                 :defaultRating rating
+                                :clearable false
                                 :on-click (fn [e]
                                             (.stopPropagation e))
                                 :onRate (fn [_ this]
