@@ -358,7 +358,9 @@
 
 (defn c-no-results []
   (let [prod-cat-suggestion (r/atom "")
-        ;; side effect everytime it shows
+        ;; side effect everytime this component is mounted:
+        ;; if there are no results, and there are filters selected,
+        ;; emphasize to user that the filters may be causing the no results.
         _ (potentially-emphasize-filters)]
     (fn []
       [:> ui/Segment {:placeholder true}

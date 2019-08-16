@@ -1765,7 +1765,25 @@
                                              [:prompt_fields :pf] [:and [:= :pf.id :rf.pf_id] [:= :pf.deleted nil]]]
                                       :where [:= :d.deleted nil]}
                               :owner :vetd
-                              :grants {:hasura [:SELECT]}}]]])
+                              :grants {:hasura [:SELECT]}}]]
+   
+   [[2019 8 16 0 0]
+    
+    [:create-or-replace-view {:schema :vetd
+                              :name :agg_group_prod_rating
+                              :honey {:select [[:gom.group_id :group_id]
+                                               [:si.product_id :product_id]
+                                               [:%count.si.id :count_stack_items]
+                                               [:si.rating :rating]]
+                                      :from [[:group_org_memberships :gom]]
+                                      :join [[:stack_items :si]
+                                             [:and
+                                              [:= :si.buyer_id :gom.org_id]
+                                              [:= :si.deleted nil]]]
+                                      :group-by [:gom.group_id :si.product_id :si.rating]}
+                              :owner :vetd
+                              :grants {:hasura [:SELECT]}}]]
+   ])
 
 
 #_(mig/mk-migration-files migrations
