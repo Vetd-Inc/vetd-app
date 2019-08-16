@@ -189,7 +189,7 @@
   [kw]
   (or (.endsWith (name kw) "id")
       ;; HACK
-      (#{:subject :sort :idx :result} kw)))
+      (#{:subject :sort :idx :result :count_stack_items} kw)))
 
 (defn walk-gql-query->args
   [field args sub]

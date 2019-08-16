@@ -164,7 +164,7 @@
                                                        :name pname}))]
     [:<>
      [c-product-header-segment product v-fn discounts]
-     [bc/c-community c-display-field]
+     [bc/c-community c-display-field id]
      [bc/c-pricing c-display-field v-fn discounts]
      [bc/c-vendor-profile (-> vendor :docs-out first) (:id vendor) (:oname vendor)]
      [bc/c-onboarding c-display-field v-fn]

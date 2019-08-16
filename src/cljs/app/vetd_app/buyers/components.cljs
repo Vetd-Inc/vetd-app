@@ -451,45 +451,14 @@
   "Component to display community information of a product profile.
   c-display-field - component to display a field (key/value)
   v-fn - function to get value per some prompt term"
-  [c-display-field]
+  [c-display-field product-id]
   (let [group-ids& (rf/subscribe [:group-ids])
         ratings& (rf/subscribe [:gql/sub
                                 {:queries
-                                 [[:agg_group_prod_rating {:group_id @group-ids&}
-                                   [:id :pname :logo
-                                    [:form-docs {:ftype "product-profile"
-                                                 :_order_by {:created :desc}
-                                                 :_limit 1
-                                                 :doc-deleted nil}
-                                     [:id 
-                                      [:response-prompts {:deleted nil
-                                                          :ref-deleted nil}
-                                       [:id :prompt-id :prompt-prompt :prompt-term
-                                        [:response-prompt-fields
-                                         {:deleted nil
-                                          :ref-deleted nil}
-                                         [:id :prompt-field-fname :idx
-                                          :sval :nval :dval]]]]]]
-                                    
-                                    [:vendor
-                                     [:id :oname :url
-                                      [:docs-out {:dtype "vendor-profile"
-                                                  :_order_by {:created :desc}
-                                                  :_limit 1}
-                                       [:id
-                                        [:response-prompts {:ref-deleted nil}
-                                         [:id :prompt-id :prompt-prompt :prompt-term
-                                          [:response-prompt-fields
-                                           [:id :prompt-field-fname :idx
-                                            :sval :nval :dval]]]]]]]]
-                                    [:forms {:ftype "preposal" ; preposal requests
-                                             :from-org-id @org-id&}
-                                     [:id]]
-                                    [:rounds {:buyer-id @org-id&
-                                              :deleted nil}
-                                     [:id :idstr :created :status]]
-                                    [:categories {:ref-deleted nil}
-                                     [:id :idstr :cname]]]]]}])]
+                                 [[:agg-group-prod-rating {:group-id @group-ids&
+                                                           :product-id product-id}
+                                   [:group-id :product-id
+                                    :count-stack-items :rating]]]}])]
     (fn [c-display-field]
       [c-profile-segment {:title [:<> "Community "
                                   [:small (str @group-ids&)]]}
@@ -497,9 +466,33 @@
         [c-display-field 8
          "Median Price"
          "$12"]
-        [c-display-field 8
-         "Average Rating"
-         "4 stars"]]
+        [:> ui/GridColumn {:width 8}
+         [:> ui/Segment {:class "display-field"
+                         :vertical true}
+          [:h3.display-field-key
+           "Average Rating"]
+          [:div.display-field-value
+           (when-not (= :loading @ratings&)
+             (let [ratings-enum (->> @ratings&
+                                     :agg-group-prod-rating
+                                     (reduce (fn [acc {:keys [rating count-stack-items]}]
+                                               (update acc rating + count-stack-items))
+                                             {1 0, 2 0, 3 0, 4 0, 5 0})
+                                     (remove (comp nil? key))
+                                     (into {}))
+                   ratings-sum (reduce (fn [acc [k v]] (+ acc (* k v))) 0 ratings-enum)
+                   ratings-count (reduce (fn [acc [k v]] (+ acc v)) 0 ratings-enum)
+                   ratings-mean (when (pos? ratings-count)
+                                  (/ ratings-sum ratings-count))]
+               (if ratings-mean
+                 [:<>
+                  [:> ui/Rating {:rating ratings-mean
+                                 :maxRating 5
+                                 :size "large"
+                                 :disabled true}]
+                  [:br]
+                  (str ratings-mean " out of 5 stars - " ratings-count " Ratings")]
+                 "No ratings available.")))]]]]
        [:> ui/GridRow
         [c-display-field 16
          "Used By Organizations"
