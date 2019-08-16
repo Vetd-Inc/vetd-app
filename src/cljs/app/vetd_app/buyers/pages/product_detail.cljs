@@ -156,7 +156,7 @@
 
 (defn c-product
   "Component to display Product details."
-  [{:keys [id pname form-docs vendor discounts] :as product}]
+  [{:keys [id pname form-docs vendor discounts stack-items] :as product}]
   (let [v-fn (partial docs/get-value-by-term (-> form-docs first :response-prompts))
         c-display-field (bc/requestable
                          (partial bc/c-display-field* {:type :product
@@ -164,7 +164,7 @@
                                                        :name pname}))]
     [:<>
      [c-product-header-segment product v-fn discounts]
-     [bc/c-community c-display-field id]
+     [bc/c-community c-display-field id stack-items]
      [bc/c-pricing c-display-field v-fn discounts]
      [bc/c-vendor-profile (-> vendor :docs-out first) (:id vendor) (:oname vendor)]
      [bc/c-onboarding c-display-field v-fn]
@@ -214,7 +214,12 @@
                                                :deleted nil}
                                       [:id :idstr :created :status]]
                                      [:categories {:ref-deleted nil}
-                                      [:id :idstr :cname]]]]]}])]
+                                      [:id :idstr :cname]]
+                                     [:stack-items
+                                      [:id :price-amount :price-period
+                                       [:buyer
+                                        [:id :oname]]]]
+                                     ]]]}])]
     (fn []
       [:div.container-with-sidebar
        [:div.sidebar

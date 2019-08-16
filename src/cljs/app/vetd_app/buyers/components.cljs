@@ -1,5 +1,6 @@
 (ns vetd-app.buyers.components
-  (:require [vetd-app.ui :as ui]
+  (:require [vetd-app.common.components :as cc]
+            [vetd-app.ui :as ui]
             [vetd-app.util :as util]
             [vetd-app.docs :as docs]
             [reagent.core :as r]
@@ -451,7 +452,7 @@
   "Component to display community information of a product profile.
   c-display-field - component to display a field (key/value)
   v-fn - function to get value per some prompt term"
-  [c-display-field product-id]
+  [c-display-field product-id stack-items]
   (let [group-ids& (rf/subscribe [:group-ids])
         ratings& (rf/subscribe [:gql/sub
                                 {:queries
@@ -460,43 +461,70 @@
                                    [:group-id :product-id
                                     :count-stack-items :rating]]]}])]
     (fn [c-display-field]
-      [c-profile-segment {:title [:<> "Community "
-                                  [:small (str @group-ids&)]]}
-       [:> ui/GridRow
-        [c-display-field 8
-         "Median Price"
-         "$12"]
-        [:> ui/GridColumn {:width 8}
-         [:> ui/Segment {:class "display-field"
-                         :vertical true}
-          [:h3.display-field-key
-           "Average Rating"]
-          [:div.display-field-value
-           (when-not (= :loading @ratings&)
-             (let [ratings-enum (->> @ratings&
-                                     :agg-group-prod-rating
-                                     (reduce (fn [acc {:keys [rating count-stack-items]}]
-                                               (update acc rating + count-stack-items))
-                                             {1 0, 2 0, 3 0, 4 0, 5 0})
-                                     (remove (comp nil? key))
-                                     (into {}))
-                   ratings-sum (reduce (fn [acc [k v]] (+ acc (* k v))) 0 ratings-enum)
-                   ratings-count (reduce (fn [acc [k v]] (+ acc v)) 0 ratings-enum)
-                   ratings-mean (when (pos? ratings-count)
-                                  (/ ratings-sum ratings-count))]
-               (if ratings-mean
-                 [:<>
-                  [:> ui/Rating {:rating ratings-mean
-                                 :maxRating 5
-                                 :size "large"
-                                 :disabled true}]
-                  [:br]
-                  (str ratings-mean " out of 5 stars - " ratings-count " Ratings")]
-                 "No ratings available.")))]]]]
-       [:> ui/GridRow
-        [c-display-field 16
-         "Used By Organizations"
-         "Martin Guitars, Taylor Guitars"]]])))
+      (let [used-by-orgs (->> stack-items
+                              (map (comp :oname :buyer))
+                              distinct)
+            ;; how many orgs to show
+            max-used-by-orgs 15]
+        [c-profile-segment {:title [:<> "Community "
+                                    #_[:small (str @group-ids&)]]}
+         [:> ui/GridRow
+          [c-display-field 8
+           "Median Price"
+           "$12"]
+          [:> ui/GridColumn {:width 8}
+           [:> ui/Segment {:class "display-field"
+                           :vertical true}
+            [:h3.display-field-key
+             "Average Rating"]
+            [:div.display-field-value
+             (when-not (= :loading @ratings&)
+               (let [ratings-enum (->> @ratings&
+                                       :agg-group-prod-rating
+                                       (reduce (fn [acc {:keys [rating count-stack-items]}]
+                                                 (update acc rating + count-stack-items))
+                                               {1 0, 2 0, 3 0, 4 0, 5 0})
+                                       (remove (comp nil? key))
+                                       (into {}))
+                     ratings-sum (reduce (fn [acc [k v]] (+ acc (* k v))) 0 ratings-enum)
+                     ratings-count (reduce (fn [acc [k v]] (+ acc v)) 0 ratings-enum)
+                     _ (println (->> @ratings&
+                                     :agg-group-prod-rating))
+                     ratings-mean (when (pos? ratings-count)
+                                    (/ ratings-sum ratings-count))]
+                 (if ratings-mean
+                   [:<>
+                    [:> ui/Rating {:rating ratings-mean
+                                   :maxRating 5
+                                   :size "large"
+                                   :disabled true}]
+                    [:br]
+                    (str (/ (Math/round (* ratings-mean 10)) 10)
+                         " out of 5 stars - " ratings-count " Ratings")]
+                   "No ratings available.")))]]]]
+         [:> ui/GridRow
+          [:> ui/GridColumn {:width 16}
+           [:> ui/Segment {:class "display-field"
+                           :vertical true}
+            [:h3.display-field-key
+             "Usage"]
+            [:div.display-field-value
+             (if (seq used-by-orgs)
+               [:<>
+                (str "Used by " (count used-by-orgs) " organizations in your communities.")
+                [:div {:style {:margin-top 7}}
+                 (util/augment-with-keys
+                  (for [org-name (take max-used-by-orgs used-by-orgs)]
+                    [:> ui/Popup
+                     {:position "bottom center"
+                      :content org-name
+                      :trigger (r/as-element
+                                [:div {:style {:display "inline-block"
+                                               :margin-right 7}}
+                                 [cc/c-avatar-initials org-name]])}]))
+                 (when (> (count used-by-orgs) max-used-by-orgs) 
+                   " see all")]]
+               "No one in your communities has used this product.")]]]]]))))
 
 (defn c-pricing
   "Component to display pricing information of a product profile.
