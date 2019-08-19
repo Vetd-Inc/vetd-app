@@ -498,7 +498,7 @@
                         (filter (comp seq :stack-items))
                         distinct)
               multiple-groups? (> (count @group-ids&) 1)]
-          [c-profile-segment {:title "Community"}
+          [c-profile-segment {:title (str "Your Communit" (if multiple-groups? "ies" "y"))}
            (when (seq orgs)
              [:> ui/GridRow
               [:> ui/GridColumn {:width 8}
@@ -508,10 +508,11 @@
                  "Median Annual Price"]
                 [:div.display-field-value
                  (let [median-prices (map :median-price agg-group-prod-price)]
-                   (when (seq median-prices)
+                   (if (seq median-prices)
                      (str "$" ;; get the mean from all the member'd groups' medians
                           (util/decimal-format (/ (apply + median-prices) (count median-prices)))
-                          " / year")))]]]
+                          " / year")
+                     "No community pricing data."))]]]
               [:> ui/GridColumn {:width 8}
                [:> ui/Segment {:class "display-field"
                                :vertical true}
@@ -537,8 +538,9 @@
                                      :disabled true}]
                       [:br]
                       (str (/ (Math/round (* ratings-mean 10)) 10)
-                           " out of 5 stars - " ratings-count " Ratings")]
-                     "No ratings available."))]]]])
+                           " out of 5 stars - " ratings-count
+                           " Rating" (when (> ratings-count 1) "s"))]
+                     "No community ratings available."))]]]])
            [:> ui/GridRow
             [:> ui/GridColumn {:width 16}
              [:> ui/Segment {:class "display-field"

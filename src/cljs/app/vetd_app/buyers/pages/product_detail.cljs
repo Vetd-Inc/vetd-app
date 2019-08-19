@@ -162,10 +162,12 @@
         c-display-field (bc/requestable
                          (partial bc/c-display-field* {:type :product
                                                        :id id
-                                                       :name pname}))]
+                                                       :name pname}))
+        group-ids& (rf/subscribe [:group-ids])]
     [:<>
      [c-product-header-segment product v-fn discounts]
-     [bc/c-community c-display-field id agg-group-prod-rating agg-group-prod-price]
+     (when (seq @group-ids&)
+       [bc/c-community c-display-field id agg-group-prod-rating agg-group-prod-price])
      [bc/c-pricing c-display-field v-fn discounts]
      [bc/c-vendor-profile (-> vendor :docs-out first) (:id vendor) (:oname vendor)]
      [bc/c-onboarding c-display-field v-fn]
