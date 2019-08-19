@@ -700,20 +700,22 @@
                                   use-id?))
 
 (defn doc->appliable--find-form
-  [{:keys [dtype dsubtype update-doc-id] :as d}]
-  (when (or dtype dsubtype update-doc-id)
+  [{:keys [dtype dsubtype update-doc-id form-id] :as d}]
+  (when (or dtype dsubtype update-doc-id form-id)
     (let [form-fields [:id :ftype :fsubtype
                        [:prompts
                         [:id :term
                          [:fields
                           [:id :fname :ftype :fsubtype]]]]]
-          form-args (merge {:_order_by {:created :desc}
-                            :_limit 1
-                            :deleted nil}
-                           (when dtype
-                             {:ftype dtype})
-                           (when dsubtype
-                             {:fsubtype dsubtype}))]
+          form-args (if form-id
+                      {:id form-id}
+                      (merge {:_order_by {:created :desc}
+                              :_limit 1
+                              :deleted nil}
+                             (when dtype
+                               {:ftype dtype})
+                             (when dsubtype
+                               {:fsubtype dsubtype})))]
       (if update-doc-id
         (-> [[:docs {:id update-doc-id}
               [[:form form-fields]]]]
@@ -747,20 +749,20 @@
         grouped-prompts (-> (merge (group-by (comp keyword :term) prompts)
                                    (group-by :id prompts))
                             (dissoc nil))]
-    (vec (for [[k r] responses]
-           (let [{prompt-id :id :keys [fields]} (-> k grouped-prompts first)]
-             (if prompt-id
-               {:item {}
-                :children [{:item {:prompt-id prompt-id}
-                             :children (fields->proc-tree r fields)}]}
-               (throw (Exception. (str "Could not find prompt with term or id: " k)))))))))
+    (vec (remove nil?
+                 (for [[k r] responses]
+                   (let [{prompt-id :id :keys [fields]} (-> k grouped-prompts first)]
+                     (when prompt-id
+                       {:item {}
+                        :children [{:item {:prompt-id prompt-id}
+                                    :children (fields->proc-tree r fields)}]})))))))
 
 ;; TODO set responses.subject
 (defn doc->proc-tree
   [{:keys [data dtype dsubtype update-doc-id] :as d}]
   (if-let [{:keys [id ftype fsubtype prompts]} (doc->appliable--find-form d)]
     {:handler-args d
-     :item (merge (select-keys d ;; TODO hard-coded fields sucks -- Bill
+     :item (merge (select-keys d ;; TODO hard-coded fields, sucks -- Bill
                                [:title :dtype :descr :notes :from-org-id
                                 :from-user-id :to-org-id :to-user-id
                                 :dtype :dsubtype :form-id :subject])
@@ -990,3 +992,30 @@
          (map (partial upsert-prompts-to-form prompts))
          doall)))
 
+(defn get-auto-pop-data
+  [subject dtype]
+  (let [data (->> {:select [[:prompt_id :prompt-id]
+                            [:prompt_term :prompt-term]
+                            [:resp_field_nval :resp_field_nval]
+                            [:prompt_field_fname :prompt-field-fname]
+                            [:resp_field_dval :resp-field-dval]
+                            [:resp_field_jval :resp-field-jval]
+                            [:resp_field_idx :resp-field-idx]]
+                   :from [:docs_to_fields]
+                   :where [:and
+                           [:= :doc_subject 272814695158]
+                           [:= :doc_dtype "product-profile"]]}
+                  db/hs-query
+                  (group-by #(or (:prompt-term %)
+                                 (:prompt-id %)))
+                  (ut/fmap (fn [x]
+                             (group-by :prompt-field-fname
+                                       x))))]
+    {:terms (->> (for [[k v] data]
+                   (when (string? k)
+                     [(keyword k) v]))
+                 (into {}))
+     :prompt-ids (->> (for [[k v] data]
+                         (when (number? k)
+                           [k v]))
+                       (into {}))}))

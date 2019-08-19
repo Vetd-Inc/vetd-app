@@ -463,6 +463,8 @@ Round URL: https://app.vetd.com/b/rounds/%s"
                         [:= :product_id product-id]]))
     product-ids)))
 
+
+
 ;; additional side effects upon creating a round-initiation doc
 (defmethod docs/handle-doc-creation :round-initiation
   [{:keys [id]} {:keys [round-id]}]
@@ -479,7 +481,13 @@ Round URL: https://app.vetd.com/b/rounds/%s"
       (catch Throwable t
         (com/log-error t)))
     (try
-      (rounds/sync-round-vendor-req-forms round-id)
+      (let [{:keys [added]} (rounds/sync-round-vendor-req-forms round-id)]
+        (doseq [{:keys [id subject from-org-id to-org-id]} added]
+          (docs/create-doc {:form-id id
+                            :subject subject
+                            :data (docs/get-auto-pop-data id subject)
+                            :to-org-id from-org-id
+                            :from-org-id to-org-id})))
       (catch Throwable e
         (com/log-error e)))
     (try

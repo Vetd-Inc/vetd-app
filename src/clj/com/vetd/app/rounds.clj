@@ -59,19 +59,27 @@
                        rps)
         to-remove (filter (partial sync-round-vendor-req-forms-to-remove
                                    prod-id->exists)
-                          rps)]
-    (doseq [{:keys [id vendor-id product]} to-add]
-      (docs/create-form-from-template {:form-template-id form-template-id
-                                       :from-org-id buyer-id
-                                       :to-org-id (:vendor-id product)
-                                       :subject id
-                                       :title (format "Round Req Form -- round %d / prod %d "
-                                                      round-id
-                                                      vendor-id)}))
+                          rps)
+        added (-> (for [{:keys [id vendor-id product]} to-add]
+                    (docs/create-form-from-template {:form-template-id form-template-id
+                                                     :from-org-id buyer-id
+                                                     :to-org-id (:vendor-id product)
+                                                     :subject id
+                                                     :title (format "Round Req Form -- round %d / prod %d "
+                                                                    round-id
+                                                                    vendor-id)}))
+                  doall)]
     (doseq [{:keys [id] forms :vendor-response-form-docs :as r} to-remove]
       (docs/update-deleted :round_product id)
       (doseq [{form-id :id doc-id :doc-id} forms]
         (when doc-id
           (docs/update-deleted :docs doc-id))
         (docs/update-deleted :forms form-id)))
-    [to-add to-remove]))
+    {:to-add to-add
+     :added added
+     :to-remove to-remove}))
+
+
+#_ (clojure.pprint/pprint
+    (get-auto-pop-data 272814695158
+                       "product-profile"))
