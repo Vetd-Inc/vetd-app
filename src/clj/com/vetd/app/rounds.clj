@@ -75,11 +75,5 @@
         (when doc-id
           (docs/update-deleted :docs doc-id))
         (docs/update-deleted :forms form-id)))
-    {:to-add to-add
-     :added added
+    {:added (map vector added to-add)
      :to-remove to-remove}))
-
-
-#_ (clojure.pprint/pprint
-    (get-auto-pop-data 272814695158
-                       "product-profile"))

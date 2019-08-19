@@ -992,30 +992,45 @@
          (map (partial upsert-prompts-to-form prompts))
          doall)))
 
+(defn get-auto-pop-data*
+  [{:keys [nval dval sval jval] :as m}]
+  (or jval dval nval sval))
+
 (defn get-auto-pop-data
   [subject dtype]
   (let [data (->> {:select [[:prompt_id :prompt-id]
                             [:prompt_term :prompt-term]
-                            [:resp_field_nval :resp_field_nval]
                             [:prompt_field_fname :prompt-field-fname]
-                            [:resp_field_dval :resp-field-dval]
-                            [:resp_field_jval :resp-field-jval]
-                            [:resp_field_idx :resp-field-idx]]
+                            [:resp_field_nval :nval]
+                            [:resp_field_dval :dval]
+                            [:resp_field_sval :sval]
+                            [:resp_field_jval :jval]
+                            [:resp_field_idx :idx]]
                    :from [:docs_to_fields]
                    :where [:and
-                           [:= :doc_subject 272814695158]
-                           [:= :doc_dtype "product-profile"]]}
+                           [:= :doc_subject subject]
+                           [:= :doc_dtype dtype]]}
                   db/hs-query
                   (group-by #(or (:prompt-term %)
                                  (:prompt-id %)))
                   (ut/fmap (fn [x]
-                             (group-by :prompt-field-fname
-                                       x))))]
+                             (->> x
+                                  (group-by :prompt-field-fname)
+                                  (ut/fmap (fn [y]
+                                             (-> y
+                                                 first
+                                                 get-auto-pop-data*)))))))]
+    (def data1 data)
+    #_ (clojure.pprint/pprint  data1)
     {:terms (->> (for [[k v] data]
                    (when (string? k)
                      [(keyword k) v]))
                  (into {}))
      :prompt-ids (->> (for [[k v] data]
-                         (when (number? k)
-                           [k v]))
-                       (into {}))}))
+                        (when (number? k)
+                          [k v]))
+                      (into {}))}))
+
+
+#_
+(clojure.pprint/pprint  (get-auto-pop-data 1993514743443 "product-profile"))

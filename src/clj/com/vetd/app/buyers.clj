@@ -482,10 +482,12 @@ Round URL: https://app.vetd.com/b/rounds/%s"
         (com/log-error t)))
     (try
       (let [{:keys [added]} (rounds/sync-round-vendor-req-forms round-id)]
-        (doseq [{:keys [id subject from-org-id to-org-id]} added]
+        (doseq [[{:keys [id subject from-org-id to-org-id]}
+                 {:keys [product-id]}]
+                added]
           (docs/create-doc {:form-id id
                             :subject subject
-                            :data (docs/get-auto-pop-data id subject)
+                            :data (docs/get-auto-pop-data product-id "product-profile")
                             :to-org-id from-org-id
                             :from-org-id to-org-id})))
       (catch Throwable e
