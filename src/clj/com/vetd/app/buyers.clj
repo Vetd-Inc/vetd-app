@@ -470,7 +470,6 @@ Round URL: https://app.vetd.com/b/rounds/%s"
                                     (catch Throwable t
                                       (com/log-error t)))]
     
-    ;; TODO invite pre-selected product, if there is one
     (try
       (db/update-any! {:id round-id
                        :doc_id id
@@ -480,11 +479,15 @@ Round URL: https://app.vetd.com/b/rounds/%s"
       (catch Throwable t
         (com/log-error t)))
     (try
+      (rounds/sync-round-vendor-req-forms round-id)
+      (catch Throwable e
+        (com/log-error e)))
+    (try
       (notify-round-init-form-completed id)
       (catch Throwable t
         (com/log-error t)))))
 
-(defmethod com/handle-ws-inbound :b/round.add-products
+(defmethod com/handle-ws-inbound :b/round.products
   [{:keys [round-id product-ids product-names buyer-id]} ws-id sub-fn]
   (when-not (empty? product-ids)
     (com/sns-publish

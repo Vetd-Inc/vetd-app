@@ -20,7 +20,6 @@
 
 (defn invite-product-to-round
   [product-id round-id]
-      ;; TODO call sync-round-vendor-req-forms too, once we're ready  
   (insert-round-product round-id product-id))
 
 (defn sync-round-vendor-req-forms-to-add
