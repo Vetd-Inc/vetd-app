@@ -1783,6 +1783,23 @@
                                       :group-by [:gom.group_id :si.product_id :si.rating]}
                               :owner :vetd
                               :grants {:hasura [:SELECT]}}]]
+
+   [[2019 8 19 0 0]
+    
+    [:create-or-replace-view {:schema :vetd
+                              :name :agg_group_prod_price
+                              :honey {:select [[:gom.group_id :group_id]
+                                               [:si.product_id :product_id]
+                                               [(honeysql.core/raw "percentile_disc (0.5) WITHIN GROUP (ORDER BY si.price_amount)") :median-price]]
+                                      :from [[:group_org_memberships :gom]]
+                                      :join [[:stack_items :si]
+                                             [:and
+                                              [:= :si.buyer_id :gom.org_id]
+                                              [:= :si.deleted nil]]]
+                                      :group-by [:gom.group_id :si.product_id]}
+                              :owner :vetd
+                              :grants {:hasura [:SELECT]}}]]
+   
    ])
 
 

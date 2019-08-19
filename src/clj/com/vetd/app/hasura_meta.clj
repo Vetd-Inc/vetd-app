@@ -350,6 +350,12 @@
                     :vetd :agg_group_prod_rating]
            :fields [:agg_group_prod_rating]
            :cols [:id :product_id]
+           :rel :many-many}
+
+          {:tables [:vetd :products
+                    :vetd :agg_group_prod_price]
+           :fields [:agg_group_prod_price]
+           :cols [:id :product_id]
            :rel :many-many}]})
 
 
