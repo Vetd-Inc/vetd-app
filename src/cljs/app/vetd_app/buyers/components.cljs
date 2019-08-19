@@ -498,8 +498,7 @@
                         (filter (comp seq :stack-items))
                         distinct)
               multiple-groups? (> (count @group-ids&) 1)]
-          [c-profile-segment {:title [:<> "Community "
-                                      #_[:small (str @group-ids&)]]}
+          [c-profile-segment {:title "Community"}
            (when (seq orgs)
              [:> ui/GridRow
               [:> ui/GridColumn {:width 8}
@@ -534,7 +533,7 @@
                      [:<>
                       [:> ui/Rating {:rating ratings-mean
                                      :maxRating 5
-                                     :size "large"
+                                     :size "huge"
                                      :disabled true}]
                       [:br]
                       (str (/ (Math/round (* ratings-mean 10)) 10)
