@@ -463,7 +463,16 @@ Round URL: https://app.vetd.com/b/rounds/%s"
                         [:= :product_id product-id]]))
     product-ids)))
 
-
+(defn sync-round-vendor-req-forms&docs [round-id]
+  (let [{:keys [added]} (rounds/sync-round-vendor-req-forms round-id)]
+    (doseq [[{:keys [id subject from-org-id to-org-id]}
+             {:keys [product-id]}]
+            added]
+      (docs/create-doc {:form-id id
+                        :subject subject
+                        :data (docs/get-auto-pop-data product-id "product-profile")
+                        :to-org-id from-org-id
+                        :from-org-id to-org-id}))))
 
 ;; additional side effects upon creating a round-initiation doc
 (defmethod docs/handle-doc-creation :round-initiation
@@ -481,17 +490,8 @@ Round URL: https://app.vetd.com/b/rounds/%s"
       (catch Throwable t
         (com/log-error t)))
     (try
-      (let [{:keys [added]} (rounds/sync-round-vendor-req-forms round-id)]
-        (doseq [[{:keys [id subject from-org-id to-org-id]}
-                 {:keys [product-id]}]
-                added]
-          (docs/create-doc {:form-id id
-                            :subject subject
-                            :data (docs/get-auto-pop-data product-id "product-profile")
-                            :to-org-id from-org-id
-                            :from-org-id to-org-id})))
-      (catch Throwable e
-        (com/log-error e)))
+      (sync-round-vendor-req-forms&docs round-id)
+      (catch Throwable t))    
     (try
       (notify-round-init-form-completed id)
       (catch Throwable t
@@ -518,7 +518,9 @@ Round URL: https://app.vetd.com/b/rounds/%s"
   (when-not (empty? product-ids)
     (doseq [product-id product-ids]
       (rounds/invite-product-to-round product-id round-id))
-    (rounds/sync-round-vendor-req-forms round-id))
+    (try
+      (sync-round-vendor-req-forms&docs round-id)
+      (catch Throwable t)))
   {})
 
 (defmethod com/handle-ws-inbound :b/set-round-products-order

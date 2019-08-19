@@ -996,6 +996,7 @@
   [{:keys [nval dval sval jval] :as m}]
   (or jval dval nval sval))
 
+;; TODO ugh.... we are not actually reusing the response records!!!!!!!!!!!
 (defn get-auto-pop-data
   [subject dtype]
   (let [data (->> {:select [[:prompt_id :prompt-id]
