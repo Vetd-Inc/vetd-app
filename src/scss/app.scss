@@ -448,6 +448,15 @@ a.label {
   }
 }
 
+.list a.item {
+  &:hover {
+    opacity: 0.7;
+    .avatar {
+      filter: brightness(1.04);
+    }
+  }
+}
+
 
 /* Override basic Semantic UI behavior */
 b, strong {

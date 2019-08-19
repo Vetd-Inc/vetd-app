@@ -448,6 +448,31 @@
                 :style {:margin-top 0}}
     (util/augment-with-keys children)]])
 
+(defn c-community-usage-modal
+  [showing?& orgs]
+  (fn [showing?& orgs]
+    [:> ui/Modal {:open @showing?&
+                  :on-close #(reset! showing?& false)
+                  :size "tiny"
+                  :dimmer "inverted"
+                  :closeOnDimmerClick true
+                  :closeOnEscape true
+                  :closeIcon true} 
+     [:> ui/ModalHeader "Usage in Your Communities"]
+     [:> ui/ModalContent {:scrolling true}
+      [:p "This product has been used by " (count orgs) " organizations in your communities."]
+      [:> ui/List
+       (util/augment-with-keys
+        (for [{:keys [id oname]} orgs]
+          [:> ui/ListItem {:as "a"}
+           [:> ui/ListContent
+            [:div {:style {:display "inline-block"
+                           :float "left"
+                           :margin-right 7}}
+             [cc/c-avatar-initials oname]]
+            [:> ui/ListHeader {:style {:line-height "40px"}}
+             oname]]]))]]]))
+
 (defn c-community
   "Component to display community information of a product profile.
   c-display-field - component to display a field (key/value)
@@ -459,13 +484,13 @@
                                  [[:agg-group-prod-rating {:group-id @group-ids&
                                                            :product-id product-id}
                                    [:group-id :product-id
-                                    :count-stack-items :rating]]]}])]
+                                    :count-stack-items :rating]]]}])
+        showing?& (r/atom false)]
     (fn [c-display-field]
-      (let [used-by-orgs (->> stack-items
-                              (map (comp :oname :buyer))
-                              distinct)
-            ;; how many orgs to show
-            max-used-by-orgs 15]
+      (let [orgs (->> stack-items
+                      (map :buyer)
+                      distinct)
+            max-orgs-showing 4]
         [c-profile-segment {:title [:<> "Community "
                                     #_[:small (str @group-ids&)]]}
          [:> ui/GridRow
@@ -479,7 +504,8 @@
              "Average Rating"]
             [:div.display-field-value
              (when-not (= :loading @ratings&)
-               (let [ratings-enum (->> @ratings&
+               (let [ ;; e.g., {[rating] [agg count], 2 8, 3 2, 4 0, 5 4}
+                     ratings-enum (->> @ratings&
                                        :agg-group-prod-rating
                                        (reduce (fn [acc {:keys [rating count-stack-items]}]
                                                  (update acc rating + count-stack-items))
@@ -488,8 +514,6 @@
                                        (into {}))
                      ratings-sum (reduce (fn [acc [k v]] (+ acc (* k v))) 0 ratings-enum)
                      ratings-count (reduce (fn [acc [k v]] (+ acc v)) 0 ratings-enum)
-                     _ (println (->> @ratings&
-                                     :agg-group-prod-rating))
                      ratings-mean (when (pos? ratings-count)
                                     (/ ratings-sum ratings-count))]
                  (if ratings-mean
@@ -509,21 +533,24 @@
             [:h3.display-field-key
              "Usage"]
             [:div.display-field-value
-             (if (seq used-by-orgs)
+             (if (seq orgs)
                [:<>
-                (str "Used by " (count used-by-orgs) " organizations in your communities.")
+                (str "Used by " (count orgs) " organizations in your communities.")
                 [:div {:style {:margin-top 7}}
                  (util/augment-with-keys
-                  (for [org-name (take max-used-by-orgs used-by-orgs)]
+                  (for [{:keys [oname]} (take max-orgs-showing orgs)]
                     [:> ui/Popup
                      {:position "bottom center"
-                      :content org-name
+                      :content oname
                       :trigger (r/as-element
                                 [:div {:style {:display "inline-block"
                                                :margin-right 7}}
-                                 [cc/c-avatar-initials org-name]])}]))
-                 (when (> (count used-by-orgs) max-used-by-orgs) 
-                   " see all")]]
+                                 [cc/c-avatar-initials oname]])}]))
+                 (when (> (count orgs) max-orgs-showing)
+                   [:<>
+                    [:a {:on-click #(reset! showing?& true)}
+                     (str " see all " (count orgs) "...")]
+                    [c-community-usage-modal showing?& orgs]])]]
                "No one in your communities has used this product.")]]]]]))))
 
 (defn c-pricing
