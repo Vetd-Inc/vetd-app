@@ -1790,7 +1790,7 @@
                               :name :agg_group_prod_price
                               :honey {:select [[:gom.group_id :group_id]
                                                [:si.product_id :product_id]
-                                               [(honeysql.core/raw "percentile_disc (0.5) WITHIN GROUP (ORDER BY si.price_amount)") :median-price]]
+                                               [(honeysql.core/raw "percentile_disc (0.5) WITHIN GROUP (ORDER BY si.price_amount)") :median_price]]
                                       :from [[:group_org_memberships :gom]]
                                       :join [[:stack_items :si]
                                              [:and
