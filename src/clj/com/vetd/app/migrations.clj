@@ -1795,7 +1795,8 @@
                                       :join [[:stack_items :si]
                                              [:and
                                               [:= :si.buyer_id :gom.org_id]
-                                              [:= :si.deleted nil]]]
+                                              [:= :si.deleted nil]
+                                              [:<> :si.price_period nil]]]
                                       :group-by [:gom.group_id :si.product_id]}
                               :owner :vetd
                               :grants {:hasura [:SELECT]}}]]
