@@ -220,7 +220,7 @@
                                       [:group-id :product-id
                                        :count-stack-items :rating]]
                                      [:agg-group-prod-price {:group-id @group-ids&}
-                                      [:group-id :product-id :median-price]]]]]}])]
+                                      [:group-id :median-price]]]]]}])]
     (fn []
       [:div.container-with-sidebar
        [:div.sidebar

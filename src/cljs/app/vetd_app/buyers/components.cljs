@@ -494,9 +494,17 @@
       [c-profile-segment {:title [:<> "Community "
                                   #_[:small (str @group-ids&)]]}
        [:> ui/GridRow
-        [c-display-field 8
-         "Median Price"
-         (str agg-group-prod-price)]
+        [:> ui/GridColumn {:width 8}
+         [:> ui/Segment {:class "display-field"
+                         :vertical true}
+          [:h3.display-field-key
+           "Median Annual Price"]
+          [:div.display-field-value
+           (let [median-prices (map :median-price agg-group-prod-price)]
+             (when (seq median-prices)
+               (str "$" ;; get the mean from all the member'd groups' medians
+                    (util/decimal-format (/ (apply + median-prices) (count median-prices)))
+                    " / year")))]]]
         [:> ui/GridColumn {:width 8}
          [:> ui/Segment {:class "display-field"
                          :vertical true}
@@ -537,7 +545,7 @@
                              (map :orgs)
                              (filter (comp seq :stack-items))
                              distinct)
-                   max-orgs-showing 4]
+                   max-orgs-showing 10]
                (if (seq orgs)
                  [:<>
                   (str "Used by " (count orgs) " organizations in your communities.")
@@ -548,8 +556,8 @@
                        {:position "bottom center"
                         :content oname
                         :trigger (r/as-element
-                                  [:div {:style {:display "inline-block"
-                                                 :margin-right 7}}
+                                  [:a {:style {:display "inline-block"
+                                               :margin-right 7}}
                                    [cc/c-avatar-initials oname]])}]))
                    (when (> (count orgs) max-orgs-showing)
                      [:<>
