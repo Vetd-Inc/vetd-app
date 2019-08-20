@@ -148,7 +148,7 @@
                     :style {:user-select "none"}}
    [:> ui/Step {:style {:cursor "inherit"}
                 :disabled (not= status "initiation")}
-    [:> ui/Icon {:name "clipboard outline"}]
+    [:> ui/Icon {:name "wpforms"}]
     [:> ui/StepContent
      [:> ui/StepTitle "Initiation"]
      [:> ui/StepDescription "Define your requirements"]]]

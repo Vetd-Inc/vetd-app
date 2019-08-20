@@ -281,7 +281,7 @@
                         [c-preposal-list-item preposal])
                       [:> ui/Segment {:placeholder true}
                        [:> ui/Header {:icon true}
-                        [:> ui/Icon {:name "wpforms"}]
+                        [:> ui/Icon {:name "clipboard outline"}]
                         "No PrePosals match your filter choices."]
                        [:div {:style {:text-align "center"
                                       :margin-top 10}}
