@@ -981,9 +981,10 @@ $cell-height: 201px;
     margin-right: 14px !important;
     margin-left: 14px !important;
     padding: 10px !important;
-    animation: fade-in-down 0.5s ease-out;
     height: 100px;
     transition: height 0.3s ease-out !important;
+
+    
 
     .product-logo {
       $edge: 77px;
@@ -1029,6 +1030,23 @@ $cell-height: 201px;
       transform: none !important;
     }
     
+  }
+}
+.inner-container:not(.initial-load) {
+  .stack > .results > .item {
+    animation: expand-in 0.5s ease-out;
+  }
+}
+
+@keyframes expand-in {
+  from {
+    opacity: 0.7;
+    transform: scale(0.97) translateY(-8px);
+  }
+  
+  to {
+    opacity: 1;
+    transform: scale(1);
   }
 }
 

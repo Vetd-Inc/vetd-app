@@ -535,7 +535,8 @@
                       [:> ui/Rating {:rating ratings-mean
                                      :maxRating 5
                                      :size "huge"
-                                     :disabled true}]
+                                     :disabled true
+                                     :style {:margin "0 0 5px -3px"}}]
                       [:br]
                       (str (/ (Math/round (* ratings-mean 10)) 10)
                            " out of 5 stars - " ratings-count
