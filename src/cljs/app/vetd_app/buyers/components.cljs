@@ -475,8 +475,8 @@
       "No community ratings available.")))
 
 (defn c-community-usage-modal
-  [showing?& orgs]
-  (fn [showing?& orgs]
+  [showing?& orgs community-str]
+  (fn [showing?& orgs community-str]
     [:> ui/Modal {:open @showing?&
                   :on-close #(reset! showing?& false)
                   :size "tiny"
@@ -484,9 +484,9 @@
                   :closeOnDimmerClick true
                   :closeOnEscape true
                   :closeIcon true} 
-     [:> ui/ModalHeader "Usage in Your Communities"]
+     [:> ui/ModalHeader (str "Usage in Your " (s/capitalize community-str))]
      [:> ui/ModalContent {:scrolling true}
-      [:p "This product has been used by " (count orgs) " organizations in your communities."]
+      [:p "This product has been used by " (count orgs) " organizations in your " community-str "."]
       [:> ui/List
        (util/augment-with-keys
         (for [{:keys [id oname]} orgs]
@@ -566,7 +566,7 @@
                        [:<>
                         [:a {:on-click #(reset! showing?& true)}
                          (str " see all " (count orgs) "...")]
-                        [c-community-usage-modal showing?& orgs]])]]
+                        [c-community-usage-modal showing?& orgs community-str]])]]
                    (str "No one in your " community-str " has used this product.")))]]]]])))))
 
 (defn c-pricing
