@@ -308,6 +308,14 @@ a.label {
   margin-top: 7px;
 }
 
+.used-by-orgs {
+  margin-top: 7px;
+  
+  > a {
+    display: inline-block;
+    margin-right: 7px;
+  }
+}
 
 /* Products & Categories page */
 .product-search {
@@ -983,8 +991,7 @@ $cell-height: 201px;
     padding: 10px !important;
     height: 100px;
     transition: height 0.3s ease-out !important;
-
-    
+    animation: expand-in 0.4s ease-out;
 
     .product-logo {
       $edge: 77px;
@@ -1030,11 +1037,6 @@ $cell-height: 201px;
       transform: none !important;
     }
     
-  }
-}
-.inner-container:not(.initial-load) {
-  .stack > .results > .item {
-    animation: expand-in 0.5s ease-out;
   }
 }
 

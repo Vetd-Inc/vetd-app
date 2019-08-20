@@ -448,6 +448,32 @@
                 :style {:margin-top 0}}
     (util/augment-with-keys children)]])
 
+(defn c-average-rating
+  [agg-group-prod-rating]
+  (let [ ;; e.g., {[rating] [agg count], 2 8, 3 2, 4 0, 5 4}
+        ratings-enum (->> agg-group-prod-rating
+                          (reduce (fn [acc {:keys [rating count-stack-items]}]
+                                    (update acc rating + count-stack-items))
+                                  {1 0, 2 0, 3 0, 4 0, 5 0})
+                          (remove (comp nil? key))
+                          (into {}))
+        ratings-sum (reduce (fn [acc [k v]] (+ acc (* k v))) 0 ratings-enum)
+        ratings-count (reduce (fn [acc [k v]] (+ acc v)) 0 ratings-enum)
+        ratings-mean (when (pos? ratings-count)
+                       (/ ratings-sum ratings-count))]
+    (if ratings-mean
+      [:<>
+       [:> ui/Rating {:rating ratings-mean
+                      :maxRating 5
+                      :size "huge"
+                      :disabled true
+                      :style {:margin "0 0 5px -3px"}}]
+       [:br]
+       (str (/ (Math/round (* ratings-mean 10)) 10)
+            " out of 5 stars - " ratings-count
+            " Rating" (when (> ratings-count 1) "s"))]
+      "No community ratings available.")))
+
 (defn c-community-usage-modal
   [showing?& orgs]
   (fn [showing?& orgs]
@@ -497,15 +523,14 @@
                         (map :orgs)
                         (filter (comp seq :stack-items))
                         distinct)
-              multiple-groups? (> (count @group-ids&) 1)]
-          [c-profile-segment {:title (str "Your Communit" (if multiple-groups? "ies" "y"))}
+              community-str (str "communit" (if (> (count @group-ids&) 1) "ies" "y"))]
+          [c-profile-segment {:title (str "Your " (s/capitalize community-str))}
            (when (seq orgs)
              [:> ui/GridRow
-              [:> ui/GridColumn {:width 8}
+              [:> ui/GridColumn
                [:> ui/Segment {:class "display-field"
                                :vertical true}
-                [:h3.display-field-key
-                 "Median Annual Price"]
+                [:h3.display-field-key "Median Annual Price"]
                 [:div.display-field-value
                  (let [median-prices (map :median-price agg-group-prod-price)]
                    (if (seq median-prices)
@@ -513,62 +538,36 @@
                           (util/decimal-format (/ (apply + median-prices) (count median-prices)))
                           " / year")
                      "No community pricing data."))]]]
-              [:> ui/GridColumn {:width 8}
+              [:> ui/GridColumn
                [:> ui/Segment {:class "display-field"
                                :vertical true}
-                [:h3.display-field-key
-                 "Average Rating"]
+                [:h3.display-field-key "Average Rating"]
                 [:div.display-field-value
-                 (let [ ;; e.g., {[rating] [agg count], 2 8, 3 2, 4 0, 5 4}
-                       ratings-enum (->> agg-group-prod-rating
-                                         (reduce (fn [acc {:keys [rating count-stack-items]}]
-                                                   (update acc rating + count-stack-items))
-                                                 {1 0, 2 0, 3 0, 4 0, 5 0})
-                                         (remove (comp nil? key))
-                                         (into {}))
-                       ratings-sum (reduce (fn [acc [k v]] (+ acc (* k v))) 0 ratings-enum)
-                       ratings-count (reduce (fn [acc [k v]] (+ acc v)) 0 ratings-enum)
-                       ratings-mean (when (pos? ratings-count)
-                                      (/ ratings-sum ratings-count))]
-                   (if ratings-mean
-                     [:<>
-                      [:> ui/Rating {:rating ratings-mean
-                                     :maxRating 5
-                                     :size "huge"
-                                     :disabled true
-                                     :style {:margin "0 0 5px -3px"}}]
-                      [:br]
-                      (str (/ (Math/round (* ratings-mean 10)) 10)
-                           " out of 5 stars - " ratings-count
-                           " Rating" (when (> ratings-count 1) "s"))]
-                     "No community ratings available."))]]]])
+                 [c-average-rating agg-group-prod-rating]]]]])
            [:> ui/GridRow
-            [:> ui/GridColumn {:width 16}
+            [:> ui/GridColumn
              [:> ui/Segment {:class "display-field"
                              :vertical true}
-              [:h3.display-field-key
-               "Usage"]
+              [:h3.display-field-key "Usage"]
               [:div.display-field-value
                (let [max-orgs-showing 10]
                  (if (seq orgs)
                    [:<>
-                    (str "Used by " (count orgs) " organizations in your " (if multiple-groups? "communities" "community") ".")
-                    [:div {:style {:margin-top 7}}
+                    (str "Used by " (count orgs) " organizations in your " community-str ".")
+                    [:div.used-by-orgs
                      (util/augment-with-keys
                       (for [{:keys [oname]} (take max-orgs-showing orgs)]
                         [:> ui/Popup
                          {:position "bottom center"
                           :content oname
                           :trigger (r/as-element
-                                    [:a {:style {:display "inline-block"
-                                                 :margin-right 7}}
-                                     [cc/c-avatar-initials oname]])}]))
+                                    [:a [cc/c-avatar-initials oname]])}]))
                      (when (> (count orgs) max-orgs-showing)
                        [:<>
                         [:a {:on-click #(reset! showing?& true)}
                          (str " see all " (count orgs) "...")]
                         [c-community-usage-modal showing?& orgs]])]]
-                   (str "No one in your " (if multiple-groups? "communities" "community") " has used this product.")))]]]]])))))
+                   (str "No one in your " community-str " has used this product.")))]]]]])))))
 
 (defn c-pricing
   "Component to display pricing information of a product profile.
