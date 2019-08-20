@@ -344,8 +344,24 @@
       [:h3 "VetdRounds"]
       "Compare similar products side-by-side based on your unique requirements, and make an informed buying decision in a fraction of the time."]]]])
 
+(defn potentially-emphasize-filters []
+  (let [filter& (rf/subscribe [:b/search.filter])
+        has-filter? (some seq (vals @filter&))
+        search-filter-node (util/node-by-id "search-filter")]
+    (when (and has-filter?
+               search-filter-node)
+      (util/add-class search-filter-node "shake")
+      (js/setTimeout (fn []
+                       (when search-filter-node
+                         (util/remove-class search-filter-node "shake")))
+                     2000))))
+
 (defn c-no-results []
-  (let [prod-cat-suggestion (r/atom "")]
+  (let [prod-cat-suggestion (r/atom "")
+        ;; side effect everytime this component is mounted:
+        ;; if there are no results, and there are filters selected,
+        ;; emphasize to user that the filters may be causing the no results.
+        _ (potentially-emphasize-filters)]
     (fn []
       [:> ui/Segment {:placeholder true}
        [:> ui/Header {:icon true}
@@ -493,7 +509,7 @@
     (fn []
       [:div.container-with-sidebar
        [:div.sidebar
-        [:> ui/Segment
+        [:> ui/Segment {:id "search-filter"}
          [:h2 "Filter"]
          [:h4 "Trial"]
          [:> ui/Checkbox {:label "Free Trial"

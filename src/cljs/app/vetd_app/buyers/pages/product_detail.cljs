@@ -156,14 +156,18 @@
 
 (defn c-product
   "Component to display Product details."
-  [{:keys [id pname form-docs vendor discounts] :as product}]
+  [{:keys [id pname form-docs vendor discounts
+           agg-group-prod-rating agg-group-prod-price] :as product}]
   (let [v-fn (partial docs/get-value-by-term (-> form-docs first :response-prompts))
         c-display-field (bc/requestable
                          (partial bc/c-display-field* {:type :product
                                                        :id id
-                                                       :name pname}))]
+                                                       :name pname}))
+        group-ids& (rf/subscribe [:group-ids])]
     [:<>
      [c-product-header-segment product v-fn discounts]
+     (when (seq @group-ids&)
+       [bc/c-community c-display-field id agg-group-prod-rating agg-group-prod-price])
      [bc/c-pricing c-display-field v-fn discounts]
      [bc/c-vendor-profile (-> vendor :docs-out first) (:id vendor) (:oname vendor)]
      [bc/c-onboarding c-display-field v-fn]
@@ -213,7 +217,12 @@
                                                :deleted nil}
                                       [:id :idstr :created :status]]
                                      [:categories {:ref-deleted nil}
-                                      [:id :idstr :cname]]]]]}])]
+                                      [:id :idstr :cname]]
+                                     [:agg-group-prod-rating {:group-id @group-ids&}
+                                      [:group-id :product-id
+                                       :count-stack-items :rating]]
+                                     [:agg-group-prod-price {:group-id @group-ids&}
+                                      [:group-id :median-price]]]]]}])]
     (fn []
       [:div.container-with-sidebar
        [:div.sidebar

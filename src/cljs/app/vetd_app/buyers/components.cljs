@@ -1,5 +1,6 @@
 (ns vetd-app.buyers.components
-  (:require [vetd-app.ui :as ui]
+  (:require [vetd-app.common.components :as cc]
+            [vetd-app.ui :as ui]
             [vetd-app.util :as util]
             [vetd-app.docs :as docs]
             [reagent.core :as r]
@@ -447,6 +448,127 @@
                 :style {:margin-top 0}}
     (util/augment-with-keys children)]])
 
+(defn c-average-rating
+  [agg-group-prod-rating]
+  (let [ ;; e.g., {[rating] [agg count], 2 8, 3 2, 4 0, 5 4}
+        ratings-enum (->> agg-group-prod-rating
+                          (reduce (fn [acc {:keys [rating count-stack-items]}]
+                                    (update acc rating + count-stack-items))
+                                  {1 0, 2 0, 3 0, 4 0, 5 0})
+                          (remove (comp nil? key))
+                          (into {}))
+        ratings-sum (reduce (fn [acc [k v]] (+ acc (* k v))) 0 ratings-enum)
+        ratings-count (reduce (fn [acc [k v]] (+ acc v)) 0 ratings-enum)
+        ratings-mean (when (pos? ratings-count)
+                       (/ ratings-sum ratings-count))]
+    (if ratings-mean
+      [:<>
+       [:> ui/Rating {:rating ratings-mean
+                      :maxRating 5
+                      :size "huge"
+                      :disabled true
+                      :style {:margin "0 0 5px -3px"}}]
+       [:br]
+       (str (/ (Math/round (* ratings-mean 10)) 10)
+            " out of 5 stars - " ratings-count
+            " Rating" (when (> ratings-count 1) "s"))]
+      "No community ratings available.")))
+
+(defn c-community-usage-modal
+  [showing?& orgs community-str]
+  (fn [showing?& orgs community-str]
+    [:> ui/Modal {:open @showing?&
+                  :on-close #(reset! showing?& false)
+                  :size "tiny"
+                  :dimmer "inverted"
+                  :closeOnDimmerClick true
+                  :closeOnEscape true
+                  :closeIcon true} 
+     [:> ui/ModalHeader (str "Usage in Your " (s/capitalize community-str))]
+     [:> ui/ModalContent {:scrolling true}
+      [:p "This product has been used by " (count orgs) " organizations in your " community-str "."]
+      [:> ui/List
+       (util/augment-with-keys
+        (for [{:keys [id oname]} orgs]
+          [:> ui/ListItem {:as "a"}
+           [:> ui/ListContent
+            [:div {:style {:display "inline-block"
+                           :float "left"
+                           :margin-right 7}}
+             [cc/c-avatar-initials oname]]
+            [:> ui/ListHeader {:style {:line-height "40px"}}
+             oname]]]))]]]))
+
+(defn c-community
+  "Component to display community information of a product profile.
+  c-display-field - component to display a field (key/value)
+  v-fn - function to get value per some prompt term"
+  [c-display-field product-id agg-group-prod-rating agg-group-prod-price]
+  (let [group-ids& (rf/subscribe [:group-ids])
+        showing?& (r/atom false)
+        stack-items& (rf/subscribe [:gql/sub
+                                    {:queries
+                                     [[:group-org-memberships {:group-id @group-ids&
+                                                               :deleted nil}
+                                       [:id
+                                        [:orgs
+                                         [:id :oname
+                                          [:stack-items {:product-id product-id
+                                                         :deleted nil}
+                                           [:id :price-amount :price-period]]]]]]]}])]
+    (fn [c-display-field product-id agg-group-prod-rating agg-group-prod-price]
+      (when-not (= :loading @stack-items&)
+        (let [orgs (->> @stack-items&
+                        :group-org-memberships
+                        (map :orgs)
+                        (filter (comp seq :stack-items))
+                        distinct)
+              community-str (str "communit" (if (> (count @group-ids&) 1) "ies" "y"))]
+          [c-profile-segment {:title (str "Your " (s/capitalize community-str))}
+           (when (seq orgs)
+             [:> ui/GridRow
+              [:> ui/GridColumn
+               [:> ui/Segment {:class "display-field"
+                               :vertical true}
+                [:h3.display-field-key "Median Annual Price"]
+                [:div.display-field-value
+                 (let [median-prices (map :median-price agg-group-prod-price)]
+                   (if (seq median-prices)
+                     (str "$" ;; get the mean from all the member'd groups' medians
+                          (util/decimal-format (/ (apply + median-prices) (count median-prices)))
+                          " / year")
+                     "No community pricing data."))]]]
+              [:> ui/GridColumn
+               [:> ui/Segment {:class "display-field"
+                               :vertical true}
+                [:h3.display-field-key "Average Rating"]
+                [:div.display-field-value
+                 [c-average-rating agg-group-prod-rating]]]]])
+           [:> ui/GridRow
+            [:> ui/GridColumn
+             [:> ui/Segment {:class "display-field"
+                             :vertical true}
+              [:h3.display-field-key "Usage"]
+              [:div.display-field-value
+               (let [max-orgs-showing 10]
+                 (if (seq orgs)
+                   [:<>
+                    (str "Used by " (count orgs) " organizations in your " community-str ".")
+                    [:div.used-by-orgs
+                     (util/augment-with-keys
+                      (for [{:keys [oname]} (take max-orgs-showing orgs)]
+                        [:> ui/Popup
+                         {:position "bottom center"
+                          :content oname
+                          :trigger (r/as-element
+                                    [:a [cc/c-avatar-initials oname]])}]))
+                     (when (> (count orgs) max-orgs-showing)
+                       [:<>
+                        [:a {:on-click #(reset! showing?& true)}
+                         (str " see all " (count orgs) "...")]
+                        [c-community-usage-modal showing?& orgs community-str]])]]
+                   (str "No one in your " community-str " has used this product.")))]]]]])))))
+
 (defn c-pricing
   "Component to display pricing information of a product profile.
   c-display-field - component to display a field (key/value)
@@ -500,7 +622,7 @@
      :has-markdown? true]]])
 
 (defn c-client-service
-  "Component to display onboarding information of a product profile.
+  "Component to display client service information of a product profile.
   c-display-field - component to display a field (key/value)
   v-fn - function to get value per some prompt term"
   [c-display-field v-fn]
@@ -512,7 +634,7 @@
      :has-markdown? true]]])
 
 (defn c-reporting
-  "Component to display onboarding information of a product profile.
+  "Component to display reporting information of a product profile.
   c-display-field - component to display a field (key/value)
   v-fn - function to get value per some prompt term"
   [c-display-field v-fn]
@@ -533,7 +655,7 @@
       :has-markdown? true]]]])
 
 (defn c-market-niche
-  "Component to display onboarding information of a product profile.
+  "Component to display market niche information of a product profile.
   c-display-field - component to display a field (key/value)
   v-fn - function to get value per some prompt term"
   [c-display-field v-fn]

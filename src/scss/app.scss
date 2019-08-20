@@ -308,6 +308,14 @@ a.label {
   margin-top: 7px;
 }
 
+.used-by-orgs {
+  margin-top: 7px;
+  
+  > a {
+    display: inline-block;
+    margin-right: 7px;
+  }
+}
 
 /* Products & Categories page */
 .product-search {
@@ -445,6 +453,15 @@ a.label {
   
   .content {
     line-height: 20px !important;
+  }
+}
+
+.list a.item {
+  &:hover {
+    opacity: 0.7;
+    .avatar {
+      filter: brightness(1.04);
+    }
   }
 }
 
@@ -972,9 +989,9 @@ $cell-height: 201px;
     margin-right: 14px !important;
     margin-left: 14px !important;
     padding: 10px !important;
-    animation: fade-in-down 0.5s ease-out;
     height: 100px;
     transition: height 0.3s ease-out !important;
+    animation: expand-in 0.4s ease-out;
 
     .product-logo {
       $edge: 77px;
@@ -992,24 +1009,6 @@ $cell-height: 201px;
         transform: none !important;
       }
     }
-
-    .ui.rating.not-rated .icon:before {
-      font-family: 'outline-icons' !important;
-      font-size: 14px;
-      position: relative;
-      top: -1px;
-    }
-    .ui.rating .icon.selected:before {
-      color: $blue !important;
-    }
-    .ui.rating:not(.not-rated) .icon.active:before {
-      color: $blue !important;
-    }
-    // this is buggy, maybe come back to this some time
-    // .ui.rating:not(.not-rated):not(:focus):hover .icon:not(.selected):before {
-    //   color: rgba(0, 0, 0, 0.15) !important;
-    // }
-    
 
     .fields {
       margin: 0;
@@ -1038,6 +1037,18 @@ $cell-height: 201px;
       transform: none !important;
     }
     
+  }
+}
+
+@keyframes expand-in {
+  from {
+    opacity: 0.7;
+    transform: scale(0.97) translateY(-8px);
+  }
+  
+  to {
+    opacity: 1;
+    transform: scale(1);
   }
 }
 
@@ -1070,8 +1081,35 @@ $cell-height: 201px;
   }
 }
 
+.ui.rating.not-rated .icon:before {
+  font-family: 'outline-icons' !important;
+  font-size: 14px;
+  position: relative;
+  top: -1px;
+}
+.ui.rating .icon.selected:before {
+  color: $blue !important;
+}
+.ui.rating:not(.not-rated) .icon.active:before {
+  color: $blue !important;
+}
+// this is buggy, maybe come back to this some time
+// .ui.rating:not(.not-rated):not(:focus):hover .icon:not(.selected):before {
+//   color: rgba(0, 0, 0, 0.15) !important;
+// }
 
 
+// experiments with animated vetd-backgrounds
+// .button {
+//   background: linear-gradient(282deg, #6dccce, #32abde) !important;
+//   background-size: 400% 400% !important;
+//   animation: gradient-roll 1s ease infinite !important;
+// }
+// @keyframes gradient-roll { 
+//   0%{background-position:0% 28%}
+//   50%{background-position:100% 73%}
+//   100%{background-position:0% 28%}
+// }
 
 
 /* Loading Spinner */
@@ -1120,6 +1158,10 @@ div.spinner i:nth-child(2) {
   }
 }
 
+
+.shake {
+  animation: shake 0.82s cubic-bezier(.36,.07,.19,.97) both;
+}
 
 .error.form {
   animation: shake 0.82s cubic-bezier(.36,.07,.19,.97) both;

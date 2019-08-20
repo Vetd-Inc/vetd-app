@@ -1765,7 +1765,43 @@
                                              [:prompt_fields :pf] [:and [:= :pf.id :rf.pf_id] [:= :pf.deleted nil]]]
                                       :where [:= :d.deleted nil]}
                               :owner :vetd
-                              :grants {:hasura [:SELECT]}}]]])
+                              :grants {:hasura [:SELECT]}}]]
+   
+   [[2019 8 16 0 0]
+    
+    [:create-or-replace-view {:schema :vetd
+                              :name :agg_group_prod_rating
+                              :honey {:select [[:gom.group_id :group_id]
+                                               [:si.product_id :product_id]
+                                               [:%count.si.id :count_stack_items]
+                                               [:si.rating :rating]]
+                                      :from [[:group_org_memberships :gom]]
+                                      :join [[:stack_items :si]
+                                             [:and
+                                              [:= :si.buyer_id :gom.org_id]
+                                              [:= :si.deleted nil]]]
+                                      :group-by [:gom.group_id :si.product_id :si.rating]}
+                              :owner :vetd
+                              :grants {:hasura [:SELECT]}}]]
+
+   [[2019 8 19 0 0]
+    
+    [:create-or-replace-view {:schema :vetd
+                              :name :agg_group_prod_price
+                              :honey {:select [[:gom.group_id :group_id]
+                                               [:si.product_id :product_id]
+                                               [(honeysql.core/raw "percentile_disc (0.5) WITHIN GROUP (ORDER BY (CASE WHEN si.price_period = 'monthly' THEN (si.price_amount * 12) WHEN si.price_period = 'free' THEN 0 ELSE si.price_amount END))") :median_price]]
+                                      :from [[:group_org_memberships :gom]]
+                                      :join [[:stack_items :si]
+                                             [:and
+                                              [:= :si.buyer_id :gom.org_id]
+                                              [:= :si.deleted nil]
+                                              [:<> :si.price_period nil]]]
+                                      :group-by [:gom.group_id :si.product_id]}
+                              :owner :vetd
+                              :grants {:hasura [:SELECT]}}]]
+   
+   ])
 
 
 #_(mig/mk-migration-files migrations

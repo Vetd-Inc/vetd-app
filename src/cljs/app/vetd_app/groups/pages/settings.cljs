@@ -125,7 +125,7 @@
                     {:queries
                      [[:orgs {:_where {:_and [{:oname {:_ilike (str "%" @search-query& "%")}}
                                               {:deleted {:_is_null true}}]}
-                              :_limit 25
+                              :_limit 100
                               :_order_by {:oname :asc}}
                        [:id :oname]]]}])
             org-ids-already-in-group (set (map :id (:orgs group)))
