@@ -441,9 +441,14 @@
            (.addEventListener node "mouseleave" mouseleave))))}))
 
 (defn c-profile-segment
-  [{:keys [title]} & children]
+  [{:keys [title icon icon-style]} & children]
   [:> ui/Segment {:class "detail-container profile"}
-   [:h1.title title]
+   [:h1.title
+    (when icon
+      [:> ui/Icon {:name icon
+                   :style (merge {:margin-right 7}
+                                 icon-style)}])
+    title]
    [:> ui/Grid {:columns "equal"
                 :style {:margin-top 0}}
     (util/augment-with-keys children)]])
@@ -457,7 +462,8 @@
         pricing-estimate-unit (v-fn :preposal/pricing-estimate "unit")
         pricing-estimate-details (v-fn :preposal/pricing-estimate "details")
         pitch (v-fn :preposal/pitch)]
-    [c-profile-segment {:title "PrePosal"}
+    [c-profile-segment {:title "PrePosal"
+                        :icon "clipboard outline"}
      [:> ui/GridRow
       [c-display-field 16
        "Pitch"
@@ -467,7 +473,7 @@
        "Pricing Estimate"
        (if pricing-estimate-value
          (str
-          (util/currency-format pricing-estimate-value) " / " pricing-estimate-unit
+          "$" (util/decimal-format pricing-estimate-value) " / " pricing-estimate-unit
           (when (not-empty pricing-estimate-details)
             (str " - " pricing-estimate-details)))
          pricing-estimate-details)]]]))
@@ -548,7 +554,9 @@
                         (filter (comp seq :stack-items))
                         distinct)
               community-str (str "communit" (if (> (count @group-ids&) 1) "ies" "y"))]
-          [c-profile-segment {:title (str "Your " (s/capitalize community-str))}
+          [c-profile-segment {:title (str "Your " (s/capitalize community-str))
+                              :icon "group"
+                              :icon-style {:margin-right 10}}
            (when (seq orgs)
              [:> ui/GridRow
               [:> ui/GridColumn
@@ -598,7 +606,10 @@
   c-display-field - component to display a field (key/value)
   v-fn - function to get value per some prompt term"
   [c-display-field v-fn & [discounts]]
-  [c-profile-segment {:title "Pricing"}
+  [c-profile-segment {:title "Pricing"
+                      :icon "dollar"
+                      :icon-style {:margin-right 5
+                                   :margin-left -5}}
    [:> ui/GridRow
     [c-display-field 16 "Range"
      (when (has-data? (v-fn :product/price-range))
@@ -633,7 +644,13 @@
   c-display-field - component to display a field (key/value)
   v-fn - function to get value per some prompt term"
   [c-display-field v-fn]
-  [c-profile-segment {:title "Onboarding"}
+  [c-profile-segment {:title "Onboarding"
+                      ;; :icon "toggle on"
+                      :icon "handshake outline"
+                      :icon-style {:position "relative"
+                                   :top 1
+                                   :margin-right 10}
+                      }
    [:> ui/GridRow
     [c-display-field 16
      "Estimated Time to Onboard" (v-fn :product/onboarding-estimated-time)]]
@@ -650,7 +667,8 @@
   c-display-field - component to display a field (key/value)
   v-fn - function to get value per some prompt term"
   [c-display-field v-fn]
-  [c-profile-segment {:title "Client Service"}
+  [c-profile-segment {:title "Client Service"
+                      :icon "comment alternate outline"}
    [:> ui/GridRow
     [c-display-field 16 "Point of Contact" (v-fn :product/point-of-contact)]]
    [:> ui/GridRow
@@ -662,7 +680,11 @@
   c-display-field - component to display a field (key/value)
   v-fn - function to get value per some prompt term"
   [c-display-field v-fn]
-  [c-profile-segment {:title "Reporting & Measurement"}
+  [c-profile-segment {:title "Reporting & Measurement"
+                      ;; :icon "balance scale"
+                      :icon "chart line"
+                      :icon-style {:position "relative"
+                                   :top 1}}
    [:> ui/Grid {:columns "equal" :style {:margin-top 0}}
     [:> ui/GridRow
      [c-display-field 16 "Reporting" (v-fn :product/reporting)
@@ -683,7 +705,8 @@
   c-display-field - component to display a field (key/value)
   v-fn - function to get value per some prompt term"
   [c-display-field v-fn]
-  [c-profile-segment {:title "Industry Niche"}
+  [c-profile-segment {:title "Industry Niche"
+                      :icon "cubes"}
    [:> ui/Grid {:columns "equal" :style {:margin-top 0}}
     [:> ui/GridRow
      [c-display-field 16 "Ideal Client Profile" (v-fn :product/ideal-client)
@@ -715,7 +738,10 @@
                                                                 :id vendor-id
                                                                 :name vendor-name}))
         v-fn (partial docs/get-value-by-term response-prompts)]
-    [c-profile-segment {:title "Company Profile"}
+    [c-profile-segment {:title "Company Profile"
+                        ;; :icon "briefcase"
+                        :icon "building"
+                        }
      [:> ui/GridRow 
       [c-display-field 6 "Website"
        (when (has-data? (v-fn :vendor/website))
