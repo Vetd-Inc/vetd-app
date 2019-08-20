@@ -240,7 +240,7 @@
                                       :icon true
                                       :labelPosition "left"
                                       :ref (fn [this] (reset! context-ref& (r/dom-node this)))}
-                        "Reject"
+                        "Reject Preposal"
                         [:> ui/Icon {:name "close"}]]))}]]
         [:> ui/Popup
          {:content "Undo PrePosal Rejection"
@@ -447,6 +447,30 @@
    [:> ui/Grid {:columns "equal"
                 :style {:margin-top 0}}
     (util/augment-with-keys children)]])
+
+(defn c-preposal
+  "Component to display preposal information of a product profile.
+  c-display-field - component to display a field (key/value)
+  v-fn - function to get value per some prompt term from the preposal doc"
+  [c-display-field v-fn]
+  (let [pricing-estimate-value (v-fn :preposal/pricing-estimate "value" :nval)
+        pricing-estimate-unit (v-fn :preposal/pricing-estimate "unit")
+        pricing-estimate-details (v-fn :preposal/pricing-estimate "details")
+        pitch (v-fn :preposal/pitch)]
+    [c-profile-segment {:title "PrePosal"}
+     [:> ui/GridRow
+      [c-display-field 16
+       "Pitch"
+       (util/parse-md pitch)]]
+     [:> ui/GridRow
+      [c-display-field 16
+       "Pricing Estimate"
+       (if pricing-estimate-value
+         (str
+          (util/currency-format pricing-estimate-value) " / " pricing-estimate-unit
+          (when (not-empty pricing-estimate-details)
+            (str " - " pricing-estimate-details)))
+         pricing-estimate-details)]]]))
 
 (defn c-average-rating
   [agg-group-prod-rating]

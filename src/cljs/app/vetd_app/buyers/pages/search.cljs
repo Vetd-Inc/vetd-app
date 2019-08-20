@@ -269,9 +269,7 @@
                           first
                           :response-prompts
                           (partial docs/get-value-by-term))]
-    [:> ui/Item {:on-click #(rf/dispatch (if preposal-responses
-                                           [:b/nav-preposal-detail (-> docs first :idstr)]
-                                           [:b/nav-product-detail idstr]))}
+    [:> ui/Item {:on-click #(rf/dispatch [:b/nav-product-detail idstr])}
      [bc/c-product-logo logo]
      [:> ui/ItemContent
       [:> ui/ItemHeader
