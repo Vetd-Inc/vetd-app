@@ -91,11 +91,11 @@
 ;; Components
 (defn c-preposal-request-button
   [{:keys [vendor forms docs] :as product}]
-  (if (seq docs)
+  (if (seq docs) ;; has completed preposal
     (let [preposal-id (-> docs first :id)
           preposal-rejected? (= 0 (-> docs first :result))]
       [bc/c-reject-preposal-button preposal-id preposal-rejected?])
-    (if (not-empty forms) ;; already requested preposal
+    (if (not-empty forms) ;; has requested preposal
       [:> ui/Popup
        {:content "We will be in touch with next steps."
         :header "PrePosal Requested!"
@@ -223,9 +223,7 @@
                                              :to-org-id @org-id&
                                              :_order_by {:created :desc}
                                              :_limit 1
-                                             ;; TODO
-                                             ;; :deleted or :ref-deleted
-                                             }
+                                             :deleted nil}
                                       [:id :idstr :title :result :reason
                                        [:from-org [:id :oname]]
                                        [:from-user [:id :uname]]

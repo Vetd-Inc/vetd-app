@@ -292,13 +292,20 @@ a.label {
 }
 
 /* Product Profile and Vendor Profile (under Product detail and Preposal detail) */
-.profile .title {
-  padding: 0 0 13px 0 !important;
-  margin: 0;
-  font-size: 22px;
-}
-.profile .row {
-  padding-top: 7px !important;
+.profile {
+  .title {
+    padding: 0 0 13px 0 !important;
+    margin: 0;
+    font-size: 22px;
+
+    .icon {
+      margin-right: 7px;
+    }
+  }
+
+  .row {
+    padding-top: 7px !important;
+  }
 }
 
 

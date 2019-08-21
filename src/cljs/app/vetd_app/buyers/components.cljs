@@ -447,8 +447,7 @@
    [:h1.title
     (when icon
       [:> ui/Icon {:name icon
-                   :style (merge {:margin-right 7}
-                                 icon-style)}])
+                   :style icon-style}])
     title]
    [:> ui/Grid {:columns "equal"
                 :style {:margin-top 0}}
@@ -650,12 +649,10 @@
   v-fn - function to get value per some prompt term"
   [c-display-field v-fn]
   [c-profile-segment {:title "Onboarding"
-                      ;; :icon "toggle on"
                       :icon "handshake outline"
                       :icon-style {:position "relative"
                                    :top 1
-                                   :margin-right 10}
-                      }
+                                   :margin-right 10}}
    [:> ui/GridRow
     [c-display-field 16
      "Estimated Time to Onboard" (v-fn :product/onboarding-estimated-time)]]
@@ -686,7 +683,6 @@
   v-fn - function to get value per some prompt term"
   [c-display-field v-fn]
   [c-profile-segment {:title "Reporting & Measurement"
-                      ;; :icon "balance scale"
                       :icon "chart line"
                       :icon-style {:position "relative"
                                    :top 1}}
@@ -744,7 +740,6 @@
                                                                 :name vendor-name}))
         v-fn (partial docs/get-value-by-term response-prompts)]
     [c-profile-segment {:title "Company Profile"
-                        ;; :icon "briefcase"
                         :icon "building"
                         }
      [:> ui/GridRow 
