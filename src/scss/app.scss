@@ -1040,6 +1040,9 @@ $cell-height: 201px;
   }
 }
 
+.expand-in {
+  animation: expand-in 0.4s ease-out;
+}
 @keyframes expand-in {
   from {
     opacity: 0.7;

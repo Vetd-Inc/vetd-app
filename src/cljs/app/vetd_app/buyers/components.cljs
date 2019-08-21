@@ -441,8 +441,9 @@
            (.addEventListener node "mouseleave" mouseleave))))}))
 
 (defn c-profile-segment
-  [{:keys [title icon icon-style]} & children]
-  [:> ui/Segment {:class "detail-container profile"}
+  [{:keys [title style icon icon-style]} & children]
+  [:> ui/Segment {:class "detail-container profile"
+                  :style style}
    [:h1.title
     (when icon
       [:> ui/Icon {:name icon
@@ -547,59 +548,61 @@
                                                          :deleted nil}
                                            [:id :price-amount :price-period]]]]]]]}])]
     (fn [c-display-field product-id agg-group-prod-rating agg-group-prod-price]
-      (when-not (= :loading @stack-items&)
-        (let [orgs (->> @stack-items&
-                        :group-org-memberships
-                        (map :orgs)
-                        (filter (comp seq :stack-items))
-                        distinct)
-              community-str (str "communit" (if (> (count @group-ids&) 1) "ies" "y"))]
-          [c-profile-segment {:title (str "Your " (s/capitalize community-str))
-                              :icon "group"
-                              :icon-style {:margin-right 10}}
-           (when (seq orgs)
-             [:> ui/GridRow
-              [:> ui/GridColumn
-               [:> ui/Segment {:class "display-field"
-                               :vertical true}
-                [:h3.display-field-key "Median Annual Price"]
-                [:div.display-field-value
-                 (let [median-prices (map :median-price agg-group-prod-price)]
-                   (if (seq median-prices)
-                     (str "$" ;; get the mean from all the member'd groups' medians
-                          (util/decimal-format (/ (apply + median-prices) (count median-prices)))
-                          " / year")
-                     "No community pricing data."))]]]
-              [:> ui/GridColumn
-               [:> ui/Segment {:class "display-field"
-                               :vertical true}
-                [:h3.display-field-key "Average Rating"]
-                [:div.display-field-value
-                 [c-average-rating agg-group-prod-rating]]]]])
-           [:> ui/GridRow
-            [:> ui/GridColumn
-             [:> ui/Segment {:class "display-field"
-                             :vertical true}
-              [:h3.display-field-key "Usage"]
-              [:div.display-field-value
-               (let [max-orgs-showing 10]
-                 (if (seq orgs)
-                   [:<>
-                    (str "Used by " (count orgs) " organizations in your " community-str ".")
-                    [:div.used-by-orgs
-                     (util/augment-with-keys
-                      (for [{:keys [oname]} (take max-orgs-showing orgs)]
-                        [:> ui/Popup
-                         {:position "bottom center"
-                          :content oname
-                          :trigger (r/as-element
-                                    [:a [cc/c-avatar-initials oname]])}]))
-                     (when (> (count orgs) max-orgs-showing)
-                       [:<>
-                        [:a {:on-click #(reset! showing?& true)}
-                         (str " see all " (count orgs) "...")]
-                        [c-community-usage-modal showing?& orgs community-str]])]]
-                   (str "No one in your " community-str " has used this product.")))]]]]])))))
+      (let [community-str (str "communit" (if (> (count @group-ids&) 1) "ies" "y"))]
+        [c-profile-segment {:title (str "Your " (s/capitalize community-str))
+                            :style {:min-height 138} ;; to minimize rendering flash
+                            :icon "group"
+                            :icon-style {:margin-right 10}}
+         (when-not (= :loading @stack-items&)
+           (let [orgs (->> @stack-items&
+                           :group-org-memberships
+                           (map :orgs)
+                           (filter (comp seq :stack-items))
+                           distinct)]
+             [:<>
+              (when (seq orgs)
+                [:> ui/GridRow
+                 [:> ui/GridColumn
+                  [:> ui/Segment {:class "display-field"
+                                  :vertical true}
+                   [:h3.display-field-key "Median Annual Price"]
+                   [:div.display-field-value
+                    (let [median-prices (map :median-price agg-group-prod-price)]
+                      (if (seq median-prices)
+                        (str "$" ;; get the mean from all the member'd groups' medians
+                             (util/decimal-format (/ (apply + median-prices) (count median-prices)))
+                             " / year")
+                        "No community pricing data."))]]]
+                 [:> ui/GridColumn
+                  [:> ui/Segment {:class "display-field"
+                                  :vertical true}
+                   [:h3.display-field-key "Average Rating"]
+                   [:div.display-field-value
+                    [c-average-rating agg-group-prod-rating]]]]])
+              [:> ui/GridRow
+               [:> ui/GridColumn
+                [:> ui/Segment {:class "display-field"
+                                :vertical true}
+                 [:h3.display-field-key "Usage"]
+                 [:div.display-field-value
+                  (let [max-orgs-showing 10]
+                    (if (seq orgs)
+                      [:<>
+                       (str "Used by " (count orgs) " organizations in your " community-str ".")
+                       [:div.used-by-orgs
+                        (util/augment-with-keys
+                         (for [{:keys [oname]} (take max-orgs-showing orgs)]
+                           [:> ui/Popup
+                            {:position "bottom center"
+                             :content oname
+                             :trigger (r/as-element
+                                       [:a [cc/c-avatar-initials oname]])}]))
+                        (when (> (count orgs) max-orgs-showing)
+                          [:<>
+                           [:a {:on-click #(reset! showing?& true)}
+                            (str " see all " (count orgs) "...")]
+                           [c-community-usage-modal showing?& orgs community-str]])]]
+                      (str "No one in your " community-str " has used this product.")))]]]]]))]))))
 
 (defn c-pricing
   "Component to display pricing information of a product profile.
