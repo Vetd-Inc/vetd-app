@@ -608,7 +608,7 @@
   "Component to display pricing information of a product profile.
   c-display-field - component to display a field (key/value)
   v-fn - function to get value per some prompt term"
-  [c-display-field v-fn & [discounts]]
+  [c-display-field v-fn discounts preposal-requested?]
   [c-profile-segment {:title "Pricing"
                       :icon "dollar"
                       :icon-style {:margin-right 5
@@ -618,8 +618,10 @@
      (when (has-data? (v-fn :product/price-range))
        [:<>
         (v-fn :product/price-range)
-        [:br]
-        "Request a PrePosal to get a personalized estimate."])]]
+        (when-not preposal-requested?
+          [:<>
+           [:br]
+           "Request a PrePosal to get a personalized estimate."])])]]
    (when (or (not-empty discounts)
              (has-data? (v-fn :product/free-trial?)))
      [:> ui/GridRow

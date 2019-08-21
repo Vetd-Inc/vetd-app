@@ -155,7 +155,8 @@
 (defn c-product
   "Component to display Product details."
   [{:keys [id pname vendor discounts
-           form-docs ; preposal requests
+           form-docs
+           forms ; requested preposals
            docs ; completed preposals
            agg-group-prod-rating agg-group-prod-price] :as product}]
   (let [v-fn (partial docs/get-value-by-term (-> form-docs first :response-prompts))
@@ -171,7 +172,9 @@
        [bc/c-preposal c-display-field preposal-v-fn])
      (when (seq @group-ids&)
        [bc/c-community c-display-field id agg-group-prod-rating agg-group-prod-price])
-     [bc/c-pricing c-display-field v-fn discounts]
+     [bc/c-pricing c-display-field v-fn discounts
+      (boolean (seq forms)) ;; has requested (and perhaps completed) a preposal
+      ]
      [bc/c-vendor-profile (-> vendor :docs-out first) (:id vendor) (:oname vendor)]
      [bc/c-onboarding c-display-field v-fn]
      [bc/c-client-service c-display-field v-fn]
