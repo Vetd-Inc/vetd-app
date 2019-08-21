@@ -745,7 +745,7 @@
      [:> ui/GridRow 
       [c-display-field 6 "Website"
        (when (has-data? (v-fn :vendor/website))
-         [c-external-link (v-fn :vendor/website)])]
+         [c-external-link (v-fn :vendor/website) "Company Website"])]
       [c-display-field 6 "Headquarters" (v-fn :vendor/headquarters)]]
      [:> ui/GridRow
       [c-display-field 6 "Funding Status" (v-fn :vendor/funding)]
