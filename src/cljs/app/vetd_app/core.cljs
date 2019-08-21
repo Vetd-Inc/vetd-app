@@ -12,7 +12,6 @@
             [vetd-app.buyers.fixtures :as b-fix]
             [vetd-app.buyers.pages.search :as p-bsearch]
             [vetd-app.buyers.pages.preposals :as p-bpreposals]
-            [vetd-app.buyers.pages.preposal-detail :as p-bpreposal-detail]
             [vetd-app.buyers.pages.product-detail :as p-bproduct-detail]
             [vetd-app.buyers.pages.rounds :as p-brounds]
             [vetd-app.buyers.pages.round-detail :as p-bround-detail]
@@ -47,7 +46,6 @@
                    :settings #'p-settings/c-page
                    :b/search #'p-bsearch/c-page
                    :b/preposals #'p-bpreposals/c-page
-                   :b/preposal-detail #'p-bpreposal-detail/c-page
                    :b/product-detail #'p-bproduct-detail/c-page
                    :b/rounds #'p-brounds/c-page
                    :b/round-detail #'p-bround-detail/c-page
@@ -68,7 +66,6 @@
                    :settings #'b-fix/container ; TODO fragile, misuse of buyer fixtures
                    :b/search #'b-fix/container
                    :b/preposals #'b-fix/container
-                   :b/preposal-detail #'b-fix/container
                    :b/product-detail #'b-fix/container
                    :b/rounds #'b-fix/container
                    :b/round-detail #'b-fix/appendable-container
@@ -228,8 +225,6 @@
 
 (sec/defroute buyers-preposals "/b/preposals" [query-params]
   (rf/dispatch [:b/route-preposals query-params]))
-(sec/defroute buyers-preposal-detail "/b/preposals/:idstr" [idstr]
-  (rf/dispatch [:b/route-preposal-detail idstr]))
 
 (sec/defroute buyers-product-detail "/b/products/:idstr" [idstr]
   (rf/dispatch [:b/route-product-detail idstr]))

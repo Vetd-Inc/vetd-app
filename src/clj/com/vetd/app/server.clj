@@ -159,7 +159,8 @@
 
 (defn ws-handler
   [req]
-  (let [ws @(ah/websocket-connection req)
+  (let [ws @(ah/websocket-connection req
+                                     {:max-frame-payload (* 2 65536)})
         ws-id (str (gensym "ws"))]
     (swap! ws-conns conj ws)
     (ms/on-closed ws (partial ws-on-closed ws ws-id))

@@ -308,6 +308,10 @@
                (+ r d))))))
 
 ;;;; DOM
+(defn node-by-id
+  [id]
+  (.getElementById js/document id))
+
 (defn nodes-by-class
   [class]
   (-> js/document

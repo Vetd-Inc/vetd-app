@@ -113,7 +113,7 @@
                           first
                           :response-prompts
                           (partial docs/get-value-by-term))]
-    [:> ui/Item {:on-click #(rf/dispatch [:b/nav-preposal-detail idstr])}
+    [:> ui/Item {:on-click #(rf/dispatch [:b/nav-product-detail (:idstr product)])}
      [bc/c-product-logo logo]
      [:> ui/ItemContent
       [:> ui/ItemHeader pname " " [:small " by " oname]
@@ -179,7 +179,7 @@
                                             :deleted nil}
                                      [:id :idstr :title :result :reason
                                       [:product
-                                       [:id :pname :logo
+                                       [:id :idstr :pname :logo
                                         [:form-docs {:doc-deleted nil
                                                      :ftype "product-profile"
                                                      :_order_by {:created :desc}
@@ -281,7 +281,7 @@
                         [c-preposal-list-item preposal])
                       [:> ui/Segment {:placeholder true}
                        [:> ui/Header {:icon true}
-                        [:> ui/Icon {:name "wpforms"}]
+                        [:> ui/Icon {:name "clipboard outline"}]
                         "No PrePosals match your filter choices."]
                        [:div {:style {:text-align "center"
                                       :margin-top 10}}
