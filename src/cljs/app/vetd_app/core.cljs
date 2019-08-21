@@ -234,8 +234,12 @@
 (sec/defroute buyers-round-detail "/b/rounds/:idstr" [idstr]
   (rf/dispatch [:b/route-round-detail idstr]))
 
+;; edit your own stack
 (sec/defroute buyers-stack "/b/stack" []
   (rf/dispatch [:b/route-stack]))
+;; view another org's stack (idstr of the org you want to view)
+(sec/defroute buyers-stacks "/b/stacks/:idstr" [idstr]
+  (rf/dispatch [:b/route-stacks idstr]))
 
 ;; Vendors
 (sec/defroute vendors-preposals "/v/preposals" [query-params]

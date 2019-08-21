@@ -548,17 +548,16 @@
                                            [:id :price-amount :price-period]]]]]]]}])]
     (fn [c-display-field product-id agg-group-prod-rating agg-group-prod-price]
       (let [community-str (str "communit" (if (> (count @group-ids&) 1) "ies" "y"))]
-        [c-profile-segment {:title (str "Your " (s/capitalize community-str))
-                            :style {:min-height 138} ;; to minimize rendering flash
-                            :icon "group"
-                            :icon-style {:margin-right 10}}
+        [:div {:style {:min-height 138}} ;; to minimize rendering flash
          (when-not (= :loading @stack-items&)
            (let [orgs (->> @stack-items&
                            :group-org-memberships
                            (map :orgs)
                            (filter (comp seq :stack-items))
                            distinct)]
-             [:<>
+             [c-profile-segment {:title (str "Your " (s/capitalize community-str))
+                                 :icon "group"
+                                 :icon-style {:margin-right 10}}
               (when (seq orgs)
                 [:> ui/GridRow
                  [:> ui/GridColumn
