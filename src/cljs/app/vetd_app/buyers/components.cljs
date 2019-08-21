@@ -148,7 +148,7 @@
                     :style {:user-select "none"}}
    [:> ui/Step {:style {:cursor "inherit"}
                 :disabled (not= status "initiation")}
-    [:> ui/Icon {:name "clipboard outline"}]
+    [:> ui/Icon {:name "wpforms"}]
     [:> ui/StepContent
      [:> ui/StepTitle "Initiation"]
      [:> ui/StepDescription "Define your requirements"]]]
@@ -240,7 +240,7 @@
                                       :icon true
                                       :labelPosition "left"
                                       :ref (fn [this] (reset! context-ref& (r/dom-node this)))}
-                        "Reject"
+                        "Reject Preposal"
                         [:> ui/Icon {:name "close"}]]))}]]
         [:> ui/Popup
          {:content "Undo PrePosal Rejection"
@@ -441,12 +441,42 @@
            (.addEventListener node "mouseleave" mouseleave))))}))
 
 (defn c-profile-segment
-  [{:keys [title]} & children]
-  [:> ui/Segment {:class "detail-container profile"}
-   [:h1.title title]
+  [{:keys [title style icon icon-style]} & children]
+  [:> ui/Segment {:class "detail-container profile"
+                  :style style}
+   [:h1.title
+    (when icon
+      [:> ui/Icon {:name icon
+                   :style icon-style}])
+    title]
    [:> ui/Grid {:columns "equal"
                 :style {:margin-top 0}}
     (util/augment-with-keys children)]])
+
+(defn c-preposal
+  "Component to display preposal information of a product profile.
+  c-display-field - component to display a field (key/value)
+  v-fn - function to get value per some prompt term from the preposal doc"
+  [c-display-field v-fn]
+  (let [pricing-estimate-value (v-fn :preposal/pricing-estimate "value" :nval)
+        pricing-estimate-unit (v-fn :preposal/pricing-estimate "unit")
+        pricing-estimate-details (v-fn :preposal/pricing-estimate "details")
+        pitch (v-fn :preposal/pitch)]
+    [c-profile-segment {:title "PrePosal"
+                        :icon "clipboard outline"}
+     [:> ui/GridRow
+      [c-display-field 16
+       "Pitch"
+       (util/parse-md pitch)]]
+     [:> ui/GridRow
+      [c-display-field 16
+       "Pricing Estimate"
+       (if pricing-estimate-value
+         (str
+          "$" (util/decimal-format pricing-estimate-value) " / " pricing-estimate-unit
+          (when (not-empty pricing-estimate-details)
+            (str " - " pricing-estimate-details)))
+         pricing-estimate-details)]]]))
 
 (defn c-average-rating
   [agg-group-prod-rating]
@@ -517,71 +547,80 @@
                                                          :deleted nil}
                                            [:id :price-amount :price-period]]]]]]]}])]
     (fn [c-display-field product-id agg-group-prod-rating agg-group-prod-price]
-      (when-not (= :loading @stack-items&)
-        (let [orgs (->> @stack-items&
-                        :group-org-memberships
-                        (map :orgs)
-                        (filter (comp seq :stack-items))
-                        distinct)
-              community-str (str "communit" (if (> (count @group-ids&) 1) "ies" "y"))]
-          [c-profile-segment {:title (str "Your " (s/capitalize community-str))}
-           (when (seq orgs)
-             [:> ui/GridRow
-              [:> ui/GridColumn
-               [:> ui/Segment {:class "display-field"
-                               :vertical true}
-                [:h3.display-field-key "Median Annual Price"]
-                [:div.display-field-value
-                 (let [median-prices (map :median-price agg-group-prod-price)]
-                   (if (seq median-prices)
-                     (str "$" ;; get the mean from all the member'd groups' medians
-                          (util/decimal-format (/ (apply + median-prices) (count median-prices)))
-                          " / year")
-                     "No community pricing data."))]]]
-              [:> ui/GridColumn
-               [:> ui/Segment {:class "display-field"
-                               :vertical true}
-                [:h3.display-field-key "Average Rating"]
-                [:div.display-field-value
-                 [c-average-rating agg-group-prod-rating]]]]])
-           [:> ui/GridRow
-            [:> ui/GridColumn
-             [:> ui/Segment {:class "display-field"
-                             :vertical true}
-              [:h3.display-field-key "Usage"]
-              [:div.display-field-value
-               (let [max-orgs-showing 10]
-                 (if (seq orgs)
-                   [:<>
-                    (str "Used by " (count orgs) " organizations in your " community-str ".")
-                    [:div.used-by-orgs
-                     (util/augment-with-keys
-                      (for [{:keys [oname]} (take max-orgs-showing orgs)]
-                        [:> ui/Popup
-                         {:position "bottom center"
-                          :content oname
-                          :trigger (r/as-element
-                                    [:a [cc/c-avatar-initials oname]])}]))
-                     (when (> (count orgs) max-orgs-showing)
-                       [:<>
-                        [:a {:on-click #(reset! showing?& true)}
-                         (str " see all " (count orgs) "...")]
-                        [c-community-usage-modal showing?& orgs community-str]])]]
-                   (str "No one in your " community-str " has used this product.")))]]]]])))))
+      (let [community-str (str "communit" (if (> (count @group-ids&) 1) "ies" "y"))]
+        [c-profile-segment {:title (str "Your " (s/capitalize community-str))
+                            :style {:min-height 138} ;; to minimize rendering flash
+                            :icon "group"
+                            :icon-style {:margin-right 10}}
+         (when-not (= :loading @stack-items&)
+           (let [orgs (->> @stack-items&
+                           :group-org-memberships
+                           (map :orgs)
+                           (filter (comp seq :stack-items))
+                           distinct)]
+             [:<>
+              (when (seq orgs)
+                [:> ui/GridRow
+                 [:> ui/GridColumn
+                  [:> ui/Segment {:class "display-field"
+                                  :vertical true}
+                   [:h3.display-field-key "Median Annual Price"]
+                   [:div.display-field-value
+                    (let [median-prices (map :median-price agg-group-prod-price)]
+                      (if (seq median-prices)
+                        (str "$" ;; get the mean from all the member'd groups' medians
+                             (util/decimal-format (/ (apply + median-prices) (count median-prices)))
+                             " / year")
+                        "No community pricing data."))]]]
+                 [:> ui/GridColumn
+                  [:> ui/Segment {:class "display-field"
+                                  :vertical true}
+                   [:h3.display-field-key "Average Rating"]
+                   [:div.display-field-value
+                    [c-average-rating agg-group-prod-rating]]]]])
+              [:> ui/GridRow
+               [:> ui/GridColumn
+                [:> ui/Segment {:class "display-field"
+                                :vertical true}
+                 [:h3.display-field-key "Usage"]
+                 [:div.display-field-value
+                  (let [max-orgs-showing 10]
+                    (if (seq orgs)
+                      [:<>
+                       (str "Used by " (count orgs) " organizations in your " community-str ".")
+                       [:div.used-by-orgs
+                        (util/augment-with-keys
+                         (for [{:keys [oname]} (take max-orgs-showing orgs)]
+                           [:> ui/Popup
+                            {:position "bottom center"
+                             :content oname
+                             :trigger (r/as-element
+                                       [:a [cc/c-avatar-initials oname]])}]))
+                        (when (> (count orgs) max-orgs-showing)
+                          [:<>
+                           [:a {:on-click #(reset! showing?& true)}
+                            (str " see all " (count orgs) "...")]
+                           [c-community-usage-modal showing?& orgs community-str]])]]
+                      (str "No one in your " community-str " has used this product.")))]]]]]))]))))
 
 (defn c-pricing
   "Component to display pricing information of a product profile.
   c-display-field - component to display a field (key/value)
   v-fn - function to get value per some prompt term"
-  [c-display-field v-fn & [discounts]]
-  [c-profile-segment {:title "Pricing"}
+  [c-display-field v-fn discounts preposal-requested?]
+  [c-profile-segment {:title "Pricing"
+                      :icon "dollar"
+                      :icon-style {:margin-right 5
+                                   :margin-left -5}}
    [:> ui/GridRow
     [c-display-field 16 "Range"
      (when (has-data? (v-fn :product/price-range))
        [:<>
         (v-fn :product/price-range)
-        [:br]
-        "Request a PrePosal to get a personalized estimate."])]]
+        (when-not preposal-requested?
+          [:<>
+           [:br]
+           "Request a PrePosal to get a personalized estimate."])])]]
    (when (or (not-empty discounts)
              (has-data? (v-fn :product/free-trial?)))
      [:> ui/GridRow
@@ -609,7 +648,11 @@
   c-display-field - component to display a field (key/value)
   v-fn - function to get value per some prompt term"
   [c-display-field v-fn]
-  [c-profile-segment {:title "Onboarding"}
+  [c-profile-segment {:title "Onboarding"
+                      :icon "handshake outline"
+                      :icon-style {:position "relative"
+                                   :top 1
+                                   :margin-right 10}}
    [:> ui/GridRow
     [c-display-field 16
      "Estimated Time to Onboard" (v-fn :product/onboarding-estimated-time)]]
@@ -626,7 +669,8 @@
   c-display-field - component to display a field (key/value)
   v-fn - function to get value per some prompt term"
   [c-display-field v-fn]
-  [c-profile-segment {:title "Client Service"}
+  [c-profile-segment {:title "Client Service"
+                      :icon "comment alternate outline"}
    [:> ui/GridRow
     [c-display-field 16 "Point of Contact" (v-fn :product/point-of-contact)]]
    [:> ui/GridRow
@@ -638,7 +682,10 @@
   c-display-field - component to display a field (key/value)
   v-fn - function to get value per some prompt term"
   [c-display-field v-fn]
-  [c-profile-segment {:title "Reporting & Measurement"}
+  [c-profile-segment {:title "Reporting & Measurement"
+                      :icon "chart line"
+                      :icon-style {:position "relative"
+                                   :top 1}}
    [:> ui/Grid {:columns "equal" :style {:margin-top 0}}
     [:> ui/GridRow
      [c-display-field 16 "Reporting" (v-fn :product/reporting)
@@ -659,7 +706,8 @@
   c-display-field - component to display a field (key/value)
   v-fn - function to get value per some prompt term"
   [c-display-field v-fn]
-  [c-profile-segment {:title "Industry Niche"}
+  [c-profile-segment {:title "Industry Niche"
+                      :icon "cubes"}
    [:> ui/Grid {:columns "equal" :style {:margin-top 0}}
     [:> ui/GridRow
      [c-display-field 16 "Ideal Client Profile" (v-fn :product/ideal-client)
@@ -691,7 +739,9 @@
                                                                 :id vendor-id
                                                                 :name vendor-name}))
         v-fn (partial docs/get-value-by-term response-prompts)]
-    [c-profile-segment {:title "Company Profile"}
+    [c-profile-segment {:title "Company Profile"
+                        :icon "building"
+                        }
      [:> ui/GridRow 
       [c-display-field 6 "Website"
        (when (has-data? (v-fn :vendor/website))

@@ -90,32 +90,36 @@
 
 ;; Components
 (defn c-preposal-request-button
-  [{:keys [vendor forms] :as product}]
-  (if (not-empty forms) ; already requested preposal
-    [:> ui/Popup
-     {:content "We will be in touch with next steps."
-      :header "PrePosal Requested!"
-      :position "bottom left"
-      :trigger (r/as-element
-                [:> ui/Label {:color "teal"
-                              :size "large"
-                              :basic true
-                              :style {:display "block"
-                                      :text-align "center"}}
-                 "PrePosal Requested"])}]
-    [:> ui/Popup
-     {:content (str "Get a pricing estimate, personalized pitch, and more from "
-                    (:oname vendor) ".")
-      :header "What is a PrePosal?"
-      :position "bottom left"
-      :trigger (r/as-element
-                [:> ui/Button {:onClick #(rf/dispatch [:b/create-preposal-req product vendor])
-                               :color "teal"
-                               :fluid true
-                               :icon true
-                               :labelPosition "left"}
-                 "Request PrePosal"
-                 [:> ui/Icon {:name "wpforms"}]])}]))
+  [{:keys [vendor forms docs] :as product}]
+  (if (seq docs) ;; has completed preposal
+    (let [preposal-id (-> docs first :id)
+          preposal-rejected? (= 0 (-> docs first :result))]
+      [bc/c-reject-preposal-button preposal-id preposal-rejected?])
+    (if (not-empty forms) ;; has requested preposal
+      [:> ui/Popup
+       {:content "We will be in touch with next steps."
+        :header "PrePosal Requested!"
+        :position "bottom left"
+        :trigger (r/as-element
+                  [:> ui/Label {:color "teal"
+                                :size "large"
+                                :basic true
+                                :style {:display "block"
+                                        :text-align "center"}}
+                   "PrePosal Requested"])}]
+      [:> ui/Popup
+       {:content (str "Get a pricing estimate, personalized pitch, and more from "
+                      (:oname vendor) ".")
+        :header "What is a PrePosal?"
+        :position "bottom left"
+        :trigger (r/as-element
+                  [:> ui/Button {:onClick #(rf/dispatch [:b/create-preposal-req product vendor])
+                                 :color "teal"
+                                 :fluid true
+                                 :icon true
+                                 :labelPosition "left"}
+                   "Request PrePosal"
+                   [:> ui/Icon {:name "wpforms"}]])}])))
 
 (defn c-product-header-segment
   [{:keys [vendor rounds pname logo] :as product} v-fn discounts]
@@ -133,13 +137,7 @@
     [:> ui/GridRow
      [:> ui/GridColumn {:width 12}
       (or (util/parse-md (v-fn :product/description))
-          [:p "No description available."])
-      [:br]
-      [:h3.display-field-key "PrePosal Pitch"]
-      [:p "Request a PrePosal to get a personalized pitch."]
-      [:br]
-      [:h3.display-field-key "PrePosal Pricing Estimate"]
-      "Request a PrePosal to get a personalized estimate."]
+          [:p "No description available."])]
      [:> ui/GridColumn {:width 4}
       (let [website-url (v-fn :product/website)]
         (when (bc/has-data? website-url)
@@ -156,9 +154,13 @@
 
 (defn c-product
   "Component to display Product details."
-  [{:keys [id pname form-docs vendor discounts
+  [{:keys [id pname vendor discounts
+           form-docs
+           forms ; requested preposals
+           docs ; completed preposals
            agg-group-prod-rating agg-group-prod-price] :as product}]
   (let [v-fn (partial docs/get-value-by-term (-> form-docs first :response-prompts))
+        preposal-v-fn (partial docs/get-value-by-term (-> docs first :response-prompts))
         c-display-field (bc/requestable
                          (partial bc/c-display-field* {:type :product
                                                        :id id
@@ -166,9 +168,13 @@
         group-ids& (rf/subscribe [:group-ids])]
     [:<>
      [c-product-header-segment product v-fn discounts]
+     (when (seq docs) ; has a completed preposal?
+       [bc/c-preposal c-display-field preposal-v-fn])
      (when (seq @group-ids&)
        [bc/c-community c-display-field id agg-group-prod-rating agg-group-prod-price])
-     [bc/c-pricing c-display-field v-fn discounts]
+     [bc/c-pricing c-display-field v-fn discounts
+      (boolean (seq forms)) ;; has requested (and perhaps completed) a preposal
+      ]
      [bc/c-vendor-profile (-> vendor :docs-out first) (:id vendor) (:oname vendor)]
      [bc/c-onboarding c-display-field v-fn]
      [bc/c-client-service c-display-field v-fn]
@@ -213,6 +219,20 @@
                                      [:forms {:ftype "preposal" ; preposal requests
                                               :from-org-id @org-id&}
                                       [:id]]
+                                     [:docs {:dtype "preposal" ; completed preposals
+                                             :to-org-id @org-id&
+                                             :_order_by {:created :desc}
+                                             :_limit 1
+                                             :deleted nil}
+                                      [:id :idstr :title :result :reason
+                                       [:from-org [:id :oname]]
+                                       [:from-user [:id :uname]]
+                                       [:to-org [:id :oname]]
+                                       [:to-user [:id :uname]]
+                                       [:response-prompts {:ref-deleted nil}
+                                        [:id :prompt-id :prompt-prompt :prompt-term
+                                         [:response-prompt-fields
+                                          [:id :prompt-field-fname :idx :sval :nval :dval]]]]]]
                                      [:rounds {:buyer-id @org-id&
                                                :deleted nil}
                                       [:id :idstr :created :status]]
