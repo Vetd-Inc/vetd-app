@@ -256,9 +256,11 @@
   (rf/dispatch [:v/route-round-product-detail round-idstr product-idstr]))
 
 ;; catch-all
-(sec/defroute catch-all-path "*" []
-  (do (.log js/console "nav catch-all")
-      (rf/dispatch [:nav-home])))
+(sec/defroute catch-all-path "*" [*]
+  (if (= * "/a/search") ;; trying to get to /a/search but route doesn't exist?
+    (.reload js/location) ;; special case to get the "full" js (needed for admin routes)
+    (do (.log js/console "nav catch-all; path: " *)
+        (rf/dispatch [:nav-home]))))
 
 (rf/reg-event-fx
  :ws-get-session-user
