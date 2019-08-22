@@ -509,6 +509,26 @@
        [:div.sidebar
         [:> ui/Segment {:id "search-filter"}
          [:h2 "Filter"]
+         [:> ui/Popup
+          {:position "bottom left"
+           :content "Vendors who have provided transparent information about their product."
+           :trigger (r/as-element
+                     [:> ui/Checkbox {:label (r/as-element
+                                              [:label
+                                               [:> ui/Icon {:name "vetd"
+                                                            :size "small"
+                                                            :color "vetd-colors"}]
+                                               [:span {:style {:position "relative"
+                                                               :top -5}}
+                                                "Vetd Vendors"]])
+                                      :checked (-> @filter& :features (contains? "vetd") boolean)
+                                      ;; on-click works better than on-change here
+                                      :on-click (fn [_ this]
+                                                   (rf/dispatch [(if (.-checked this)
+                                                                   :b/search.filter.add
+                                                                   :b/search.filter.remove)
+                                                                 :features
+                                                                 "vetd"]))}])}]
          [:h4 "Trial"]
          [:> ui/Checkbox {:label "Free Trial"
                           :checked (-> @filter& :features (contains? "free-trial") boolean)
