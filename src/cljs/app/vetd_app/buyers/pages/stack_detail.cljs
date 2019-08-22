@@ -9,16 +9,19 @@
             [clojure.string :as s]))
 
 ;;;; Subscriptions
-(rf/reg-sub :org-idstr
+(rf/reg-sub
+ :org-idstr
  :<- [:page-params] 
  (fn [{:keys [org-idstr]}] org-idstr))
 
 ;;;; Events
-(rf/reg-event-fx :b/nav-stack-detail
+(rf/reg-event-fx
+ :b/nav-stack-detail
  (fn [_ [_ org-idstr]]
    {:nav {:path (str "/b/stacks/" org-idstr)}}))
 
-(rf/reg-event-fx :b/route-stack-detail
+(rf/reg-event-fx
+ :b/route-stack-detail
  (fn [{:keys [db]} [_ org-idstr]]
    {:db (assoc db
                :page :b/stack-detail
@@ -50,12 +53,14 @@
              [bc/c-categories product]]
             [:> ui/GridColumn {:width 3
                                :style {:text-align "right"}}
-             [:div {:style {:margin-bottom 4}}
-              "Their Rating"]
-             [:> ui/Rating {:rating rating
-                            :maxRating 5
-                            :size "huge"
-                            :disabled true}]]]]]]]])))
+             (when rating
+               [:<>
+                [:div {:style {:margin-bottom 4}}
+                 "Their Rating"]
+                [:> ui/Rating {:rating rating
+                               :maxRating 5
+                               :size "huge"
+                               :disabled true}]])]]]]]]])))
 
 (defn c-page []
   (let [org-idstr& (rf/subscribe [:org-idstr])
