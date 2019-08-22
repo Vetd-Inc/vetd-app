@@ -9,19 +9,16 @@
             [clojure.string :as s]))
 
 ;;;; Subscriptions
-(rf/reg-sub
- :org-idstr
+(rf/reg-sub :org-idstr
  :<- [:page-params] 
  (fn [{:keys [org-idstr]}] org-idstr))
 
 ;;;; Events
-(rf/reg-event-fx
- :b/nav-stack-detail
+(rf/reg-event-fx :b/nav-stack-detail
  (fn [_ [_ org-idstr]]
    {:nav {:path (str "/b/stacks/" org-idstr)}}))
 
-(rf/reg-event-fx
- :b/route-stack-detail
+(rf/reg-event-fx :b/route-stack-detail
  (fn [{:keys [db]} [_ org-idstr]]
    {:db (assoc db
                :page :b/stack-detail
