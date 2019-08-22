@@ -1108,6 +1108,39 @@ $cell-height: 201px;
 //   color: rgba(0, 0, 0, 0.15) !important;
 // }
 
+.public-stack {
+  .stack > .results > .item {
+    height: 83px;
+    animation: none;
+    
+    .product-logo {
+      $edge: 60px;
+      min-width: $edge;
+      min-height: $edge;
+      max-width: $edge;
+      max-height: $edge;
+    }
+
+    .extra {
+      margin-top: 0px;
+    }
+    .row {
+      margin-top: 0;
+      
+      > .column > .category-tag {
+        position: absolute;
+        bottom: 0px;
+      }
+    }
+  }
+}
+
+
+
+
+
+
+
 
 // experiments with animated vetd-backgrounds
 // .button {
