@@ -521,14 +521,14 @@
                                                [:span {:style {:position "relative"
                                                                :top -5}}
                                                 "Vetd Vendors"]])
-                                      :checked (-> @filter& :features (contains? "vetd") boolean)
+                                      :checked (-> @filter& :features (contains? "product-profile-completed") boolean)
                                       ;; on-click works better than on-change here
                                       :on-click (fn [_ this]
                                                    (rf/dispatch [(if (.-checked this)
                                                                    :b/search.filter.add
                                                                    :b/search.filter.remove)
                                                                  :features
-                                                                 "vetd"]))}])}]
+                                                                 "product-profile-completed"]))}])}]
          [:h4 "Trial"]
          [:> ui/Checkbox {:label "Free Trial"
                           :checked (-> @filter& :features (contains? "free-trial") boolean)
