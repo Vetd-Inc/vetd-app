@@ -59,7 +59,7 @@
                          (when (not-empty cat-ids)	
                            [:in :pc.cat_id cat-ids])]
                         (when (features "product-profile-completed")
-                          [:> :pscore 0])]
+                          [:>= :p.profile_score 0.9])]
                 :order-by [[:pscore :desc] [:nscore :desc]]
                 ;; this will be paginated on the frontend
                 :limit 500})

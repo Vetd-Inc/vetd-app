@@ -485,13 +485,21 @@ b, strong {
   padding-right: 0px !important;
   text-align: left !important;
 }
-i.icon.vetd {
-  width: 50px !important;
-  height: 50px !important;
+i.icon.vetd { 
   background-image: url(../images/vetd-arrow.svg) !important;
   background-size: contain !important;
   background-position: center !important;
   background-repeat: no-repeat !important;
+}
+i.icon.vetd.small {
+  width: 13px !important;
+  height: 19px !important;
+}
+i.icon.vetd:not(.small) {
+  width: 50px !important;
+  height: 50px !important;
+}
+i.icon.vetd:not(.vetd-colors) {
   filter: grayscale(1) brightness(0.6);
 }
 i.icon.vetd-icon:before {

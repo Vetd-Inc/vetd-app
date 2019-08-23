@@ -509,6 +509,26 @@
        [:div.sidebar
         [:> ui/Segment {:id "search-filter"}
          [:h2 "Filter"]
+         [:> ui/Popup
+          {:position "bottom left"
+           :content "Products that have been through our vetting process and have in-depth information available."
+           :trigger (r/as-element
+                     [:> ui/Checkbox {:label (r/as-element
+                                              [:label
+                                               [:> ui/Icon {:name "vetd"
+                                                            :size "small"
+                                                            :color "vetd-colors"}]
+                                               [:span {:style {:position "relative"
+                                                               :top -5}}
+                                                "Vetd Products"]])
+                                      :checked (-> @filter& :features (contains? "product-profile-completed") boolean)
+                                      ;; on-click works better than on-change here
+                                      :on-click (fn [_ this]
+                                                   (rf/dispatch [(if (.-checked this)
+                                                                   :b/search.filter.add
+                                                                   :b/search.filter.remove)
+                                                                 :features
+                                                                 "product-profile-completed"]))}])}]
          [:h4 "Trial"]
          [:> ui/Checkbox {:label "Free Trial"
                           :checked (-> @filter& :features (contains? "free-trial") boolean)
