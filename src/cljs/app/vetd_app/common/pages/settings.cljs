@@ -5,7 +5,8 @@
             [vetd-app.ui :as ui]
             [vetd-app.util :as util]
             [reagent.core :as r]
-            [re-frame.core :as rf]))
+            [re-frame.core :as rf]
+            [clojure.string :as s]))
 
 ;;;; Events
 (rf/reg-event-fx
@@ -357,7 +358,9 @@
            [cc/c-field {:label "Name"
                         :value oname}]
            [cc/c-field {:label "Website"
-                        :value url}]
+                        :value (-> url
+                                   (s/split #"\?ref=vetd")
+                                   (s/join))}]
            [c-org-members memberships id oname]])))))
 
 (defn c-page []

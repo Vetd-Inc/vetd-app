@@ -230,12 +230,7 @@
                  product] :as stack-item}]
       (let [{product-id :id
              product-idstr :idstr
-             :keys [pname short-desc logo 
-                    form-docs vendor]} product
-            product-v-fn (->> form-docs
-                              first
-                              :response-prompts
-                              (partial docs/get-value-by-term))]
+             :keys [pname short-desc logo vendor]} product]
         [:> ui/Item {:class (when (@stack-items-editing?& id) "editing")
                      :on-click #(when-not (@stack-items-editing?& id)
                                   (rf/dispatch [:b/nav-product-detail product-idstr]))}
@@ -405,20 +400,6 @@
                                 :onRate (fn [_ this]
                                           (rf/dispatch [:b/stack.rate-item id (aget this "rating")]))}]]]]]])]]))))
 
-(defn c-no-stack-items []
-  (let [group-ids& (rf/subscribe [:group-ids])]
-    (fn []
-      [:> ui/Segment {:placeholder true}
-       [:> ui/Header {:icon true}
-        [:> ui/Icon {:name "grid layout"}]
-        "You don't have any products in your stack."]
-       [:> ui/SegmentInline
-        "Add products to your stack to keep track of renewals, get recommendations, and share with "
-        (if (not-empty @group-ids&)
-          "your community"
-          "others")
-        "."]])))
-
 (defn c-page []
   (let [org-id& (rf/subscribe [:org-id])
         org-name& (rf/subscribe [:org-name])
@@ -435,18 +416,7 @@
                                       [:product
                                        [:id :pname :idstr :logo
                                         [:vendor
-                                         [:id :oname :idstr :short-desc]] 
-                                        [:form-docs {:ftype "product-profile"
-                                                     :_order_by {:created :desc}
-                                                     :_limit 1
-                                                     :doc-deleted nil}
-                                         [:id
-                                          [:response-prompts {:prompt-term ["product/description"
-                                                                            "product/free-trial?"]
-                                                              :ref_deleted nil}
-                                           [:id :prompt-id :notes :prompt-prompt :prompt-term
-                                            [:response-prompt-fields
-                                             [:id :prompt-field-fname :idx :sval :nval :dval]]]]]]]]]]]}])]
+                                         [:id :oname :idstr :short-desc]]]]]]]}])]
         (fn []
           (if (= :loading @stack&)
             [cc/c-loader]

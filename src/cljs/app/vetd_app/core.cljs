@@ -16,6 +16,7 @@
             [vetd-app.buyers.pages.rounds :as p-brounds]
             [vetd-app.buyers.pages.round-detail :as p-bround-detail]
             [vetd-app.buyers.pages.stack :as p-bstack]
+            [vetd-app.buyers.pages.stack-detail :as p-bstack-detail]
             [vetd-app.vendors.fixtures :as v-fix]
             [vetd-app.vendors.pages.preposals :as p-vpreposals]
             [vetd-app.vendors.pages.products :as p-vprods]
@@ -50,6 +51,7 @@
                    :b/rounds #'p-brounds/c-page
                    :b/round-detail #'p-bround-detail/c-page
                    :b/stack #'p-bstack/c-page
+                   :b/stack-detail #'p-bstack-detail/c-page
                    :v/preposals #'p-vpreposals/c-page
                    :v/products #'p-vprods/c-page
                    :v/product-detail #'p-vprod-detail/c-page
@@ -70,6 +72,7 @@
                    :b/rounds #'b-fix/container
                    :b/round-detail #'b-fix/appendable-container
                    :b/stack #'b-fix/container
+                   :b/stack-detail #'b-fix/container
                    :v/preposals #'v-fix/container
                    :v/products #'v-fix/container
                    :v/product-detail #'v-fix/container
@@ -234,8 +237,12 @@
 (sec/defroute buyers-round-detail "/b/rounds/:idstr" [idstr]
   (rf/dispatch [:b/route-round-detail idstr]))
 
+;; edit your own stack
 (sec/defroute buyers-stack "/b/stack" []
   (rf/dispatch [:b/route-stack]))
+;; view another org's stack (idstr of the org you want to view)
+(sec/defroute buyers-stack-detail "/b/stacks/:idstr" [idstr]
+  (rf/dispatch [:b/route-stack-detail idstr]))
 
 ;; Vendors
 (sec/defroute vendors-preposals "/v/preposals" [query-params]
@@ -256,9 +263,11 @@
   (rf/dispatch [:v/route-round-product-detail round-idstr product-idstr]))
 
 ;; catch-all
-(sec/defroute catch-all-path "*" []
-  (do (.log js/console "nav catch-all")
-      (rf/dispatch [:nav-home])))
+(sec/defroute catch-all-path "*" [*]
+  (if (= * "/a/search") ;; trying to get to /a/search but route doesn't exist?
+    (.reload js/location) ;; special case to get the "full" js (needed for admin routes)
+    (do (.log js/console "nav catch-all; path: " *)
+        (rf/dispatch [:nav-home]))))
 
 (rf/reg-event-fx
  :ws-get-session-user

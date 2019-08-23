@@ -506,28 +506,33 @@
 
 (defn c-community-usage-modal
   [showing?& orgs community-str]
-  (fn [showing?& orgs community-str]
-    [:> ui/Modal {:open @showing?&
-                  :on-close #(reset! showing?& false)
-                  :size "tiny"
-                  :dimmer "inverted"
-                  :closeOnDimmerClick true
-                  :closeOnEscape true
-                  :closeIcon true} 
-     [:> ui/ModalHeader (str "Usage in Your " (s/capitalize community-str))]
-     [:> ui/ModalContent {:scrolling true}
-      [:p "This product has been used by " (count orgs) " organizations in your " community-str "."]
-      [:> ui/List
-       (util/augment-with-keys
-        (for [{:keys [id oname]} orgs]
-          [:> ui/ListItem {:as "a"}
-           [:> ui/ListContent
-            [:div {:style {:display "inline-block"
-                           :float "left"
-                           :margin-right 7}}
-             [cc/c-avatar-initials oname]]
-            [:> ui/ListHeader {:style {:line-height "40px"}}
-             oname]]]))]]]))
+  (let [org-id& (rf/subscribe [:org-id])]
+    (fn [showing?& orgs community-str]
+      [:> ui/Modal {:open @showing?&
+                    :on-close #(reset! showing?& false)
+                    :size "tiny"
+                    :dimmer "inverted"
+                    :closeOnDimmerClick true
+                    :closeOnEscape true
+                    :closeIcon true} 
+       [:> ui/ModalHeader (str "Usage in Your " (s/capitalize community-str))]
+       [:> ui/ModalContent {:scrolling true}
+        [:p "This product has been used by " (count orgs) " organizations in your " community-str "."]
+        [:> ui/List
+         (util/augment-with-keys
+          (for [{:keys [id idstr oname]} orgs]
+            [:> ui/ListItem {:as "a"
+                             :on-click (fn []
+                                         (if (= id @org-id&)
+                                           (rf/dispatch [:b/nav-stack])
+                                           (rf/dispatch [:b/nav-stack-detail idstr])))}
+             [:> ui/ListContent
+              [:div {:style {:display "inline-block"
+                             :float "left"
+                             :margin-right 7}}
+               [cc/c-avatar-initials oname]]
+              [:> ui/ListHeader {:style {:line-height "40px"}}
+               oname]]]))]]])))
 
 (defn c-community
   "Component to display community information of a product profile.
@@ -535,6 +540,7 @@
   v-fn - function to get value per some prompt term"
   [c-display-field product-id agg-group-prod-rating agg-group-prod-price]
   (let [group-ids& (rf/subscribe [:group-ids])
+        org-id& (rf/subscribe [:org-id])
         showing?& (r/atom false)
         stack-items& (rf/subscribe [:gql/sub
                                     {:queries
@@ -542,23 +548,22 @@
                                                                :deleted nil}
                                        [:id
                                         [:orgs
-                                         [:id :oname
+                                         [:id :idstr :oname
                                           [:stack-items {:product-id product-id
                                                          :deleted nil}
                                            [:id :price-amount :price-period]]]]]]]}])]
     (fn [c-display-field product-id agg-group-prod-rating agg-group-prod-price]
       (let [community-str (str "communit" (if (> (count @group-ids&) 1) "ies" "y"))]
-        [c-profile-segment {:title (str "Your " (s/capitalize community-str))
-                            :style {:min-height 138} ;; to minimize rendering flash
-                            :icon "group"
-                            :icon-style {:margin-right 10}}
+        [:div {:style {:min-height 138}} ;; to minimize rendering flash
          (when-not (= :loading @stack-items&)
            (let [orgs (->> @stack-items&
                            :group-org-memberships
                            (map :orgs)
                            (filter (comp seq :stack-items))
                            distinct)]
-             [:<>
+             [c-profile-segment {:title (str "Your " (s/capitalize community-str))
+                                 :icon "group"
+                                 :icon-style {:margin-right 10}}
               (when (seq orgs)
                 [:> ui/GridRow
                  [:> ui/GridColumn
@@ -590,12 +595,16 @@
                        (str "Used by " (count orgs) " organizations in your " community-str ".")
                        [:div.used-by-orgs
                         (util/augment-with-keys
-                         (for [{:keys [oname]} (take max-orgs-showing orgs)]
+                         (for [{:keys [id idstr oname]} (take max-orgs-showing orgs)]
                            [:> ui/Popup
                             {:position "bottom center"
                              :content oname
                              :trigger (r/as-element
-                                       [:a [cc/c-avatar-initials oname]])}]))
+                                       [:a {:on-click (fn []
+                                                        (if (= id @org-id&)
+                                                          (rf/dispatch [:b/nav-stack])
+                                                          (rf/dispatch [:b/nav-stack-detail idstr])))}
+                                        [cc/c-avatar-initials oname]])}]))
                         (when (> (count orgs) max-orgs-showing)
                           [:<>
                            [:a {:on-click #(reset! showing?& true)}
@@ -745,7 +754,7 @@
      [:> ui/GridRow 
       [c-display-field 6 "Website"
        (when (has-data? (v-fn :vendor/website))
-         [c-external-link (v-fn :vendor/website)])]
+         [c-external-link (v-fn :vendor/website) "Company Website"])]
       [c-display-field 6 "Headquarters" (v-fn :vendor/headquarters)]]
      [:> ui/GridRow
       [c-display-field 6 "Funding Status" (v-fn :vendor/funding)]
