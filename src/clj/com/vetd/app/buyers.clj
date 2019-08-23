@@ -470,7 +470,7 @@ Round URL: https://app.vetd.com/b/rounds/%s"
             added]
       (docs/create-doc {:form-id id
                         :subject subject
-                        :data (docs/get-auto-pop-data product-id "product-profile")
+                        :data {} #_(docs/get-auto-pop-data product-id "product-profile")
                         :to-org-id from-org-id
                         :from-org-id to-org-id}))))
 

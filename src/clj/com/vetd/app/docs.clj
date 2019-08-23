@@ -1032,6 +1032,14 @@
                           [k v]))
                       (into {}))}))
 
+(defn select-missing-response-fields-by-doc-id
+  [doc-id]
+  
+  )
+
+(defn select-reusable-response-fields [subject dtype])
+
+(defn reuse-response-fields [])
 
 #_
 (clojure.pprint/pprint  (get-auto-pop-data 1993514743443 "product-profile"))
