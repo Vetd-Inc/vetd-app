@@ -1800,6 +1800,13 @@
                                       :group-by [:gom.group_id :si.product_id]}
                               :owner :vetd
                               :grants {:hasura [:SELECT]}}]]
+
+   [[2019 8 23 0 0]
+    
+    [:alter-table {:schema :vetd
+                   :name :stack_items
+                   :columns
+                   {:add {:renewal_day_of_month [:integer]}}}]]
    
    ])
 

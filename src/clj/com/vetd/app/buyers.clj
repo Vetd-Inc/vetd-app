@@ -528,7 +528,7 @@ Round URL: https://app.vetd.com/b/rounds/%s"
 
 (defn insert-stack-item
   [{:keys [product-id buyer-id status price-amount price-period
-           renewal-date renewal-reminder rating]}]
+           renewal-date renewal-day-of-month renewal-reminder rating]}]
   (let [[id idstr] (ut/mk-id&str)]
     (db/insert! :stack_items
                 {:id id
@@ -541,6 +541,7 @@ Round URL: https://app.vetd.com/b/rounds/%s"
                  :price_amount price-amount
                  :price_period price-period
                  :renewal_date renewal-date
+                 :renewal_day_of_month renewal-day-of-month
                  :renewal_reminder renewal-reminder
                  :rating rating})
     id))
@@ -566,7 +567,8 @@ Round URL: https://app.vetd.com/b/rounds/%s"
 
 (defmethod com/handle-ws-inbound :b/stack.update-item
   [{:keys [stack-item-id status
-           price-amount price-period renewal-date
+           price-amount price-period
+           renewal-date renewal-day-of-month
            renewal-reminder rating]
     :as req}
    ws-id sub-fn]
@@ -586,6 +588,12 @@ Round URL: https://app.vetd.com/b/rounds/%s"
                                             (-> renewal-date
                                                 tc/to-long
                                                 java.sql.Timestamp.))})
+                         (when-not (nil? renewal-day-of-month)
+                           {:renewal_day_of_month
+                            (if (s/blank? renewal-day-of-month) ; blank string is used to unset renewal-day-of-month
+                              nil
+                              (-> renewal-day-of-month
+                                  ut/->int))})
                          (when-not (nil? renewal-reminder)
                            {:renewal_reminder renewal-reminder})
                          (when-not (nil? rating)
