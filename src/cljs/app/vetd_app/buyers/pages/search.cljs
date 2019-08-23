@@ -511,7 +511,7 @@
          [:h2 "Filter"]
          [:> ui/Popup
           {:position "bottom left"
-           :content "Vendors who have provided transparent information about their product."
+           :content "Products that have been through our vetting process and have in-depth information available."
            :trigger (r/as-element
                      [:> ui/Checkbox {:label (r/as-element
                                               [:label
@@ -520,7 +520,7 @@
                                                             :color "vetd-colors"}]
                                                [:span {:style {:position "relative"
                                                                :top -5}}
-                                                "Vetd Vendors"]])
+                                                "Vetd Products"]])
                                       :checked (-> @filter& :features (contains? "product-profile-completed") boolean)
                                       ;; on-click works better than on-change here
                                       :on-click (fn [_ this]
