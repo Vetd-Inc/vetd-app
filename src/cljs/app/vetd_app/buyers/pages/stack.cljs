@@ -74,7 +74,7 @@
 
 (rf/reg-event-fx
  :b/stack.save-item.submit
- (fn [{:keys [db]} [_ {:keys [id price-amount price-period renewal-date]
+ (fn [{:keys [db]} [_ {:keys [id price-amount price-period renewal-date renewal-day-of-month]
                        :as input}]]
    (println renewal-date)
    (cfx/validated-dispatch-fx db
@@ -85,18 +85,24 @@
                                       (not (re-matches #"^\d{4}\-(0?[1-9]|1[012])\-(0?[1-9]|[12][0-9]|3[01])$" renewal-date)))
                                  [:uname "Renewal Date must be in YYYY-MM-DD format, but it is not a required field."]
                                  
+                                 (and renewal-day-of-month
+                                      (not (s/blank? renewal-day-of-month))
+                                      (not (re-matches #"^(0?[1-9]|[12][0-9]|3[01])$" renewal-day-of-month)))
+                                 [:uname "Renewal Day of Month must be a number between 1 to 31, but it is not a required field."]
+                                 
                                  :else nil))))
 
 (rf/reg-event-fx
  :b/stack.save-item
- (fn [{:keys [db]} [_ {:keys [id price-amount price-period renewal-date]}]]
+ (fn [{:keys [db]} [_ {:keys [id price-amount price-period renewal-date renewal-day-of-month]}]]
    {:ws-send {:payload {:cmd :b/stack.update-item
                         :return {:handler :b/stack.save-item.return
                                  :id id}
                         :stack-item-id id
                         :price-amount price-amount
                         :price-period price-period
-                        :renewal-date renewal-date}}}))
+                        :renewal-date renewal-date
+                        :renewal-day-of-month renewal-day-of-month}}}))
 
 (rf/reg-event-fx
  :b/stack.save-item.return
@@ -218,15 +224,16 @@
                    :on-change (fn [_ this] (reset! subscription-type& (.-value this)))}])
 
 (defn c-stack-item
-  [{:keys [price-amount price-period renewal-date] :as stack-item}]
+  [{:keys [price-amount price-period renewal-date renewal-day-of-month] :as stack-item}]
   (let [stack-items-editing?& (rf/subscribe [:b/stack.items-editing])
         bad-input& (rf/subscribe [:bad-input])
         subscription-type& (r/atom price-period)
         price& (atom price-amount)
         ;; TODO fragile (expects particular string format of date from server)
-        renewal-date& (atom (when renewal-date (subs renewal-date 0 10)))]
+        renewal-date& (atom (when renewal-date (subs renewal-date 0 10)))
+        renewal-day-of-month& (atom renewal-day-of-month)]
     (fn [{:keys [id rating price-amount price-period
-                 renewal-date renewal-reminder status
+                 renewal-date renewal-day-of-month renewal-reminder status
                  product] :as stack-item}]
       (let [{product-id :id
              product-idstr :idstr
@@ -244,7 +251,8 @@
                                                      {:id id
                                                       :price-amount @price&
                                                       :price-period @subscription-type&
-                                                      :renewal-date @renewal-date&}])
+                                                      :renewal-date @renewal-date&
+                                                      :renewal-day-of-month @renewal-day-of-month&}])
                             :color "blue"
                             :as "a"
                             :style {:float "right"}}
@@ -330,12 +338,21 @@
                     " per " (if (#{"annual" "other"} @subscription-type&) "year" "month")]]])
                [:> ui/FormField {:width 1}]
                (when (= @subscription-type& "annual")
-                 [:> ui/FormField {:width 3
+                 [:> ui/FormField {:width 6
                                    :style {:margin-top 10}}
                   [:label "Renewal Date"]
                   [:> ui/Input {:placeholder "YYYY-MM-DD"
+                                :style {:width 130}
                                 :defaultValue (when renewal-date (subs renewal-date 0 10)) ; TODO fragile (expects particular string format of date from server)
-                                :on-change #(reset! renewal-date& (-> % .-target .-value))}]])]])]
+                                :on-change #(reset! renewal-date& (-> % .-target .-value))}]])
+               (when (= @subscription-type& "monthly")
+                 [:> ui/FormField {:width 6
+                                   :style {:margin-top 10}}
+                  [:label "Renewal Day of Month"]
+                  [:> ui/Input {:placeholder "DD"
+                                :style {:width 60}
+                                :defaultValue renewal-day-of-month
+                                :on-change #(reset! renewal-day-of-month& (-> % .-target .-value))}]])]])]
           (when-not (@stack-items-editing?& id)
             [:<>
              [:> ui/ItemExtra {:style {:color "rgba(0, 0, 0, 0.85)"
@@ -351,7 +368,10 @@
                 [:> ui/GridColumn {:width 8}
                  (when (and (= price-period "annual")
                             renewal-date)
-                   "Annual Renewal")]
+                   "Annual Renewal")
+                 (when (and (= price-period "monthly")
+                            renewal-day-of-month)
+                   "Monthly Renewal Day")]
                 [:> ui/GridColumn {:width 5
                                    :style {:text-align "right"}}
                  "Your Rating"]]
@@ -387,7 +407,19 @@
                                                               (rf/dispatch [:b/stack.set-item-renewal-reminder id (.-checked this)])
                                                               ;; return 'this' to keep it as an uncontrolled component
                                                               this)
-                                                 :label "Remind?"}])}]])]
+                                                 :label "Remind?"}])}]])
+                 (when (and (= price-period "monthly")
+                            renewal-day-of-month)
+                   (str renewal-day-of-month
+                        (case renewal-day-of-month
+                          1 "st"
+                          2 "nd"
+                          3 "rd"
+                          21 "st"
+                          22 "nd"
+                          23 "rd"
+                          31 "st"
+                          "th")))]
                 [:> ui/GridColumn {:width 5
                                    :style {:text-align "right"}}
                  [:> ui/Rating {:class (when-not rating "not-rated")
@@ -412,7 +444,8 @@
                                                    :deleted nil}
                                      [:id :idstr :status
                                       :price-amount :price-period :rating
-                                      :renewal-date :renewal-reminder
+                                      :renewal-date :renewal-day-of-month
+                                      :renewal-reminder
                                       [:product
                                        [:id :pname :idstr :logo
                                         [:vendor
