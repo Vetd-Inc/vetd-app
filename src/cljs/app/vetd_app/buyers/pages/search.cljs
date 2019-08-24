@@ -281,7 +281,7 @@
       [:> ui/ItemDescription (bc/product-description product-v-fn)]
       [:> ui/ItemExtra [bc/c-tags product product-v-fn discounts]]]
      
-     (when true
+     (when (pos? orgs-using-count)
        [:div.community
         [:div.metric
          [:h5
