@@ -307,6 +307,24 @@
                (inc idx)
                (+ r d))))))
 
+(defn rating-avg-map
+  [agg-group-prod-rating]
+  (let [ ;; e.g., {[rating] [agg count], 2 8, 3 2, 4 0, 5 4}
+        ratings-enum (->> agg-group-prod-rating
+                          (reduce (fn [acc {:keys [rating count-stack-items]}]
+                                    (update acc rating + count-stack-items))
+                                  {1 0, 2 0, 3 0, 4 0, 5 0})
+                          (remove (comp nil? key))
+                          (into {}))
+        ratings-sum (reduce (fn [acc [k v]] (+ acc (* k v))) 0 ratings-enum)
+        ratings-count (reduce (fn [acc [k v]] (+ acc v)) 0 ratings-enum)
+        ratings-mean (when (pos? ratings-count)
+                       (/ ratings-sum ratings-count))]
+    (if ratings-mean
+      {:count ratings-count
+       :mean ratings-mean}
+      nil)))
+
 ;;;; DOM
 (defn node-by-id
   [id]

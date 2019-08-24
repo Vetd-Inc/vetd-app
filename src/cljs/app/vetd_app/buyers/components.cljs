@@ -128,7 +128,7 @@
                                    (.stopPropagation e)
                                    (rf/dispatch [:b/nav-round-detail round-idstr]))}
                       props)
-   "Product In VetdRound"])
+   "In VetdRound"])
 
 (defn c-rounds
   "Given a product map, display the Round data."
@@ -480,28 +480,18 @@
 
 (defn c-average-rating
   [agg-group-prod-rating]
-  (let [ ;; e.g., {[rating] [agg count], 2 8, 3 2, 4 0, 5 4}
-        ratings-enum (->> agg-group-prod-rating
-                          (reduce (fn [acc {:keys [rating count-stack-items]}]
-                                    (update acc rating + count-stack-items))
-                                  {1 0, 2 0, 3 0, 4 0, 5 0})
-                          (remove (comp nil? key))
-                          (into {}))
-        ratings-sum (reduce (fn [acc [k v]] (+ acc (* k v))) 0 ratings-enum)
-        ratings-count (reduce (fn [acc [k v]] (+ acc v)) 0 ratings-enum)
-        ratings-mean (when (pos? ratings-count)
-                       (/ ratings-sum ratings-count))]
-    (if ratings-mean
+  (let [{:keys [count mean]} (util/rating-avg-map agg-group-prod-rating)]
+    (if mean
       [:<>
-       [:> ui/Rating {:rating ratings-mean
+       [:> ui/Rating {:rating mean
                       :maxRating 5
                       :size "huge"
                       :disabled true
                       :style {:margin "0 0 5px -3px"}}]
        [:br]
-       (str (/ (Math/round (* ratings-mean 10)) 10)
-            " out of 5 stars - " ratings-count
-            " Rating" (when (> ratings-count 1) "s"))]
+       (str (/ (Math/round (* mean 10)) 10)
+            " out of 5 stars - " count
+            " Rating" (when (> count 1) "s"))]
       "No community ratings available.")))
 
 (defn c-community-usage-modal
