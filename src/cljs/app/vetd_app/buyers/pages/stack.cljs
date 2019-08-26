@@ -481,8 +481,7 @@
                  "."]
                 [:div.stack
                  [:h2 "Current"]
-                 [:span.scroll-anchor {:ref (fn [this]
-                                              (rf/dispatch [:reg-scroll-to-ref :current-stack this]))}]
+                 [:span.scroll-anchor {:ref (fn [this] (rf/dispatch [:reg-scroll-to-ref :current-stack this]))}]
                  [:> ui/ItemGroup {:class "results"}
                   (let [stack (filter (comp (partial = "current") :status) unfiltered-stack)]
                     (if (seq stack)
@@ -494,8 +493,7 @@
                        "You don't have any products in your current stack."]))]]
                 [:div.stack
                  [:h2 "Previous"]
-                 [:span.scroll-anchor {:ref (fn [this]
-                                              (rf/dispatch [:reg-scroll-to-ref :previous-stack this]))}]
+                 [:span.scroll-anchor {:ref (fn [this] (rf/dispatch [:reg-scroll-to-ref :previous-stack this]))}]
                  [:> ui/ItemGroup {:class "results"}
                   (let [stack (filter (comp (partial = "previous") :status) unfiltered-stack)]
                     (if (seq stack)

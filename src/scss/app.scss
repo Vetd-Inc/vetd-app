@@ -1008,11 +1008,6 @@ $cell-height: 201px;
     z-index: 1003;
   }
 
-  .scroll-anchor {
-    position: relative;
-    top: -73px;
-  }
-
   & > .results > .item {
     width: auto !important;
     margin-right: 14px !important;
@@ -1111,6 +1106,16 @@ $cell-height: 201px;
       padding: 0 !important;
     }
   }
+}
+
+.scroll-anchor {
+  position: relative;
+}
+.stack .scroll-anchor {
+  top: -73px;
+}
+.profile .scroll-anchor {
+  top: -25px;
 }
 
 .ui.rating.not-rated .icon:before {
