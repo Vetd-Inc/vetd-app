@@ -250,15 +250,34 @@
          [bc/c-back-button "Back"]]
         (when-not (= :loading @products&)
           (let [{:keys [vendor rounds] :as product} (-> @products& :products first)]
-            (when (empty? (:rounds product))
-              [:> ui/Segment
-               [bc/c-start-round-button {:etype :product
-                                         :eid (:id product)
-                                         :ename (:pname product)
-                                         :props {:fluid true}}]
-               [c-preposal-request-button product]
-               [bc/c-setup-call-button product vendor]
-               [bc/c-ask-a-question-button product vendor]])))]
+            [:<>
+             (when (empty? (:rounds product))
+               [:> ui/Segment
+                [bc/c-start-round-button {:etype :product
+                                          :eid (:id product)
+                                          :ename (:pname product)
+                                          :props {:fluid true}}]
+                [c-preposal-request-button product]
+                [bc/c-setup-call-button product vendor]
+                [bc/c-ask-a-question-button product vendor]])
+             [:> ui/Segment {:class "top-categories"}
+              [:h4 "Jump To"]
+              (util/augment-with-keys
+               (for [[label k] (remove nil?
+                                       [["Description" :top]
+                                        (when (seq (:docs product)) ; has a completed preposal?
+                                          ["Preposal" :product/preposal])
+                                        (when (seq @group-ids&) ; is in a community?
+                                          ["Your Community" :product/community])
+                                        ["Pricing" :product/pricing]
+                                        ["Company Profile" :product/vendor-profile]
+                                        ["Onboarding" :product/onboarding]
+                                        ["Client Service" :product/client-service]
+                                        ["Reporting & Measurement" :product/reporting]
+                                        ["Industry Niche" :product/market-niche]])]
+                 [:div
+                  [:a.blue {:on-click #(rf/dispatch [:scroll-to k])}
+                   label]]))]]))]
        [:div.inner-container
         (if (= :loading @products&)
           [cc/c-loader]
