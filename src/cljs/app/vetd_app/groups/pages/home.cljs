@@ -1,5 +1,6 @@
 (ns vetd-app.groups.pages.home
   (:require [vetd-app.ui :as ui]
+            [vetd-app.util :as util]
             [vetd-app.common.components :as cc]
             [vetd-app.buyers.components :as bc]
             [vetd-app.common.fx :as cfx]
@@ -30,14 +31,14 @@
       (let [num-members (count memberships)]
         [cc/c-field {:label [:<>
                              [:> ui/Button {:on-click (fn []
-                                                        (println id)
                                                         (if (= id @org-id&)
                                                           (rf/dispatch [:b/nav-stack])
                                                           (rf/dispatch [:b/nav-stack-detail idstr])))
                                             :as "a"
+                                            :size "small"
                                             :color "lightblue"
                                             :style {:float "right"
-                                                    :margin-top 5}}
+                                                    :margin-top 7}}
                               [:> ui/Icon {:name "grid layout"}]
                               ;; TODO ? number of items in stack
                               "View Stack"]
@@ -69,30 +70,40 @@
                product] :as stack-item}]
     (let [{product-id :id
            product-idstr :idstr
-           :keys [pname short-desc logo vendor]} product]
+           :keys [pname short-desc logo vendor]} product
+
+          orgs-using-count 5
+
+          ]
       [:> ui/Item {:on-click #(rf/dispatch [:b/nav-product-detail product-idstr])}
        [bc/c-product-logo logo]
        [:> ui/ItemContent
         [:> ui/ItemHeader
          pname " " [:small " by " (:oname vendor)]]
-        [:<>
-         [:> ui/ItemExtra {:style {:color "rgba(0, 0, 0, 0.85)"
-                                   :font-size 14
-                                   :line-height "14px"}}
-          [:> ui/Grid {:class "stack-item-grid"}
-           [:> ui/GridRow {:class "field-row"}
-            [:> ui/GridColumn {:width 13}
-             [bc/c-categories product]]
-            [:> ui/GridColumn {:width 3
-                               :style {:text-align "right"}}
-             (when rating
-               [:<>
-                [:div {:style {:margin-bottom 4}}
-                 "Their Rating"]
-                [:> ui/Rating {:rating rating
-                               :maxRating 5
-                               :size "huge"
-                               :disabled true}]])]]]]]]])))
+        [:> ui/ItemExtra {:style {:color "rgba(0, 0, 0, 0.85)"
+                                  :font-size 14
+                                  :line-height "14px"}}
+         [bc/c-categories product]]]
+       [:div.community
+        [:div.metric
+         "Used by " orgs-using-count " "
+         [:> ui/Icon {:name "group"}]]
+        [:div.metric
+         (let [median-prices [45] #_(map :median-price agg-group-prod-price)]
+           (if (seq median-prices)
+             (str "$" ;; get the mean from all the member'd groups' medians
+                  (util/decimal-format (/ (apply + median-prices) (count median-prices)))
+                  " / year")
+             "No pricing data."))]
+        [:> ui/Rating {:rating 4
+                       :maxRating 5
+                       :size "large"
+                       :disabled true}]
+        #_(when-let [mean (:mean (util/rating-avg-map agg-group-prod-rating))]
+            [:> ui/Rating {:rating mean
+                           :maxRating 5
+                           :size "large"
+                           :disabled true}])]])))
 
 (defn c-popular-stack
   [{:keys [id] :as group}]
@@ -116,12 +127,15 @@
                                          [:id :pname :idstr :logo
                                           [:vendor
                                            [:id :oname :idstr :short-desc]]
-                                          [:categories {:ref-deleted nil}
+                                          [:categories {:ref-deleted nil
+                                                        :_limit 1}
                                            [:id :idstr :cname]]]]]]]]]}])]
     (fn []
       (if (= :loading @org-stack&)
         [cc/c-loader]
-        [bc/c-profile-segment {:title "Popular Products"}
+        [;; bc/c-profile-segment {:title "Popular Products"}
+         :div.popular-products
+         [:h1 "Popular Products"]
          (let [{:keys [oname stack-items] :as org} (first (:orgs @org-stack&))]
            [:> ui/ItemGroup {:class "results"}
             (let [current-stack-items (filter (comp (partial = "current") :status) stack-items)]
@@ -142,7 +156,7 @@
    [:> ui/GridRow
     [:> ui/GridColumn {:computer 16 :mobile 16}
      [:h1 {:style {:text-align "center"}}
-      gname]]]
+      gname " Community"]]]
    [:> ui/GridRow
     [:> ui/GridColumn {:computer 8 :mobile 16}
      [c-orgs group]]
