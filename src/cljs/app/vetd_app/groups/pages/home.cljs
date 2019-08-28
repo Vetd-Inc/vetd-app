@@ -99,7 +99,7 @@
            (str "$" ;; get the mean from all the member'd groups' medians
                 (util/decimal-format (/ (apply + median-prices) (count median-prices)))
                 " / year")
-           "No pricing."))]
+           "No pricing data."))]
       [:> ui/Rating {:rating mean
                      :maxRating 5
                      :size "large"
