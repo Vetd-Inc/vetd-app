@@ -136,12 +136,6 @@
                                [:id :oname :idstr :short-desc]]
                               [:categories {:ref-deleted nil}
                                [:id :idstr :cname]]
-
-                              ;; TODO, this isn't being used because the above agg-group-prod-rating is being used instead...
-                              [:agg-group-prod-rating {:group-id @group-ids&}
-                               [:group-id :product-id
-                                :count-stack-items :rating]]
-                              
                               [:agg-group-prod-price {:group-id @group-ids&}
                                [:group-id :median-price]]
                               [:discounts {:id @group-ids&
@@ -155,11 +149,7 @@
                (for [product (:products products)]
                  ^{:key (:id product)}
                  [c-stack-item product (:agg-group-prod-rating @agg-group-prod-rating&)]))
-              "No organizations have added products to their stack yet."
-              ;; TODO spacing below this empty state?
-              )]])
-        )
-      )))
+              "No organizations have added products to their stack yet.")]])))))
 
 (defn c-group
   [{:keys [gname] :as group}]

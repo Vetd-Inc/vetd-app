@@ -138,7 +138,7 @@
 
 ;;;; Components
 (defn c-add-product-form
-  [stack popup-open?&]
+  [stack-items popup-open?&]
   (let [value& (r/atom [])
         options& (r/atom []) ; options from search results + current values
         search-query& (r/atom "")
@@ -147,7 +147,7 @@
                               {:key id
                                :text pname
                                :value id}))]
-    (fn [stack popup-open?&]
+    (fn [stack-items popup-open?&]
       (let [products& (rf/subscribe
                        [:gql/q
                         {:queries
@@ -156,13 +156,15 @@
                                       :_limit 100
                                       :_order_by {:pname :asc}}
                            [:id :pname]]]}])
+            product-ids-already-in-stack (set (map (comp :id :product) stack-items))
             _ (when-not (= :loading @products&)
                 (let [options (->> @products&
                                    :products
                                    products->options ; now we have options from gql sub
                                    ;; (this dumbly actually keeps everything, but that seems fine)
                                    (concat @options&) ; keep options for the current values
-                                   distinct)]
+                                   distinct
+                                   (remove (comp (partial contains? product-ids-already-in-stack) :value)))]
                   (when-not (= @options& options)
                     (reset! options& options))))]
         [:> ui/Form {:as "div"
@@ -194,9 +196,9 @@
           "Add"]]))))
 
 (defn c-add-product-button
-  [stack]
+  [stack-items]
   (let [popup-open? (r/atom false)]
-    (fn [stack]
+    (fn [stack-items]
       [:> ui/Popup
        {:position "bottom left"
         :on "click"
@@ -205,7 +207,7 @@
         :onClose #(reset! popup-open? false)
         :hideOnScroll false
         :flowing true
-        :content (r/as-element [c-add-product-form stack popup-open?])
+        :content (r/as-element [c-add-product-form stack-items popup-open?])
         :trigger (r/as-element
                   [:> ui/Button {:color "teal"
                                  :icon true
@@ -457,7 +459,7 @@
               [:div.container-with-sidebar
                [:div.sidebar
                 [:> ui/Segment
-                 [c-add-product-button]]
+                 [c-add-product-button unfiltered-stack]]
                 [:> ui/Segment {:class "top-categories"}
                  [:h4 "Jump To"]
                  [:div
