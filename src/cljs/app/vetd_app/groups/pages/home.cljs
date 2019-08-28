@@ -117,7 +117,8 @@
                                      [:id :pname :idstr :logo :score
                                       [:vendor
                                        [:id :oname :idstr :short-desc]]
-                                      [:categories {:ref-deleted nil}
+                                      [:categories {:ref-deleted nil
+                                                    :_limit 1}
                                        [:id :idstr :cname]]
                                       [:agg-group-prod-rating {:group-id @group-ids&}
                                        [:group-id :product-id
