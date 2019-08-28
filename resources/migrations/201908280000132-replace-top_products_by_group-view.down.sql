@@ -1,0 +1,1 @@
+DROP VIEW IF EXISTS vetd.top_products_by_group;

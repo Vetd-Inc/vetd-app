@@ -132,25 +132,22 @@
      [bc/c-round-in-progress {:round-idstr (-> rounds first :idstr)
                               :props {:ribbon "left"}}])
    [bc/c-tags product v-fn discounts]
-   [:> ui/Grid {:columns "equal"
-                :style {:margin-top 4}}
-    [:> ui/GridRow
-     [:> ui/GridColumn {:width 12}
-      (or (util/parse-md (v-fn :product/description))
-          [:p "No description available."])]
-     [:> ui/GridColumn {:width 4}
-      (let [website-url (v-fn :product/website)]
-        (when (bc/has-data? website-url)
-          [:<>
-           [bc/c-external-link website-url "Product Website"]
-           [:br]
-           [:br]]))
-      (let [demo-url (v-fn :product/demo)]
-        (when (bc/has-data? demo-url)
-          [:<>
-           [bc/c-external-link demo-url "Watch Demo Video"]
-           [:br]
-           [:br]]))]]]])
+   [cc/c-grid {:style {:margin-top 4}}
+    [[(or (util/parse-md (v-fn :product/description))
+          [:p "No description available."]) 12]
+     [[:<>
+       (let [website-url (v-fn :product/website)]
+         (when (bc/has-data? website-url)
+           [:<>
+            [bc/c-external-link website-url "Product Website"]
+            [:br]
+            [:br]]))
+       (let [demo-url (v-fn :product/demo)]
+         (when (bc/has-data? demo-url)
+           [:<>
+            [bc/c-external-link demo-url "Watch Demo Video"]
+            [:br]
+            [:br]]))] 4]]]])
 
 (defn c-product
   "Component to display Product details."

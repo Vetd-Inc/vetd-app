@@ -1807,6 +1807,22 @@
                    :name :stack_items
                    :columns
                    {:add {:renewal_day_of_month [:integer]}}}]]
+
+   [[2019 8 28 0 0]
+
+    [:create-or-replace-view {:schema :vetd
+                              :name :top_products_by_group
+                              :honey {:select [[:gom.group_id :group_id]
+                                               [:si.product_id :product_id]
+                                               [:%count.si.id :count_stack_items]]
+                                      :from [[:group_org_memberships :gom]]
+                                      :join [[:stack_items :si]
+                                             [:and
+                                              [:= :si.buyer_id :gom.org_id]
+                                              [:= :si.deleted nil]]]
+                                      :group-by [:gom.group_id :si.product_id]}
+                              :owner :vetd
+                              :grants {:hasura [:SELECT]}}]]
    
    ])
 

@@ -339,18 +339,18 @@
   [:> ui/Segment {:placeholder true
                   :class "how-vetd-works"}
    [:h2 "How Vetd Works . . ."]
-   [:> ui/Grid {:columns "equal"
-                :style {:margin-top 4}}
-    [:> ui/GridRow
-     [:> ui/GridColumn
-      [:h3 "Products & Categories"]
-      "Search for products or product categories to find products that meet your needs."]
-     [:> ui/GridColumn
-      [:h3 "PrePosals"]
-      "Review PrePosals (personalized pricing estimate and product pitch) you have received from vendors. Don't have any PrePosals yet? Request one by searching above or simply forward vendor emails to forward@vetd.com."]
-     [:> ui/GridColumn
-      [:h3 "VetdRounds"]
-      "Compare similar products side-by-side based on your unique requirements, and make an informed buying decision in a fraction of the time."]]]])
+   [cc/c-grid {:columns "equal"
+               :style {:margin-top 4}}
+    [[[:<>
+       [:h3 "Products & Categories"]
+       "Search for products or product categories to find products that meet your needs."]]
+     [[:<>
+       [:h3 "PrePosals"]
+       "Review PrePosals (personalized pricing estimate and product pitch) you have received from vendors. Don't have any PrePosals yet? Request one by searching above or simply forward vendor emails to forward@vetd.com."
+       ]]
+     [[:<>
+       [:h3 "VetdRounds"]
+       "Compare similar products side-by-side based on your unique requirements, and make an informed buying decision in a fraction of the time."]]]]])
 
 (defn potentially-emphasize-filters []
   (let [filter& (rf/subscribe [:b/search.filter])

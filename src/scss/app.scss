@@ -393,8 +393,8 @@ a.label {
     }
 
     > .community {
-      width: 150px;
-      min-width: 150px;
+      width: 115px;
+      min-width: 115px;
       text-align: right;
 
       .metric {
@@ -1158,6 +1158,56 @@ $cell-height: 201px;
       > .column > .category-tag {
         position: absolute;
         bottom: 0px;
+      }
+    }
+  }
+}
+
+.popular-products {
+  padding: 14px;
+  margin: 0 !important;
+  background-image: radial-gradient(at center 100px, #f5f5f5 0px, #eee 120px);
+  background-repeat: no-repeat;
+  border-radius: 4px;
+
+  h1 {
+    padding: 0px 0px 14px 0px;
+    margin-bottom: 0;
+    background-image: radial-gradient(at center 100px, #f5f5f5 0px, #eee 120px);
+    background-repeat: no-repeat;
+    z-index: 1003;
+    font-size: 22px;
+    font-weight: 700;
+  }
+  
+  .results {
+    > .item {
+      height: 83px;
+      width: auto !important;
+      padding: 10px !important;
+
+      .header {
+        font-size: 17px;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        max-width: 275px;
+      }
+      
+      .product-logo {
+        $edge: 60px;
+        min-width: $edge;
+        min-height: $edge;
+        max-width: $edge;
+        max-height: $edge;
+      }
+
+      .extra {
+        margin-top: 13px;
+      }
+
+      .community .metric {
+        margin-bottom: 4px;
       }
     }
   }
