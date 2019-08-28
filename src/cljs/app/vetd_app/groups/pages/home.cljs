@@ -66,15 +66,15 @@
      [c-org org group])])
 
 (defn c-stack-item
-  [product agg-group-prod-rating]
+  [product top-products]
   (let [{product-id :id
          product-idstr :idstr
-         :keys [pname short-desc logo vendor
-                agg-group-prod-price discounts]} product
-        ;; TODO easy to optimize
-        orgs-using-count (-> (filter #(= (:product-id %) product-id) agg-group-prod-rating)
-                             (util/rating-avg-map {:keep-nil true})
-                             :count)
+         :keys [pname short-desc logo vendor discounts
+                agg-group-prod-rating agg-group-prod-price]} product
+        orgs-using-count (->> top-products
+                              (filter #(= (:product-id %) product-id))
+                              first
+                              :count-stack-items)
         mean (->> agg-group-prod-rating
                   (filter #(= (:product-id %) product-id))
                   util/rating-avg-map
@@ -106,50 +106,40 @@
                      :disabled true}]]]))
 
 (defn c-popular-stack
-  [{:keys [id] :as group}]
-  (let [products-showing-count 10
-        group-ids& (rf/subscribe [:group-ids])
-        agg-group-prod-rating& (rf/subscribe
-                                [:gql/sub
-                                 {:queries
-                                  [[:agg-group-prod-rating {:group-id @group-ids&
-                                                            ;; not the best way to determine popularity, basically just means:
-                                                            ;; which product had the most ratings of the same star value
-                                                            :_order_by {:count-stack-items :desc}
-                                                            ;; at least 10 products fully represented (all rating choices including nil)
-                                                            :_limit (* 6 products-showing-count)}
-                                    [:group-id :product-id
-                                     :count-stack-items :rating]]]}])]
+  [{:keys [id top-products] :as group}]
+  (let [group-ids& (rf/subscribe [:group-ids])]
     (fn []
-      (if (= :loading @agg-group-prod-rating&)
-        [cc/c-loader]
-        (let [products @(rf/subscribe
-                         [:gql/q
-                          {:queries
-                           [[:products {:id (->> @agg-group-prod-rating&
-                                                 :agg-group-prod-rating
-                                                 (map :product-id)
-                                                 distinct
-                                                 (take products-showing-count))}
-                             [:id :pname :idstr :logo :score
-                              [:vendor
-                               [:id :oname :idstr :short-desc]]
-                              [:categories {:ref-deleted nil}
-                               [:id :idstr :cname]]
-                              [:agg-group-prod-price {:group-id @group-ids&}
-                               [:group-id :median-price]]
-                              [:discounts {:id @group-ids&
-                                           :ref-deleted nil}
-                               [:group-discount-descr :gname]]]]]}])]
-          [:div.popular-products
-           [:h1 "Popular Products"]
-           [:> ui/ItemGroup {:class "results"}
-            (if (seq (:products products))
-              (doall
-               (for [product (:products products)]
-                 ^{:key (:id product)}
-                 [c-stack-item product (:agg-group-prod-rating @agg-group-prod-rating&)]))
-              "No organizations have added products to their stack yet.")]])))))
+      (let [top-products-ids (map :product-id top-products)
+            products-unordered @(rf/subscribe
+                                 [:gql/q
+                                  {:queries
+                                   [[:products {:id top-products-ids}
+                                     [:id :pname :idstr :logo :score
+                                      [:vendor
+                                       [:id :oname :idstr :short-desc]]
+                                      [:categories {:ref-deleted nil}
+                                       [:id :idstr :cname]]
+                                      [:agg-group-prod-rating {:group-id @group-ids&}
+                                       [:group-id :product-id
+                                        :count-stack-items :rating]]
+                                      [:agg-group-prod-price {:group-id @group-ids&}
+                                       [:group-id :median-price]]
+                                      [:discounts {:id @group-ids&
+                                                   :ref-deleted nil}
+                                       [:group-discount-descr :gname]]]]]}])]
+        [:div.popular-products
+         [:h1 "Popular Products"]
+         [:> ui/ItemGroup {:class "results"}
+          (when-not (= :loading products-unordered)
+            (let [products (->> products-unordered
+                                :products
+                                (sort-by #(.indexOf top-products-ids (:id %))))]
+              (if (seq products)
+                (doall
+                 (for [product products]
+                   ^{:key (:id product)}
+                   [c-stack-item product top-products]))
+                "No organizations have added products to their stack yet.")))]]))))
 
 (defn c-group
   [{:keys [gname] :as group}]
@@ -185,7 +175,10 @@
                                      [:memberships
                                       [:id
                                        [:user
-                                        [:id :uname]]]]]]]]]}])]
+                                        [:id :uname]]]]]]
+                                   [:top-products {:_order_by {:count-stack-items :desc}
+                                                   :_limit 10}
+                                    [:group-id :product-id :count-stack-items]]]]]}])]
     (fn []
       (if (= :loading @groups&)
         [cc/c-loader]

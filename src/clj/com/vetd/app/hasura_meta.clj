@@ -356,7 +356,13 @@
                     :vetd :agg_group_prod_price]
            :fields [:agg_group_prod_price]
            :cols [:id :product_id]
-           :rel :many-many}]})
+           :rel :many-many}
+
+          {:tables [:vetd :groups
+                    :vetd :top_products_by_group]
+           :fields [:top-products]
+           :cols [:id :group_id]
+           :rel :one-many}]})
 
 
 #_
