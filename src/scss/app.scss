@@ -1188,6 +1188,10 @@ $cell-height: 201px;
 
       .header {
         font-size: 17px;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        max-width: 275px;
       }
       
       .product-logo {
@@ -1199,7 +1203,7 @@ $cell-height: 201px;
       }
 
       .extra {
-        margin-top: 8px;
+        margin-top: 13px;
       }
 
       .community .metric {

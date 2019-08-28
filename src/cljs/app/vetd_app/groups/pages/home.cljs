@@ -58,94 +58,106 @@
 
 (defn c-orgs
   [{:keys [id orgs] :as group}]
-  [bc/c-profile-segment {:title "Organizations"}
+  [bc/c-profile-segment {:title [:<>
+                                 [:> ui/Icon {:name "group"}]
+                                 " Organizations"]}
    (for [org orgs]
      ^{:key (:id org)}
      [c-org org group])])
 
 (defn c-stack-item
-  [{:keys [price-amount price-period renewal-date] :as stack-item}]
-  (fn [{:keys [id rating price-amount price-period
-               renewal-date renewal-reminder status
-               product] :as stack-item}]
-    (let [{product-id :id
-           product-idstr :idstr
-           :keys [pname short-desc logo vendor]} product
-
-          orgs-using-count 5
-
-          ]
-      [:> ui/Item {:on-click #(rf/dispatch [:b/nav-product-detail product-idstr])}
-       [bc/c-product-logo logo]
-       [:> ui/ItemContent
-        [:> ui/ItemHeader
-         pname " " [:small " by " (:oname vendor)]]
-        [:> ui/ItemExtra {:style {:color "rgba(0, 0, 0, 0.85)"
-                                  :font-size 14
-                                  :line-height "14px"}}
-         [bc/c-categories product]]]
-       [:div.community
-        [:div.metric
-         "Used by " orgs-using-count " "
-         [:> ui/Icon {:name "group"}]]
-        [:div.metric
-         (let [median-prices [45] #_(map :median-price agg-group-prod-price)]
-           (if (seq median-prices)
-             (str "$" ;; get the mean from all the member'd groups' medians
-                  (util/decimal-format (/ (apply + median-prices) (count median-prices)))
-                  " / year")
-             "No pricing data."))]
-        [:> ui/Rating {:rating 4
-                       :maxRating 5
-                       :size "large"
-                       :disabled true}]
-        #_(when-let [mean (:mean (util/rating-avg-map agg-group-prod-rating))]
-            [:> ui/Rating {:rating mean
-                           :maxRating 5
-                           :size "large"
-                           :disabled true}])]])))
+  [product agg-group-prod-rating]
+  (let [{product-id :id
+         product-idstr :idstr
+         :keys [pname short-desc logo vendor
+                agg-group-prod-price discounts]} product
+        ;; TODO easy to optimize
+        orgs-using-count (-> (filter #(= (:product-id %) product-id) agg-group-prod-rating)
+                             (util/rating-avg-map {:keep-nil true})
+                             :count)
+        mean (->> agg-group-prod-rating
+                  (filter #(= (:product-id %) product-id))
+                  util/rating-avg-map
+                  :mean)]
+    [:> ui/Item {:on-click #(rf/dispatch [:b/nav-product-detail product-idstr])}
+     [bc/c-product-logo logo]
+     [:> ui/ItemContent
+      [:> ui/ItemHeader
+       pname ;; " " [:small " by " (:oname vendor)]
+       ]
+      [:> ui/ItemExtra {:class "product-tags"}
+       [bc/c-categories product]
+       (when (seq discounts)
+         [bc/c-discount-tag discounts])]]
+     [:div.community
+      [:div.metric
+       "Used by " orgs-using-count " "
+       [:> ui/Icon {:name "group"}]]
+      [:div.metric
+       (let [median-prices (map :median-price agg-group-prod-price)]
+         (if (seq median-prices)
+           (str "$" ;; get the mean from all the member'd groups' medians
+                (util/decimal-format (/ (apply + median-prices) (count median-prices)))
+                " / year")
+           "No pricing data."))]
+      [:> ui/Rating {:rating mean
+                     :maxRating 5
+                     :size "large"
+                     :disabled true}]]]))
 
 (defn c-popular-stack
   [{:keys [id] :as group}]
-  (let [org-stack& (rf/subscribe [:gql/sub
-                                  {:queries
-                                   [[:orgs {
-                                            :_order_by {:created :desc}
-                                            
-                                            :_limit 1}
-                                     [:id :oname
-                                      [:stack-items {:_order_by {:created :desc}
-                                                     :deleted nil
-
-                                                     :_limit 10
-
-                                                     }
-                                       [:id :idstr :status
-                                        :price-amount :price-period :rating
-                                        :renewal-date :renewal-reminder
-                                        [:product
-                                         [:id :pname :idstr :logo
-                                          [:vendor
-                                           [:id :oname :idstr :short-desc]]
-                                          [:categories {:ref-deleted nil
-                                                        :_limit 1}
-                                           [:id :idstr :cname]]]]]]]]]}])]
+  (let [products-showing-count 10
+        group-ids& (rf/subscribe [:group-ids])
+        agg-group-prod-rating& (rf/subscribe
+                                [:gql/sub
+                                 {:queries
+                                  [[:agg-group-prod-rating {:group-id @group-ids&
+                                                            ;; not the best way to determine popularity, basically just means:
+                                                            ;; which product had the most ratings of the same star value
+                                                            :_order_by {:count-stack-items :desc}
+                                                            ;; at least 10 products fully represented (all rating choices including nil)
+                                                            :_limit (* 6 products-showing-count)}
+                                    [:group-id :product-id
+                                     :count-stack-items :rating]]]}])]
     (fn []
-      (if (= :loading @org-stack&)
+      (if (= :loading @agg-group-prod-rating&)
         [cc/c-loader]
-        [;; bc/c-profile-segment {:title "Popular Products"}
-         :div.popular-products
-         [:h1 "Popular Products"]
-         (let [{:keys [oname stack-items] :as org} (first (:orgs @org-stack&))]
+        (let [products @(rf/subscribe
+                         [:gql/q
+                          {:queries
+                           [[:products {:id (->> @agg-group-prod-rating&
+                                                 :agg-group-prod-rating
+                                                 (map :product-id)
+                                                 distinct
+                                                 (take products-showing-count))}
+                             [:id :pname :idstr :logo :score
+                              [:vendor
+                               [:id :oname :idstr :short-desc]]
+                              [:categories {:ref-deleted nil}
+                               [:id :idstr :cname]]
+
+                              ;; TODO, this isn't being used because the above agg-group-prod-rating is being used instead...
+                              [:agg-group-prod-rating {:group-id @group-ids&}
+                               [:group-id :product-id
+                                :count-stack-items :rating]]
+                              
+                              [:agg-group-prod-price {:group-id @group-ids&}
+                               [:group-id :median-price]]
+                              [:discounts {:id @group-ids&
+                                           :ref-deleted nil}
+                               [:group-discount-descr :gname]]]]]}])]
+          [:div.popular-products
+           [:h1 "Popular Products"]
            [:> ui/ItemGroup {:class "results"}
-            (let [current-stack-items (filter (comp (partial = "current") :status) stack-items)]
-              (if (seq current-stack-items)
-                (for [stack-item current-stack-items]
-                  ^{:key (:id stack-item)}
-                  [c-stack-item stack-item])
-                "No organizations have added products to their stack yet."
-                ;; TODO spacing below this empty state?
-                ))])]
+            (if (seq (:products products))
+              (doall
+               (for [product (:products products)]
+                 ^{:key (:id product)}
+                 [c-stack-item product (:agg-group-prod-rating @agg-group-prod-rating&)]))
+              "No organizations have added products to their stack yet."
+              ;; TODO spacing below this empty state?
+              )]])
         )
       )))
 
