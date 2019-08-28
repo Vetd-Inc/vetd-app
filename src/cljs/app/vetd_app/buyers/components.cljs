@@ -128,7 +128,7 @@
                                    (.stopPropagation e)
                                    (rf/dispatch [:b/nav-round-detail round-idstr]))}
                       props)
-   "Product In VetdRound"])
+   "In VetdRound"])
 
 (defn c-rounds
   "Given a product map, display the Round data."
@@ -441,9 +441,10 @@
            (.addEventListener node "mouseleave" mouseleave))))}))
 
 (defn c-profile-segment
-  [{:keys [title style icon icon-style]} & children]
+  [{:keys [title scroll-to-ref-key style icon icon-style]} & children]
   [:> ui/Segment {:class "detail-container profile"
                   :style style}
+   [:span.scroll-anchor {:ref (fn [this] (rf/dispatch [:reg-scroll-to-ref scroll-to-ref-key this]))}]
    [:h1.title
     (when icon
       [:> ui/Icon {:name icon
@@ -463,6 +464,7 @@
         pricing-estimate-details (v-fn :preposal/pricing-estimate "details")
         pitch (v-fn :preposal/pitch)]
     [c-profile-segment {:title "PrePosal"
+                        :scroll-to-ref-key :product/preposal
                         :icon "clipboard outline"}
      [:> ui/GridRow
       [c-display-field 16
@@ -480,28 +482,18 @@
 
 (defn c-average-rating
   [agg-group-prod-rating]
-  (let [ ;; e.g., {[rating] [agg count], 2 8, 3 2, 4 0, 5 4}
-        ratings-enum (->> agg-group-prod-rating
-                          (reduce (fn [acc {:keys [rating count-stack-items]}]
-                                    (update acc rating + count-stack-items))
-                                  {1 0, 2 0, 3 0, 4 0, 5 0})
-                          (remove (comp nil? key))
-                          (into {}))
-        ratings-sum (reduce (fn [acc [k v]] (+ acc (* k v))) 0 ratings-enum)
-        ratings-count (reduce (fn [acc [k v]] (+ acc v)) 0 ratings-enum)
-        ratings-mean (when (pos? ratings-count)
-                       (/ ratings-sum ratings-count))]
-    (if ratings-mean
+  (let [{:keys [count mean]} (util/rating-avg-map agg-group-prod-rating)]
+    (if mean
       [:<>
-       [:> ui/Rating {:rating ratings-mean
+       [:> ui/Rating {:rating mean
                       :maxRating 5
                       :size "huge"
                       :disabled true
                       :style {:margin "0 0 5px -3px"}}]
        [:br]
-       (str (/ (Math/round (* ratings-mean 10)) 10)
-            " out of 5 stars - " ratings-count
-            " Rating" (when (> ratings-count 1) "s"))]
+       (str (/ (Math/round (* mean 10)) 10)
+            " out of 5 stars - " count
+            " Rating" (when (> count 1) "s"))]
       "No community ratings available.")))
 
 (defn c-community-usage-modal
@@ -562,6 +554,7 @@
                            (filter (comp seq :stack-items))
                            distinct)]
              [c-profile-segment {:title (str "Your " (s/capitalize community-str))
+                                 :scroll-to-ref-key :product/community
                                  :icon "group"
                                  :icon-style {:margin-right 10}}
               (when (seq orgs)
@@ -618,6 +611,7 @@
   v-fn - function to get value per some prompt term"
   [c-display-field v-fn discounts preposal-requested?]
   [c-profile-segment {:title "Pricing"
+                      :scroll-to-ref-key :product/pricing
                       :icon "dollar"
                       :icon-style {:margin-right 5
                                    :margin-left -5}}
@@ -658,6 +652,7 @@
   v-fn - function to get value per some prompt term"
   [c-display-field v-fn]
   [c-profile-segment {:title "Onboarding"
+                      :scroll-to-ref-key :product/onboarding
                       :icon "handshake outline"
                       :icon-style {:position "relative"
                                    :top 1
@@ -679,6 +674,7 @@
   v-fn - function to get value per some prompt term"
   [c-display-field v-fn]
   [c-profile-segment {:title "Client Service"
+                      :scroll-to-ref-key :product/client-service
                       :icon "comment alternate outline"}
    [:> ui/GridRow
     [c-display-field 16 "Point of Contact" (v-fn :product/point-of-contact)]]
@@ -692,6 +688,7 @@
   v-fn - function to get value per some prompt term"
   [c-display-field v-fn]
   [c-profile-segment {:title "Reporting & Measurement"
+                      :scroll-to-ref-key :product/reporting
                       :icon "chart line"
                       :icon-style {:position "relative"
                                    :top 1}}
@@ -716,6 +713,7 @@
   v-fn - function to get value per some prompt term"
   [c-display-field v-fn]
   [c-profile-segment {:title "Industry Niche"
+                      :scroll-to-ref-key :product/market-niche
                       :icon "cubes"}
    [:> ui/Grid {:columns "equal" :style {:margin-top 0}}
     [:> ui/GridRow
@@ -749,8 +747,8 @@
                                                                 :name vendor-name}))
         v-fn (partial docs/get-value-by-term response-prompts)]
     [c-profile-segment {:title "Company Profile"
-                        :icon "building"
-                        }
+                        :scroll-to-ref-key :product/vendor-profile
+                        :icon "building"}
      [:> ui/GridRow 
       [c-display-field 6 "Website"
        (when (has-data? (v-fn :vendor/website))

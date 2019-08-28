@@ -795,16 +795,16 @@ a.ui.basic.vetd.label:hover {
 
 .ui.blue.labels .label,
 .ui.blue.label {
-  background-color: #2185D0 !important;
-  border-color: #2185D0 !important;
+  background-color: $blue !important;
+  border-color: $blue !important;
   color: #FFFFFF !important;
 }
 
 /* Link */
 .ui.blue.labels .label:hover,
 a.ui.blue.label:hover {
-  background-color: #1678c2 !important;
-  border-color: #1678c2 !important;
+  background-color: $blue-highlight !important;
+  border-color: $blue-highlight !important;
   color: #FFFFFF !important;
 }
 
@@ -822,14 +822,14 @@ a.ui.blue.label:hover {
 /* Basic */
 .ui.basic.blue.label {
   background: none #FFFFFF !important;
-  color: #2185D0 !important;
-  border-color: #2185D0 !important;
+  color: $blue !important;
+  border-color: $blue !important;
 }
 .ui.basic.blue.labels a.label:hover,
 a.ui.basic.blue.label:hover {
   background-color: #FFFFFF !important;
-  color: #1678c2 !important;
-  border-color: #1678c2 !important;
+  color: $blue-highlight !important;
+  border-color: $blue-highlight !important;
 }
 
 /*--- Violet ---*/

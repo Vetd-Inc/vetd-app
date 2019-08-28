@@ -258,40 +258,50 @@
 ;;;; Components
 (defn c-product-list-item
   [{:keys [id idstr pname short-desc logo rounds
-           form-docs forms docs vendor discounts] :as product}]
-  (let [requested-preposal? (not-empty forms)
-        preposal-responses (-> docs
-                               first
-                               :response-prompts)
-        preposal-v-fn (->> preposal-responses
-                           (partial docs/get-value-by-term))
-        product-v-fn (->> form-docs
+           form-docs forms vendor discounts
+           agg-group-prod-rating agg-group-prod-price] :as product}]
+  (let [product-v-fn (->> form-docs
                           first
                           :response-prompts
-                          (partial docs/get-value-by-term))]
+                          (partial docs/get-value-by-term))
+        orgs-using-count (reduce (fn [acc {:keys [count-stack-items]}]
+                                   (+ acc count-stack-items))
+                                 0
+                                 agg-group-prod-rating)]
     [:> ui/Item {:on-click #(rf/dispatch [:b/nav-product-detail idstr])}
      [bc/c-product-logo logo]
+     (when (not-empty rounds)
+       [bc/c-round-in-progress {:round-idstr (-> rounds first :idstr)
+                                :props {:ribbon "left"
+                                        :style {:position "absolute"
+                                                :left -14}}}])
      [:> ui/ItemContent
       [:> ui/ItemHeader
        pname " " [:small " by " (:oname vendor)]]
-      [:> ui/ItemMeta
-       (if preposal-responses
-         [bc/c-pricing-estimate preposal-v-fn]
-         (if requested-preposal?
-           "PrePosal Requested"
-           [:<>
-            "Pricing Unavailable "
-            [:a.teal {:on-click (fn [e]
-                                  (.stopPropagation e)
-                                  (rf/dispatch [:b/create-preposal-req product vendor]))}
-             "Request a PrePosal"]]))]
       [:> ui/ItemDescription (bc/product-description product-v-fn)]
       [:> ui/ItemExtra [bc/c-tags product product-v-fn discounts]]]
-     (when (not-empty rounds)
-       [bc/c-round-in-progress {:round-idstr (-> rounds first :idstr)
-                                :props {:ribbon "right"
-                                        :style {:position "absolute"
-                                                :marginLeft -14}}}])]))
+     
+     (when (pos? orgs-using-count)
+       [:div.community
+        [:div.metric
+         [:h5
+          "Your Community"]
+         "Used by " orgs-using-count " "
+         [:> ui/Icon {:name "group"}]]
+        [:div.metric
+         [:h5
+          "Median Price"]
+         (let [median-prices (map :median-price agg-group-prod-price)]
+           (if (seq median-prices)
+             (str "$" ;; get the mean from all the member'd groups' medians
+                  (util/decimal-format (/ (apply + median-prices) (count median-prices)))
+                  " / year")
+             "No pricing data."))]
+        (when-let [mean (:mean (util/rating-avg-map agg-group-prod-rating))]
+          [:> ui/Rating {:rating mean
+                         :maxRating 5
+                         :size "huge"
+                         :disabled true}])])]))
 
 (defn c-product-search-results
   "Given a list product IDs in order, and an indexed map of products by id,
@@ -414,25 +424,16 @@
                                       [:id :prompt-id :notes :prompt-prompt :prompt-term
                                        [:response-prompt-fields
                                         [:id :prompt-field-fname :idx :sval :nval :dval]]]]]]
-                                   [:forms {:ftype "preposal" ; preposal requests
-                                            :from-org-id @org-id&}
-                                    [:id]]
-                                   [:docs {:dtype "preposal" ; completed preposals
-                                           :to-org-id @org-id&}
-                                    [:id :idstr :title
-                                     [:from-org [:id :oname]]
-                                     [:from-user [:id :uname]]
-                                     [:to-org [:id :oname]]
-                                     [:to-user [:id :uname]]
-                                     [:response-prompts {:ref_deleted nil}
-                                      [:id :prompt-id :notes :prompt-prompt :prompt-term
-                                       [:response-prompt-fields
-                                        [:id :prompt-field-fname :idx :sval :nval :dval]]]]]]
                                    [:rounds {:buyer-id @org-id&
                                              :deleted nil}
                                     [:id :idstr :created :status]]
                                    [:categories {:ref-deleted nil}
                                     [:id :idstr :cname]]
+                                   [:agg-group-prod-rating {:group-id @group-ids&}
+                                    [:group-id :product-id
+                                     :count-stack-items :rating]]
+                                   [:agg-group-prod-price {:group-id @group-ids&}
+                                    [:group-id :median-price]]
                                    [:discounts {:id @group-ids&
                                                 :ref-deleted nil}
                                     [:group-discount-descr :gname]]]]]}]))
@@ -509,6 +510,26 @@
        [:div.sidebar
         [:> ui/Segment {:id "search-filter"}
          [:h2 "Filter"]
+         [:> ui/Popup
+          {:position "bottom left"
+           :content "Products that have been through our vetting process and have in-depth information available."
+           :trigger (r/as-element
+                     [:> ui/Checkbox {:label (r/as-element
+                                              [:label
+                                               [:> ui/Icon {:name "vetd"
+                                                            :size "small"
+                                                            :color "vetd-colors"}]
+                                               [:span {:style {:position "relative"
+                                                               :top -5}}
+                                                "Vetd Products"]])
+                                      :checked (-> @filter& :features (contains? "product-profile-completed") boolean)
+                                      ;; on-click works better than on-change here
+                                      :on-click (fn [_ this]
+                                                  (rf/dispatch [(if (.-checked this)
+                                                                  :b/search.filter.add
+                                                                  :b/search.filter.remove)
+                                                                :features
+                                                                "product-profile-completed"]))}])}]
          [:h4 "Trial"]
          [:> ui/Checkbox {:label "Free Trial"
                           :checked (-> @filter& :features (contains? "free-trial") boolean)

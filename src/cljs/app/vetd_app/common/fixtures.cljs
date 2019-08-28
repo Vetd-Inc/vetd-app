@@ -55,23 +55,25 @@
                                                          :pages #{:g/settings}
                                                          :event [:g/nav-settings]}))]
         (when (and @page& @user-name&)
-          [:> ui/Menu {:class "top-nav"
-                       :secondary true} ; 'secondary' is a misnomer (it's just for styling)
-           [:> ui/MenuItem {:class "logo"
-                            :on-click #(do (rf/dispatch [:b/search.reset])
-                                           (rf/dispatch [:nav-home]))}
-            ;; todo: use a config var for base url
-            [:img {:src "https://s3.amazonaws.com/vetd-logos/vetd.svg"}]]
-           (doall
-            (for [item pages]
-              (c-top-nav-page-link (assoc item :active (boolean ((:pages item) @page&))))))
-           [:> ui/MenuMenu {:position "right"}
-            ;; Consider having search bar in top nav?
-            ;; [:> ui/MenuItem
-            ;;    [:> ui/Input {:icon "search"
-            ;;                  :placeholder "Search for products & categories..."}]]
-            [:> ui/MenuItem {:style {:padding-right 0}}
-             [c-avatar @user-name& @org-name&]]]])))))
+          [:<>
+           [:span.scroll-anchor {:ref (fn [this] (rf/dispatch [:reg-scroll-to-ref :top this]))}]
+           [:> ui/Menu {:class "top-nav"
+                        :secondary true} ; 'secondary' is a misnomer (it's just for styling)
+            [:> ui/MenuItem {:class "logo"
+                             :on-click #(do (rf/dispatch [:b/search.reset])
+                                            (rf/dispatch [:nav-home]))}
+             ;; todo: use a config var for base url
+             [:img {:src "https://s3.amazonaws.com/vetd-logos/vetd.svg"}]]
+            (doall
+             (for [item pages]
+               (c-top-nav-page-link (assoc item :active (boolean ((:pages item) @page&))))))
+            [:> ui/MenuMenu {:position "right"}
+             ;; Consider having search bar in top nav?
+             ;; [:> ui/MenuItem
+             ;;    [:> ui/Input {:icon "search"
+             ;;                  :placeholder "Search for products & categories..."}]]
+             [:> ui/MenuItem {:style {:padding-right 0}}
+              [c-avatar @user-name& @org-name&]]]]])))))
 
 (defn container [body]
   [:<>
