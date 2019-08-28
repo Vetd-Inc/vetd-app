@@ -1032,10 +1032,32 @@
                           [k v]))
                       (into {}))}))
 
-(defn select-missing-response-fields-by-doc-id
+;; docs points to forms; forms have prompts, but doc doesn't have response (or response is blank)
+
+;; select d.id, d.title, f.id, f.title, dr.id, r.id, p.prompt, pf.* from docs d join forms f on d.form_id = f.id join form_prompt fp on fp.form_id = f.id join doc_resp dr on dr.doc_id = d.id left join responses r on r.id = dr.resp_id and r.prompt_id = fp.prompt_id and r.id is null join prompts p on p.id = fp.prompt_id join prompt_fields pf on p.id = pf.prompt_id limit 3;
+
+(defn select-missing-prompt-fields-by-doc-id
   [doc-id]
-  
-  )
+  (db/hs-query
+   {:select [[:p.prompt :prompt_prompt]
+             [:pf.id :prompt_field_id]]
+    :from [[:docs :d]]
+    :join [[:forms :f]
+           [:= :d.form_id :f.id]
+           [:form_prompt :fp]
+           [:= :fp.form_id :f.id]
+           [:doc_resp :dr]
+           [:= :dr.doc_id :d.id]
+           [:prompts :p]
+           [:= :p.id :fp.prompt_id]
+           [:prompt_fields :pf]
+           [:= :pf.prompt_id :p.id]]
+    :left-join [[:responses :r]
+                [:and
+                 [:= :r.id :dr.resp_id]
+                 [:= :r.prompt_id :fp.prompt_id]
+                 [:= :r.id nil]]]
+    :limit 3}))
 
 (defn select-reusable-response-fields [subject dtype])
 
