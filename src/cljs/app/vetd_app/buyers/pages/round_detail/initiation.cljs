@@ -49,7 +49,6 @@
                       :props {:category "Round"
                               :label round-id}}}))
 
-
 ;;;; Components
 (defn c-topics-explainer-list
   [{:keys [title items icon-name]}]

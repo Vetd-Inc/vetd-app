@@ -16,6 +16,11 @@
 ;; the current x position of a column being reordered
 (defonce curr-reordering-pos-x (r/atom nil))
 
+;;;; Subscriptions
+(rf/reg-sub
+ :round-products-order
+ (fn [{:keys [round-products-order]}] round-products-order))
+
 ;;;; Events
 (rf/reg-event-fx
  :b/round.add-requirements
@@ -164,17 +169,37 @@
                         :user-id (-> db :user :id)
                         :org-id (util/db->current-org-id db)}}}))
 
-;;;; Subscriptions
-(rf/reg-sub
- :round-products-order
- (fn [{:keys [round-products-order]}] round-products-order))
-
 ;;;; Components
+(defn c-declare-winner-form
+  [round product popup-open?]
+  (let [new-reason (atom "")]
+    (fn [round product popup-open?]
+      [:> ui/Form {:style {:width 325}}
+       [:h4 {:style {:margin-bottom 7}}
+        "Declare Winner of VetdRound"]
+       [:p {:style {:margin-top 0}}
+        "We will put you in touch with " (:oname (:vendor product)) " as soon as possible."]
+       [:> ui/FormField
+        [:label "Why did you pick " (:pname product) "?"]
+        [:> ui/Input
+         {:placeholder "Enter a reason for your future reference..."
+          :on-change (fn [_ this] (reset! new-reason (.-value this)))}]
+        [:> ui/Button
+         {:color "vetd-gradient"
+          :fluid true
+          :style {:margin-top 7}
+          :on-click (fn []
+                      (reset! popup-open? false)
+                      (rf/dispatch [:b/round.declare-winner
+                                    (:id round)
+                                    (:id product)
+                                    @new-reason]))}
+         "Declare Winner"]]])))
+
 (defn c-declare-winner-button
   [round product won? reason]
   (let [popup-open? (r/atom false)
-        context-ref (r/atom nil)
-        new-reason (atom "")]
+        context-ref (r/atom nil)]
     (fn [round product won? reason]
       (if-not won?
         [:<>
@@ -184,28 +209,7 @@
            :open @popup-open?
            :on-close #(reset! popup-open? false)
            :context @context-ref
-           :content (r/as-element
-                     [:> ui/Form {:style {:width 325}}
-                      [:h4 {:style {:margin-bottom 7}}
-                       "Declare Winner of VetdRound"]
-                      [:p {:style {:margin-top 0}}
-                       "We will put you in touch with " (:oname (:vendor product)) " as soon as possible."]
-                      [:> ui/FormField
-                       [:label "Why did you pick " (:pname product) "?"]
-                       [:> ui/Input
-                        {:placeholder "Enter a reason for your future reference..."
-                         :on-change (fn [_ this]
-                                      (reset! new-reason (.-value this)))}]
-                       [:> ui/Button
-                        {:color "vetd-gradient"
-                         :fluid true
-                         :style {:margin-top 7}
-                         :on-click #(do (reset! popup-open? false)
-                                        (rf/dispatch [:b/round.declare-winner
-                                                      (:id round)
-                                                      (:id product)
-                                                      @new-reason]))}
-                        "Declare Winner"]]])}]
+           :content (r/as-element [c-declare-winner-form round product popup-open?])}]
          [:> ui/Popup
           {:content "Declare Winner"
            :position "bottom center"
@@ -217,7 +221,7 @@
                        :ref (fn [this] (reset! context-ref (r/dom-node this)))
                        :on-click #(swap! popup-open? not)
                        :size "mini"}])}]]
-
+        ;; winner already declared
         [:> ui/Popup
          {:header "Declared Winner"
           :content reason
@@ -230,9 +234,8 @@
                       :style {:cursor "default"}}
                      [:<> [:> ui/Icon {:name "checkmark"}] " Winner"]])}]))))
 
-
 (defn c-setup-call-button
-  [round product vendor won?]
+  [product vendor won?]
   [:> ui/Popup
    {:content (str "Set up call with " (:oname vendor))
     :position "bottom center"
@@ -243,11 +246,30 @@
                 :onClick #(rf/dispatch [:b/setup-call (:id product) (:pname product)])
                 :size "mini"}])}])
 
+(defn c-disqualify-form
+  [round product popup-open?]
+  (let [new-reason (atom "")]
+    (fn [round product popup-open?]
+      [:> ui/Form {:style {:width 400}}
+       [:> ui/FormField
+        [:> ui/Input
+         {:placeholder "Enter reason..."
+          :on-change (fn [_ this] (reset! new-reason (.-value this)))
+          :action (r/as-element
+                   [:> ui/Button
+                    {:color "red"
+                     :on-click (fn []
+                                 (reset! popup-open? false)
+                                 (rf/dispatch [:b/round.disqualify
+                                               (:id round)
+                                               (:id product)
+                                               @new-reason]))}
+                    "Disqualify"])}]]])))
+
 (defn c-disqualify-button
   [round product disqualified? reason]
   (let [popup-open? (r/atom false)
-        context-ref (r/atom nil)
-        new-reason (atom "")]
+        context-ref (r/atom nil)]
     (fn [round product disqualified? reason]
       (if-not disqualified?
         [:<>
@@ -257,22 +279,7 @@
            :open @popup-open?
            :on-close #(reset! popup-open? false)
            :context @context-ref
-           :content (r/as-element
-                     [:> ui/Form {:style {:width 400}}
-                      [:> ui/FormField
-                       [:> ui/Input
-                        {:placeholder "Enter reason..."
-                         :on-change (fn [_ this]
-                                      (reset! new-reason (.-value this)))
-                         :action (r/as-element
-                                  [:> ui/Button
-                                   {:color "red"
-                                    :on-click #(do (reset! popup-open? false)
-                                                   (rf/dispatch [:b/round.disqualify
-                                                                 (:id round)
-                                                                 (:id product)
-                                                                 @new-reason]))}
-                                   "Disqualify"])}]]])}]
+           :content (r/as-element [c-disqualify-form round product popup-open?])}]
          [:> ui/Popup
           {:content "Disqualify"
            :position "bottom center"
@@ -410,15 +417,9 @@
                        :icon "thumbs down outline"
                        :popup-text (if (= rating-disapproved resp-rating) "Disapproved" "Disapprove")}]]))
 
-(rf/reg-sub
- :loading?
- (fn [{:keys [loading?]} [_ product-id]]
-   ((:products loading?) product-id)))
-
 (defn c-column
   [round req-form-template rp show-modal-fn]
-  (let [loading?& (rf/subscribe [:loading? (:id (:product rp))])
-        products-order& (rf/subscribe [:round-products-order])]
+  (let [products-order& (rf/subscribe [:round-products-order])]
     (fn [{:keys [id status] :as round}
          {:keys [prompts] :as req-form-template}
          rp
@@ -427,7 +428,6 @@
              product-id :id
              product-idstr :idstr
              vendor :vendor
-             preposals :docs
              :as product} (:product rp)
             rp-result (:result rp)
             [won? disqualified?] ((juxt (partial = 1) zero?) rp-result)
@@ -443,22 +443,17 @@
                                      (* 234 (.indexOf @products-order& product-id)))
                                    "px)")}}
          [:div.round-product {:class (when (> (count pname) 17) " long")}
-          (if @loading?&
-            [cc/c-loader]
-            [:div
-             [:a.name {:on-mouse-down #(reset! cell-click-disabled? false)
-                       :on-click #(when-not @cell-click-disabled?
-                                    (rf/dispatch
-                                     (if (seq preposals)
-                                       [:b/nav-preposal-detail (-> preposals first :idstr)]
-                                       [:b/nav-product-detail product-idstr])))}
-              pname]
-             (when-not disqualified?
-               [c-declare-winner-button round product won? reason])
-             (when-not disqualified?
-               [c-setup-call-button round product vendor won?])
-             (when-not won?
-               [c-disqualify-button round product disqualified? reason])])]
+          [:div
+           [:a.name {:on-mouse-down #(reset! cell-click-disabled? false)
+                     :on-click #(when-not @cell-click-disabled?
+                                  (rf/dispatch [:b/nav-product-detail product-idstr]))}
+            pname]
+           (when-not disqualified?
+             [c-declare-winner-button round product won? reason])
+           (when-not disqualified?
+             [c-setup-call-button product vendor won?])
+           (when-not won?
+             [c-disqualify-button round product disqualified? reason])]]
          (if (seq prompts)
            (for [req prompts
                  :let [{req-prompt-id :id
@@ -477,10 +472,7 @@
                        resps (docs/get-response-fields-by-prompt-id response-prompts req-prompt-id)
                        resp-id (-> resps first :resp-id)
                        resp-text (->> resps
-                                      (map (fn [r]
-                                             (or (:sval r)
-                                                 (:nval r)
-                                                 (:dval r))))
+                                      (map #(or (:sval %) (:nval %) (:dval %)))
                                       (apply str))]]
              ^{:key (str req-prompt-id "-" product-id)}
              [:div.cell {:class (str (when (= 1 resp-rating) "response-approved ")

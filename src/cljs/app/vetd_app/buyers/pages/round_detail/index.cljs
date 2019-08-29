@@ -11,6 +11,12 @@
             [re-frame.core :as rf]
             [clojure.string :as s]))
 
+;;;; Subscriptions
+(rf/reg-sub
+ :round-idstr
+ :<- [:page-params] 
+ (fn [{:keys [round-idstr]}] round-idstr))
+
 ;;;; Events
 (rf/reg-event-fx
  :b/nav-round-detail
@@ -26,16 +32,7 @@
     :analytics/page {:name "Buyers Round Detail"
                      :props {:round-idstr round-idstr}}}))
 
-;;;; Subscriptions
-(rf/reg-sub
- :round-idstr
- :<- [:page-params] 
- (fn [{:keys [round-idstr]}] round-idstr))
-
 ;;;; Components
-
-
-
 (defn c-round-initiation
   [{:keys [id status title products init-doc] :as round}]
   (if init-doc
@@ -89,7 +86,7 @@
                            "Let the vendor know that you have made a final decision."]]]}])
 
 (defn c-round
-  "Component to display Round details."
+  "Component to display round details."
   [round req-form-template round-product show-top-scrollbar? explainer-modal-showing?&]
   (let [share-modal-showing?& (r/atom false)]
     (fn [{:keys [id status title products] :as round}
@@ -126,13 +123,10 @@
             [:br][:br]
             "If there are specific products you would like to have Vetd evaluate, feel free "
             "to add them by clicking the Add Products button."]])]
-       (condp contains? status
-         #{"initiation"} [:> ui/Segment {:class "detail-container"
-                                         :style {:margin-left 20}}
-                          [c-round-initiation round]]
-         #{"in-progress"
-           "complete"} [:span] #_[c-round-grid round req-form-template round-product show-top-scrollbar?]
-         )
+       (when (= status "initiation")
+         [:> ui/Segment {:class "detail-container"
+                         :style {:margin-left 20}}
+          [c-round-initiation round]])
        [bc/c-share-modal id title share-modal-showing?&]])))
 
 (defn sort-round-products
@@ -217,4 +211,3 @@
            (when (and (#{"in-progress" "complete"} status)
                       (seq sorted-round-products))
              [grid/c-round-grid round req-form-template sorted-round-products show-top-scrollbar?])])))))
-
