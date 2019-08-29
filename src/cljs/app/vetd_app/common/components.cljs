@@ -45,6 +45,7 @@
              cmp]))]))])) 
 
 (defn c-modal
+  "showing?& - ratom to toggle visibility of modal"
   [{:keys [showing?& header content size]}]
   [:> ui/Modal {:open @showing?&
                 :on-close #(reset! showing?& false)

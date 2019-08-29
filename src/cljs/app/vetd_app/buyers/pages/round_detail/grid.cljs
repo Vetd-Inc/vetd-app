@@ -1,6 +1,7 @@
-(ns vetd-app.buyers.pages.round-detail
+(ns vetd-app.buyers.pages.round-detail.grid
   (:require [vetd-app.buyers.components :as bc]
             [vetd-app.common.components :as cc]
+            [vetd-app.buyers.pages.round-detail.initiation :as initiation]
             [vetd-app.ui :as ui]
             [vetd-app.util :as util]
             [vetd-app.docs :as docs]
@@ -16,30 +17,6 @@
 (defonce curr-reordering-pos-x (r/atom nil))
 
 ;;;; Events
-(rf/reg-event-fx
- :b/nav-round-detail
- (fn [_ [_ round-idstr]]
-   {:nav {:path (str "/b/rounds/" round-idstr)}}))
-
-(rf/reg-event-fx
- :b/route-round-detail
- (fn [{:keys [db]} [_ round-idstr]]
-   {:db (assoc db
-               :page :b/round-detail
-               :page-params {:round-idstr round-idstr})
-    :analytics/page {:name "Buyers Round Detail"
-                     :props {:round-idstr round-idstr}}}))
-
-(rf/reg-event-fx
- :b/round.initiation-form-saved
- (fn [_ [_ _ {{:keys [round-id]} :return}]]
-   {:toast {:type "success"
-            :title "Initiation Form Submitted"
-            :message "Status updated to \"In Progress\""}
-    :analytics/track {:event "Initiation Form Saved"
-                      :props {:category "Round"
-                              :label round-id}}}))
-
 (rf/reg-event-fx
  :b/round.add-requirements
  (fn [{:keys [db]} [_ round-id requirements]]
@@ -64,8 +41,8 @@
 
 (rf/reg-event-fx
  :b/round.add-products
- ;; "products" is a mixed coll of product id's (for adding products that exist),
- ;; and product names (for adding products that don't exist in our DB yet)
+ ;; "products" is a mixed coll of product id's[number] (for adding products that exist),
+ ;; and product names[strings] (for adding products that don't exist in our DB yet)
  (fn [{:keys [db]} [_ round-id products]]
    (let [product-ids (filter number? products)
          product-names (filter string? products)]
@@ -84,19 +61,15 @@
 (rf/reg-event-fx
  :b/round.add-products-return
  (fn [{:keys [db]} [_ _ {{:keys [product-ids product-names]} :return}]]
-   (let [multiple-products? (> (+ (count product-ids)
-                                  (count product-names))
-                               1)]
-     {:toast {:type (if (empty? product-names) "success" "warning")
-              :title (if (empty? product-names)
-                       (str "Product" (when multiple-products? "s")
-                            " Added to VetdRound")
-                       (if multiple-products?
-                         "Some Products Not Addded Yet"
-                         "Product Not Added Yet"))
-              :message (when-not (empty? product-names)
-                         (str "We don't recognize the following products but will look into adding them soon: "
-                              (s/join ", " product-names)))}})))
+   (let [multiple-products? (> (+ (count product-ids) (count product-names)) 1)
+         all-products-known? (empty? product-names)]
+     {:toast (if all-products-known?
+               {:type "success"
+                :title (str "Product" (when multiple-products? "s") " Added to VetdRound")}
+               {:type "warning"
+                :title (if multiple-products? "Some Products Not Addded Yet" "Product Not Added Yet")
+                :message (str "We don't recognize the following products but will look into adding them soon: "
+                              (s/join ", " product-names))})})))
 
 (rf/reg-event-fx
  :b/round.declare-winner
@@ -115,8 +88,7 @@
 (rf/reg-event-fx
  :b/round.disqualify
  (fn [{:keys [db]} [_ round-id product-id reason]]
-   {;; :db (update-in db [:loading? :products] conj product-id)
-    :ws-send {:payload {:cmd :b/round.declare-result
+   {:ws-send {:payload {:cmd :b/round.declare-result
                         :return {:handler :b/round.declare-result-return
                                  :round-id round-id
                                  :product-id product-id}
@@ -129,8 +101,7 @@
 (rf/reg-event-fx
  :b/round.declare-result-return
  (fn [{:keys [db]} [_ _ {{:keys [round-id product-id]} :return}]]
-   {;; :db (update-in db [:loading? :products] disj product-id)
-    :toast {:type "success"
+   {:toast {:type "success"
             :title "Product Disqualified from VetdRound"}
     :analytics/track {:event "Disqualify Product"
                       :props {:category "Round"
@@ -151,8 +122,7 @@
 
 (rf/reg-event-fx
  :b/round.ask-a-question
- (fn [{:keys [db]} [_ product-id product-name message
-                    round-id requirement-text]]
+ (fn [{:keys [db]} [_ product-id product-name message round-id requirement-text]]
    {:ws-send {:payload {:cmd :b/ask-a-question
                         :return {:handler :b/ask-a-question-return}
                         :product-id product-id
@@ -178,6 +148,7 @@
                       :props {:category "Round"
                               :label rating}}}))
 
+;; sets round products sort order locally (app-db)
 (rf/reg-event-fx
  :b/set-round-products-order
  (fn [{:keys [db]} [_ new-round-products-order]]
@@ -195,182 +166,10 @@
 
 ;;;; Subscriptions
 (rf/reg-sub
- :round-idstr
- :<- [:page-params] 
- (fn [{:keys [round-idstr]}] round-idstr))
-
-(rf/reg-sub
  :round-products-order
  (fn [{:keys [round-products-order]}] round-products-order))
 
 ;;;; Components
-(defn get-requirements-options []
-  (ui/as-dropdown-options
-   ["Pricing Estimate"
-
-    "Pricing Model"
-    "Free Trial"
-    "Payment Options"
-    "Minimum Contract Length"
-    "Cancellation Process"
-
-    "Company Funding Status"
-    "Company Headquarters"
-    "Company Year Founded"
-    "Number of Employees at Company"
-
-    "How long does it take to onboard?"
-    "Onboarding Process"
-    "How involved do we need to be in the onboarding process?"
-
-    "What is our point of contact after signing?"
-    "How often will we have meetings after signing?"
-
-    "What KPIs do you provide?"
-    "Integrations with other services"
-    "Describe your Data Security"
-
-    "Who are some of your current clients?"
-    "Number of Current Clients"
-    "Case Studies of Current Clients"
-    "Key Differences from Competitors"
-    "What is your Product Roadmap?"
-    ]))
-
-(defn c-topics-explainer-list
-  [{:keys [title items icon-name]}]
-  [:div.explainer-item
-   [:h4 title]
-   [:ul {:style {:list-style "none"
-                 :margin 0
-                 :padding 0}}
-    (util/augment-with-keys
-     (for [item items]
-       [:li [:> ui/Icon {:name icon-name}] (str " " item)]))]])
-
-(defn c-topics-explainer-modal
-  [topics-explainer-modal-showing?&]
-  [cc/c-modal
-   {:showing?& topics-explainer-modal-showing?&
-    :size "tiny"
-    :header "What is a Topic?"
-    :content [:div.explainer-section
-              "Topics can be any factor, feature, use case, or question that you would like to have vendors directly respond to. Choose existing Topics or create new Topics that will help you narrow the field of products, making your decision easier."
-              [:br] [:br]
-              [c-topics-explainer-list {:title "Examples of Good Topics"
-                                        :icon-name "check"
-                                        :items ["API that can pull customer service ratings data into XYZ Dashboard"
-                                                "Onboarding in less than a week with our Marketing Manager"
-                                                "Integrates with XYZ Chat"]}]
-              [c-topics-explainer-list {:title "Examples of Bad Topics"
-                                        :icon-name "x"
-                                        :items ["Has an API"
-                                                "Easy to onboard"
-                                                "Integration"]}]]}])
-
-(defn c-round-initiation-form
-  [round-id]
-  (let [requirements-options (r/atom (get-requirements-options))
-        ;; form data
-        goal (r/atom "")
-        start-using (r/atom "")
-        num-users (r/atom "")
-        budget (r/atom "")
-        requirements (r/atom ["Pricing Estimate" "Pricing Model" "Free Trial"])
-        add-products-by-name (r/atom "")
-        topics-explainer-modal-showing?& (r/atom false)]
-    (fn [round-id]
-      [:<>
-       [:h3 "VetdRound Initiation Form"]
-       [:p "Let us know a little more about what features you are looking for and who will be using this product. Then, we'll gather quotes for you to compare right away."]
-       [:> ui/Form {:as "div"
-                    :class "round-initiation-form"}
-        [:> ui/FormField
-         [:label
-          "What specific topics will help you make a decision?"
-          [:a {:on-click #(reset! topics-explainer-modal-showing?& true)
-               :style {:float "right"}}
-           [:> ui/Icon {:name "question circle"}]
-           "Learn more about topics"]]
-         [:> ui/Dropdown {:value @requirements
-                          :options @requirements-options
-                          :placeholder "Add topics..."
-                          :search true
-                          :selection true
-                          :multiple true
-                          :header "Enter a custom topic..."
-                          :allowAdditions true
-                          :additionLabel "Hit 'Enter' to Add "
-                          :noResultsMessage "Type to add a new topic..."
-                          :onAddItem (fn [_ this]
-                                       (let [value (.-value this)]
-                                         (swap! requirements-options
-                                                conj
-                                                {:key value
-                                                 :text value
-                                                 :value value})))
-                          :onChange (fn [_ this]
-                                      (reset! requirements (.-value this)))}]]
-        [:> ui/FormGroup {:widths "equal"}
-         [:> ui/FormField
-          [:label "When do you need to decide by?"]
-          [:> ui/Dropdown {:selection true
-                           :options (ui/as-dropdown-options
-                                     ["Within 2 Weeks" "Within 3 Weeks" "Within 1 Month"
-                                      "Within 2 Months" "Within 6 Months" "Within 12 Months"])
-                           :on-change (fn [_ this]
-                                        (reset! start-using (.-value this)))}]]
-         [:> ui/FormField
-          [:label "How many users?"]
-          [:> ui/Input {:labelPosition "right"}
-           [:input {:type "number"
-                    :on-change #(reset! num-users (-> % .-target .-value))}]
-           [:> ui/Label {:basic true} "users"]]]
-         [:> ui/FormField
-          [:label "What is your annual budget? (optional)"]
-          [:> ui/Input {:labelPosition "right"}
-           [:> ui/Label {:basic true} "$"]
-           [:input {:type "number"
-                    :style {:width 0} ; idk why 0 width works, but it does
-                    :on-change #(reset! budget (-> % .-target .-value))}]
-           [:> ui/Label {:basic true} " per year"]]]]
-        [:> ui/FormTextArea
-         {:label "Is there any additional information you would like to provide? (optional)"
-          :on-change (fn [e this]
-                       (reset! goal (.-value this)))}]
-        #_[:> ui/FormField
-           [:label "Are there specific products you want to include?"]
-           [:> ui/Dropdown {:multiple true
-                            :search true
-                            :selection true
-                            ;; :on-change (fn [_ this]
-                            ;;              (reset! add-products-by-name (.-value this)))
-                            :on-change #(.log js/console %1 %2)}]]
-        [:> ui/FormButton
-         {:color "blue"
-          :on-click
-          #(rf/dispatch
-            [:save-doc
-             {:dtype "round-initiation"
-              :round-id round-id
-              :return {:handler :b/round.initiation-form-saved
-                       :round-id round-id}}
-             {:terms
-              {:rounds/goal {:value @goal}
-               :rounds/start-using {:value @start-using}
-               :rounds/num-users {:value @num-users}
-               :rounds/budget {:value @budget}
-               :rounds/requirements {:value @requirements}
-               :rounds/add-products-by-name {:value @add-products-by-name}}}])}
-         "Submit"]]
-       [c-topics-explainer-modal topics-explainer-modal-showing?&]])))
-
-(defn c-round-initiation
-  [{:keys [id status title products init-doc] :as round}]
-  (if init-doc
-    "You have already submitted your requirements." ; this should never show
-    [c-round-initiation-form id]))
-
 (defn c-declare-winner-button
   [round product won? reason]
   (let [popup-open? (r/atom false)
@@ -979,105 +778,13 @@
          (when @window-scroll-fn-ref
            (.removeEventListener js/window "scroll" @window-scroll-fn-ref)))})))
 
-(defn c-explainer-modal
-  [modal-showing?&]
-  [cc/c-modal {:showing?& modal-showing?&
-               :header "How VetdRounds Work"
-               :content [:<>
-                         [:div.explainer-section
-                          [:h3 "Keep Track"]
-                          [:div.explainer-item
-                           [:h4 "Approve or Disapprove every response "
-                            [:> ui/Icon {:name "thumbs up outline"}]
-                            [:> ui/Icon {:name "thumbs down outline"}]]
-                           "Approve or Disapprove the responses you receive to keep track of which products best meet your needs."]]
-                         [:div.explainer-section
-                          [:h3.teal "Learn More"]
-                          [:div.explainer-item
-                           [:h4 
-                            "Add a Topic "
-                            [:> ui/Icon {:name "plus"}]]
-                           "Request that all vendors respond to a new requirement / use case."]
-                          [:div.explainer-item
-                           [:h4 
-                            "Add a Product "
-                            [:> ui/Icon {:name "plus"}]]
-                           "Add specific products to your VetdRound, and we'll get them to respond to your topics."]
-                          [:div.explainer-item
-                           [:h4 "Ask Questions "
-                            [:> ui/Icon {:name "chat outline"}]]
-                           "Ask vendors follow-up questions about their responses."]]
-                         [:div.explainer-section
-                          [:h3.blue "Make a Decision"]
-                          [:div.explainer-item
-                           [:h4 
-                            "Disqualify Products "
-                            [:> ui/Icon {:name "ban"}]]
-                           "Mark products as unsatisfactory and hide them on the grid. Don't worry, you can change your mind later!"]
-                          [:div.explainer-item
-                           [:h4 
-                            "Set Up a Call "
-                            [:> ui/Icon {:name "call"}]]
-                           "(Optional) Have Vetd set up a phone call with your top choices."]
-                          [:div.explainer-item
-                           [:h4 
-                            "Declare a Winner "
-                            [:> ui/Icon {:name "check"}]]
-                           "Let the vendor know that you have made a final decision."]]]}])
-
-(defn c-round
-  "Component to display Round details."
-  [round req-form-template round-product show-top-scrollbar? explainer-modal-showing?&]
-  (let [share-modal-showing?& (r/atom false)]
-    (fn [{:keys [id status title products] :as round}
-         req-form-template
-         round-product
-         show-top-scrollbar?
-         explainer-modal-showing?&]
-      [:<>
-       [:> ui/Segment {:id "round-title-container"
-                       :class (str "detail-container " (when (> (count title) 40) "long"))}
-        [:h1.round-title title
-         [:> ui/Button {:onClick #(reset! share-modal-showing?& true)
-                        :color "lightblue"
-                        :icon true
-                        :labelPosition "right"
-                        :floated "right"}
-          "Share"
-          [:> ui/Icon {:name "share"}]]]
-        (when (and (#{"in-progress" "complete"} status)
-                   (seq round-product))
-          [:<>
-           [:a {:on-click #(reset! explainer-modal-showing?& true)
-                :style {:font-size 13}}
-            [:> ui/Icon {:name "question circle"}]
-            "How VetdRounds Work"]
-           [c-explainer-modal explainer-modal-showing?&]])
-        [bc/c-round-status status]
-        (when (and (#{"in-progress" "complete"} status)
-                   (empty? round-product))
-          [:<>
-           [:> ui/Header "Your VetdRound is in progress!"]
-           [:p
-            [:em "We will provide responses to your selected topics from top vendors shortly. "]
-            [:br][:br]
-            "If there are specific products you would like to have Vetd evaluate, feel free "
-            "to add them by clicking the Add Products button."]])]
-       (condp contains? status
-         #{"initiation"} [:> ui/Segment {:class "detail-container"
-                                         :style {:margin-left 20}}
-                          [c-round-initiation round]]
-         #{"in-progress"
-           "complete"} [:span] #_[c-round-grid round req-form-template round-product show-top-scrollbar?]
-         )
-       [bc/c-share-modal id title share-modal-showing?&]])))
 
 (defn c-add-requirement-form
   [round-id popup-open?&]
   (let [value& (r/atom [])
         ;; TODO remove requirements that have already been added to the round.
         ;; they are already ignored on the backend, but shouldn't even be shown to user.
-        options& (r/atom (get-requirements-options))]
+        options& (r/atom (initiation/get-requirements-options))]
     (fn [round-id popup-open?&]
       [:> ui/Form {:as "div"
                    :class "popup-dropdown-form"}
@@ -1216,86 +923,6 @@
                    "Add Products"
                    [:> ui/Icon {:name "plus"}]])}])))
 
-(defn sort-round-products
-  [round-product]
-  (sort-by (juxt #(- 1 (or (:result %) 0.5))
-                 #(:sort % 1)
-                 (comp :pname :product))
-           compare round-product))
 
-(defn c-page []
-  (let [org-id& (rf/subscribe [:org-id])
-        round-idstr& (rf/subscribe [:round-idstr])
-        rounds& (rf/subscribe [:gql/sub
-                               {:queries
-                                [[:rounds {:idstr @round-idstr&
-                                           :deleted nil}
-                                  [:id :idstr :created :status :title
-                                   ;; requirements form template
-                                   [:req-form-template
-                                    [:id
-                                     [:prompts {:ref-deleted nil
-                                                :_order_by {:sort :asc}}
-                                      [:id :idstr :prompt :descr :sort]]]]
-                                   ;; round initiation form response
-                                   [:init-doc
-                                    [:id
-                                     [:response-prompts {:ref-deleted nil}
-                                      [:id :prompt-id :prompt-prompt :prompt-term
-                                       [:response-prompt-fields
-                                        [:id :prompt-field-fname :idx
-                                         :sval :nval :dval]]]]]]
-                                   ;; requirements responses from vendors
-                                   [:round-product {:deleted nil
-                                                    :_order_by {:sort :asc}}
-                                    [:id :result :reason :sort
-                                     [:product
-                                      [:id :idstr :pname
-                                       [:docs {:dtype "preposal" ; completed preposals
-                                               :to-org-id @org-id&}
-                                        [:id :idstr]]
-                                       [:vendor
-                                        [:id :oname]]]]
-                                     [:vendor-response-form-docs
-                                      [:id :title :doc-id :doc-title
-                                       :ftype :fsubtype
-                                       [:doc-from-org [:id :oname]]
-                                       [:doc-to-org [:id :oname]]
-                                       [:response-prompts {:ref-deleted nil}
-                                        [:id :prompt-id :prompt-prompt :prompt-term
-                                         [:response-prompt-fields
-                                          [:id :prompt-field-fname :idx :resp-id
-                                           :sval :nval :dval]]
-                                         [:subject-of-response-prompt
-                                          {:deleted nil
-                                           :prompt-term "round.response/rating"}
-                                          [[:response-prompt-fields
-                                            {:deleted nil}
-                                            [:nval]]]]]]]]]]]]]}])
-        explainer-modal-showing?& (r/atom false)]
-    (fn []
-      (if (= :loading @rounds&)
-        [cc/c-loader]
-        (let [{:keys [status req-form-template round-product] :as round} (-> @rounds& :rounds first)
-              sorted-round-products (sort-round-products round-product)
-              show-top-scrollbar? (> (count sorted-round-products) 4)]
-          [:<>
-           [:> ui/Container {:class "main-container"
-                             :style {:padding-top 0}}
-            [:div.container-with-sidebar.round-details
-             [:<> ; sidebar margins (and detail container margins) are customized on this page
-              [:div.sidebar {:style {:margin-right 0}}
-               [:div {:style {:padding "0 15px"}}
-                [bc/c-back-button {:on-click #(rf/dispatch [:b/nav-rounds])}
-                 "All VetdRounds"]]
-               (when (#{"in-progress" "complete"} status)
-                 (when-not (some (comp (partial = 1) :result) sorted-round-products) ; has a winner
-                   [:<>
-                    [:> ui/Segment
-                     [c-add-requirement-button round]
-                     [c-add-product-button round]]]))]
-              [:div.inner-container [c-round round req-form-template sorted-round-products show-top-scrollbar? explainer-modal-showing?&]]]]]
-           (when (and (#{"in-progress" "complete"} status)
-                      (seq sorted-round-products))
-             [c-round-grid round req-form-template sorted-round-products show-top-scrollbar?])])))))
+
 
