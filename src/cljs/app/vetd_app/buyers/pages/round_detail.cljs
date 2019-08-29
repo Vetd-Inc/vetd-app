@@ -237,6 +237,37 @@
     "What is your Product Roadmap?"
     ]))
 
+(defn c-topics-explainer-list
+  [{:keys [title items icon-name]}]
+  [:div.explainer-item
+   [:h4 title]
+   [:ul {:style {:list-style "none"
+                 :margin 0
+                 :padding 0}}
+    (util/augment-with-keys
+     (for [item items]
+       [:li [:> ui/Icon {:name icon-name}] (str " " item)]))]])
+
+(defn c-topics-explainer-modal
+  [topics-explainer-modal-showing?&]
+  [cc/c-modal
+   {:showing?& topics-explainer-modal-showing?&
+    :size "tiny"
+    :header "What is a Topic?"
+    :content [:div.explainer-section
+              "Topics can be any factor, feature, use case, or question that you would like to have vendors directly respond to. Choose existing Topics or create new Topics that will help you narrow the field of products, making your decision easier."
+              [:br] [:br]
+              [c-topics-explainer-list {:title "Examples of Good Topics"
+                                        :icon-name "check"
+                                        :items ["API that can pull customer service ratings data into XYZ Dashboard"
+                                                "Onboarding in less than a week with our Marketing Manager"
+                                                "Integrates with XYZ Chat"]}]
+              [c-topics-explainer-list {:title "Examples of Bad Topics"
+                                        :icon-name "x"
+                                        :items ["Has an API"
+                                                "Easy to onboard"
+                                                "Integration"]}]]}])
+
 (defn c-round-initiation-form
   [round-id]
   (let [requirements-options (r/atom (get-requirements-options))
@@ -247,7 +278,7 @@
         budget (r/atom "")
         requirements (r/atom ["Pricing Estimate" "Pricing Model" "Free Trial"])
         add-products-by-name (r/atom "")
-        topics-modal-showing?& (r/atom false)]
+        topics-explainer-modal-showing?& (r/atom false)]
     (fn [round-id]
       [:<>
        [:h3 "VetdRound Initiation Form"]
@@ -257,7 +288,7 @@
         [:> ui/FormField
          [:label
           "What specific topics will help you make a decision?"
-          [:a {:on-click #(reset! topics-modal-showing?& true)
+          [:a {:on-click #(reset! topics-explainer-modal-showing?& true)
                :style {:float "right"}}
            [:> ui/Icon {:name "question circle"}]
            "Learn more about topics"]]
@@ -332,36 +363,7 @@
                :rounds/requirements {:value @requirements}
                :rounds/add-products-by-name {:value @add-products-by-name}}}])}
          "Submit"]]
-       [:> ui/Modal {:open @topics-modal-showing?&
-                     :on-close #(reset! topics-modal-showing?& false)
-                     :size "tiny"
-                     :dimmer "inverted"
-                     :closeOnDimmerClick true
-                     :closeOnEscape true
-                     :closeIcon true}
-        [:> ui/ModalHeader "What is a Topic?"]
-        [:> ui/ModalContent
-         [:div.explainer-section
-          "Topics can be any factor, feature, use case, or question that you would like to have vendors directly respond to. Choose existing Topics or create new Topics that will help you narrow the field of products, making your decision easier."
-          [:br]
-          [:br]
-          [:div.explainer-item
-           [:h4 "Examples of Good Topics"]
-           [:ul {:style {:list-style "none"
-                         :margin 0
-                         :padding 0}}
-            [:li [:> ui/Icon {:name "check"}] " API that can pull customer service ratings data into XYZ Dashboard"]
-            [:li [:> ui/Icon {:name "check"}] " Onboarding in less than a week with our Marketing Manager"]
-            [:li [:> ui/Icon {:name "check"}] " Integrates with XYZ Chat"]
-            ]]
-          [:div.explainer-item
-           [:h4 "Examples of Bad Topics"]
-           [:ul {:style {:list-style "none"
-                         :margin 0
-                         :padding 0}}
-            [:li [:> ui/Icon {:name "x"}] " Has an API"]
-            [:li [:> ui/Icon {:name "x"}] " Easy to onboard"]
-            [:li [:> ui/Icon {:name "x"}] " Integration"]]]]]]])))
+       [c-topics-explainer-modal topics-explainer-modal-showing?&]])))
 
 (defn c-round-initiation
   [{:keys [id status title products init-doc] :as round}]
@@ -979,54 +981,49 @@
 
 (defn c-explainer-modal
   [modal-showing?&]
-  [:> ui/Modal {:open @modal-showing?&
-                :on-close #(reset! modal-showing?& false)
-                :dimmer "inverted"
-                :closeOnDimmerClick true
-                :closeOnEscape true
-                :closeIcon true} 
-   [:> ui/ModalHeader "How VetdRounds Work"]
-   [:> ui/ModalContent
-    [:div.explainer-section
-     [:h3 "Keep Track"]
-     [:div.explainer-item
-      [:h4 "Approve or Disapprove every response "
-       [:> ui/Icon {:name "thumbs up outline"}]
-       [:> ui/Icon {:name "thumbs down outline"}]]
-      "Approve or Disapprove the responses you receive to keep track of which products best meet your needs."]]
-    [:div.explainer-section
-     [:h3.teal "Learn More"]
-     [:div.explainer-item
-      [:h4 
-       "Add a Topic "
-       [:> ui/Icon {:name "plus"}]]
-      "Request that all vendors respond to a new requirement / use case."]
-     [:div.explainer-item
-      [:h4 
-       "Add a Product "
-       [:> ui/Icon {:name "plus"}]]
-      "Add specific products to your VetdRound, and we'll get them to respond to your topics."]
-     [:div.explainer-item
-      [:h4 "Ask Questions "
-       [:> ui/Icon {:name "chat outline"}]]
-      "Ask vendors follow-up questions about their responses."]]
-    [:div.explainer-section
-     [:h3.blue "Make a Decision"]
-     [:div.explainer-item
-      [:h4 
-       "Disqualify Products "
-       [:> ui/Icon {:name "ban"}]]
-      "Mark products as unsatisfactory and hide them on the grid. Don't worry, you can change your mind later!"]
-     [:div.explainer-item
-      [:h4 
-       "Set Up a Call "
-       [:> ui/Icon {:name "call"}]]
-      "(Optional) Have Vetd set up a phone call with your top choices."]
-     [:div.explainer-item
-      [:h4 
-       "Declare a Winner "
-       [:> ui/Icon {:name "check"}]]
-      "Let the vendor know that you have made a final decision."]]]])
+  [cc/c-modal {:showing?& modal-showing?&
+               :header "How VetdRounds Work"
+               :content [:<>
+                         [:div.explainer-section
+                          [:h3 "Keep Track"]
+                          [:div.explainer-item
+                           [:h4 "Approve or Disapprove every response "
+                            [:> ui/Icon {:name "thumbs up outline"}]
+                            [:> ui/Icon {:name "thumbs down outline"}]]
+                           "Approve or Disapprove the responses you receive to keep track of which products best meet your needs."]]
+                         [:div.explainer-section
+                          [:h3.teal "Learn More"]
+                          [:div.explainer-item
+                           [:h4 
+                            "Add a Topic "
+                            [:> ui/Icon {:name "plus"}]]
+                           "Request that all vendors respond to a new requirement / use case."]
+                          [:div.explainer-item
+                           [:h4 
+                            "Add a Product "
+                            [:> ui/Icon {:name "plus"}]]
+                           "Add specific products to your VetdRound, and we'll get them to respond to your topics."]
+                          [:div.explainer-item
+                           [:h4 "Ask Questions "
+                            [:> ui/Icon {:name "chat outline"}]]
+                           "Ask vendors follow-up questions about their responses."]]
+                         [:div.explainer-section
+                          [:h3.blue "Make a Decision"]
+                          [:div.explainer-item
+                           [:h4 
+                            "Disqualify Products "
+                            [:> ui/Icon {:name "ban"}]]
+                           "Mark products as unsatisfactory and hide them on the grid. Don't worry, you can change your mind later!"]
+                          [:div.explainer-item
+                           [:h4 
+                            "Set Up a Call "
+                            [:> ui/Icon {:name "call"}]]
+                           "(Optional) Have Vetd set up a phone call with your top choices."]
+                          [:div.explainer-item
+                           [:h4 
+                            "Declare a Winner "
+                            [:> ui/Icon {:name "check"}]]
+                           "Let the vendor know that you have made a final decision."]]]}])
 
 (defn c-round
   "Component to display Round details."

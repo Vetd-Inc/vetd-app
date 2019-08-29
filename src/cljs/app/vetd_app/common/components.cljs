@@ -43,3 +43,15 @@
           (for [[cmp width] row]
             [:> ui/GridColumn {:width width}
              cmp]))]))])) 
+
+(defn c-modal
+  [{:keys [showing?& header content size]}]
+  [:> ui/Modal {:open @showing?&
+                :on-close #(reset! showing?& false)
+                :size size
+                :dimmer "inverted"
+                :closeOnDimmerClick true
+                :closeOnEscape true
+                :closeIcon true}
+   [:> ui/ModalHeader header]
+   [:> ui/ModalContent content]])
