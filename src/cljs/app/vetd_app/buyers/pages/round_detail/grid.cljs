@@ -15,6 +15,8 @@
 (defonce reordering-product (r/atom nil))
 ;; the current x position of a column being reordered
 (defonce curr-reordering-pos-x (r/atom nil))
+;; includes any spacing to the right of each col
+(defonce col-width 234) 
 
 ;;;; Subscriptions
 (rf/reg-sub
@@ -440,7 +442,7 @@
                                    (if (and @products-order& ; to trigger re-render
                                             (= @reordering-product product-id))
                                      @curr-reordering-pos-x
-                                     (* 234 (.indexOf @products-order& product-id)))
+                                     (* col-width (.indexOf @products-order& product-id)))
                                    "px)")}}
          [:div.round-product {:class (when (> (count pname) 17) " long")}
           [:div
@@ -514,7 +516,7 @@
           (rf/dispatch [:b/set-round-products-order default-products-order])))
       [:div.round-grid-container ; c-round-grid expects a certain order of children
        [:div.round-grid-top-scrollbar {:style {:display (if show-top-scrollbar? "block" "none")}}
-        [:div {:style {:width (* 234 (count round-product))
+        [:div {:style {:width (* col-width (count round-product))
                        :height 1}}]]
        [:div.round-grid {:style {:min-height (-> req-form-template
                                                  :prompts
@@ -522,37 +524,40 @@
                                                  (* 203)
                                                  (+ 122)
                                                  (max (+ 122 (* 1 203))))}}
-        [:div {:style {:min-width (- (* 234 (count round-product))
+        [:div {:style {:min-width (- (* col-width (count round-product))
                                      14)}}
          (for [rp round-product]
            ^{:key (-> rp :product :id)}
            [c-column round req-form-template rp show-modal-fn])]]
        [c-cell-modal (:id round) modal-showing?& modal-response&]])))
 
+(defn cmp->child-nodes [cmp] (-> cmp r/dom-node .-children array-seq))
+(def round-grid-cmp->round-grid-node (comp second cmp->child-nodes))
+(def round-grid-cmp->top-scrollbar-node (comp first cmp->child-nodes))
+
 (def c-round-grid
-  (let [component-exists? (atom true)
+  (let [products-order& (rf/subscribe [:round-products-order])
+        component-exists? (atom true)
         ;; keep a reference to the window-scroll fn (will be created on mount)
         ;; so we can remove the event listener upon unmount
         window-scroll-fn-ref (atom nil)
-        get-round-grid-node (fn [this] (-> this r/dom-node .-children array-seq second))
-        get-top-scrollbar-node (fn [this] (-> this r/dom-node .-children array-seq first))
         ;; right-side scroll boundary
         scroll-x-max (atom 0)
-        update-draggability
-        (fn [this]
-          (let [node (get-round-grid-node this)]
-            (reset! scroll-x-max (- (.-scrollWidth node) (.-clientWidth node)))
-            (if (> (.-scrollWidth node) (.-clientWidth node))
-              (util/add-class node "draggable")
-              (util/remove-class node "draggable"))))
-        products-order& (rf/subscribe [:round-products-order])]
+        update-draggability (fn [cmp]
+                              (let [node (round-grid-cmp->round-grid-node cmp)
+                                    scroll-width (aget node "scrollWidth")
+                                    client-width (aget node "clientWidth")
+                                    modify-class-fn (if (> scroll-width client-width)
+                                                      util/add-class
+                                                      util/remove-class)]
+                                (reset! scroll-x-max (- scroll-width client-width))
+                                (modify-class-fn node "draggable")))]
     (with-meta c-round-grid*
       {:component-did-mount
        (fn [this] ; make grid draggable (scrolling & reordering)
          (let [round-id (-> this r/props :id)
-               node (get-round-grid-node this)
-               top-scrollbar-node (get-top-scrollbar-node this)
-               col-width 234 ; includes any spacing to the right of each col
+               node (round-grid-cmp->round-grid-node this)
+               top-scrollbar-node (round-grid-cmp->top-scrollbar-node this)
                mousedown? (atom false)
                x-at-mousedown (atom nil)
                mouse-x (atom nil) ; current mouse pos x
