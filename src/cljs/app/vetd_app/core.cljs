@@ -24,6 +24,7 @@
             [vetd-app.vendors.pages.profile :as p-vprofile]
             [vetd-app.vendors.pages.rounds :as p-vrounds]
             [vetd-app.vendors.pages.round-product-detail :as p-vround-product-detail]
+            [vetd-app.groups.pages.home :as p-ghome]
             [vetd-app.groups.pages.settings :as p-gsettings]
             [vetd-app.common.fixtures :as pub-fix]
             [vetd-app.common.pages.signup :as p-signup]
@@ -58,6 +59,7 @@
                    :v/profile #'p-vprofile/c-page
                    :v/rounds #'p-vrounds/c-page
                    :v/round-product-detail #'p-vround-product-detail/c-page
+                   :g/home #'p-ghome/c-page
                    :g/settings #'p-gsettings/c-page})
 
 (hooks/reg-hooks! hooks/c-container
@@ -79,6 +81,7 @@
                    :v/profile #'v-fix/container
                    :v/rounds #'v-fix/container
                    :v/round-product-detail #'v-fix/container
+                   :g/home #'b-fix/container
                    :g/settings #'b-fix/container})
 
 
@@ -212,6 +215,9 @@
 
 (sec/defroute settings-root "/settings" []
   (rf/dispatch [:route-settings]))
+
+(sec/defroute group-home-path "/c/home" []
+  (rf/dispatch [:g/route-home]))
 
 (sec/defroute group-settings-path "/c/settings" []
   (rf/dispatch [:g/route-settings]))

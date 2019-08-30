@@ -29,3 +29,17 @@
   [c-field-container
    [:h3.display-field-key label]
    [:div.display-field-value value]])
+
+(defn c-grid
+  [& args]
+  (let [[a & as] args
+        props (when (map? a) a)
+        rows (if props as args)]
+    [:> ui/Grid props
+     (util/augment-with-keys
+      (for [row rows]
+        [:> ui/GridRow
+         (util/augment-with-keys
+          (for [[cmp width] row]
+            [:> ui/GridColumn {:width width}
+             cmp]))]))])) 

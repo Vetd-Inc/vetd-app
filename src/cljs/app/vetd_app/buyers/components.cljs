@@ -692,20 +692,19 @@
                       :icon "chart line"
                       :icon-style {:position "relative"
                                    :top 1}}
-   [:> ui/Grid {:columns "equal" :style {:margin-top 0}}
-    [:> ui/GridRow
-     [c-display-field 16 "Reporting" (v-fn :product/reporting)
-      :has-markdown? true]]
-    [:> ui/GridRow
-     [c-display-field 16 "KPIs" (v-fn :product/kpis)
-      :has-markdown? true
-      :info "Key Performance Indicators"]]
-    [:> ui/GridRow
-     [c-display-field 16 "Integrations" (v-fn :product/integrations)
-      :has-markdown? true]]
-    [:> ui/GridRow
-     [c-display-field 16 "Data Security" (v-fn :product/data-security)
-      :has-markdown? true]]]])
+   [:> ui/GridRow
+    [c-display-field 16 "Reporting" (v-fn :product/reporting)
+     :has-markdown? true]]
+   [:> ui/GridRow
+    [c-display-field 16 "KPIs" (v-fn :product/kpis)
+     :has-markdown? true
+     :info "Key Performance Indicators"]]
+   [:> ui/GridRow
+    [c-display-field 16 "Integrations" (v-fn :product/integrations)
+     :has-markdown? true]]
+   [:> ui/GridRow
+    [c-display-field 16 "Data Security" (v-fn :product/data-security)
+     :has-markdown? true]]])
 
 (defn c-market-niche
   "Component to display market niche information of a product profile.
@@ -715,30 +714,29 @@
   [c-profile-segment {:title "Industry Niche"
                       :scroll-to-ref-key :product/market-niche
                       :icon "cubes"}
-   [:> ui/Grid {:columns "equal" :style {:margin-top 0}}
-    [:> ui/GridRow
-     [c-display-field 16 "Ideal Client Profile" (v-fn :product/ideal-client)
-      :has-markdown? true
-      :info "A typical user of this product, in terms of company size, revenue, verticals, etc."]]
-    [:> ui/GridRow
-     [c-display-field 16 "Case Studies"
-      (when (has-data? (v-fn :product/case-studies "Links to Case Studies"))
-        [c-external-link (v-fn :product/case-studies "Links to Case Studies")])]]
-    [:> ui/GridRow
-     [c-display-field 6 "Number of Current Clients"
-      (when (has-data? (v-fn :product/num-clients nil :nval))
-        (util/decimal-format (v-fn :product/num-clients nil :nval)))]
-     [c-display-field 10 "Example Current Clients" (v-fn :product/clients)
-      :has-markdown? true]]
-    [:> ui/GridRow
-     [c-display-field 16 "Competitors" (v-fn :product/competitors)
-      :has-markdown? true]]
-    [:> ui/GridRow
-     [c-display-field 16 "Competitive Differentiator" (v-fn :product/competitive-differentiator)
-      :has-markdown? true]]
-    [:> ui/GridRow
-     [c-display-field 16 "Product Roadmap" (v-fn :product/roadmap)
-      :has-markdown? true]]]])
+   [:> ui/GridRow
+    [c-display-field 16 "Ideal Client Profile" (v-fn :product/ideal-client)
+     :has-markdown? true
+     :info "A typical user of this product, in terms of company size, revenue, verticals, etc."]]
+   [:> ui/GridRow
+    [c-display-field 16 "Case Studies"
+     (when (has-data? (v-fn :product/case-studies "Links to Case Studies"))
+       [c-external-link (v-fn :product/case-studies "Links to Case Studies")])]]
+   [:> ui/GridRow
+    [c-display-field 6 "Number of Current Clients"
+     (when (has-data? (v-fn :product/num-clients nil :nval))
+       (util/decimal-format (v-fn :product/num-clients nil :nval)))]
+    [c-display-field 10 "Example Current Clients" (v-fn :product/clients)
+     :has-markdown? true]]
+   [:> ui/GridRow
+    [c-display-field 16 "Competitors" (v-fn :product/competitors)
+     :has-markdown? true]]
+   [:> ui/GridRow
+    [c-display-field 16 "Competitive Differentiator" (v-fn :product/competitive-differentiator)
+     :has-markdown? true]]
+   [:> ui/GridRow
+    [c-display-field 16 "Product Roadmap" (v-fn :product/roadmap)
+     :has-markdown? true]]])
 
 (defn c-vendor-profile
   [{:keys [response-prompts] :as vendor-profile-doc} vendor-id vendor-name]
