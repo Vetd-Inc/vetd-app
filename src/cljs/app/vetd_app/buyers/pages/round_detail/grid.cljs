@@ -189,13 +189,11 @@
         [:> ui/Button
          {:color "vetd-gradient"
           :fluid true
-          :style {:margin-top 7}
           :on-click (fn []
                       (reset! popup-open? false)
                       (rf/dispatch [:b/round.declare-winner
-                                    (:id round)
-                                    (:id product)
-                                    @new-reason]))}
+                                    (:id round) (:id product) @new-reason]))
+          :style {:margin-top 7}}
          "Declare Winner"]]])))
 
 (defn c-declare-winner-button
@@ -245,7 +243,7 @@
               [:> ui/Button
                {:icon "call"
                 :color (if won? "white" "lightteal")
-                :onClick #(rf/dispatch [:b/setup-call (:id product) (:pname product)])
+                :on-click #(rf/dispatch [:b/setup-call (:id product) (:pname product)])
                 :size "mini"}])}])
 
 (defn c-disqualify-form
@@ -318,23 +316,25 @@
                                     :size "mini"}
                                    props)])}])
 
-(defn c-no-response []
+(defn c-response-status-icon
+  [{:keys [popup-text icon-name]}]
   [:> ui/Popup
-   {:content "Vendor did not respond"
+   {:content popup-text
     :position "bottom center"
     :trigger (r/as-element
-              [:> ui/Icon {:name "ban"
+              [:> ui/Icon {:name icon-name
                            :size "large"
                            :style {:color "#aaa"}}])}])
 
+(defn c-no-response []
+  [c-response-status-icon
+   {:popup-text "Vendor did not respond"
+    :icon-name "ban"}])
+
 (defn c-waiting-for-response []
-  [:> ui/Popup
-   {:content "Waiting for vendor response"
-    :position "bottom center"
-    :trigger (r/as-element
-              [:> ui/Icon {:name "clock outline"
-                           :size "large"
-                           :style {:color "#aaa"}}])}])
+  [c-response-status-icon
+   {:popup-text "Waiting for vendor response"
+    :icon-name "clock outline"}])
 
 (defn c-cell-modal
   [round-id modal-showing?& modal-response&]
@@ -570,16 +570,9 @@
      (aget node "clientHeight")))
 
 (defn mousedown
-  [{:keys [node
-           mouse-x
-           last-mouse-x
-           x-at-mousedown
-           mousedown?
-           products-order&
-           reordering-col-node
-           drag-direction-intention
-           drag-handle-offset
-           drag-scrolling?] :as state}
+  [{:keys [node mouse-x last-mouse-x x-at-mousedown mousedown?
+           products-order& reordering-col-node drag-direction-intention
+           drag-handle-offset drag-scrolling?] :as state}
    e]
   (reset! mousedown? true)
   (reset! mouse-x (.-pageX e))
@@ -643,15 +636,9 @@
                            new-index @reordering-product)]))))
 
 (defn mousemove
-  [{:keys [mouse-x
-           mousedown?
-           x-at-mousedown
-           last-mouse-delta
-           last-mouse-x
-           drag-direction-intention
-           scroll-x
-           scroll-v
-           scroll-a-factor] :as state}
+  [{:keys [mouse-x mousedown? x-at-mousedown last-mouse-delta
+           last-mouse-x drag-direction-intention scroll-x
+           scroll-v scroll-a-factor] :as state}
    e]
   (reset! mouse-x (.-pageX e))
   (when @mousedown?
@@ -675,13 +662,8 @@
     (reset! last-mouse-x @mouse-x)))
 
 (defn mouseup
-  [{:keys [node
-           mouse-x
-           mousedown?
-           last-mouse-delta
-           reordering-col-node
-           round-id
-           drag-scrolling?] :as state}
+  [{:keys [node mouse-x mousedown? last-mouse-delta
+           reordering-col-node round-id drag-scrolling?] :as state}
    e]
   (reset! mouse-x (.-pageX e))
   (when @mousedown?
@@ -695,11 +677,7 @@
     (util/remove-class @node "dragging")))
 
 (defn scroll
-  [{:keys [node
-           drag-scrolling?
-           scroll-x
-           scroll-v
-           top-scrollbar-node] :as state}]
+  [{:keys [node drag-scrolling? scroll-x scroll-v top-scrollbar-node] :as state}]
   (when-not @drag-scrolling?
     (when (> (Math/abs (- (.-scrollLeft @node) @scroll-x)) 0.99999)
       (reset! scroll-v 0)
@@ -707,12 +685,8 @@
   (aset @top-scrollbar-node "scrollLeft" (Math/floor @scroll-x)))
 
 (defn scroll-top-scrollbar
-  [{:keys [node
-           hovering-top-scrollbar?
-           drag-scrolling?
-           top-scrollbar-node
-           scroll-x
-           scroll-v] :as state}]
+  [{:keys [node hovering-top-scrollbar? drag-scrolling? top-scrollbar-node
+           scroll-x scroll-v] :as state}]
   (when @hovering-top-scrollbar?
     (when-not @drag-scrolling?
       (when (> (Math/abs (- (.-scrollLeft @top-scrollbar-node) @scroll-x)) 0.99999)
@@ -729,18 +703,9 @@
   (reset! hovering-top-scrollbar? false))
 
 (defn animation-loop
-  [{:keys [node
-           last-mouse-delta
-           mouse-x
-           scroll-x
-           scroll-x-max
-           scroll-v
-           scroll-k
-           scroll-speed-reordering
-           drag-handle-offset
-           drag-scrolling?
-           drag-direction-intention
-           mounted?] :as state}
+  [{:keys [node last-mouse-delta mouse-x scroll-x scroll-x-max scroll-v
+           scroll-k scroll-speed-reordering drag-handle-offset
+           drag-scrolling? drag-direction-intention mounted?] :as state}
    timestamp]
   (do
     ;; override scroll velocity if reordering
@@ -816,27 +781,27 @@
         window-scroll-ref (partial window-scroll state)]
     (with-meta c-round-grid*
       {:component-did-mount
-       (fn [this] ;; make grid draggable (scrolling & reordering)
-         (do (reset! (:round-id state) (-> this r/props :id))
-             (reset! (:node state) (round-grid-cmp->round-grid-node this))
-             (reset! (:top-scrollbar-node state) (round-grid-cmp->top-scrollbar-node this))
-             (reset! (:mounted? state) true)
-             (js/requestAnimationFrame (partial animation-loop state))
-             (update-draggability state)
-             (.addEventListener @(:node state) "mousedown" (partial mousedown state))
-             (.addEventListener @(:node state) "mousemove" (partial mousemove state))
-             (.addEventListener @(:node state) "mouseup" (partial mouseup state))
-             (.addEventListener @(:node state) "mouseleave" (partial mouseup state))
-             (.addEventListener @(:node state) "scroll" (partial scroll state))
-             (.addEventListener @(:top-scrollbar-node state) "mouseover" (partial mouseover-top-scrollbar state))
-             (.addEventListener @(:top-scrollbar-node state) "mouseleave" (partial mouseleave-top-scrollbar state))
-             (.addEventListener @(:top-scrollbar-node state) "scroll" (partial scroll-top-scrollbar state))
-             (.addEventListener js/window "scroll" window-scroll-ref)))
+       (fn [cmp] ;; make grid draggable (for scrolling & reordering columns)
+         (let [{:keys [round-id node top-scrollbar-node mounted?]} state]
+           (do (reset! round-id (-> cmp r/props :id))
+               (reset! node (round-grid-cmp->round-grid-node cmp))
+               (reset! top-scrollbar-node (round-grid-cmp->top-scrollbar-node cmp))
+               (reset! mounted? true)
+               (js/requestAnimationFrame (partial animation-loop state))
+               (update-draggability state)
+               (.addEventListener @node "mousedown" (partial mousedown state))
+               (.addEventListener @node "mousemove" (partial mousemove state))
+               (.addEventListener @node "mouseup" (partial mouseup state))
+               (.addEventListener @node "mouseleave" (partial mouseup state))
+               (.addEventListener @node "scroll" (partial scroll state))
+               (.addEventListener @top-scrollbar-node "mouseover" (partial mouseover-top-scrollbar state))
+               (.addEventListener @top-scrollbar-node "mouseleave" (partial mouseleave-top-scrollbar state))
+               (.addEventListener @top-scrollbar-node "scroll" (partial scroll-top-scrollbar state))
+               (.addEventListener js/window "scroll" window-scroll-ref))))
        :component-did-update (fn [] (update-draggability state))
-       :component-will-unmount (fn [this]
+       :component-will-unmount (fn []
                                  (reset! (:mounted? state) false)
                                  (.removeEventListener js/window "scroll" window-scroll-ref))})))
-
 
 (defn c-add-requirement-form
   [round-id popup-open?&]
@@ -981,7 +946,3 @@
                                  :on-mouse-leave #(util/remove-class (get-round-grid-node) "highlight-products")}
                    "Add Products"
                    [:> ui/Icon {:name "plus"}]])}])))
-
-
-
-
