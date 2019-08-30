@@ -1036,11 +1036,12 @@
 
 ;; select d.id, d.title, f.id, f.title, dr.id, r.id, p.prompt, pf.* from docs d join forms f on d.form_id = f.id join form_prompt fp on fp.form_id = f.id join doc_resp dr on dr.doc_id = d.id left join responses r on r.id = dr.resp_id and r.prompt_id = fp.prompt_id and r.id is null join prompts p on p.id = fp.prompt_id join prompt_fields pf on p.id = pf.prompt_id limit 3;
 
-(defn select-missing-prompt-fields-by-doc-id
+(defn select-missing-prompt-responses-by-doc-id
   [doc-id]
   (db/hs-query
-   {:select [[:p.prompt :prompt_prompt]
-             [:pf.id :prompt_field_id]]
+   {:select [[:p.id :prompt-id]
+             [:p.prompt :prompt-term]
+             [:pf.id :prompt-field-id]] ;; TODO <==== don't need field id
     :from [[:docs :d]]
     :join [[:forms :f]
            [:= :d.form_id :f.id]
@@ -1059,9 +1060,51 @@
                  [:= :r.id nil]]]
     :limit 3}))
 
-(defn select-reusable-response-fields [subject dtype])
+;; find response fields from other docs that can be re-used
+(defn select-reusable-response-fields [subject dtype prompt-rows]
+  (let [prompt-ids (->> prompt-rows (map :prompt-id) distinct)
+        prompt-terms (->> prompt-rows (map :prompt-terms) distinct)
+        prompt-field-ids (->> prompt-rows (map :prompt-field-ids) distinct)
+        data (->> {:select [[:prompt_id :prompt-id]
+                            [:prompt_term :prompt-term]
+                            [:prompt_field_fname :prompt-field-fname]
+                            [:resp_field_nval :nval]
+                            [:resp_field_dval :dval]
+                            [:resp_field_sval :sval]
+                            [:resp_field_jval :jval]
+                            [:resp_field_idx :idx]]
+                   :from [:docs_to_fields]
+                   :where [:and
+                           [:= :doc_subject subject]
+                           [:= :doc_dtype dtype]
+                           [:in :prompt_id prompt-ids]
+                           [:in :prompt_terms prompt-terms]
+                           [:in :prompt_field_ids prompt-field-ids]]}
+                  db/hs-query
+                  (group-by #(or (:prompt-term %)
+                                 (:prompt-id %)))
+                  (ut/fmap (fn [x]
+                             (->> x
+                                  (group-by :prompt-field-fname)
+                                  (ut/fmap (fn [y]
+                                             (-> y
+                                                 first
+                                                 get-auto-pop-data*)))))))]
+    (def data1 data)
+    #_ (clojure.pprint/pprint  data1)
+    {:terms (->> (for [[k v] data]
+                   (when (string? k)
+                     [(keyword k) v]))
+                 (into {}))
+     :prompt-ids (->> (for [[k v] data]
+                        (when (number? k)
+                          [k v]))
+                      (into {}))}))
 
-(defn reuse-response-fields [])
+
+;; add doc_resp references to doc that point to reusable responses
+(defn reuse-responses
+  [])
 
 #_
-(clojure.pprint/pprint  (get-auto-pop-data 1993514743443 "product-profile"))
+(clojure.pprint/pprint  (select-missing-prompt-fields-by-doc-id 851996074457))
