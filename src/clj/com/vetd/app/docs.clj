@@ -1108,10 +1108,11 @@
 
 (defn auto-pop-missing-responses-by-doc-id
   [doc-id]
-  (->> doc-id
-       select-missing-prompt-responses-by-doc-id
-       (select-reusable-response-fields subject dtype)
-       (reuse-responses doc-id)))
+#_  (let [{:keys [subject ftype]} (select-form-by-doc-id)]
+    (->> doc-id
+         select-missing-prompt-responses-by-doc-id
+         (select-reusable-response-fields subject dtype)
+         (reuse-responses doc-id))))
 
 #_
 (clojure.pprint/pprint  (select-missing-prompt-fields-by-doc-id 851996074457))
