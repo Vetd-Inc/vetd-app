@@ -545,7 +545,9 @@
     (reset! scroll-x-max (- scroll-width client-width))
     (modify-class-fn @node "draggable")))
 
-(defn all-header-nodes []
+(defn all-header-nodes
+  "Get all of the DOM nodes that are a header element of a column."
+  []
   (util/nodes-by-class "round-product"))
 
 ;; this needs to be called when we leave 'sticky mode'
@@ -566,7 +568,6 @@
   [node y]
   (> (- y (aget node "offsetTop"))
      (aget node "clientHeight")))
-
 
 (defn mousedown
   [{:keys [node
@@ -788,33 +789,30 @@
       (js/requestAnimationFrame (partial animation-loop state)))))
 
 (def c-round-grid
-  (let [state {:mounted? (atom false)
+  (let [state {:mounted? (atom false) ;; is this component mounted?
                :round-id (atom nil) 
-               :node (atom nil)
-               :top-scrollbar-node (atom nil)
-               :mousedown? (atom false)
-               :x-at-mousedown (atom nil)
-               :mouse-x (atom nil) ;; current mouse pos x
-               :last-mouse-x (atom nil)
-               :last-mouse-delta (atom 0)
-               :drag-scrolling? (atom false)
-               :drag-direction-intention (atom nil)
+               :node (atom nil) ;; round grid DOM node
+               :top-scrollbar-node (atom nil) ;; top scrollbar DOM node
+               :mousedown? (atom false) ;; is the mouse button currently down?
+               :x-at-mousedown (atom nil) ;; what was the x position of the most recent mousedown
+               :mouse-x (atom nil) ;; current mouse x position
+               :last-mouse-x (atom nil) ;; last mouse x position (from the previous animation loop step)
+               :last-mouse-delta (atom 0) ;; last mouse x delta (from the previous animation loop step)
+               :drag-scrolling? (atom false) ;; are we currently causing the grid to scroll because of a reordering drag?
+               :drag-direction-intention (atom nil) ;; (left/right) direction user is intending to drag a column
                :drag-handle-offset (atom nil) ;; distance that user mousedown'd from left side of column being dragged
-               :hovering-top-scrollbar? (atom false)
+               :hovering-top-scrollbar? (atom false) ;; is the mouse over the top scrollbar?
                :scroll-x (atom 0) ;; think of this as the grid's scrollLeft
-               :last-scroll-x (atom 0)
+               :last-scroll-x (atom 0) ;; what was the scroll-x in the last animation loop step?
                :scroll-x-max (atom 0) ;; right-side scroll boundary
                :scroll-v (atom 0) ;; scroll velocity (on x axis)
                :scroll-k (atom 0.85) ;; coefficient of friction
-               ;; where to make header row 'sticky' upon vertical window scroll
-               :header-pickup-y (atom nil) ;; nil when not in 'sticky mode'
-               :reordering-col-node (atom nil)
+               ;; where (y position) did we pickup the column headers when we entered sticky mode?
+               :header-pickup-y (atom nil) ;; nil when not in sticky mode
+               :reordering-col-node (atom nil) ;; the DOM node of the column we are reordering (if any)
                :products-order& (rf/subscribe [:round-products-order])
-
-               ;; TODO move these config constants somewhere else??
                :scroll-a-factor 1 ;; amount of acceleration that gets applied per 1px mouse drag
-               :scroll-speed-reordering 7 ;; when reordering near left or right edge of grid
-               }
+               :scroll-speed-reordering 7} ;; when reordering near left or right edge of grid
         window-scroll-ref (partial window-scroll state)]
     (with-meta c-round-grid*
       {:component-did-mount
