@@ -96,6 +96,7 @@
          explainer-modal-showing?&]
       [:<>
        [:> ui/Segment {:id "round-title-container"
+                       :style {:margin-bottom 14}
                        :class (str "detail-container " (when (> (count title) 40) "long"))}
         [:h1.round-title title
          [:> ui/Button {:onClick #(reset! share-modal-showing?& true)
