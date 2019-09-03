@@ -614,23 +614,25 @@
 
 (defn window-scroll
   "Turn on and off header row 'sticky mode' as necessary."
-  [{:keys [node header-pickup-y] :as state}]
+  [{{:keys [grid]} :nodes
+    {:keys [header-pickup-y]} :scroll
+    :as state}]
   (.requestAnimationFrame
    js/window
    (fn []
      (let [window-scroll-y (.-scrollY js/window)
-           node-offset-top (.-offsetTop @node)]
+           node-offset-top (.-offsetTop @grid)]
        (if @header-pickup-y
          (if (< window-scroll-y @header-pickup-y)
            (do (reset! header-pickup-y nil)
-               (util/remove-class @node "fixed")
+               (util/remove-class @grid "fixed")
                (zero-out-header-scroll))
            (doseq [header-node (all-header-nodes)]
              (aset (.-style header-node) "transform"
                    (str "translateY(" (- window-scroll-y node-offset-top) "px)"))))
          (when (> window-scroll-y node-offset-top)
            (reset! header-pickup-y node-offset-top)
-           (util/add-class @node "fixed")))))))
+           (util/add-class @grid "fixed")))))))
 
 (defn update-sort-pos
   "Based on the current x-axis position of the column being dragged,
@@ -650,94 +652,94 @@
                            new-index @reordering-product)]))))
 
 (defn mousemove
-  [{:keys [mouse-x mousedown? x-at-mousedown last-mouse-delta
-           last-mouse-x drag-direction-intention scroll-x
-           scroll-v scroll-a-factor] :as state}
-   e]
-  (reset! mouse-x (.-pageX e))
-  (when @mousedown?
-    ;; seems to prevent cell text selection when scrolling
-    (.preventDefault e)
-    ;; if you drag more than 3px, disable the cell & product name clickability
-    (when (and (not @cell-click-disabled?)
-               (> (Math/abs (- @mouse-x @x-at-mousedown)) 3))
-      (reset! cell-click-disabled? true))
-    ;; useful for determining if right or left edge scrolling is needed
-    (reset! last-mouse-delta (- @mouse-x @last-mouse-x))
-    (when-not (zero? @last-mouse-delta)
-      (if (pos? @last-mouse-delta)
-        (reset! drag-direction-intention "right")
-        (reset! drag-direction-intention "left")))
-    ;; scrolling
-    (when-not @reordering-product
-      (let [neg-disp (* -1 (- (.-pageX e) @last-mouse-x))]
-        (swap! scroll-x + neg-disp)
-        (reset! scroll-v (* neg-disp scroll-a-factor))))
-    (reset! last-mouse-x @mouse-x)))
+  [{:keys [mouse scroll drag] :as state} e]
+  (let [page-x (.-pageX e)]
+    (reset! (:x mouse) page-x)
+    (when @(:down? mouse)
+      ;; this seems to prevent cell text selection when scrolling
+      (.preventDefault e)
+      ;; if you drag more than 3px, disable the cell & product name clickability
+      (when (and (not @cell-click-disabled?)
+                 (> (Math/abs (- @(:x mouse) @(:x-pos-at-down mouse))) 3))
+        (reset! cell-click-disabled? true))
+      ;; useful for determining if right or left edge scrolling is needed
+      (reset! (:last-delta-x mouse) (- @(:x mouse) @(:last-x mouse)))
+      (when-not (zero? @(:last-delta-x mouse))
+        (reset! (:direction-intention drag) (if (pos? @(:last-delta-x mouse)) "right" "left")))
+      ;; scrolling
+      (when-not @reordering-product
+        (let [neg-disp (* -1 (- page-x @last-mouse-x))]
+          (swap! scroll-x + neg-disp)
+          (reset! scroll-v (* neg-disp scroll-a-factor))))
+      (reset! (:last-x mouse) @(:x mouse)))))
 
 (defn mouseup
-  [{:keys [node mouse-x mousedown? last-mouse-delta
-           reordering-col-node round-id drag-scrolling?] :as state}
-   e]
-  (reset! mouse-x (.-pageX e))
-  (when @mousedown?
-    (reset! mousedown? false)
-    (reset! last-mouse-delta 0)
+  [{:keys [round-id nodes mouse scroll] :as state} e]
+  (reset! (:x mouse) (.-pageX e))
+  (when @(:down? mouse)
+    (reset! (:down? mouse) false)
+    (reset! (:last-delta-x mouse) 0)
     (when @reordering-product
-      (do (util/remove-class @reordering-col-node "reordering")
+      (do (util/remove-class @(:reordering-col nodes) "reordering")
           (reset! reordering-product nil)
           (rf/dispatch [:b/store-round-products-order @round-id])))
-    (reset! drag-scrolling? false)
-    (util/remove-class @node "dragging")))
+    (reset! (:grabbing? scroll) false)
+    (util/remove-class @(:grid nodes) "dragging")))
 
 (defn scroll
-  [{:keys [node drag-scrolling? scroll-x scroll-v top-scrollbar-node] :as state}]
-  (when-not @drag-scrolling?
-    (when (> (Math/abs (- (.-scrollLeft @node) @scroll-x)) 0.99999)
-      (reset! scroll-v 0)
-      (reset! scroll-x (.-scrollLeft @node))))
-  (aset @top-scrollbar-node "scrollLeft" (Math/floor @scroll-x)))
+  [{:keys [nodes scroll] :as state}]
+  (when-not @(:grabbing? scroll)
+    (let [scroll-left (.-scrollLeft @(:grid nodes))]
+      (when (> (Math/abs (- scroll-left @(:x scroll))) 0.99999)
+        (reset! (:velocity-x scroll) 0)
+        (reset! (:x scroll) scroll-left))))
+  (aset @(:top-scrollbar nodes) "scrollLeft" (Math/floor @(:x scroll))))
 
 (defn scroll-top-scrollbar
-  [{:keys [node hovering-top-scrollbar? drag-scrolling? top-scrollbar-node
-           scroll-x scroll-v] :as state}]
-  (when @hovering-top-scrollbar?
-    (when-not @drag-scrolling?
-      (when (> (Math/abs (- (.-scrollLeft @top-scrollbar-node) @scroll-x)) 0.99999)
-        (reset! scroll-v 0)
-        (reset! scroll-x (.-scrollLeft @top-scrollbar-node))
-        (aset @node "scrollLeft" (Math/floor @scroll-x))))))
+  [{:keys [nodes scroll] :as state}]
+  (when @(:hovering-top-scrollbar? scroll)
+    (when-not @(:grabbing? scroll)
+      (let [scroll-left (.-scrollLeft @top-scrollbar-node)]
+        (when (> (Math/abs (- scroll-left @(:x scroll))) 0.99999)
+          (reset! (:velocity-x scroll) 0)
+          (reset! (:x scroll) scroll-left)
+          (aset @(:grid nodes) "scrollLeft" (Math/floor @(:x scroll))))))))
 
 (defn mouseover-top-scrollbar
-  [{:keys [hovering-top-scrollbar?] :as state}]
+  [{{:keys [hovering-top-scrollbar?]} :scroll
+    :as state}]
   (reset! hovering-top-scrollbar? true))
 
 (defn mouseleave-top-scrollbar
-  [{:keys [hovering-top-scrollbar?] :as state}]
+  [{{:keys [hovering-top-scrollbar?]} :scroll
+    :as state}]
   (reset! hovering-top-scrollbar? false))
 
 (defn animation-loop
-  [{:keys [node last-mouse-delta mouse-x scroll-x scroll-x-max scroll-v
-           scroll-k scroll-speed-reordering drag-handle-offset
-           drag-scrolling? drag-direction-intention mounted?] :as state}
-   timestamp]
+  [{:keys [mounted? nodes mouse scroll drag] :as state} timestamp]
   (do
     ;; override scroll velocity if reordering
     (when (and @reordering-product
-               (= @drag-direction-intention "right")
-               (not (neg? @last-mouse-delta))
-               (> (- @mouse-x
+               (= @(:direction-intention drag) "right")
+               (not (neg? @(:last-delta-x mouse)))
+               (> (- @(:x mouse)
                      (.-offsetLeft @node))
                   (- (.-clientWidth @node)
                      col-width)))
-      (reset! scroll-v scroll-speed-reordering))
+      (reset! (:velocity-x scroll) (:speed-reordering scroll)))
     (when (and @reordering-product
-               (= @drag-direction-intention "left")
-               (not (pos? @last-mouse-delta))
-               (< (- @mouse-x
+               (= @(:direction-intention drag) "left")
+               (not (pos? @(:last-delta-x mouse)))
+               (< (- @(:x mouse)
                      (.-offsetLeft @node))
                   col-width))
-      (reset! scroll-v (* -1 scroll-speed-reordering)))
+      (reset! (:velocity-x scroll) (* -1 (:speed-reordering scroll))))
+
+
+
+    ;; WHERE I LEFT OFF was refactoring state map structure 
+
+    
     ;; apply scroll velocity to scroll position
     (swap! scroll-x + @scroll-v)
     ;; right-side boundary
