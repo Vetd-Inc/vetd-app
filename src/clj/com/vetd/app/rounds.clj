@@ -20,7 +20,6 @@
 
 (defn invite-product-to-round
   [product-id round-id]
-      ;; TODO call sync-round-vendor-req-forms too, once we're ready  
   (insert-round-product round-id product-id))
 
 (defn sync-round-vendor-req-forms-to-add
@@ -60,19 +59,21 @@
                        rps)
         to-remove (filter (partial sync-round-vendor-req-forms-to-remove
                                    prod-id->exists)
-                          rps)]
-    (doseq [{:keys [id vendor-id product]} to-add]
-      (docs/create-form-from-template {:form-template-id form-template-id
-                                       :from-org-id buyer-id
-                                       :to-org-id (:vendor-id product)
-                                       :subject id
-                                       :title (format "Round Req Form -- round %d / prod %d "
-                                                      round-id
-                                                      vendor-id)}))
+                          rps)
+        added (-> (for [{:keys [id vendor-id product]} to-add]
+                    (docs/create-form-from-template {:form-template-id form-template-id
+                                                     :from-org-id buyer-id
+                                                     :to-org-id (:vendor-id product)
+                                                     :subject id
+                                                     :title (format "Round Req Form -- round %d / prod %d "
+                                                                    round-id
+                                                                    vendor-id)}))
+                  doall)]
     (doseq [{:keys [id] forms :vendor-response-form-docs :as r} to-remove]
       (docs/update-deleted :round_product id)
       (doseq [{form-id :id doc-id :doc-id} forms]
         (when doc-id
           (docs/update-deleted :docs doc-id))
         (docs/update-deleted :forms form-id)))
-    [to-add to-remove]))
+    {:added (map vector added to-add)
+     :to-remove to-remove}))
