@@ -313,7 +313,14 @@ Round URL: https://app.vetd.com/b/rounds/%s"
         existing-prompts (docs/select-form-template-prompts-by-parent-id req-form-template-id)]
     (when-not (some #(= id (:prompt-id %)) existing-prompts)
       (docs/insert-form-template-prompt req-form-template-id id)
-      (docs/merge-template-to-forms req-form-template-id))))
+      (let [form-ids (docs/merge-template-to-forms req-form-template-id)
+            doc-ids (->> [[:docs {:form-id form-ids}
+                           [:id]]]
+                         ha/sync-query
+                         :docs
+                         (map :id))]
+        (doseq [id doc-ids]
+          (docs/auto-pop-missing-responses-by-doc-id id))))))
 
 ;; TODO there could be multiple preposals/rounds per buyer-vendor pair
 
@@ -501,7 +508,7 @@ Round URL: https://app.vetd.com/b/rounds/%s"
       (catch Throwable t
         (com/log-error t)))))
 
-(defmethod com/handle-ws-inbound :b/round.products
+(defmethod com/handle-ws-inbound :b/round.add-products
   [{:keys [round-id product-ids product-names buyer-id]} ws-id sub-fn]
   (when-not (empty? product-ids)
     (com/sns-publish

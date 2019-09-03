@@ -974,7 +974,8 @@
                     set)]
     (doseq [{prompt-id :id sort' :sort} prompts]
       (when-not (id-set prompt-id)
-        (insert-form-prompt form-id prompt-id sort')))))
+        (insert-form-prompt form-id prompt-id sort')))
+    form-id))
 
 (defn merge-template-to-forms
   [req-form-template-id]
