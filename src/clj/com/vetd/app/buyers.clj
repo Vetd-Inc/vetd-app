@@ -477,7 +477,7 @@ Round URL: https://app.vetd.com/b/rounds/%s"
             added]
       (let [doc (docs/create-doc {:form-id id
                                   :subject subject
-                                  :data {} #_(docs/get-auto-pop-data product-id "product-profile")
+                                  :data {}
                                   :to-org-id from-org-id
                                   :from-org-id to-org-id})]
         (-> doc

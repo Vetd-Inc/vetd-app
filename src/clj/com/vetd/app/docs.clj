@@ -993,50 +993,6 @@
          (map (partial upsert-prompts-to-form prompts))
          doall)))
 
-(defn get-auto-pop-data*
-  [{:keys [nval dval sval jval] :as m}]
-  (or jval dval nval sval))
-
-;; TODO ugh.... we are not actually reusing the response records!!!!!!!!!!!
-(defn get-auto-pop-data
-  [subject dtype]
-  (let [data (->> {:select [[:prompt_id :prompt-id]
-                            [:prompt_term :prompt-term]
-                            [:prompt_field_fname :prompt-field-fname]
-                            [:resp_field_nval :nval]
-                            [:resp_field_dval :dval]
-                            [:resp_field_sval :sval]
-                            [:resp_field_jval :jval]
-                            [:resp_field_idx :idx]]
-                   :from [:docs_to_fields]
-                   :where [:and
-                           [:= :doc_subject subject]
-                           [:= :doc_dtype dtype]]}
-                  db/hs-query
-                  (group-by #(or (:prompt-term %)
-                                 (:prompt-id %)))
-                  (ut/fmap (fn [x]
-                             (->> x
-                                  (group-by :prompt-field-fname)
-                                  (ut/fmap (fn [y]
-                                             (-> y
-                                                 first
-                                                 get-auto-pop-data*)))))))]
-    (def data1 data)
-    #_ (clojure.pprint/pprint  data1)
-    {:terms (->> (for [[k v] data]
-                   (when (string? k)
-                     [(keyword k) v]))
-                 (into {}))
-     :prompt-ids (->> (for [[k v] data]
-                        (when (number? k)
-                          [k v]))
-                      (into {}))}))
-
-;; docs points to forms; forms have prompts, but doc doesn't have response (or response is blank)
-
-;; select d.id, d.title, f.id, f.title, dr.id, r.id, p.prompt, pf.* from docs d join forms f on d.form_id = f.id join form_prompt fp on fp.form_id = f.id join doc_resp dr on dr.doc_id = d.id left join responses r on r.id = dr.resp_id and r.prompt_id = fp.prompt_id and r.id is null join prompts p on p.id = fp.prompt_id join prompt_fields pf on p.id = pf.prompt_id limit 3;
-
 (defn select-missing-prompt-responses-by-doc-id
   [doc-id]
   (->> {:select [[:p.id :prompt-id]
@@ -1064,39 +1020,28 @@
 (defn select-reusable-response-fields [subject prompt-rows]
   (let [prompt-ids (->> prompt-rows (map :prompt-id) distinct)
         prompt-terms (->> prompt-rows (map :prompt-term) distinct)
-        prompt-field-ids (->> prompt-rows (map :prompt-field-id) distinct)
-        data (->> {:select [[:prompt_id :prompt-id]
-                            [:prompt_term :prompt-term]
-                            [:response_id :response-id]
-                            [:resp_field_nval :nval]
-                            [:resp_field_dval :dval]
-                            [:resp_field_sval :sval]
-                            [:resp_field_jval :jval]
-                            [:resp_field_idx :idx]]
-                   :from [:docs_to_fields]
-                   :where [:and
-                           [:in :doc_subject subject]
-                           [:or
-                            [:in :prompt_id prompt-ids]
-                            [:in :prompt_term prompt-terms]]]}
-                  db/hs-query
-                  (group-by #(or (:prompt-term %)
-                                 (:prompt-id %)))
-                  vals
-                  (map first)
-                  (map #(assoc %
-                               :value (get-auto-pop-data* %))))]
-    (def data1 data)
-    data
-    #_ (clojure.pprint/pprint  data1)
-    #_{:terms (->> (for [[k v] data]
-                   (when (string? k)
-                     [(keyword k) v]))
-                 (into {}))
-     :prompt-ids (->> (for [[k v] data]
-                        (when (number? k)
-                          [k v]))
-                      (into {}))}))
+        prompt-field-ids (->> prompt-rows (map :prompt-field-id) distinct)]
+    (->> {:select [[:prompt_id :prompt-id]
+                   [:prompt_term :prompt-term]
+                   [:response_id :response-id]
+                   [:resp_field_nval :nval]
+                   [:resp_field_dval :dval]
+                   [:resp_field_sval :sval]
+                   [:resp_field_jval :jval]
+                   [:resp_field_idx :idx]]
+          :from [:docs_to_fields]
+          :where [:and
+                  [:in :doc_subject subject]
+                  [:or
+                   [:in :prompt_id prompt-ids]
+                   [:in :prompt_term prompt-terms]]]}
+         db/hs-query
+         (group-by #(or (:prompt-term %)
+                        (:prompt-id %)))
+         vals
+         (map first)
+         (map #(assoc %
+                      :value (get-auto-pop-data* %))))))
 
 ;; add doc_resp references to doc that point to reusable responses
 (defn reuse-responses
@@ -1124,7 +1069,4 @@
          select-missing-prompt-responses-by-doc-id
          (select-reusable-response-fields product-ids)
          (reuse-responses doc-id))))
-
-#_
-(clojure.pprint/pprint  (auto-pop-missing-responses-by-doc-id 1993738263615))
 
