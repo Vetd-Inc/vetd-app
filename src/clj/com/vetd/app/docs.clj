@@ -990,3 +990,83 @@
          (map (partial upsert-prompts-to-form prompts))
          doall)))
 
+(defn select-missing-prompt-responses-by-doc-id
+  [doc-id]
+  (->> {:select [[:p.id :prompt-id]
+                 [:p.prompt :prompt-term]
+                 [:f.id :form-id]]
+        :from [[:docs :d]]
+        :join [[:forms :f]
+               [:= :d.form_id :f.id]
+               [:form_prompt :fp]
+               [:= :fp.form_id :f.id]
+               [:prompts :p]
+               [:= :p.id :fp.prompt_id]]
+        :left-join [[:doc_resp :dr]
+                    [:= :dr.doc_id :d.id]
+                    [:responses :r]
+                    [:and
+                     [:= :r.id :dr.resp_id]
+                     [:= :r.prompt_id :fp.prompt_id]]]
+        :where [:and
+                [:= :d.id doc-id]
+                [:= :r.id nil]]}
+       db/hs-query))
+
+(defn find-prompt-field-value
+  [{:keys [nval dval sval jval] :as m}]
+  (or jval dval nval sval))
+
+;; find response fields from other docs that can be re-used
+(defn select-reusable-response-fields [subject prompt-rows]
+  (let [prompt-ids (->> prompt-rows (map :prompt-id) distinct)
+        prompt-terms (->> prompt-rows (map :prompt-term) distinct)
+        prompt-field-ids (->> prompt-rows (map :prompt-field-id) distinct)]
+    (->> {:select [[:prompt_id :prompt-id]
+                   [:prompt_term :prompt-term]
+                   [:response_id :response-id]
+                   [:resp_field_nval :nval]
+                   [:resp_field_dval :dval]
+                   [:resp_field_sval :sval]
+                   [:resp_field_jval :jval]
+                   [:resp_field_idx :idx]]
+          :from [:docs_to_fields]
+          :where [:and
+                  [:in :doc_subject subject]
+                  [:or
+                   [:in :prompt_id prompt-ids]
+                   [:in :prompt_term prompt-terms]]]}
+         db/hs-query
+         (group-by #(or (:prompt-term %)
+                        (:prompt-id %)))
+         vals
+         (map first)
+         (map #(assoc %
+                      :value (find-prompt-field-value %))))))
+
+;; add doc_resp references to doc that point to reusable responses
+(defn reuse-responses
+  [doc-id responses]
+  (doseq [{:keys [response-id]} responses]
+    (insert-doc-response doc-id response-id)))
+
+(defn select-round-product-ids-by-doc-id
+  [doc-id]
+  (->> {:select [[:rp.product_id :product-id]]
+        :modifiers [:distinct]
+        :from [[:docs :d]]
+        :join [[:round_product :rp]
+               [:and
+                [:= :d.subject :rp.id]
+                [:= :rp.deleted nil]]]
+        :where [:= :d.id doc-id]}
+       db/hs-query
+       (map :product-id)))
+
+(defn auto-pop-missing-responses-by-doc-id
+  [doc-id]
+  (let [product-ids (select-round-product-ids-by-doc-id doc-id)]
+    (->> doc-id
+         select-missing-prompt-responses-by-doc-id
+         (select-reusable-response-fields product-ids)
+         (reuse-responses doc-id))))
