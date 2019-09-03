@@ -1154,11 +1154,6 @@ $cell-height: 201px;
     .row {
       height: 39px;
       margin-top: 0;
-      
-      > .column > .category-tag {
-        position: absolute;
-        bottom: 0px;
-      }
     }
   }
 }
