@@ -479,7 +479,8 @@
              ^{:key (str req-prompt-id "-" product-id)}
              [:div.cell {:class (str (when (= 1 resp-rating) "response-approved ")
                                      (when (= 0 resp-rating) "response-disapproved "))
-                         :on-mouse-down #(reset! cell-click-disabled? false)
+                         :on-mouse-down #(do (println "cell mousedown")
+                                             (reset! cell-click-disabled? false))
                          :on-click #(when-not @cell-click-disabled?
                                       (show-modal-fn {:req-prompt-id req-prompt-id
                                                       :req-prompt-text req-prompt-text
@@ -569,34 +570,47 @@
   (> (- y (aget node "offsetTop"))
      (aget node "clientHeight")))
 
+(defn part-of-cell-topic?
+  [node]
+  (util/contains-class? node "topic"))
+
+(defn col-node->product-id
+  [node]
+  (js/parseInt (.getAttribute col "data-product-id")))
+
 (defn mousedown
-  [{:keys [node mouse-x last-mouse-x x-at-mousedown mousedown?
-           products-order& reordering-col-node drag-direction-intention
-           drag-handle-offset drag-scrolling?] :as state}
-   e]
-  (reset! mousedown? true)
-  (reset! mouse-x (.-pageX e))
-  (reset! x-at-mousedown (.-pageX e))
-  (when (and (part-of-drag-handle? (.-target e))
-             (> (count @products-order&) 1)) ; only able to reorder if more than one product
-    ;; Reordering
-    (when-let [col (.closest (.-target e) ".column")] ; is the mousedown even on/in a column?
-      (let [col-left (js/parseInt (re-find #"\d+" (.-transform (.-style col))))]
-        (reset! reordering-col-node col)
-        (reset! curr-reordering-pos-x col-left)
-        (reset! drag-direction-intention nil)
-        (reset! drag-handle-offset (- (+ (- (.-pageX e)
-                                            (.-offsetLeft @node))
-                                         (.-scrollLeft @node))
-                                      col-left))
-        ;; remember the id of the product we are currently reordering
-        (reset! reordering-product (js/parseInt (.getAttribute col "data-product-id")))
-        (util/add-class @reordering-col-node "reordering"))))
-  ;; Scrolling
-  (when-not (part-of-scrollbar? @node (.-pageY e))
-    (do (reset! drag-scrolling? true)
-        (util/add-class @node "dragging")))
-  (reset! last-mouse-x (.-pageX e)))
+  [{:keys [nodes mouse scroll drag products-order&] :as state} e]
+  (let [page-x (.-pageX e)
+        page-y (.-pageY e)
+        target (.-target e)
+        {:keys [grid reordering-col]} nodes]
+    (reset! (:down? mouse) true)
+    (reset! (:x mouse) page-x)
+    (reset! (:x-pos-at-down mouse) page-x)
+    (when (and (part-of-drag-handle? target)
+               (> (count @products-order&) 1)) ; only able to reorder if more than one product
+      ;; Reordering columns
+      (when-let [col (.closest target ".column")] ; is the mousedown even on/in a column?
+        (let [col-left (js/parseInt (re-find #"\d+" (.-transform (.-style col))))]
+          (reset! reordering-col col)
+          (reset! curr-reordering-pos-x col-left)
+          (reset! (:direction-intention drag) nil)
+          (reset! (:handle-offset drag) (- (+ (- page-x
+                                                 (.-offsetLeft @grid))
+                                              (.-scrollLeft @grid))
+                                           col-left))
+          ;; remember the id of the product we are currently reordering
+          (reset! reordering-product (col-node->product-id col))
+          (util/add-class col "reordering"))))
+    ;; Scrolling by grabbing/dragging the grid
+    (when-not (part-of-scrollbar? @grid page-y)
+      (do (reset! (:grabbing? scroll) true)
+          (util/add-class @grid "dragging")))
+    ;; Reordering rows
+    (when (part-of-cell-topic? target)
+      (println "topic mousedown")
+      (reset! cell-click-disabled? true))
+    (reset! (:last-x mouse) page-x)))
 
 (defn window-scroll
   "Turn on and off header row 'sticky mode' as necessary."
@@ -755,48 +769,57 @@
 
 (def c-round-grid
   (let [state {:mounted? (atom false) ;; is this component mounted?
-               :round-id (atom nil) 
-               :node (atom nil) ;; round grid DOM node
-               :top-scrollbar-node (atom nil) ;; top scrollbar DOM node
-               :mousedown? (atom false) ;; is the mouse button currently down?
-               :x-at-mousedown (atom nil) ;; what was the x position of the most recent mousedown
-               :mouse-x (atom nil) ;; current mouse x position
-               :last-mouse-x (atom nil) ;; last mouse x position (from the previous animation loop step)
-               :last-mouse-delta (atom 0) ;; last mouse x delta (from the previous animation loop step)
-               :drag-scrolling? (atom false) ;; are we currently causing the grid to scroll because of a reordering drag?
-               :drag-direction-intention (atom nil) ;; (left/right) direction user is intending to drag a column
-               :drag-handle-offset (atom nil) ;; distance that user mousedown'd from left side of column being dragged
-               :hovering-top-scrollbar? (atom false) ;; is the mouse over the top scrollbar?
-               :scroll-x (atom 0) ;; think of this as the grid's scrollLeft
-               :last-scroll-x (atom 0) ;; what was the scroll-x in the last animation loop step?
-               :scroll-x-max (atom 0) ;; right-side scroll boundary
-               :scroll-v (atom 0) ;; scroll velocity (on x axis)
-               :scroll-k (atom 0.85) ;; coefficient of friction
-               ;; where (y position) did we pickup the column headers when we entered sticky mode?
-               :header-pickup-y (atom nil) ;; nil when not in sticky mode
-               :reordering-col-node (atom nil) ;; the DOM node of the column we are reordering (if any)
-               :products-order& (rf/subscribe [:round-products-order])
-               :scroll-a-factor 1 ;; amount of acceleration that gets applied per 1px mouse drag
-               :scroll-speed-reordering 7} ;; when reordering near left or right edge of grid
+               :round-id (atom nil)
+               :nodes {:grid (atom nil) ;; round grid DOM node
+                       :top-scrollbar (atom nil) ;; top scrollbar DOM node
+                       :reordering-col (atom nil)} ;; the DOM node of the column we are reordering (if any)
+               :mouse {:x (atom nil) ;; current mouse x position
+                       :y (atom nil) ;; current mouse y position
+                       :last-x (atom nil) ;; last mouse x position (from the previous animation loop step)
+                       :last-y (atom nil) ;; last mouse y position (from the previous animation loop step)
+                       ;; the delta from mouse position two steps ago and the previous step
+                       :last-delta-x (atom 0) ;; last mouse x delta (from the previous animation loop step)
+                       :last-delta-y (atom 0)
+                       :down? (atom false) ;; is the mouse button currently down?
+                       :x-pos-at-down (atom nil) ;; what was the x position of the most recent mousedown
+                       :y-pos-at-down (atom nil)} ;; what was the y position of the most recent mousedown
+               :scroll {:x (atom 0) ;; the grid's scrollLeft
+                        :y (atom 0) ;; the grid's scrollTop
+                        :last-x (atom 0) ;; last scroll x position (from the previous animation loop step)
+                        :last-y (atom 0) ;; last scroll y position (from the previous animation loop step)
+                        :max-x (atom 0) ;; right-side scroll boundary
+                        :velocity-x (atom 0) ;; scroll velocity (on x axis)
+                        :velocity-y (atom 0) ;; scroll velocity (on x axis)
+                        :friction (atom 0.85) ;; coefficient of friction
+                        :acceleration-factor 1 ;; amount of acceleration that gets applied per 1px mouse drag
+                        :speed-reordering 7 ;; speed of scroll when reordering near left or right edge of grid
+                        :grabbing? (atom false) ;; currently scrolling by grabbing/dragging the grid?
+                        ;; where (y position) did we pickup the column headers when we entered sticky mode?
+                        :header-pickup-y (atom nil) ;; nil when not in sticky mode
+                        :hovering-top-scrollbar? (atom false)} ;; is the mouse over the top scrollbar?
+               :drag {:direction-intention (atom nil) ;; (left/right) direction user is intending to drag a column
+                      :handle-offset (atom nil)} ;; distance that user mousedown'd from left side of column being dragged
+               :products-order& (rf/subscribe [:round-products-order])}
         window-scroll-ref (partial window-scroll state)]
     (with-meta c-round-grid*
       {:component-did-mount
        (fn [cmp] ;; make grid draggable (for scrolling & reordering columns)
-         (let [{:keys [round-id node top-scrollbar-node mounted?]} state]
+         (let [{:keys [mounted? round-id nodes]} state
+               {:keys [grid top-scrollbar]} nodes]
            (do (reset! round-id (-> cmp r/props :id))
-               (reset! node (round-grid-cmp->round-grid-node cmp))
-               (reset! top-scrollbar-node (round-grid-cmp->top-scrollbar-node cmp))
+               (reset! grid (round-grid-cmp->round-grid-node cmp))
+               (reset! top-scrollbar (round-grid-cmp->top-scrollbar-node cmp))
                (reset! mounted? true)
                (js/requestAnimationFrame (partial animation-loop state))
                (update-draggability state)
-               (.addEventListener @node "mousedown" (partial mousedown state))
-               (.addEventListener @node "mousemove" (partial mousemove state))
-               (.addEventListener @node "mouseup" (partial mouseup state))
-               (.addEventListener @node "mouseleave" (partial mouseup state))
-               (.addEventListener @node "scroll" (partial scroll state))
-               (.addEventListener @top-scrollbar-node "mouseover" (partial mouseover-top-scrollbar state))
-               (.addEventListener @top-scrollbar-node "mouseleave" (partial mouseleave-top-scrollbar state))
-               (.addEventListener @top-scrollbar-node "scroll" (partial scroll-top-scrollbar state))
+               (.addEventListener @grid "mousedown" (partial mousedown state))
+               (.addEventListener @grid "mousemove" (partial mousemove state))
+               (.addEventListener @grid "mouseup" (partial mouseup state))
+               (.addEventListener @grid "mouseleave" (partial mouseup state))
+               (.addEventListener @grid "scroll" (partial scroll state))
+               (.addEventListener @top-scrollbar "mouseover" (partial mouseover-top-scrollbar state))
+               (.addEventListener @top-scrollbar "mouseleave" (partial mouseleave-top-scrollbar state))
+               (.addEventListener @top-scrollbar "scroll" (partial scroll-top-scrollbar state))
                (.addEventListener js/window "scroll" window-scroll-ref))))
        :component-did-update (fn [] (update-draggability state))
        :component-will-unmount (fn []
