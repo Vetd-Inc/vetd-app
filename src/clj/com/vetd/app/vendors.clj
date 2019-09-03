@@ -9,10 +9,8 @@
             [mikera.image.core :as mimg]
             [image-resizer.resize :as rzimg]
             [image-resizer.pad :as pdimg]
-            [image-resizer.crop :as crimg]))
-
-
-
+            [image-resizer.crop :as crimg]
+            [clojure.string :as s]))
 
 (defn insert-product
   [{:keys [vendor-id pname short-desc long-desc logo url]}]
@@ -41,7 +39,6 @@
           :cname category-name}
          (db/insert! :categories)
          first)))
-
 
 (defn update-product
   [{:keys [id pname ]}]
@@ -178,12 +175,13 @@
                       :fields
                       (map :jval))]
     (when subject
-      (let [cats' (map (fn [{:keys [id text]}]
-                         (or id
-                             (-> text
-                                  insert-category
-                                  :id)))
-                       cats)]
+      (let [cats' (keep (fn [{:keys [id text]}]
+                          (or id
+                              (when-not (s/blank? text)
+                                (-> text
+                                    insert-category
+                                    :id))))
+                        cats)]
         (replace-product-categories {:id subject
                                      :categories cats'})))))
 

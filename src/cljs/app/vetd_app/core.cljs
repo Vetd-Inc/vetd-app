@@ -14,7 +14,7 @@
             [vetd-app.buyers.pages.preposals :as p-bpreposals]
             [vetd-app.buyers.pages.product-detail :as p-bproduct-detail]
             [vetd-app.buyers.pages.rounds :as p-brounds]
-            [vetd-app.buyers.pages.round-detail :as p-bround-detail]
+            [vetd-app.buyers.pages.round-detail.index :as p-bround-detail]
             [vetd-app.buyers.pages.stack :as p-bstack]
             [vetd-app.buyers.pages.stack-detail :as p-bstack-detail]
             [vetd-app.vendors.fixtures :as v-fix]

@@ -49,7 +49,11 @@
                                    :line-height "14px"}}
           [:> ui/Grid {:class "stack-item-grid"}
            [:> ui/GridRow {:class "field-row"}
-            [:> ui/GridColumn {:width 13}
+            [:> ui/GridColumn {:width 13
+                               :style {:display "flex"
+                                       :justify-content "end"
+                                       :flex-direction "row"
+                                       :align-items "flex-end"}}
              [bc/c-categories product]]
             [:> ui/GridColumn {:width 3
                                :style {:text-align "right"}}
