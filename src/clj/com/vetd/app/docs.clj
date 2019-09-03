@@ -1016,13 +1016,10 @@
                 [:= :r.id nil]]}
        db/hs-query))
 
-<<<<<<< HEAD
 (defn find-prompt-field-value
   [{:keys [nval dval sval jval] :as m}]
   (or jval dval nval sval))
 
-=======
->>>>>>> b7fc77db6fa2b3d16e1abdf0e0540be547c5f6e4
 ;; find response fields from other docs that can be re-used
 (defn select-reusable-response-fields [subject prompt-rows]
   (let [prompt-ids (->> prompt-rows (map :prompt-id) distinct)
@@ -1048,11 +1045,7 @@
          vals
          (map first)
          (map #(assoc %
-<<<<<<< HEAD
                       :value (find-prompt-field-value %))))))
-=======
-                      :value (get-auto-pop-data* %))))))
->>>>>>> b7fc77db6fa2b3d16e1abdf0e0540be547c5f6e4
 
 ;; add doc_resp references to doc that point to reusable responses
 (defn reuse-responses
