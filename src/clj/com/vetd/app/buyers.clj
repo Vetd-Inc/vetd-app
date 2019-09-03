@@ -59,7 +59,7 @@
                          (when (not-empty cat-ids)	
                            [:in :pc.cat_id cat-ids])]
                         (when (features "product-profile-completed")
-                          [:> :pscore 0])]
+                          [:>= :p.profile_score 0.9])]
                 :order-by [[:pscore :desc] [:nscore :desc]]
                 ;; this will be paginated on the frontend
                 :limit 500})
@@ -313,7 +313,14 @@ Round URL: https://app.vetd.com/b/rounds/%s"
         existing-prompts (docs/select-form-template-prompts-by-parent-id req-form-template-id)]
     (when-not (some #(= id (:prompt-id %)) existing-prompts)
       (docs/insert-form-template-prompt req-form-template-id id)
-      (docs/merge-template-to-forms req-form-template-id))))
+      (let [form-ids (docs/merge-template-to-forms req-form-template-id)
+            doc-ids (->> [[:docs {:form-id form-ids}
+                           [:id]]]
+                         ha/sync-query
+                         :docs
+                         (map :id))]
+        (doseq [id doc-ids]
+          (docs/auto-pop-missing-responses-by-doc-id id))))))
 
 ;; TODO there could be multiple preposals/rounds per buyer-vendor pair
 
@@ -463,6 +470,21 @@ Round URL: https://app.vetd.com/b/rounds/%s"
                         [:= :product_id product-id]]))
     product-ids)))
 
+(defn sync-round-vendor-req-forms&docs [round-id]
+  (let [{:keys [added]} (rounds/sync-round-vendor-req-forms round-id)]
+    (doseq [[{:keys [id subject from-org-id to-org-id]}
+             {:keys [product-id]}]
+            added]
+      (let [doc (docs/create-doc {:form-id id
+                                  :subject subject
+                                  :data {}
+                                  :to-org-id from-org-id
+                                  :from-org-id to-org-id})]
+        (-> doc
+            :item
+            :id
+            docs/auto-pop-missing-responses-by-doc-id)))))
+
 ;; additional side effects upon creating a round-initiation doc
 (defmethod docs/handle-doc-creation :round-initiation
   [{:keys [id]} {:keys [round-id]}]
@@ -470,7 +492,6 @@ Round URL: https://app.vetd.com/b/rounds/%s"
                                     (catch Throwable t
                                       (com/log-error t)))]
     
-    ;; TODO invite pre-selected product, if there is one
     (try
       (db/update-any! {:id round-id
                        :doc_id id
@@ -479,6 +500,9 @@ Round URL: https://app.vetd.com/b/rounds/%s"
                       :rounds)
       (catch Throwable t
         (com/log-error t)))
+    (try
+      (sync-round-vendor-req-forms&docs round-id)
+      (catch Throwable t))    
     (try
       (notify-round-init-form-completed id)
       (catch Throwable t
@@ -505,7 +529,9 @@ Round URL: https://app.vetd.com/b/rounds/%s"
   (when-not (empty? product-ids)
     (doseq [product-id product-ids]
       (rounds/invite-product-to-round product-id round-id))
-    (rounds/sync-round-vendor-req-forms round-id))
+    (try
+      (sync-round-vendor-req-forms&docs round-id)
+      (catch Throwable t)))
   {})
 
 (defmethod com/handle-ws-inbound :b/set-round-products-order
@@ -528,7 +554,7 @@ Round URL: https://app.vetd.com/b/rounds/%s"
 
 (defn insert-stack-item
   [{:keys [product-id buyer-id status price-amount price-period
-           renewal-date renewal-reminder rating]}]
+           renewal-date renewal-day-of-month renewal-reminder rating]}]
   (let [[id idstr] (ut/mk-id&str)]
     (db/insert! :stack_items
                 {:id id
@@ -541,6 +567,7 @@ Round URL: https://app.vetd.com/b/rounds/%s"
                  :price_amount price-amount
                  :price_period price-period
                  :renewal_date renewal-date
+                 :renewal_day_of_month renewal-day-of-month
                  :renewal_reminder renewal-reminder
                  :rating rating})
     id))
@@ -566,7 +593,8 @@ Round URL: https://app.vetd.com/b/rounds/%s"
 
 (defmethod com/handle-ws-inbound :b/stack.update-item
   [{:keys [stack-item-id status
-           price-amount price-period renewal-date
+           price-amount price-period
+           renewal-date renewal-day-of-month
            renewal-reminder rating]
     :as req}
    ws-id sub-fn]
@@ -586,6 +614,12 @@ Round URL: https://app.vetd.com/b/rounds/%s"
                                             (-> renewal-date
                                                 tc/to-long
                                                 java.sql.Timestamp.))})
+                         (when-not (nil? renewal-day-of-month)
+                           {:renewal_day_of_month
+                            (if (s/blank? renewal-day-of-month) ; blank string is used to unset renewal-day-of-month
+                              nil
+                              (-> renewal-day-of-month
+                                  ut/->int))})
                          (when-not (nil? renewal-reminder)
                            {:renewal_reminder renewal-reminder})
                          (when-not (nil? rating)

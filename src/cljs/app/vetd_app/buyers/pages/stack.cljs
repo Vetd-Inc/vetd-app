@@ -74,7 +74,7 @@
 
 (rf/reg-event-fx
  :b/stack.save-item.submit
- (fn [{:keys [db]} [_ {:keys [id price-amount price-period renewal-date]
+ (fn [{:keys [db]} [_ {:keys [id price-amount price-period renewal-date renewal-day-of-month]
                        :as input}]]
    (println renewal-date)
    (cfx/validated-dispatch-fx db
@@ -85,18 +85,24 @@
                                       (not (re-matches #"^\d{4}\-(0?[1-9]|1[012])\-(0?[1-9]|[12][0-9]|3[01])$" renewal-date)))
                                  [:uname "Renewal Date must be in YYYY-MM-DD format, but it is not a required field."]
                                  
+                                 (and renewal-day-of-month
+                                      (not (s/blank? renewal-day-of-month))
+                                      (not (re-matches #"^(0?[1-9]|[12][0-9]|3[01])$" renewal-day-of-month)))
+                                 [:uname "Renewal Day of Month must be a number between 1 to 31, but it is not a required field."]
+                                 
                                  :else nil))))
 
 (rf/reg-event-fx
  :b/stack.save-item
- (fn [{:keys [db]} [_ {:keys [id price-amount price-period renewal-date]}]]
+ (fn [{:keys [db]} [_ {:keys [id price-amount price-period renewal-date renewal-day-of-month]}]]
    {:ws-send {:payload {:cmd :b/stack.update-item
                         :return {:handler :b/stack.save-item.return
                                  :id id}
                         :stack-item-id id
                         :price-amount price-amount
                         :price-period price-period
-                        :renewal-date renewal-date}}}))
+                        :renewal-date renewal-date
+                        :renewal-day-of-month renewal-day-of-month}}}))
 
 (rf/reg-event-fx
  :b/stack.save-item.return
@@ -132,7 +138,7 @@
 
 ;;;; Components
 (defn c-add-product-form
-  [stack popup-open?&]
+  [stack-items popup-open?&]
   (let [value& (r/atom [])
         options& (r/atom []) ; options from search results + current values
         search-query& (r/atom "")
@@ -141,7 +147,7 @@
                               {:key id
                                :text pname
                                :value id}))]
-    (fn [stack popup-open?&]
+    (fn [stack-items popup-open?&]
       (let [products& (rf/subscribe
                        [:gql/q
                         {:queries
@@ -150,13 +156,15 @@
                                       :_limit 100
                                       :_order_by {:pname :asc}}
                            [:id :pname]]]}])
+            product-ids-already-in-stack (set (map (comp :id :product) stack-items))
             _ (when-not (= :loading @products&)
                 (let [options (->> @products&
                                    :products
                                    products->options ; now we have options from gql sub
                                    ;; (this dumbly actually keeps everything, but that seems fine)
                                    (concat @options&) ; keep options for the current values
-                                   distinct)]
+                                   distinct
+                                   (remove (comp (partial contains? product-ids-already-in-stack) :value)))]
                   (when-not (= @options& options)
                     (reset! options& options))))]
         [:> ui/Form {:as "div"
@@ -188,9 +196,9 @@
           "Add"]]))))
 
 (defn c-add-product-button
-  [stack]
+  [stack-items]
   (let [popup-open? (r/atom false)]
-    (fn [stack]
+    (fn [stack-items]
       [:> ui/Popup
        {:position "bottom left"
         :on "click"
@@ -199,7 +207,7 @@
         :onClose #(reset! popup-open? false)
         :hideOnScroll false
         :flowing true
-        :content (r/as-element [c-add-product-form stack popup-open?])
+        :content (r/as-element [c-add-product-form stack-items popup-open?])
         :trigger (r/as-element
                   [:> ui/Button {:color "teal"
                                  :icon true
@@ -218,24 +226,20 @@
                    :on-change (fn [_ this] (reset! subscription-type& (.-value this)))}])
 
 (defn c-stack-item
-  [{:keys [price-amount price-period renewal-date] :as stack-item}]
+  [{:keys [price-amount price-period renewal-date renewal-day-of-month] :as stack-item}]
   (let [stack-items-editing?& (rf/subscribe [:b/stack.items-editing])
         bad-input& (rf/subscribe [:bad-input])
         subscription-type& (r/atom price-period)
         price& (atom price-amount)
         ;; TODO fragile (expects particular string format of date from server)
-        renewal-date& (atom (when renewal-date (subs renewal-date 0 10)))]
+        renewal-date& (atom (when renewal-date (subs renewal-date 0 10)))
+        renewal-day-of-month& (atom renewal-day-of-month)]
     (fn [{:keys [id rating price-amount price-period
-                 renewal-date renewal-reminder status
+                 renewal-date renewal-day-of-month renewal-reminder status
                  product] :as stack-item}]
       (let [{product-id :id
              product-idstr :idstr
-             :keys [pname short-desc logo 
-                    form-docs vendor]} product
-            product-v-fn (->> form-docs
-                              first
-                              :response-prompts
-                              (partial docs/get-value-by-term))]
+             :keys [pname short-desc logo vendor]} product]
         [:> ui/Item {:class (when (@stack-items-editing?& id) "editing")
                      :on-click #(when-not (@stack-items-editing?& id)
                                   (rf/dispatch [:b/nav-product-detail product-idstr]))}
@@ -249,7 +253,8 @@
                                                      {:id id
                                                       :price-amount @price&
                                                       :price-period @subscription-type&
-                                                      :renewal-date @renewal-date&}])
+                                                      :renewal-date @renewal-date&
+                                                      :renewal-day-of-month @renewal-day-of-month&}])
                             :color "blue"
                             :as "a"
                             :style {:float "right"}}
@@ -335,12 +340,21 @@
                     " per " (if (#{"annual" "other"} @subscription-type&) "year" "month")]]])
                [:> ui/FormField {:width 1}]
                (when (= @subscription-type& "annual")
-                 [:> ui/FormField {:width 3
+                 [:> ui/FormField {:width 6
                                    :style {:margin-top 10}}
                   [:label "Renewal Date"]
                   [:> ui/Input {:placeholder "YYYY-MM-DD"
+                                :style {:width 130}
                                 :defaultValue (when renewal-date (subs renewal-date 0 10)) ; TODO fragile (expects particular string format of date from server)
-                                :on-change #(reset! renewal-date& (-> % .-target .-value))}]])]])]
+                                :on-change #(reset! renewal-date& (-> % .-target .-value))}]])
+               (when (= @subscription-type& "monthly")
+                 [:> ui/FormField {:width 6
+                                   :style {:margin-top 10}}
+                  [:label "Renewal Day of Month"]
+                  [:> ui/Input {:placeholder "DD"
+                                :style {:width 60}
+                                :defaultValue renewal-day-of-month
+                                :on-change #(reset! renewal-day-of-month& (-> % .-target .-value))}]])]])]
           (when-not (@stack-items-editing?& id)
             [:<>
              [:> ui/ItemExtra {:style {:color "rgba(0, 0, 0, 0.85)"
@@ -356,7 +370,10 @@
                 [:> ui/GridColumn {:width 8}
                  (when (and (= price-period "annual")
                             renewal-date)
-                   "Annual Renewal")]
+                   "Annual Renewal")
+                 (when (and (= price-period "monthly")
+                            renewal-day-of-month)
+                   "Monthly Renewal Day")]
                 [:> ui/GridColumn {:width 5
                                    :style {:text-align "right"}}
                  "Your Rating"]]
@@ -392,7 +409,19 @@
                                                               (rf/dispatch [:b/stack.set-item-renewal-reminder id (.-checked this)])
                                                               ;; return 'this' to keep it as an uncontrolled component
                                                               this)
-                                                 :label "Remind?"}])}]])]
+                                                 :label "Remind?"}])}]])
+                 (when (and (= price-period "monthly")
+                            renewal-day-of-month)
+                   (str renewal-day-of-month
+                        (case renewal-day-of-month
+                          1 "st"
+                          2 "nd"
+                          3 "rd"
+                          21 "st"
+                          22 "nd"
+                          23 "rd"
+                          31 "st"
+                          "th")))]
                 [:> ui/GridColumn {:width 5
                                    :style {:text-align "right"}}
                  [:> ui/Rating {:class (when-not rating "not-rated")
@@ -404,20 +433,6 @@
                                             (.stopPropagation e))
                                 :onRate (fn [_ this]
                                           (rf/dispatch [:b/stack.rate-item id (aget this "rating")]))}]]]]]])]]))))
-
-(defn c-no-stack-items []
-  (let [group-ids& (rf/subscribe [:group-ids])]
-    (fn []
-      [:> ui/Segment {:placeholder true}
-       [:> ui/Header {:icon true}
-        [:> ui/Icon {:name "grid layout"}]
-        "You don't have any products in your stack."]
-       [:> ui/SegmentInline
-        "Add products to your stack to keep track of renewals, get recommendations, and share with "
-        (if (not-empty @group-ids&)
-          "your community"
-          "others")
-        "."]])))
 
 (defn c-page []
   (let [org-id& (rf/subscribe [:org-id])
@@ -431,22 +446,12 @@
                                                    :deleted nil}
                                      [:id :idstr :status
                                       :price-amount :price-period :rating
-                                      :renewal-date :renewal-reminder
+                                      :renewal-date :renewal-day-of-month
+                                      :renewal-reminder
                                       [:product
                                        [:id :pname :idstr :logo
                                         [:vendor
-                                         [:id :oname :idstr :short-desc]] 
-                                        [:form-docs {:ftype "product-profile"
-                                                     :_order_by {:created :desc}
-                                                     :_limit 1
-                                                     :doc-deleted nil}
-                                         [:id
-                                          [:response-prompts {:prompt-term ["product/description"
-                                                                            "product/free-trial?"]
-                                                              :ref_deleted nil}
-                                           [:id :prompt-id :notes :prompt-prompt :prompt-term
-                                            [:response-prompt-fields
-                                             [:id :prompt-field-fname :idx :sval :nval :dval]]]]]]]]]]]}])]
+                                         [:id :oname :idstr :short-desc]]]]]]]}])]
         (fn []
           (if (= :loading @stack&)
             [cc/c-loader]
@@ -454,7 +459,7 @@
               [:div.container-with-sidebar
                [:div.sidebar
                 [:> ui/Segment
-                 [c-add-product-button]]
+                 [c-add-product-button unfiltered-stack]]
                 [:> ui/Segment {:class "top-categories"}
                  [:h4 "Jump To"]
                  [:div
@@ -478,8 +483,7 @@
                  "."]
                 [:div.stack
                  [:h2 "Current"]
-                 [:span.scroll-anchor {:ref (fn [this]
-                                              (rf/dispatch [:reg-scroll-to-ref :current-stack this]))}]
+                 [:span.scroll-anchor {:ref (fn [this] (rf/dispatch [:reg-scroll-to-ref :current-stack this]))}]
                  [:> ui/ItemGroup {:class "results"}
                   (let [stack (filter (comp (partial = "current") :status) unfiltered-stack)]
                     (if (seq stack)
@@ -491,8 +495,7 @@
                        "You don't have any products in your current stack."]))]]
                 [:div.stack
                  [:h2 "Previous"]
-                 [:span.scroll-anchor {:ref (fn [this]
-                                              (rf/dispatch [:reg-scroll-to-ref :previous-stack this]))}]
+                 [:span.scroll-anchor {:ref (fn [this] (rf/dispatch [:reg-scroll-to-ref :previous-stack this]))}]
                  [:> ui/ItemGroup {:class "results"}
                   (let [stack (filter (comp (partial = "previous") :status) unfiltered-stack)]
                     (if (seq stack)

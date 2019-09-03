@@ -128,7 +128,7 @@
                                    (.stopPropagation e)
                                    (rf/dispatch [:b/nav-round-detail round-idstr]))}
                       props)
-   "Product In VetdRound"])
+   "In VetdRound"])
 
 (defn c-rounds
   "Given a product map, display the Round data."
@@ -441,9 +441,10 @@
            (.addEventListener node "mouseleave" mouseleave))))}))
 
 (defn c-profile-segment
-  [{:keys [title style icon icon-style]} & children]
+  [{:keys [title scroll-to-ref-key style icon icon-style]} & children]
   [:> ui/Segment {:class "detail-container profile"
                   :style style}
+   [:span.scroll-anchor {:ref (fn [this] (rf/dispatch [:reg-scroll-to-ref scroll-to-ref-key this]))}]
    [:h1.title
     (when icon
       [:> ui/Icon {:name icon
@@ -463,6 +464,7 @@
         pricing-estimate-details (v-fn :preposal/pricing-estimate "details")
         pitch (v-fn :preposal/pitch)]
     [c-profile-segment {:title "PrePosal"
+                        :scroll-to-ref-key :product/preposal
                         :icon "clipboard outline"}
      [:> ui/GridRow
       [c-display-field 16
@@ -480,54 +482,49 @@
 
 (defn c-average-rating
   [agg-group-prod-rating]
-  (let [ ;; e.g., {[rating] [agg count], 2 8, 3 2, 4 0, 5 4}
-        ratings-enum (->> agg-group-prod-rating
-                          (reduce (fn [acc {:keys [rating count-stack-items]}]
-                                    (update acc rating + count-stack-items))
-                                  {1 0, 2 0, 3 0, 4 0, 5 0})
-                          (remove (comp nil? key))
-                          (into {}))
-        ratings-sum (reduce (fn [acc [k v]] (+ acc (* k v))) 0 ratings-enum)
-        ratings-count (reduce (fn [acc [k v]] (+ acc v)) 0 ratings-enum)
-        ratings-mean (when (pos? ratings-count)
-                       (/ ratings-sum ratings-count))]
-    (if ratings-mean
+  (let [{:keys [count mean]} (util/rating-avg-map agg-group-prod-rating)]
+    (if mean
       [:<>
-       [:> ui/Rating {:rating ratings-mean
+       [:> ui/Rating {:rating mean
                       :maxRating 5
                       :size "huge"
                       :disabled true
                       :style {:margin "0 0 5px -3px"}}]
        [:br]
-       (str (/ (Math/round (* ratings-mean 10)) 10)
-            " out of 5 stars - " ratings-count
-            " Rating" (when (> ratings-count 1) "s"))]
+       (str (/ (Math/round (* mean 10)) 10)
+            " out of 5 stars - " count
+            " Rating" (when (> count 1) "s"))]
       "No community ratings available.")))
 
 (defn c-community-usage-modal
   [showing?& orgs community-str]
-  (fn [showing?& orgs community-str]
-    [:> ui/Modal {:open @showing?&
-                  :on-close #(reset! showing?& false)
-                  :size "tiny"
-                  :dimmer "inverted"
-                  :closeOnDimmerClick true
-                  :closeOnEscape true
-                  :closeIcon true} 
-     [:> ui/ModalHeader (str "Usage in Your " (s/capitalize community-str))]
-     [:> ui/ModalContent {:scrolling true}
-      [:p "This product has been used by " (count orgs) " organizations in your " community-str "."]
-      [:> ui/List
-       (util/augment-with-keys
-        (for [{:keys [id oname]} orgs]
-          [:> ui/ListItem {:as "a"}
-           [:> ui/ListContent
-            [:div {:style {:display "inline-block"
-                           :float "left"
-                           :margin-right 7}}
-             [cc/c-avatar-initials oname]]
-            [:> ui/ListHeader {:style {:line-height "40px"}}
-             oname]]]))]]]))
+  (let [org-id& (rf/subscribe [:org-id])]
+    (fn [showing?& orgs community-str]
+      [:> ui/Modal {:open @showing?&
+                    :on-close #(reset! showing?& false)
+                    :size "tiny"
+                    :dimmer "inverted"
+                    :closeOnDimmerClick true
+                    :closeOnEscape true
+                    :closeIcon true} 
+       [:> ui/ModalHeader (str "Usage in Your " (s/capitalize community-str))]
+       [:> ui/ModalContent {:scrolling true}
+        [:p "This product has been used by " (count orgs) " organizations in your " community-str "."]
+        [:> ui/List
+         (util/augment-with-keys
+          (for [{:keys [id idstr oname]} orgs]
+            [:> ui/ListItem {:as "a"
+                             :on-click (fn []
+                                         (if (= id @org-id&)
+                                           (rf/dispatch [:b/nav-stack])
+                                           (rf/dispatch [:b/nav-stack-detail idstr])))}
+             [:> ui/ListContent
+              [:div {:style {:display "inline-block"
+                             :float "left"
+                             :margin-right 7}}
+               [cc/c-avatar-initials oname]]
+              [:> ui/ListHeader {:style {:line-height "40px"}}
+               oname]]]))]]])))
 
 (defn c-community
   "Component to display community information of a product profile.
@@ -535,6 +532,7 @@
   v-fn - function to get value per some prompt term"
   [c-display-field product-id agg-group-prod-rating agg-group-prod-price]
   (let [group-ids& (rf/subscribe [:group-ids])
+        org-id& (rf/subscribe [:org-id])
         showing?& (r/atom false)
         stack-items& (rf/subscribe [:gql/sub
                                     {:queries
@@ -542,23 +540,23 @@
                                                                :deleted nil}
                                        [:id
                                         [:orgs
-                                         [:id :oname
+                                         [:id :idstr :oname
                                           [:stack-items {:product-id product-id
                                                          :deleted nil}
                                            [:id :price-amount :price-period]]]]]]]}])]
     (fn [c-display-field product-id agg-group-prod-rating agg-group-prod-price]
       (let [community-str (str "communit" (if (> (count @group-ids&) 1) "ies" "y"))]
-        [c-profile-segment {:title (str "Your " (s/capitalize community-str))
-                            :style {:min-height 138} ;; to minimize rendering flash
-                            :icon "group"
-                            :icon-style {:margin-right 10}}
+        [:div {:style {:min-height 138}} ;; to minimize rendering flash
          (when-not (= :loading @stack-items&)
            (let [orgs (->> @stack-items&
                            :group-org-memberships
                            (map :orgs)
                            (filter (comp seq :stack-items))
                            distinct)]
-             [:<>
+             [c-profile-segment {:title (str "Your " (s/capitalize community-str))
+                                 :scroll-to-ref-key :product/community
+                                 :icon "group"
+                                 :icon-style {:margin-right 10}}
               (when (seq orgs)
                 [:> ui/GridRow
                  [:> ui/GridColumn
@@ -590,12 +588,16 @@
                        (str "Used by " (count orgs) " organizations in your " community-str ".")
                        [:div.used-by-orgs
                         (util/augment-with-keys
-                         (for [{:keys [oname]} (take max-orgs-showing orgs)]
+                         (for [{:keys [id idstr oname]} (take max-orgs-showing orgs)]
                            [:> ui/Popup
                             {:position "bottom center"
                              :content oname
                              :trigger (r/as-element
-                                       [:a [cc/c-avatar-initials oname]])}]))
+                                       [:a {:on-click (fn []
+                                                        (if (= id @org-id&)
+                                                          (rf/dispatch [:b/nav-stack])
+                                                          (rf/dispatch [:b/nav-stack-detail idstr])))}
+                                        [cc/c-avatar-initials oname]])}]))
                         (when (> (count orgs) max-orgs-showing)
                           [:<>
                            [:a {:on-click #(reset! showing?& true)}
@@ -609,6 +611,7 @@
   v-fn - function to get value per some prompt term"
   [c-display-field v-fn discounts preposal-requested?]
   [c-profile-segment {:title "Pricing"
+                      :scroll-to-ref-key :product/pricing
                       :icon "dollar"
                       :icon-style {:margin-right 5
                                    :margin-left -5}}
@@ -649,6 +652,7 @@
   v-fn - function to get value per some prompt term"
   [c-display-field v-fn]
   [c-profile-segment {:title "Onboarding"
+                      :scroll-to-ref-key :product/onboarding
                       :icon "handshake outline"
                       :icon-style {:position "relative"
                                    :top 1
@@ -670,6 +674,7 @@
   v-fn - function to get value per some prompt term"
   [c-display-field v-fn]
   [c-profile-segment {:title "Client Service"
+                      :scroll-to-ref-key :product/client-service
                       :icon "comment alternate outline"}
    [:> ui/GridRow
     [c-display-field 16 "Point of Contact" (v-fn :product/point-of-contact)]]
@@ -683,23 +688,23 @@
   v-fn - function to get value per some prompt term"
   [c-display-field v-fn]
   [c-profile-segment {:title "Reporting & Measurement"
+                      :scroll-to-ref-key :product/reporting
                       :icon "chart line"
                       :icon-style {:position "relative"
                                    :top 1}}
-   [:> ui/Grid {:columns "equal" :style {:margin-top 0}}
-    [:> ui/GridRow
-     [c-display-field 16 "Reporting" (v-fn :product/reporting)
-      :has-markdown? true]]
-    [:> ui/GridRow
-     [c-display-field 16 "KPIs" (v-fn :product/kpis)
-      :has-markdown? true
-      :info "Key Performance Indicators"]]
-    [:> ui/GridRow
-     [c-display-field 16 "Integrations" (v-fn :product/integrations)
-      :has-markdown? true]]
-    [:> ui/GridRow
-     [c-display-field 16 "Data Security" (v-fn :product/data-security)
-      :has-markdown? true]]]])
+   [:> ui/GridRow
+    [c-display-field 16 "Reporting" (v-fn :product/reporting)
+     :has-markdown? true]]
+   [:> ui/GridRow
+    [c-display-field 16 "KPIs" (v-fn :product/kpis)
+     :has-markdown? true
+     :info "Key Performance Indicators"]]
+   [:> ui/GridRow
+    [c-display-field 16 "Integrations" (v-fn :product/integrations)
+     :has-markdown? true]]
+   [:> ui/GridRow
+    [c-display-field 16 "Data Security" (v-fn :product/data-security)
+     :has-markdown? true]]])
 
 (defn c-market-niche
   "Component to display market niche information of a product profile.
@@ -707,31 +712,31 @@
   v-fn - function to get value per some prompt term"
   [c-display-field v-fn]
   [c-profile-segment {:title "Industry Niche"
+                      :scroll-to-ref-key :product/market-niche
                       :icon "cubes"}
-   [:> ui/Grid {:columns "equal" :style {:margin-top 0}}
-    [:> ui/GridRow
-     [c-display-field 16 "Ideal Client Profile" (v-fn :product/ideal-client)
-      :has-markdown? true
-      :info "A typical user of this product, in terms of company size, revenue, verticals, etc."]]
-    [:> ui/GridRow
-     [c-display-field 16 "Case Studies"
-      (when (has-data? (v-fn :product/case-studies "Links to Case Studies"))
-        [c-external-link (v-fn :product/case-studies "Links to Case Studies")])]]
-    [:> ui/GridRow
-     [c-display-field 6 "Number of Current Clients"
-      (when (has-data? (v-fn :product/num-clients nil :nval))
-        (util/decimal-format (v-fn :product/num-clients nil :nval)))]
-     [c-display-field 10 "Example Current Clients" (v-fn :product/clients)
-      :has-markdown? true]]
-    [:> ui/GridRow
-     [c-display-field 16 "Competitors" (v-fn :product/competitors)
-      :has-markdown? true]]
-    [:> ui/GridRow
-     [c-display-field 16 "Competitive Differentiator" (v-fn :product/competitive-differentiator)
-      :has-markdown? true]]
-    [:> ui/GridRow
-     [c-display-field 16 "Product Roadmap" (v-fn :product/roadmap)
-      :has-markdown? true]]]])
+   [:> ui/GridRow
+    [c-display-field 16 "Ideal Client Profile" (v-fn :product/ideal-client)
+     :has-markdown? true
+     :info "A typical user of this product, in terms of company size, revenue, verticals, etc."]]
+   [:> ui/GridRow
+    [c-display-field 16 "Case Studies"
+     (when (has-data? (v-fn :product/case-studies "Links to Case Studies"))
+       [c-external-link (v-fn :product/case-studies "Links to Case Studies")])]]
+   [:> ui/GridRow
+    [c-display-field 6 "Number of Current Clients"
+     (when (has-data? (v-fn :product/num-clients nil :nval))
+       (util/decimal-format (v-fn :product/num-clients nil :nval)))]
+    [c-display-field 10 "Example Current Clients" (v-fn :product/clients)
+     :has-markdown? true]]
+   [:> ui/GridRow
+    [c-display-field 16 "Competitors" (v-fn :product/competitors)
+     :has-markdown? true]]
+   [:> ui/GridRow
+    [c-display-field 16 "Competitive Differentiator" (v-fn :product/competitive-differentiator)
+     :has-markdown? true]]
+   [:> ui/GridRow
+    [c-display-field 16 "Product Roadmap" (v-fn :product/roadmap)
+     :has-markdown? true]]])
 
 (defn c-vendor-profile
   [{:keys [response-prompts] :as vendor-profile-doc} vendor-id vendor-name]
@@ -740,12 +745,12 @@
                                                                 :name vendor-name}))
         v-fn (partial docs/get-value-by-term response-prompts)]
     [c-profile-segment {:title "Company Profile"
-                        :icon "building"
-                        }
+                        :scroll-to-ref-key :product/vendor-profile
+                        :icon "building"}
      [:> ui/GridRow 
       [c-display-field 6 "Website"
        (when (has-data? (v-fn :vendor/website))
-         [c-external-link (v-fn :vendor/website)])]
+         [c-external-link (v-fn :vendor/website) "Company Website"])]
       [c-display-field 6 "Headquarters" (v-fn :vendor/headquarters)]]
      [:> ui/GridRow
       [c-display-field 6 "Funding Status" (v-fn :vendor/funding)]

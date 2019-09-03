@@ -3,7 +3,7 @@
 $bg-color: #fafafa;
 
 body {
-  background: $bg-color;
+  background: $bg-color;  
   font-size: 14px;
   font-weight: 300;
   color: #444;
@@ -391,6 +391,20 @@ a.label {
         flex: 1 !important;
       }
     }
+
+    > .community {
+      width: 150px;
+      min-width: 150px;
+      text-align: right;
+
+      .metric {
+        margin-bottom: 12px;
+
+        h5 {
+          margin-bottom: 3px;
+        }
+      }
+    }
   }
 }
 
@@ -485,13 +499,21 @@ b, strong {
   padding-right: 0px !important;
   text-align: left !important;
 }
-i.icon.vetd {
-  width: 50px !important;
-  height: 50px !important;
+i.icon.vetd { 
   background-image: url(../images/vetd-arrow.svg) !important;
   background-size: contain !important;
   background-position: center !important;
   background-repeat: no-repeat !important;
+}
+i.icon.vetd.small {
+  width: 13px !important;
+  height: 19px !important;
+}
+i.icon.vetd:not(.small) {
+  width: 50px !important;
+  height: 50px !important;
+}
+i.icon.vetd:not(.vetd-colors) {
   filter: grayscale(1) brightness(0.6);
 }
 i.icon.vetd-icon:before {
@@ -986,11 +1008,6 @@ $cell-height: 201px;
     z-index: 1003;
   }
 
-  .scroll-anchor {
-    position: relative;
-    top: -73px;
-  }
-
   & > .results > .item {
     width: auto !important;
     margin-right: 14px !important;
@@ -1091,6 +1108,16 @@ $cell-height: 201px;
   }
 }
 
+.scroll-anchor {
+  position: relative;
+}
+.stack .scroll-anchor {
+  top: -73px;
+}
+.profile .scroll-anchor {
+  top: -25px;
+}
+
 .ui.rating.not-rated .icon:before {
   font-family: 'outline-icons' !important;
   font-size: 14px;
@@ -1107,6 +1134,90 @@ $cell-height: 201px;
 // .ui.rating:not(.not-rated):not(:focus):hover .icon:not(.selected):before {
 //   color: rgba(0, 0, 0, 0.15) !important;
 // }
+
+.public-stack {
+  .stack > .results > .item {
+    height: 83px;
+    animation: none;
+    
+    .product-logo {
+      $edge: 60px;
+      min-width: $edge;
+      min-height: $edge;
+      max-width: $edge;
+      max-height: $edge;
+    }
+
+    .extra {
+      margin-top: 0px;
+    }
+    .row {
+      height: 39px;
+      margin-top: 0;
+    }
+  }
+}
+
+.popular-products {
+  padding: 14px;
+  margin: 0 !important;
+  background-image: radial-gradient(at center 100px, #f5f5f5 0px, #eee 120px);
+  background-repeat: no-repeat;
+  border-radius: 4px;
+
+  h1 {
+    padding: 0px 0px 14px 0px;
+    margin-bottom: 0;
+    background-image: radial-gradient(at center 100px, #f5f5f5 0px, #eee 120px);
+    background-repeat: no-repeat;
+    z-index: 1003;
+    font-size: 22px;
+    font-weight: 700;
+  }
+  
+  .results {
+    > .item {
+      height: 83px;
+      width: auto !important;
+      padding: 10px !important;
+
+      .header {
+        font-size: 17px;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        max-width: 275px;
+      }
+      
+      .product-logo {
+        $edge: 60px;
+        min-width: $edge;
+        min-height: $edge;
+        max-width: $edge;
+        max-height: $edge;
+      }
+
+      .extra {
+        margin-top: 13px;
+      }
+
+      .community {
+        width: 115px;
+        min-width: 115px;
+        
+        .metric {
+          margin-bottom: 4px;
+        }
+      }
+    }
+  }
+}
+
+
+
+
+
+
 
 
 // experiments with animated vetd-backgrounds

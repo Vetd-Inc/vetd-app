@@ -29,3 +29,30 @@
   [c-field-container
    [:h3.display-field-key label]
    [:div.display-field-value value]])
+
+(defn c-grid
+  [& args]
+  (let [[a & as] args
+        props (when (map? a) a)
+        rows (if props as args)]
+    [:> ui/Grid props
+     (util/augment-with-keys
+      (for [row rows]
+        [:> ui/GridRow
+         (util/augment-with-keys
+          (for [[cmp width] row]
+            [:> ui/GridColumn {:width width}
+             cmp]))]))])) 
+
+(defn c-modal
+  "showing?& - ratom to toggle visibility of modal"
+  [{:keys [showing?& header content size]}]
+  [:> ui/Modal {:open @showing?&
+                :on-close #(reset! showing?& false)
+                :size size
+                :dimmer "inverted"
+                :closeOnDimmerClick true
+                :closeOnEscape true
+                :closeIcon true}
+   [:> ui/ModalHeader header]
+   [:> ui/ModalContent content]])

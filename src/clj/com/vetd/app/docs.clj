@@ -700,20 +700,22 @@
                                   use-id?))
 
 (defn doc->appliable--find-form
-  [{:keys [dtype dsubtype update-doc-id] :as d}]
-  (when (or dtype dsubtype update-doc-id)
+  [{:keys [dtype dsubtype update-doc-id form-id] :as d}]
+  (when (or dtype dsubtype update-doc-id form-id)
     (let [form-fields [:id :ftype :fsubtype
                        [:prompts
                         [:id :term
                          [:fields
                           [:id :fname :ftype :fsubtype]]]]]
-          form-args (merge {:_order_by {:created :desc}
-                            :_limit 1
-                            :deleted nil}
-                           (when dtype
-                             {:ftype dtype})
-                           (when dsubtype
-                             {:fsubtype dsubtype}))]
+          form-args (if form-id
+                      {:id form-id}
+                      (merge {:_order_by {:created :desc}
+                              :_limit 1
+                              :deleted nil}
+                             (when dtype
+                               {:ftype dtype})
+                             (when dsubtype
+                               {:fsubtype dsubtype})))]
       (if update-doc-id
         (-> [[:docs {:id update-doc-id}
               [[:form form-fields]]]]
@@ -747,20 +749,20 @@
         grouped-prompts (-> (merge (group-by (comp keyword :term) prompts)
                                    (group-by :id prompts))
                             (dissoc nil))]
-    (vec (for [[k r] responses]
-           (let [{prompt-id :id :keys [fields]} (-> k grouped-prompts first)]
-             (if prompt-id
-               {:item {}
-                :children [{:item {:prompt-id prompt-id}
-                             :children (fields->proc-tree r fields)}]}
-               (throw (Exception. (str "Could not find prompt with term or id: " k)))))))))
+    (vec (remove nil?
+                 (for [[k r] responses]
+                   (let [{prompt-id :id :keys [fields]} (-> k grouped-prompts first)]
+                     (when prompt-id
+                       {:item {}
+                        :children [{:item {:prompt-id prompt-id}
+                                    :children (fields->proc-tree r fields)}]})))))))
 
 ;; TODO set responses.subject
 (defn doc->proc-tree
   [{:keys [data dtype dsubtype update-doc-id] :as d}]
   (if-let [{:keys [id ftype fsubtype prompts]} (doc->appliable--find-form d)]
     {:handler-args d
-     :item (merge (select-keys d ;; TODO hard-coded fields sucks -- Bill
+     :item (merge (select-keys d ;; TODO hard-coded fields, sucks -- Bill
                                [:title :dtype :descr :notes :from-org-id
                                 :from-user-id :to-org-id :to-user-id
                                 :dtype :dsubtype :form-id :subject])
@@ -972,7 +974,8 @@
                     set)]
     (doseq [{prompt-id :id sort' :sort} prompts]
       (when-not (id-set prompt-id)
-        (insert-form-prompt form-id prompt-id sort')))))
+        (insert-form-prompt form-id prompt-id sort')))
+    form-id))
 
 (defn merge-template-to-forms
   [req-form-template-id]
@@ -1013,10 +1016,13 @@
                 [:= :r.id nil]]}
        db/hs-query))
 
+<<<<<<< HEAD
 (defn find-prompt-field-value
   [{:keys [nval dval sval jval] :as m}]
   (or jval dval nval sval))
 
+=======
+>>>>>>> b7fc77db6fa2b3d16e1abdf0e0540be547c5f6e4
 ;; find response fields from other docs that can be re-used
 (defn select-reusable-response-fields [subject prompt-rows]
   (let [prompt-ids (->> prompt-rows (map :prompt-id) distinct)
@@ -1042,7 +1048,11 @@
          vals
          (map first)
          (map #(assoc %
+<<<<<<< HEAD
                       :value (find-prompt-field-value %))))))
+=======
+                      :value (get-auto-pop-data* %))))))
+>>>>>>> b7fc77db6fa2b3d16e1abdf0e0540be547c5f6e4
 
 ;; add doc_resp references to doc that point to reusable responses
 (defn reuse-responses

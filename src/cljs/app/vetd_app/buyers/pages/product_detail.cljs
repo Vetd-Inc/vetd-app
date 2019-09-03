@@ -132,25 +132,22 @@
      [bc/c-round-in-progress {:round-idstr (-> rounds first :idstr)
                               :props {:ribbon "left"}}])
    [bc/c-tags product v-fn discounts]
-   [:> ui/Grid {:columns "equal"
-                :style {:margin-top 4}}
-    [:> ui/GridRow
-     [:> ui/GridColumn {:width 12}
-      (or (util/parse-md (v-fn :product/description))
-          [:p "No description available."])]
-     [:> ui/GridColumn {:width 4}
-      (let [website-url (v-fn :product/website)]
-        (when (bc/has-data? website-url)
-          [:<>
-           [bc/c-external-link website-url "Product Website"]
-           [:br]
-           [:br]]))
-      (let [demo-url (v-fn :product/demo)]
-        (when (bc/has-data? demo-url)
-          [:<>
-           [bc/c-external-link demo-url "Watch Demo Video"]
-           [:br]
-           [:br]]))]]]])
+   [cc/c-grid {:style {:margin-top 4}}
+    [[(or (util/parse-md (v-fn :product/description))
+          [:p "No description available."]) 12]
+     [[:<>
+       (let [website-url (v-fn :product/website)]
+         (when (bc/has-data? website-url)
+           [:<>
+            [bc/c-external-link website-url "Product Website"]
+            [:br]
+            [:br]]))
+       (let [demo-url (v-fn :product/demo)]
+         (when (bc/has-data? demo-url)
+           [:<>
+            [bc/c-external-link demo-url "Watch Demo Video"]
+            [:br]
+            [:br]]))] 4]]]])
 
 (defn c-product
   "Component to display Product details."
@@ -250,15 +247,34 @@
          [bc/c-back-button "Back"]]
         (when-not (= :loading @products&)
           (let [{:keys [vendor rounds] :as product} (-> @products& :products first)]
-            (when (empty? (:rounds product))
-              [:> ui/Segment
-               [bc/c-start-round-button {:etype :product
-                                         :eid (:id product)
-                                         :ename (:pname product)
-                                         :props {:fluid true}}]
-               [c-preposal-request-button product]
-               [bc/c-setup-call-button product vendor]
-               [bc/c-ask-a-question-button product vendor]])))]
+            [:<>
+             (when (empty? (:rounds product))
+               [:> ui/Segment
+                [bc/c-start-round-button {:etype :product
+                                          :eid (:id product)
+                                          :ename (:pname product)
+                                          :props {:fluid true}}]
+                [c-preposal-request-button product]
+                [bc/c-setup-call-button product vendor]
+                [bc/c-ask-a-question-button product vendor]])
+             [:> ui/Segment {:class "top-categories"}
+              [:h4 "Jump To"]
+              (util/augment-with-keys
+               (for [[label k] (remove nil?
+                                       [["Description" :top]
+                                        (when (seq (:docs product)) ; has a completed preposal?
+                                          ["Preposal" :product/preposal])
+                                        (when (seq @group-ids&) ; is in a community?
+                                          ["Your Community" :product/community])
+                                        ["Pricing" :product/pricing]
+                                        ["Company Profile" :product/vendor-profile]
+                                        ["Onboarding" :product/onboarding]
+                                        ["Client Service" :product/client-service]
+                                        ["Reporting & Measurement" :product/reporting]
+                                        ["Industry Niche" :product/market-niche]])]
+                 [:div
+                  [:a.blue {:on-click #(rf/dispatch [:scroll-to k])}
+                   label]]))]]))]
        [:div.inner-container
         (if (= :loading @products&)
           [cc/c-loader]

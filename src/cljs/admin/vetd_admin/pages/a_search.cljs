@@ -19,6 +19,7 @@
  (fn [db [_ query-params]]
    (assoc db
           :page :a/search
+          :search-term ""
           :query-params query-params)))
 
 
