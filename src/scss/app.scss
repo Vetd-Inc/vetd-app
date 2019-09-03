@@ -3,7 +3,7 @@
 $bg-color: #fafafa;
 
 body {
-  background: $bg-color;
+  background: $bg-color;  
   font-size: 14px;
   font-weight: 300;
   color: #444;
@@ -393,8 +393,8 @@ a.label {
     }
 
     > .community {
-      width: 115px;
-      min-width: 115px;
+      width: 150px;
+      min-width: 150px;
       text-align: right;
 
       .metric {
@@ -1201,8 +1201,13 @@ $cell-height: 201px;
         margin-top: 13px;
       }
 
-      .community .metric {
-        margin-bottom: 4px;
+      .community {
+        width: 115px;
+        min-width: 115px;
+        
+        .metric {
+          margin-bottom: 4px;
+        }
       }
     }
   }
