@@ -1036,30 +1036,28 @@
 
 ;; select d.id, d.title, f.id, f.title, dr.id, r.id, p.prompt, pf.* from docs d join forms f on d.form_id = f.id join form_prompt fp on fp.form_id = f.id join doc_resp dr on dr.doc_id = d.id left join responses r on r.id = dr.resp_id and r.prompt_id = fp.prompt_id and r.id is null join prompts p on p.id = fp.prompt_id join prompt_fields pf on p.id = pf.prompt_id limit 3;
 
-
-;; TODO this is returnind ALL prompt-responses -- we just want blank ones
 (defn select-missing-prompt-responses-by-doc-id
   [doc-id]
-  (db/hs-query
-   {:select [[:p.id :prompt-id]
-             [:p.prompt :prompt-term]
-             [:pf.id :prompt-field-id]] ;; TODO <==== don't need field id
-    :from [[:docs :d]]
-    :join [[:forms :f]
-           [:= :d.form_id :f.id]
-           [:form_prompt :fp]
-           [:= :fp.form_id :f.id]
-           [:doc_resp :dr]
-           [:= :dr.doc_id :d.id]
-           [:prompts :p]
-           [:= :p.id :fp.prompt_id]
-           [:prompt_fields :pf]
-           [:= :pf.prompt_id :p.id]]
-    :left-join [[:responses :r]
-                [:and
-                 [:= :r.id :dr.resp_id]
-                 [:= :r.prompt_id :fp.prompt_id]
-                 [:= :r.id nil]]]}))
+  (->> {:select [[:p.id :prompt-id]
+                 [:p.prompt :prompt-term]
+                 [:f.id :form-id]]
+        :from [[:docs :d]]
+        :join [[:forms :f]
+               [:= :d.form_id :f.id]
+               [:form_prompt :fp]
+               [:= :fp.form_id :f.id]
+               [:prompts :p]
+               [:= :p.id :fp.prompt_id]]
+        :left-join [[:doc_resp :dr]
+                    [:= :dr.doc_id :d.id]
+                    [:responses :r]
+                    [:and
+                     [:= :r.id :dr.resp_id]
+                     [:= :r.prompt_id :fp.prompt_id]]]
+        :where [:and
+                [:= :d.id doc-id]
+                [:= :r.id nil]]}
+       db/hs-query))
 
 ;; find response fields from other docs that can be re-used
 (defn select-reusable-response-fields [subject prompt-rows]
@@ -1068,7 +1066,7 @@
         prompt-field-ids (->> prompt-rows (map :prompt-field-id) distinct)
         data (->> {:select [[:prompt_id :prompt-id]
                             [:prompt_term :prompt-term]
-                            [:prompt_field_fname :prompt-field-fname]
+                            [:response_id :response-id]
                             [:resp_field_nval :nval]
                             [:resp_field_dval :dval]
                             [:resp_field_sval :sval]
@@ -1079,21 +1077,18 @@
                            [:in :doc_subject subject]
                            [:or
                             [:in :prompt_id prompt-ids]
-                            [:in :prompt_term prompt-terms]]
-                           [:in :prompt_field_id prompt-field-ids]]}
+                            [:in :prompt_term prompt-terms]]]}
                   db/hs-query
                   (group-by #(or (:prompt-term %)
                                  (:prompt-id %)))
-                  (ut/fmap (fn [x]
-                             (->> x
-                                  (group-by :prompt-field-fname)
-                                  (ut/fmap (fn [y]
-                                             (-> y
-                                                 first
-                                                 get-auto-pop-data*)))))))]
+                  vals
+                  (map first)
+                  (map #(assoc %
+                               :value (get-auto-pop-data* %))))]
     (def data1 data)
+    data
     #_ (clojure.pprint/pprint  data1)
-    {:terms (->> (for [[k v] data]
+    #_{:terms (->> (for [[k v] data]
                    (when (string? k)
                      [(keyword k) v]))
                  (into {}))
@@ -1102,11 +1097,11 @@
                           [k v]))
                       (into {}))}))
 
-
 ;; add doc_resp references to doc that point to reusable responses
 (defn reuse-responses
   [doc-id responses]
-  [doc-id responses])
+  (doseq [{:keys [response-id]} responses]
+    (insert-doc-response doc-id response-id)))
 
 (defn select-round-product-ids-by-doc-id
   [doc-id]
@@ -1131,3 +1126,4 @@
 
 #_
 (clojure.pprint/pprint  (auto-pop-missing-responses-by-doc-id 1993738263615))
+

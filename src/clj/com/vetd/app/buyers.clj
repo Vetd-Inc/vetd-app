@@ -468,11 +468,15 @@ Round URL: https://app.vetd.com/b/rounds/%s"
     (doseq [[{:keys [id subject from-org-id to-org-id]}
              {:keys [product-id]}]
             added]
-      (docs/create-doc {:form-id id
-                        :subject subject
-                        :data {} #_(docs/get-auto-pop-data product-id "product-profile")
-                        :to-org-id from-org-id
-                        :from-org-id to-org-id}))))
+      (let [doc (docs/create-doc {:form-id id
+                                  :subject subject
+                                  :data {} #_(docs/get-auto-pop-data product-id "product-profile")
+                                  :to-org-id from-org-id
+                                  :from-org-id to-org-id})]
+        (-> doc
+            :item
+            :id
+            docs/auto-pop-missing-responses-by-doc-id)))))
 
 ;; additional side effects upon creating a round-initiation doc
 (defmethod docs/handle-doc-creation :round-initiation
