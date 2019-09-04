@@ -527,6 +527,12 @@ i.icon.vetd-icon:before {
   filter: brightness(100);
 }
 
+i.icon.quickbooks { 
+  background-image: url(../images/quickbooks-logo.png) !important;
+  background-size: 20px !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+}
 
 .borderless > input {
   border: none !important;

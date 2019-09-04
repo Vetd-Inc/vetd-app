@@ -216,6 +216,22 @@
                    "Add Product"
                    [:> ui/Icon {:name "plus"}]])}])))
 
+(defn c-qb-import-button
+  []
+  [:> ui/Form {:method "post"
+               :action "https://quickbooks.vetd.com/"
+               :style {:margin-top 14}}
+   [:> ui/Popup
+    {:position "bottom left"
+     :content "Connect to your Quickbooks account and Vetd will add your vendor stack for you."
+     :trigger (r/as-element
+               [:> ui/Button {:color "lightteal"
+                              :icon true
+                              :labelPosition "left"
+                              :fluid true}
+                "Import Quickbooks"
+                [:> ui/Icon {:name "quickbooks"}]])}]])
+
 (defn c-subscription-type-checkbox
   [s-type subscription-type&]
   [:> ui/Checkbox {:radio true
@@ -459,7 +475,8 @@
               [:div.container-with-sidebar
                [:div.sidebar
                 [:> ui/Segment
-                 [c-add-product-button unfiltered-stack]]
+                 [c-add-product-button unfiltered-stack]
+                 [c-qb-import-button]]
                 [:> ui/Segment {:class "top-categories"}
                  [:h4 "Jump To"]
                  [:div
