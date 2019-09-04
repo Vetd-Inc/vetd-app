@@ -537,14 +537,15 @@
 (def round-grid-cmp->top-scrollbar-node (comp first cmp->child-nodes))
 
 (defn update-draggability
-  [{:keys [node scroll-x-max] :as state}]
-  (let [scroll-width (aget @node "scrollWidth")
-        client-width (aget @node "clientWidth")
+  [{{:keys [grid]} :nodes
+    :keys [scroll] :as state}]
+  (let [scroll-width (aget @grid "scrollWidth")
+        client-width (aget @grid "clientWidth")
         modify-class-fn (if (> scroll-width client-width)
                           util/add-class
                           util/remove-class)]
-    (reset! scroll-x-max (- scroll-width client-width))
-    (modify-class-fn @node "draggable")))
+    (reset! (:max-x scroll) (- scroll-width client-width))
+    (modify-class-fn @grid "draggable")))
 
 (defn all-header-nodes
   "Get all of the DOM nodes that are a header element of a column."
@@ -576,7 +577,7 @@
 
 (defn col-node->product-id
   [node]
-  (js/parseInt (.getAttribute col "data-product-id")))
+  (js/parseInt (.getAttribute node "data-product-id")))
 
 (defn mousedown
   [{:keys [nodes mouse scroll drag products-order&] :as state} e]
@@ -668,9 +669,9 @@
         (reset! (:direction-intention drag) (if (pos? @(:last-delta-x mouse)) "right" "left")))
       ;; scrolling
       (when-not @reordering-product
-        (let [neg-disp (* -1 (- page-x @last-mouse-x))]
-          (swap! scroll-x + neg-disp)
-          (reset! scroll-v (* neg-disp scroll-a-factor))))
+        (let [neg-disp (* -1 (- page-x @(:last-x mouse)))]
+          (swap! (:x scroll) + neg-disp)
+          (reset! (:velocity-x scroll) (* neg-disp (:acceleration-factor scroll)))))
       (reset! (:last-x mouse) @(:x mouse)))))
 
 (defn mouseup
@@ -699,7 +700,7 @@
   [{:keys [nodes scroll] :as state}]
   (when @(:hovering-top-scrollbar? scroll)
     (when-not @(:grabbing? scroll)
-      (let [scroll-left (.-scrollLeft @top-scrollbar-node)]
+      (let [scroll-left (.-scrollLeft @(:top-scrollbar nodes))]
         (when (> (Math/abs (- scroll-left @(:x scroll))) 0.99999)
           (reset! (:velocity-x scroll) 0)
           (reset! (:x scroll) scroll-left)
@@ -723,49 +724,43 @@
                (= @(:direction-intention drag) "right")
                (not (neg? @(:last-delta-x mouse)))
                (> (- @(:x mouse)
-                     (.-offsetLeft @node))
-                  (- (.-clientWidth @node)
+                     (.-offsetLeft @(:grid nodes)))
+                  (- (.-clientWidth @(:grid nodes))
                      col-width)))
       (reset! (:velocity-x scroll) (:speed-reordering scroll)))
     (when (and @reordering-product
                (= @(:direction-intention drag) "left")
                (not (pos? @(:last-delta-x mouse)))
                (< (- @(:x mouse)
-                     (.-offsetLeft @node))
+                     (.-offsetLeft @(:grid nodes)))
                   col-width))
-      (reset! (:velocity-x scroll) (* -1 (:speed-reordering scroll))))
-
-
-
-    ;; WHERE I LEFT OFF was refactoring state map structure 
-
-    
+      (reset! (:velocity-x scroll) (* -1 (:speed-reordering scroll))))    
     ;; apply scroll velocity to scroll position
-    (swap! scroll-x + @scroll-v)
+    (swap! (:x scroll) + @(:velocity-x scroll))
     ;; right-side boundary
-    (when (> @scroll-x @scroll-x-max)
-      (reset! scroll-v 0)
-      (reset! scroll-x @scroll-x-max))
+    (when (> @(:x scroll) @(:max-x scroll))
+      (reset! (:velocity-x scroll) 0)
+      (reset! (:x scroll) @(:max-x scroll)))
     ;; left-side boundary
-    (when (< @scroll-x 0)
-      (reset! scroll-v 0)
-      (reset! scroll-x 0))
+    (when (< @(:x scroll) 0)
+      (reset! (:velocity-x scroll) 0)
+      (reset! (:x scroll) 0))
     ;; apply position updates
-    (when @drag-scrolling? ; drag scrolling is not the same as reordering scrolling
-      (aset @node "scrollLeft" (Math/floor @scroll-x)))
+    (when @(:grabbing? scroll) ; drag scrolling is not the same as reordering scrolling
+      (aset @(:grid nodes) "scrollLeft" (Math/floor @(:x scroll))))
     (when @reordering-product
-      (reset! curr-reordering-pos-x (- (+ (- @mouse-x
-                                             (.-offsetLeft @node))
-                                          (.-scrollLeft @node))
-                                       @drag-handle-offset))
+      (reset! curr-reordering-pos-x (- (+ (- @(:x mouse)
+                                             (.-offsetLeft @(:grid nodes)))
+                                          (.-scrollLeft @(:grid nodes)))
+                                       @(:handle-offset drag)))
       (update-sort-pos state))
     ;; apply friction
     (if @reordering-product
-      (swap! scroll-v * 0)
-      (swap! scroll-v * @scroll-k))
+      (swap! (:velocity-x scroll) * 0)
+      (swap! (:velocity-x scroll) * @(:friction scroll)))
     ;; zero out weak velocity
-    (if (< (Math/abs @scroll-v) 0.000001)
-      (reset! scroll-v 0))
+    (if (< (Math/abs @(:velocity-x scroll)) 0.000001)
+      (reset! (:velocity-x scroll) 0))
     (when @mounted?
       (js/requestAnimationFrame (partial animation-loop state)))))
 
