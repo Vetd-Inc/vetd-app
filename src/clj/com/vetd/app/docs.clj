@@ -1073,3 +1073,11 @@
          select-missing-prompt-responses-by-doc-id
          (select-reusable-response-fields product-ids)
          (reuse-responses doc-id))))
+
+(defn set-form-template-prompts-order
+  [form-template-id prompt-ids]
+  (let [indexed (map-indexed vector prompt-ids)]
+    (doseq [[idx id] indexed]
+      (db/update-any! {:id id
+                       :sort idx}
+                      :form_template_prompt))))

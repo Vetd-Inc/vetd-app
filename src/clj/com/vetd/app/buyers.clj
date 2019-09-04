@@ -392,6 +392,16 @@ Round URL: https://app.vetd.com/b/rounds/%s"
                       idstr))
     {}))
 
+(defmethod com/handle-ws-inbound :b/round.set-topic-order
+  [{:keys [round-id prompt-ids]} ws-id sub-fn]
+  (let [{:keys [req-form-template-id]} (-> [[:rounds {:id round-id}
+                                             [:req-form-template-id]]]
+                                           ha/sync-query
+                                           vals
+                                           ffirst)]
+    (docs/set-form-template-prompts-order req-form-template-id prompt-ids)
+    {}))
+
 (defmethod com/handle-ws-inbound :save-doc
   [{:keys [data ftype update-doc-id from-org-id] :as req} ws-id sub-fn]
   (if (nil? update-doc-id)
