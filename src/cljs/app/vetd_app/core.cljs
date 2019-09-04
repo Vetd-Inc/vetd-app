@@ -171,7 +171,9 @@
   [membs admin?]
   (if admin?
     "/a/search"
-    (if-let [active-memb (first membs)]
+    "/b/search"
+    ;; TODO use code below when vendor pages are ready
+#_    (if-let [active-memb (first membs)]
       (if (-> active-memb :org :buyer?)
         "/b/search"
         "/v/preposals")

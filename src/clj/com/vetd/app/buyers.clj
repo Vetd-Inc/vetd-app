@@ -313,7 +313,14 @@ Round URL: https://app.vetd.com/b/rounds/%s"
         existing-prompts (docs/select-form-template-prompts-by-parent-id req-form-template-id)]
     (when-not (some #(= id (:prompt-id %)) existing-prompts)
       (docs/insert-form-template-prompt req-form-template-id id)
-      (docs/merge-template-to-forms req-form-template-id))))
+      (let [form-ids (docs/merge-template-to-forms req-form-template-id)
+            doc-ids (->> [[:docs {:form-id form-ids}
+                           [:id]]]
+                         ha/sync-query
+                         :docs
+                         (map :id))]
+        (doseq [id doc-ids]
+          (docs/auto-pop-missing-responses-by-doc-id id))))))
 
 ;; TODO there could be multiple preposals/rounds per buyer-vendor pair
 
@@ -383,6 +390,16 @@ Round URL: https://app.vetd.com/b/rounds/%s"
                       (:oname buyer)
                       (s/join ", " requirements)
                       idstr))
+    {}))
+
+(defmethod com/handle-ws-inbound :b/round.set-topic-order
+  [{:keys [round-id prompt-ids]} ws-id sub-fn]
+  (let [{:keys [req-form-template-id]} (-> [[:rounds {:id round-id}
+                                             [:req-form-template-id]]]
+                                           ha/sync-query
+                                           vals
+                                           ffirst)]
+    (docs/set-form-template-prompts-order req-form-template-id prompt-ids)
     {}))
 
 (defmethod com/handle-ws-inbound :save-doc
@@ -463,6 +480,21 @@ Round URL: https://app.vetd.com/b/rounds/%s"
                         [:= :product_id product-id]]))
     product-ids)))
 
+(defn sync-round-vendor-req-forms&docs [round-id]
+  (let [{:keys [added]} (rounds/sync-round-vendor-req-forms round-id)]
+    (doseq [[{:keys [id subject from-org-id to-org-id]}
+             {:keys [product-id]}]
+            added]
+      (let [doc (docs/create-doc {:form-id id
+                                  :subject subject
+                                  :data {}
+                                  :to-org-id from-org-id
+                                  :from-org-id to-org-id})]
+        (-> doc
+            :item
+            :id
+            docs/auto-pop-missing-responses-by-doc-id)))))
+
 ;; additional side effects upon creating a round-initiation doc
 (defmethod docs/handle-doc-creation :round-initiation
   [{:keys [id]} {:keys [round-id]}]
@@ -470,7 +502,6 @@ Round URL: https://app.vetd.com/b/rounds/%s"
                                     (catch Throwable t
                                       (com/log-error t)))]
     
-    ;; TODO invite pre-selected product, if there is one
     (try
       (db/update-any! {:id round-id
                        :doc_id id
@@ -479,6 +510,9 @@ Round URL: https://app.vetd.com/b/rounds/%s"
                       :rounds)
       (catch Throwable t
         (com/log-error t)))
+    (try
+      (sync-round-vendor-req-forms&docs round-id)
+      (catch Throwable t))    
     (try
       (notify-round-init-form-completed id)
       (catch Throwable t
@@ -505,7 +539,9 @@ Round URL: https://app.vetd.com/b/rounds/%s"
   (when-not (empty? product-ids)
     (doseq [product-id product-ids]
       (rounds/invite-product-to-round product-id round-id))
-    (rounds/sync-round-vendor-req-forms round-id))
+    (try
+      (sync-round-vendor-req-forms&docs round-id)
+      (catch Throwable t)))
   {})
 
 (defmethod com/handle-ws-inbound :b/set-round-products-order

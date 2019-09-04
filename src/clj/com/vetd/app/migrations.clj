@@ -1823,8 +1823,58 @@
                                       :group-by [:gom.group_id :si.product_id]}
                               :owner :vetd
                               :grants {:hasura [:SELECT]}}]]
-   
-   ])
+
+   [[2019 9 3 0 0]
+    [:create-or-replace-view {:schema :vetd
+                              :name :docs_to_fields
+                              :honey {:select [[:d.id :doc_id]
+                                               [:d.dtype :doc_dtype]
+                                               [:d.dsubtype :doc_dsubtype]
+                                               [:d.title :doc_title]
+                                               [:d.from_user_id :doc_from_user_id]
+                                               [:d.to_org_id :doc_to_org_id]
+                                               [:d.from_org_id :doc_from_org_id]
+                                               [:d.to_user_id :doc_to_user_id]
+                                               [:d.subject :doc_subject]
+                                               [:d.result :doc_result]
+                                               [:d.reason :doc_reason]
+                                               [:d.created :doc_created]
+                                               [:d.updated :doc_updated]
+                                               [:r.id :response_id]
+                                               [:r.subject :response_subject]
+                                               [:r.subject_type :response_subject_type]
+                                               [:r.created :response_created]
+                                               [:r.updated :response_updated]
+                                               [:rf.id :resp_field_id]
+                                               [:rf.nval :resp_field_nval]
+                                               [:rf.sval :resp_field_sval]
+                                               [:rf.dval :resp_field_dval]
+                                               [:rf.jval :resp_field_jval]
+                                               [:rf.idx :resp_field_idx]
+                                               [:rf.created :resp_field_created]
+                                               [:rf.updated :resp_field_updated]
+                                               [:p.id :prompt_id]
+                                               [:p.prompt :prompt_prompt]
+                                               [:p.term :prompt_term]
+                                               [:p.created :prompt_created]
+                                               [:p.updated :prompt_updated]
+                                               [:pf.id :prompt_field_id]
+                                               [:pf.fname :prompt_field_fname]
+                                               [:pf.list_qm :prompt_field_list_qm]
+                                               [:pf.ftype :prompt_field_ftype]
+                                               [:pf.fsubtype :prompt_field_fsubtype]            
+                                               [:pf.sort :prompt_field_sort]
+                                               [:pf.created :prompt_field_created]
+                                               [:pf.updated :prompt_field_updated]]
+                                      :from [[:docs :d]]
+                                      :join [[:doc_resp :dr] [:and [:= :d.id :dr.doc_id] [:= :dr.deleted nil]]
+                                             [:responses :r] [:and [:= :dr.resp_id :r.id] [:= :r.deleted nil]]
+                                             [:resp_fields :rf] [:and [:= :rf.resp_id :r.id] [:= :rf.deleted nil]]
+                                             [:prompts :p] [:and [:= :r.prompt_id :p.id] [:= :p.deleted nil]]
+                                             [:prompt_fields :pf] [:and [:= :pf.id :rf.pf_id] [:= :pf.deleted nil]]]
+                                      :where [:= :d.deleted nil]}
+                              :owner :vetd
+                              :grants {:hasura [:SELECT]}}]]])
 
 
 #_(mig/mk-migration-files migrations
