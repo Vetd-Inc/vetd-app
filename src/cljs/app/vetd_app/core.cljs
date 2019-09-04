@@ -8,6 +8,7 @@
             vetd-app.debounce
             vetd-app.common.fx
             vetd-app.orgs.fx
+            [vetd-app.util :as util]
             [vetd-app.hooks :as hooks]
             [vetd-app.buyers.fixtures :as b-fix]
             [vetd-app.buyers.pages.search :as p-bsearch]
