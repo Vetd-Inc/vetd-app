@@ -248,6 +248,8 @@
 ;; edit your own stack
 (sec/defroute buyers-stack "/b/stack" []
   (rf/dispatch [:b/route-stack]))
+(sec/defroute buyers-stack-with-param "/b/stack/:param" [param]
+  (rf/dispatch [:b/route-stack param]))
 ;; view another org's stack (idstr of the org you want to view)
 (sec/defroute buyers-stack-detail "/b/stacks/:idstr" [idstr]
   (rf/dispatch [:b/route-stack-detail idstr]))
