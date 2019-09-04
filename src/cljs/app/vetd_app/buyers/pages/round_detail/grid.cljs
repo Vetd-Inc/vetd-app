@@ -401,23 +401,37 @@
 
 (defn c-cell-actions
   [resp-id resp-rating]
-  (let [rating-approved 1
+  (let [admin?& (rf/subscribe [:admin?]) 
+        rating-approved 1
         rating-disapproved 0]
-    [:div.actions
-     [c-action-button {:props {:class "action-button question"}
-                       :icon "chat outline" ; no on-click, let it pass through to underlying cell click
-                       :popup-text "Ask Question"}]
-     [c-action-button {:props {:class "action-button approve"}
-                       :on-click (fn [e]
-                                   (.stopPropagation e) ; stop propagation to underlying cell click
-                                   (rf/dispatch [:b/round.rate-response resp-id rating-approved]))
-                       :icon "thumbs up outline"
-                       :popup-text (if (= rating-approved resp-rating) "Approved" "Approve")}]
-     [c-action-button {:props {:class "action-button disapprove"}
-                       :on-click (fn [e] (.stopPropagation e) ; stop propagation to cell click
-                                   (rf/dispatch [:b/round.rate-response resp-id rating-disapproved]))
-                       :icon "thumbs down outline"
-                       :popup-text (if (= rating-disapproved resp-rating) "Disapproved" "Disapprove")}]]))
+    (fn [resp-id resp-rating]
+      [:div.actions
+       [c-action-button {:props {:class "action-button"}
+                         :icon "chat outline" ; no on-click, let it pass through to underlying cell click
+                         :popup-text "Ask Question"}]
+       [c-action-button {:props {:class "action-button approve"}
+                         :on-click (fn [e]
+                                     (.stopPropagation e) ; stop propagation to underlying cell click
+                                     (rf/dispatch [:b/round.rate-response resp-id rating-approved]))
+                         :icon "thumbs up outline"
+                         :popup-text (if (= rating-approved resp-rating) "Approved" "Approve")}]
+       [c-action-button {:props {:class "action-button disapprove"}
+                         :on-click (fn [e] (.stopPropagation e) ; stop propagation to cell click
+                                     (rf/dispatch [:b/round.rate-response resp-id rating-disapproved]))
+                         :icon "thumbs down outline"
+                         :popup-text (if (= rating-disapproved resp-rating) "Disapproved" "Disapprove")}]
+       (when @admin?&
+         [:<>
+          [c-action-button {:props {:class "action-button"}
+                            :on-click (fn [e] (.stopPropagation e) ; stop propagation to cell click
+                                        (rf/dispatch [:b/round.rate-response resp-id rating-disapproved]))
+                            :icon "arrow up"
+                            :popup-text "Move row up"}]
+          [c-action-button {:props {:class "action-button"}
+                            :on-click (fn [e] (.stopPropagation e) ; stop propagation to cell click
+                                        (rf/dispatch [:b/round.rate-response resp-id rating-disapproved]))
+                            :icon "arrow down"
+                            :popup-text "Move row down"}]])])))
 
 (defn c-column
   [round req-form-template rp show-modal-fn]
@@ -479,8 +493,7 @@
              ^{:key (str req-prompt-id "-" product-id)}
              [:div.cell {:class (str (when (= 1 resp-rating) "response-approved ")
                                      (when (= 0 resp-rating) "response-disapproved "))
-                         :on-mouse-down #(do (println "cell mousedown")
-                                             (reset! cell-click-disabled? false))
+                         :on-mouse-down #(reset! cell-click-disabled? false)
                          :on-click #(when-not @cell-click-disabled?
                                       (show-modal-fn {:req-prompt-id req-prompt-id
                                                       :req-prompt-text req-prompt-text
@@ -571,10 +584,6 @@
   (> (- y (aget node "offsetTop"))
      (aget node "clientHeight")))
 
-(defn part-of-cell-topic?
-  [node]
-  (util/contains-class? node "topic"))
-
 (defn col-node->product-id
   [node]
   (js/parseInt (.getAttribute node "data-product-id")))
@@ -607,10 +616,6 @@
     (when-not (part-of-scrollbar? @grid page-y)
       (do (reset! (:grabbing? scroll) true)
           (util/add-class @grid "dragging")))
-    ;; Reordering rows
-    (when (part-of-cell-topic? target)
-      (println "topic mousedown")
-      (reset! cell-click-disabled? true))
     (reset! (:last-x mouse) page-x)))
 
 (defn window-scroll
