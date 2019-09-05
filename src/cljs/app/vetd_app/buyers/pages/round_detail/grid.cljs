@@ -171,6 +171,22 @@
                         :user-id (-> db :user :id)
                         :org-id (util/db->current-org-id db)}}}))
 
+(rf/reg-event-fx
+ :b/round.move-topic
+ (fn [{:keys [db]} [_ direction round-id prompt-id]]
+   (println direction round-id prompt-id)
+   #_(let [topics-order (-> (:))]
+     {:dispatch [:b/round.store-topic-order round-id topics-order]})))
+
+(rf/reg-event-fx
+ :b/round.store-topic-order
+ (fn [{:keys [db]} [_ round-id topics-order]]
+   {:ws-send {:payload {:cmd :b/round.set-topic-order
+                        :prompt-ids topics-order
+                        :round-id round-id                        
+                        :user-id (-> db :user :id)
+                        :org-id (util/db->current-org-id db)}}}))
+
 ;;;; Components
 (defn c-declare-winner-form
   [round product popup-open?]
@@ -400,7 +416,7 @@
        [c-waiting-for-response]))])
 
 (defn c-cell-actions
-  [resp-id resp-rating]
+  [resp-id resp-rating round-id prompt-id]
   (let [admin?& (rf/subscribe [:admin?]) 
         rating-approved 1
         rating-disapproved 0]
@@ -411,27 +427,30 @@
                          :popup-text "Ask Question"}]
        [c-action-button {:props {:class "action-button approve"}
                          :on-click (fn [e]
-                                     (.stopPropagation e) ; stop propagation to underlying cell click
+                                     (.stopPropagation e)
                                      (rf/dispatch [:b/round.rate-response resp-id rating-approved]))
                          :icon "thumbs up outline"
                          :popup-text (if (= rating-approved resp-rating) "Approved" "Approve")}]
        [c-action-button {:props {:class "action-button disapprove"}
-                         :on-click (fn [e] (.stopPropagation e) ; stop propagation to cell click
+                         :on-click (fn [e]
+                                     (.stopPropagation e)
                                      (rf/dispatch [:b/round.rate-response resp-id rating-disapproved]))
                          :icon "thumbs down outline"
                          :popup-text (if (= rating-disapproved resp-rating) "Disapproved" "Disapprove")}]
        (when @admin?&
          [:<>
           [c-action-button {:props {:class "action-button"}
-                            :on-click (fn [e] (.stopPropagation e) ; stop propagation to cell click
-                                        (rf/dispatch [:b/round.rate-response resp-id rating-disapproved]))
+                            :on-click (fn [e]
+                                        (.stopPropagation e)
+                                        (rf/dispatch [:b/round.move-topic "up" round-id prompt-id]))
                             :icon "arrow up"
-                            :popup-text "Move row up"}]
+                            :popup-text "Move topic row up"}]
           [c-action-button {:props {:class "action-button"}
-                            :on-click (fn [e] (.stopPropagation e) ; stop propagation to cell click
-                                        (rf/dispatch [:b/round.rate-response resp-id rating-disapproved]))
+                            :on-click (fn [e]
+                                        (.stopPropagation e)
+                                        (rf/dispatch [:b/round.move-topic "down" round-id prompt-id]))
                             :icon "arrow down"
-                            :popup-text "Move row down"}]])])))
+                            :popup-text "Move topic row down"}]])])))
 
 (defn c-column
   [round req-form-template rp show-modal-fn]
@@ -504,7 +523,7 @@
                                                       :resp-rating resp-rating}))}
               [:div.topic req-prompt-text]
               [c-cell-text resp-text status]
-              [c-cell-actions resp-id resp-rating]])
+              [c-cell-actions resp-id resp-rating id req-prompt-id]])
            [:div.cell [c-cell-text "Click \"Add Topics\" to learn more about this product." status]])]))))
 
 (defn c-round-grid*
