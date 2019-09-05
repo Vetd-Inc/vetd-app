@@ -332,23 +332,40 @@
       [c-prompt-field-fn (update field
                                  :response deref)])))
 
-(defn c-prompt-default
-  [{:keys [id prompt descr fields response actions] :as p} form-id doc-id]
-  [:div {:style {:margin "10px 0 40px 0"}}
-   [:div {:style {:margin-bottom "5px"}}
-    [:span {:style {:padding-right "10px"}} prompt]
-    (when descr
-      [:> ui/Popup {:trigger (r/as-element [:> ui/Icon {:name "info circle"
-                                                        :style {:padding-right "30px"}}])
-                    :wide true}
-       descr])
-    (for [[k f] actions]
-      ^{:key (str "prompt-action" id)}
-      [:a {:on-click (partial f p)
-           :style {:margin-left "10px"}} k])]
-   (for [{:keys [idstr ftype fsubtype] :as f} fields]
-     ^{:key (str "field" (:id f))}
-     [c-prompt-field f])])
+(defn c-prompt-default [{:keys [id prompt descr fields response actions] :as p} form-id doc-id]
+  (let [on-load-fns (atom [])]
+    (r/create-class
+     {:reagent-render
+      (fn [{:keys [id prompt descr fields response actions] :as p} form-id doc-id]
+        [:div {:style {:margin "10px 0 40px 0"}}
+         [:div {:style {:margin-bottom "5px"}}
+          [:span {:style {:padding-right "10px"}} prompt]
+          (when descr
+            [:> ui/Popup {:trigger (r/as-element [:> ui/Icon {:name "info circle"
+                                                              :style {:padding-right "30px"}}])
+                          :wide true}
+             descr])
+          (for [[k f] actions]
+            (if (= k :-on-load)
+              (do
+                (swap! on-load-fns conj (partial f p))
+                nil)
+              (do
+                ^{:key (str "prompt-action" id)}
+                [:a {:on-click (partial f p)
+                     :style {:margin-left "10px"}} k])))]
+         (for [{:keys [idstr ftype fsubtype] :as f} fields]
+           ^{:key (str "field" (:id f))}
+           [c-prompt-field f])])
+      :component-did-mount
+      (fn [& args]
+        (let [fns @on-load-fns]
+          (reset! on-load-fns nil)
+          (doseq [f fns]
+            (try
+              (f)
+              (catch js/Error e
+                (.log js/console e))))))})))
 
 (defn prep-form-doc
   [{:keys [id ftype fsubtype title product to-org to-user from-org from-user doc-id doc-title prompts] :as form-doc}]
@@ -393,7 +410,6 @@
 	                          :fluid true
 	                          :on-click save-fn}
 	            "Submit"])])))
-
 
 (hooks/reg-hooks! hooks/c-prompt
                   {:default #'c-prompt-default})

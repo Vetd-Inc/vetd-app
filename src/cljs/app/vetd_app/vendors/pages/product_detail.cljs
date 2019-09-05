@@ -105,7 +105,8 @@
                                                            prompts2)]
            [id {"remove" remove-fn}])
          (into {"product/categories"
-                {"auto-populate" auto-populate-categories}}))))
+                {:-on-load auto-populate-categories
+                 "auto-populate" auto-populate-categories}}))))
 
 (defn c-page []
   (let [org-id& (rf/subscribe [:org-id])
