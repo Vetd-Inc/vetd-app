@@ -109,7 +109,7 @@
    (cfx/validated-dispatch-fx db
                               [:o/invite-user-to-org email org-id user-id]
                               #(cond
-                                 (not (re-matches #"^\S+@\S+\.\S+$" email))
+                                 (not (util/valid-email-address? email))
                                  [:invite-email-address "Please enter a valid email address."]
                                  
                                  :else nil))))
