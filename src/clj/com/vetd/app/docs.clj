@@ -349,9 +349,9 @@
     (insert-doc-response doc-id resp-id)
     (doseq [{:keys [id] :as f} fields]
       (insert-response-fields resp-id
-                             (assoc f
-                                    :prompt-field-id
-                                    id)))))
+                              (assoc f
+                                     :prompt-field-id
+                                     id)))))
 
 (defn select-form-template-prompts-by-parent-id
   [form-template-id]
@@ -736,12 +736,12 @@
     (vec (for [[k value] resp-fields]
            (let [{:keys [fname ftype fsubtype id]} (-> k name fields-by-fname first)] 
              {:item (merge {:fname fname
-                             :ftype ftype
-                             :fsubtype fsubtype
-                             :prompt-field-id id}
-                            (convert-field-val value
-                                               ftype
-                                               fsubtype))})))))
+                            :ftype ftype
+                            :fsubtype fsubtype
+                            :prompt-field-id id}
+                           (convert-field-val value
+                                              ftype
+                                              fsubtype))})))))
 
 (defn response-prompts->proc-tree
   [{:keys [terms prompt-ids]} prompts]
@@ -790,7 +790,7 @@
                             {:fields
                              [(tree-assoc-fn [parent item]
                                              [:item (insert-response-fields (:id parent)
-                                                                           item)])]}]}
+                                                                            item)])]}]}
                           (tree-assoc-fn [item children parent]
                                          [:item
                                           (->> children
@@ -1078,6 +1078,8 @@
   [form-template-id prompt-ids]
   (let [indexed (map-indexed vector prompt-ids)]
     (doseq [[idx id] indexed]
-      (db/update-any! {:id id
-                       :sort idx}
-                      :form_template_prompt))))
+      (db/update-where :form_template_prompt
+                       {:sort idx}
+                       [:and
+                        [:= :prompt_id id]
+                        [:= :form_template_id form-template-id]]))))

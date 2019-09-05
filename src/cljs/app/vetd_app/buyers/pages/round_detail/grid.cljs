@@ -173,13 +173,19 @@
 
 (rf/reg-event-fx
  :b/round.move-topic
- (fn [{:keys [db]} [_ direction round-id prompt-id]]
-   (println direction round-id prompt-id)
-   #_(let [topics-order (-> (:))]
-     {:dispatch [:b/round.store-topic-order round-id topics-order]})))
+ (fn [{:keys [db]} [_ direction round-id prompt-id prompts]]
+   (let [curr-order (->> prompts (sort-by :sort) (mapv :id))
+         swap-fn (if (= direction "up") dec inc)
+         swap-idx (swap-fn (.indexOf curr-order prompt-id))]
+     (when (< -1 swap-idx (count curr-order))
+       {:dispatch [:b/round.store-topic-order
+                   round-id
+                   (replace {prompt-id (curr-order swap-idx)
+                             (curr-order swap-idx) prompt-id} curr-order)]}))))
 
 (rf/reg-event-fx
  :b/round.store-topic-order
+ ;; topics-order is a vector of prompt-ids in correct order
  (fn [{:keys [db]} [_ round-id topics-order]]
    {:ws-send {:payload {:cmd :b/round.set-topic-order
                         :prompt-ids topics-order
@@ -416,11 +422,11 @@
        [c-waiting-for-response]))])
 
 (defn c-cell-actions
-  [resp-id resp-rating round-id prompt-id]
+  [resp-id resp-rating round-id prompt-id prompts]
   (let [admin?& (rf/subscribe [:admin?]) 
         rating-approved 1
         rating-disapproved 0]
-    (fn [resp-id resp-rating]
+    (fn [resp-id resp-rating round-id prompt-id prompts]
       [:div.actions
        [c-action-button {:props {:class "action-button"}
                          :icon "chat outline" ; no on-click, let it pass through to underlying cell click
@@ -442,13 +448,13 @@
           [c-action-button {:props {:class "action-button"}
                             :on-click (fn [e]
                                         (.stopPropagation e)
-                                        (rf/dispatch [:b/round.move-topic "up" round-id prompt-id]))
+                                        (rf/dispatch [:b/round.move-topic "up" round-id prompt-id prompts]))
                             :icon "arrow up"
                             :popup-text "Move topic row up"}]
           [c-action-button {:props {:class "action-button"}
                             :on-click (fn [e]
                                         (.stopPropagation e)
-                                        (rf/dispatch [:b/round.move-topic "down" round-id prompt-id]))
+                                        (rf/dispatch [:b/round.move-topic "down" round-id prompt-id prompts]))
                             :icon "arrow down"
                             :popup-text "Move topic row down"}]])])))
 
@@ -523,7 +529,7 @@
                                                       :resp-rating resp-rating}))}
               [:div.topic req-prompt-text]
               [c-cell-text resp-text status]
-              [c-cell-actions resp-id resp-rating id req-prompt-id]])
+              [c-cell-actions resp-id resp-rating id req-prompt-id prompts]])
            [:div.cell [c-cell-text "Click \"Add Topics\" to learn more about this product." status]])]))))
 
 (defn c-round-grid*
