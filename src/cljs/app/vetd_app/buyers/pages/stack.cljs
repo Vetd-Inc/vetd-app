@@ -36,9 +36,13 @@
 
 (rf/reg-event-fx
  :b/route-stack
- (fn [{:keys [db]}]
-   {:db (assoc db :page :b/stack)
-    :analytics/page {:name "Buyers Stack"}}))
+ (fn [{:keys [db]} [_ param]]
+   (merge {:db (assoc db :page :b/stack)
+           :analytics/page {:name "Buyers Stack"}}
+          (when (= param "qb-return")
+            {:toast {:type "success"
+                     :title "Connected to Quickbooks"
+                     :message "We will notify you after your data has been processed and added to your stack."}}))))
 
 (rf/reg-event-fx
  :b/stack.add-items
@@ -215,6 +219,22 @@
                                  :fluid true}
                    "Add Product"
                    [:> ui/Icon {:name "plus"}]])}])))
+
+(defn c-qb-import-button
+  []
+  [:> ui/Form {:method "post"
+               :action "https://quickbooks.vetd.com/"
+               :style {:margin-top 14}}
+   [:> ui/Popup
+    {:position "bottom left"
+     :content "Connect to your Quickbooks account and Vetd will add your vendor stack for you."
+     :trigger (r/as-element
+               [:> ui/Button {:color "lightteal"
+                              :icon true
+                              :labelPosition "left"
+                              :fluid true}
+                "Import Quickbooks"
+                [:> ui/Icon {:name "quickbooks"}]])}]])
 
 (defn c-subscription-type-checkbox
   [s-type subscription-type&]
@@ -459,7 +479,8 @@
               [:div.container-with-sidebar
                [:div.sidebar
                 [:> ui/Segment
-                 [c-add-product-button unfiltered-stack]]
+                 [c-add-product-button unfiltered-stack]
+                 [c-qb-import-button]]
                 [:> ui/Segment {:class "top-categories"}
                  [:h4 "Jump To"]
                  [:div
