@@ -156,6 +156,11 @@
  :admin-of-groups
  (fn [{:keys [admin-of-groups]}] admin-of-groups))
 
+;; Vetd admin
+(rf/reg-sub
+ :admin?
+ (fn [{:keys [admin?]}] admin?))
+
 
 (rf/reg-fx
  :nav
