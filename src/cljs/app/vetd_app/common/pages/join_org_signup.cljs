@@ -91,7 +91,14 @@
         [:img.logo {:src "https://s3.amazonaws.com/vetd-logos/vetd.svg"}]]
        [:> ui/Header {:as "h2"
                       :class "blue"}
-        "Join " @org-name& " on Vetd"]
+        ;; TODO
+        ;; show this if simply joining an org
+        ;; "Join " @org-name& " on Vetd"
+        ;; show this if invite originated from inviting a non-existent org
+        ;; to a community
+        ;; "Join COMMUNITY on Vetd"
+        "Sign Up"
+        ]
        [:> ui/Form {:style {:margin-top 25}}
         [:> ui/FormField {:error (= @bad-input& :uname)}
          [:label "Full Name"

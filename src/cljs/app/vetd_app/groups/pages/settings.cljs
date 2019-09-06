@@ -23,9 +23,21 @@
                :page-params {:fields-editing #{}})
     :analytics/page {:name "Groups Settings"}}))
 
+
+(rf/dispatch [:g/add-orgs-to-group
+              (:id group)
+              ;; orgs that exist
+              (js->clj (remove (set (map :oname @new-orgs&)) @value&))
+              ;; orgs that need to be created
+              (map #(assoc % :email @(:email& %)) @new-orgs&)])
+
 (rf/reg-event-fx
  :g/add-orgs-to-group
- (fn [{:keys [db]} [_ group-id org-ids]]
+ ;; org-ids are ids of orgs that exist in our database
+ ;; new-orgs is a coll of maps, e.g.:
+ ;; [{:oname "Hartford Electronics", :email "jerry@hec.org"}
+ ;;  {:oname "Fourier Method Co", :email "thomas@sorkin.edu"}]
+ (fn [{:keys [db]} [_ group-id org-ids new-orgs]]
    {:ws-send {:payload {:cmd :g/add-orgs-to-group
                         :return {:handler :g/add-orgs-to-group-return
                                  :group-id group-id
@@ -118,7 +130,10 @@
                         (for [{:keys [id oname]} orgs]
                           {:key id
                            :text oname
-                           :value id}))]
+                           :value id}))
+        ;; e.g., [{:oname "Hartford Electronics", :email& (atom "jerry@hec.org")}
+        ;;        {:oname "Fourier Method Co", :email& (atom nil)}]
+        new-orgs& (r/atom [])]
     (fn [group]
       (let [orgs& (rf/subscribe
                    [:gql/q
@@ -139,37 +154,66 @@
                                    (remove (comp (partial contains? org-ids-already-in-group) :value)))]
                   (when-not (= @options& options)
                     (reset! options& options))))]
-        [:> ui/Form {:as "div"
-                     :class "popup-dropdown-form"} ;; popup is a misnomer here
-         [:> ui/FormField {:style {:padding-top 7
-                                   :width "100%"}
-                           ;; this class combo w/ width 100% is a hack
-                           :class "ui action input"}
-          [:> ui/Dropdown {:loading (= :loading @orgs&)
-                           :options @options&
-                           :placeholder "Search organizations..."
-                           :search true
-                           :selection true
-                           :multiple true
-                           ;; :auto-focus true ;; TODO this doesn't work
-                           :selectOnBlur false
-                           :selectOnNavigation true
-                           :closeOnChange true
-                           :allowAdditions false ;; TODO this should be changed to true when we allow invites of new orgs
-                           ;; :additionLabel "Hit 'Enter' to Add "
-                           ;; :onAddItem (fn [_ this]
-                           ;;              (->> this
-                           ;;                   .-value
-                           ;;                   vector
-                           ;;                   ui/as-dropdown-options
-                           ;;                   (swap! options& concat)))
-                           :onSearchChange (fn [_ this] (reset! search-query& (aget this "searchQuery")))
-                           :onChange (fn [_ this] (reset! value& (.-value this)))}]
-          [:> ui/Button
-           {:color "teal"
-            :disabled (empty? @value&)
-            :on-click #(rf/dispatch [:g/add-orgs-to-group (:id group) (js->clj @value&)])}
-           "Add"]]]))))
+        [:<>
+         [:> ui/Form {:as "div"
+                      :class "popup-dropdown-form"} ;; popup is a misnomer here
+          [:> ui/FormField {:style {:padding-top 7
+                                    :width "100%"}
+                            ;; this class combo w/ width 100% is a hack
+                            :class "ui action input"}
+           [:> ui/Dropdown {:loading (= :loading @orgs&)
+                            :options @options&
+                            :placeholder "Search organizations..."
+                            :search true
+                            :selection true
+                            :multiple true
+                            ;; :auto-focus true ;; TODO this doesn't work
+                            :selectOnBlur false
+                            :selectOnNavigation true
+                            :closeOnChange true
+                            :allowAdditions true
+                            :additionLabel "Hit 'Enter' to Invite "
+                            :onAddItem (fn [_ this]
+                                         (let [new-value (-> this .-value vector)]
+                                           (do (->> new-value
+                                                    ui/as-dropdown-options
+                                                    (swap! options& concat))
+                                               (swap! new-orgs& conj {:oname (first new-value)
+                                                                      :email& (atom nil)}))))
+                            :onSearchChange (fn [_ this] (reset! search-query& (aget this "searchQuery")))
+                            :onChange (fn [_ this] (reset! value& (.-value this)))}]
+           (when (empty? @new-orgs&)
+             [:> ui/Button
+              {:color "teal"
+               :disabled (empty? @value&)
+               :on-click #(rf/dispatch [:g/add-orgs-to-group (:id group) (js->clj @value&)])}
+              "Add"])]]
+         ;; yeah... it's outside the Form, but that because of formatting issues
+         (when (seq @new-orgs&)
+           [:> ui/Form {:as "div"}
+            (for [{:keys [oname email&]} @new-orgs&]
+              ^{:key oname}
+              [:> ui/FormField {:style {:padding-top 7
+                                        :margin-bottom 0}}
+               [:label
+                (str "Email address of someone at " oname)
+                [:> ui/Input
+                 {:placeholder "Enter email address..."
+                  :fluid true
+                  :auto-focus true
+                  :on-change #(reset! email& (-> % .-target .-value))}]]])
+            [:> ui/Button
+             {:color "teal"
+              :style {:margin-top 10}
+              :on-click (fn []
+                          (rf/dispatch [:g/add-orgs-to-group
+                                        (:id group)
+                                        ;; orgs that exist
+                                        (js->clj (remove (set (map :oname @new-orgs&)) @value&))
+                                        ;; orgs that need to be created
+                                        (map #(assoc % :email @(:email& %)) @new-orgs&)]))}
+             (str "Invite (" (count @value&) ")")]])]
+        ))))
 
 (defn c-org
   [org group]
@@ -326,7 +370,7 @@
                                   :color "teal"
                                   :style {:float "right"}}
                      [:> ui/Icon {:name "add group"}]
-                     "Add Organization"])
+                     "Add or Invite Organization"])
                   "Organizations"
                   (when (@fields-editing& field-name)
                     [c-add-orgs-form group])]}
