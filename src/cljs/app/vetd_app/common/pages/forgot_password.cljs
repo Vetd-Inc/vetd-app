@@ -23,7 +23,7 @@
  (fn [{:keys [db]} [_ email pwd cpwd]]
    (let [[bad-input message]
          (cond
-           (not (re-matches #"^\S+@\S+\.\S+$" email)) [:email "Please enter a valid email address."]
+           (not (util/valid-email-address? email)) [:email "Please enter a valid email address."]
            (< (count pwd) 8) [:pwd "Password must be at least 8 characters."]
            (not= pwd cpwd) [:cpwd "Password and Confirm Password must match."]
            :else nil)]
