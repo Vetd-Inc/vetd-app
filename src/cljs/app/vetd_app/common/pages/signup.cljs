@@ -1,5 +1,6 @@
 (ns vetd-app.common.pages.signup
   (:require [vetd-app.ui :as ui]
+            [vetd-app.util :as util]
             [reagent.core :as r]
             [re-frame.core :as rf]
             [clojure.string :as s]))
