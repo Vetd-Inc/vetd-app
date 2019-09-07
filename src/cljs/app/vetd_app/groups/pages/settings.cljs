@@ -23,14 +23,6 @@
                :page-params {:fields-editing #{}})
     :analytics/page {:name "Groups Settings"}}))
 
-
-(rf/dispatch [:g/add-orgs-to-group
-              (:id group)
-              ;; orgs that exist
-              (js->clj (remove (set (map :oname @new-orgs&)) @value&))
-              ;; orgs that need to be created
-              (map #(assoc % :email @(:email& %)) @new-orgs&)])
-
 (rf/reg-event-fx
  :g/add-orgs-to-group
  ;; org-ids are ids of orgs that exist in our database
@@ -41,17 +33,20 @@
    {:ws-send {:payload {:cmd :g/add-orgs-to-group
                         :return {:handler :g/add-orgs-to-group-return
                                  :group-id group-id
-                                 :org-ids org-ids}
+                                 :org-ids org-ids
+                                 :new-orgs new-orgs}
                         :group-id group-id
-                        :org-ids org-ids}}
+                        :org-ids org-ids
+                        :new-orgs new-orgs
+                        :from-user-id (-> db :user :id)}}
     :analytics/track {:event "Add Organization"
                       :props {:category "Community"}}}))
 
 (rf/reg-event-fx
  :g/add-orgs-to-group-return
- (fn [{:keys [db]} [_ _ {{:keys [group-id org-ids]} :return}]]
+ (fn [{:keys [db]} [_ _ {{:keys [group-id org-ids new-orgs]} :return}]]
    {:toast {:type "success"
-            :title (str "Organization" (when (> (count org-ids) 1) "s") " added to your community!")}
+            :title (str "Organization" (when (> (count (concat org-ids new-orgs)) 1) "s") " added to your community!")}
     :dispatch [:stop-edit-field (str "add-orgs-to-group-" group-id)]}))
 
 ;; remove an org from a group
@@ -209,9 +204,12 @@
                           (rf/dispatch [:g/add-orgs-to-group
                                         (:id group)
                                         ;; orgs that exist
-                                        (js->clj (remove (set (map :oname @new-orgs&)) @value&))
+                                        (remove (set (map :oname @new-orgs&)) @value&)
                                         ;; orgs that need to be created
-                                        (map #(assoc % :email @(:email& %)) @new-orgs&)]))}
+                                        (map #(-> %
+                                                  (assoc :email @(:email& %))
+                                                  (dissoc :email&))
+                                             @new-orgs&)]))}
              (str "Invite (" (count @value&) ")")]])]
         ))))
 
@@ -247,17 +245,18 @@
                                           "Remove"])}]
                              oname]
                      :value [:<> (str num-members " member" (when-not (= num-members 1) "s") " ")
-                             [:> ui/Popup
-                              {:position "bottom left"
-                               :wide "very"
-                               :content (let [max-members-show 15]
-                                          (str (s/join ", " (->> memberships
-                                                                 (map (comp :uname :user))
-                                                                 (take max-members-show)))
-                                               (when (> num-members max-members-show)
-                                                 (str " and " (- num-members max-members-show) " more."))))
-                               :trigger (r/as-element
-                                         [:> ui/Icon {:name "question circle"}])}]]}]))))
+                             (when (pos? num-members)
+                               [:> ui/Popup
+                                {:position "bottom left"
+                                 :wide "very"
+                                 :content (let [max-members-show 15]
+                                            (str (s/join ", " (->> memberships
+                                                                   (map (comp :uname :user))
+                                                                   (take max-members-show)))
+                                                 (when (> num-members max-members-show)
+                                                   (str " and " (- num-members max-members-show) " more."))))
+                                 :trigger (r/as-element
+                                           [:> ui/Icon {:name "question circle"}])}])]}]))))
 
 (defn c-add-discount-form [group]
   (let [fields-editing& (rf/subscribe [:fields-editing])

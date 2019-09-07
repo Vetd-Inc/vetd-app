@@ -308,14 +308,42 @@
   [{:keys [email pwd] :as req} ws-id sub-fn]
   (password-reset-request req))
 
-(defmethod com/handle-ws-inbound :invite-user-to-org
-  [{:keys [email org-id from-user-id] :as req} ws-id sub-fn]
+(defn invite-user-to-org
+  [email org-id from-user-id]
   (let [user (select-user-by-email email)]
     (if (and user
              (select-memb-by-ids (:id user) org-id))
       {:already-member? true}
-      (do (future (send-invite-user-to-org-email req))
+      (do (future (send-invite-user-to-org-email
+                   {:email email
+                    :org-id org-id
+                    :from-user-id from-user-id}))
           {}))))
+
+(defmethod com/handle-ws-inbound :invite-user-to-org
+  [{:keys [email org-id from-user-id] :as req} ws-id sub-fn]
+  (invite-user-to-org email org-id from-user-id))
+
+
+
+;; TODO what security holes does this open by allow any community admin to
+;; add whatever email address they want to a made up new org?
+
+;; org-ids are ids of orgs that presumably exist in our database
+;; new-orgs is a coll of maps, e.g.:
+;; [{:oname "Hartford Electronics", :email "jerry@hec.org"}
+;;  {:oname "Fourier Method Co", :email "thomas@sorkin.edu"}]
+(defmethod com/handle-ws-inbound :g/add-orgs-to-group
+  [{:keys [org-ids new-orgs group-id from-user-id]} ws-id sub-fn]
+  (doseq [org-id org-ids]
+    (g/create-or-find-group-org-memb org-id group-id))
+  (doseq [{:keys [oname email]} new-orgs]
+    (let [[_ {:keys [id]}] (create-or-find-org oname "" true false)]
+      (do (g/create-or-find-group-org-memb id group-id)
+          ;; TODO would it be better for UX
+          ;; to use something like from-org than from-user-id
+          (invite-user-to-org email id from-user-id))))
+  {})
 
 (defmethod com/handle-ws-inbound :create-membership
   [{:keys [user-id org-id]} ws-id sub-fn]
