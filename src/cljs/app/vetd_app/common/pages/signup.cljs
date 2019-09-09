@@ -1,5 +1,6 @@
 (ns vetd-app.common.pages.signup
   (:require [vetd-app.ui :as ui]
+            [vetd-app.util :as util]
             [reagent.core :as r]
             [re-frame.core :as rf]
             [clojure.string :as s]))
@@ -27,7 +28,7 @@
    (let [[bad-input message]
          (cond
            (not (re-matches #".+\s.+" uname)) [:uname "Please enter your full name (first & last)."]
-           (not (re-matches #"^\S+@\S+\.\S+$" email)) [:email "Please enter a valid email address."]
+           (not (util/valid-email-address? email)) [:email "Please enter a valid email address."]
            (< (count pwd) 8) [:pwd "Password must be at least 8 characters."]
            (not= pwd cpwd) [:cpwd "Password and Confirm Password must match."]
            (not terms-agree) [:terms-agree "You must agree to the Terms of Use in order to sign up."]
