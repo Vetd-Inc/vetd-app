@@ -172,12 +172,12 @@
   [membs admin?]
   (if admin?
     "/a/search"
-    "/b/search"
-    ;; TODO use code below when vendor pages are ready
-#_    (if-let [active-memb (first membs)]
-      (if (-> active-memb :org :buyer?)
-        "/b/search"
-        "/v/preposals")
+    (if-let [active-memb (first membs)]
+      "/b/search"
+      ;; TODO use code below when vendor pages are ready
+      #_      (if (-> active-memb :org :buyer?)
+                "/b/search"
+                "/v/preposals")
       "/login")))
 
 (rf/reg-event-fx
