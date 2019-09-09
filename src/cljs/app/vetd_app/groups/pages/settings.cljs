@@ -139,6 +139,7 @@
                               :_order_by {:oname :asc}}
                        [:id :oname]]]}])
             org-ids-already-in-group (set (map :id (:orgs group)))
+            lc-org-names-already-in-group (set (map (comp s/lower-case :oname) (:orgs group)))
             _ (when-not (= :loading @orgs&)
                 (let [options (->> @orgs&
                                    :orgs
@@ -169,15 +170,20 @@
                             :allowAdditions true
                             :additionLabel "Hit 'Enter' to Invite "
                             :onAddItem (fn [_ this]
-                                         (let [new-value (-> this .-value vector)]
-                                           (do (->> new-value
-                                                    ui/as-dropdown-options
-                                                    (swap! options& concat))
-                                               (swap! new-orgs& conj {:oname (first new-value)
-                                                                      :email& (atom nil)}))))
+                                         (let [new-value (-> this .-value vector)
+                                               new-entry (first new-value)]
+                                           (if-not ((set lc-org-names-already-in-group) (s/lower-case new-entry))
+                                             (do (->> new-value
+                                                      ui/as-dropdown-options
+                                                      (swap! options& concat))
+                                                 (swap! new-orgs& conj {:oname new-entry
+                                                                        :email& (atom nil)}))
+                                             (rf/dispatch [:toast {:type "error"
+                                                                   :title "Already in Community"
+                                                                   :message (str new-entry " is already part of your community.")}]))))
                             :onSearchChange (fn [_ this] (reset! search-query& (aget this "searchQuery")))
                             :onChange (fn [_ this]
-                                        (reset! value& (.-value this))
+                                        (reset! value& (remove (set lc-org-names-already-in-group) (.-value this)))
                                         (reset! new-orgs&
                                                 (remove (comp not (set (js->clj (.-value this))) :oname)
                                                         @new-orgs&)))}]
