@@ -1,5 +1,6 @@
 (ns vetd-app.groups.pages.settings
   (:require [vetd-app.ui :as ui]
+            [vetd-app.util :as util]
             [vetd-app.common.components :as cc]
             [vetd-app.buyers.components :as bc]
             [vetd-app.common.fx :as cfx]
@@ -22,6 +23,17 @@
                :page :g/settings
                :page-params {:fields-editing #{}})
     :analytics/page {:name "Groups Settings"}}))
+
+(rf/reg-event-fx
+ :g/add-orgs-to-group.submit
+ (fn [{:keys [db]} [_ group-id org-ids new-orgs]]
+   (cfx/validated-dispatch-fx db
+                              [:g/add-orgs-to-group group-id org-ids new-orgs]
+                              #(cond
+                                 (some (complement util/valid-email-address?) (map :email new-orgs))
+                                 [:invite-email-address "Please enter a valid email address."]
+                                 
+                                 :else nil))))
 
 (rf/reg-event-fx
  :g/add-orgs-to-group
@@ -139,6 +151,7 @@
                               :_order_by {:oname :asc}}
                        [:id :oname]]]}])
             org-ids-already-in-group (set (map :id (:orgs group)))
+            lc-org-names-already-in-group (set (map (comp s/lower-case :oname) (:orgs group)))
             _ (when-not (= :loading @orgs&)
                 (let [options (->> @orgs&
                                    :orgs
@@ -169,19 +182,28 @@
                             :allowAdditions true
                             :additionLabel "Hit 'Enter' to Invite "
                             :onAddItem (fn [_ this]
-                                         (let [new-value (-> this .-value vector)]
-                                           (do (->> new-value
-                                                    ui/as-dropdown-options
-                                                    (swap! options& concat))
-                                               (swap! new-orgs& conj {:oname (first new-value)
-                                                                      :email& (atom nil)}))))
+                                         (let [new-value (-> this .-value vector)
+                                               new-entry (first new-value)]
+                                           (if-not ((set lc-org-names-already-in-group) (s/lower-case new-entry))
+                                             (do (->> new-value
+                                                      ui/as-dropdown-options
+                                                      (swap! options& concat))
+                                                 (swap! new-orgs& conj {:oname new-entry
+                                                                        :email& (atom nil)}))
+                                             (rf/dispatch [:toast {:type "error"
+                                                                   :title "Already in Community"
+                                                                   :message (str new-entry " is already part of your community.")}]))))
                             :onSearchChange (fn [_ this] (reset! search-query& (aget this "searchQuery")))
-                            :onChange (fn [_ this] (reset! value& (.-value this)))}]
+                            :onChange (fn [_ this]
+                                        (reset! value& (remove (set lc-org-names-already-in-group) (.-value this)))
+                                        (reset! new-orgs&
+                                                (remove (comp not (set (js->clj (.-value this))) :oname)
+                                                        @new-orgs&)))}]
            (when (empty? @new-orgs&)
              [:> ui/Button
               {:color "teal"
                :disabled (empty? @value&)
-               :on-click #(rf/dispatch [:g/add-orgs-to-group (:id group) (js->clj @value&)])}
+               :on-click #(rf/dispatch [:g/add-orgs-to-group.submit (:id group) (js->clj @value&)])}
               "Add"])]]
          ;; this is in a second Form to fix formatting issues (TODO could be better)
          (when (seq @new-orgs&)
@@ -201,7 +223,7 @@
              {:color "teal"
               :style {:margin-top 10}
               :on-click (fn []
-                          (rf/dispatch [:g/add-orgs-to-group
+                          (rf/dispatch [:g/add-orgs-to-group.submit
                                         (:id group)
                                         ;; orgs that exist
                                         (remove (set (map :oname @new-orgs&)) @value&)

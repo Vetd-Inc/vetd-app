@@ -186,3 +186,9 @@
      "error" (js/toastr.error message title)
      "info" (js/toastr.info message title)
      "warning" (js/toastr.warning message title))))
+
+;; avoid using this, but if you must...
+(rf/reg-event-fx
+ :toast
+ (fn [_ [_ opts]]
+   {:toast opts}))
