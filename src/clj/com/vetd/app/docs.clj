@@ -1021,8 +1021,8 @@
   [{:keys [nval dval sval jval] :as m}]
   (or jval dval nval sval))
 
-;; find response fields from other docs that can be re-used
-(defn select-reusable-response-fields [subject prompt-rows]
+(defn select-reusable-response-fields
+  [subject from-org-id prompt-rows]
   (let [prompt-ids (->> prompt-rows (map :prompt-id) distinct)
         prompt-terms (->> prompt-rows (map :prompt-term) distinct)
         prompt-field-ids (->> prompt-rows (map :prompt-field-id) distinct)]
@@ -1036,6 +1036,11 @@
                    [:resp_field_idx :idx]]
           :from [:docs_to_fields]
           :where [:and
+                  [:or
+                   [:= :doc_dtype "product-profile"]
+                   [:and
+                    [:= :doc_dtype "preposal"]
+                    [:= :doc_to_org_id from-org-id]]]
                   [:in :doc_subject subject]
                   [:or
                    [:in :prompt_id prompt-ids]
@@ -1069,10 +1074,15 @@
 
 (defn auto-pop-missing-responses-by-doc-id
   [doc-id]
-  (let [product-ids (select-round-product-ids-by-doc-id doc-id)]
+  (let [product-ids (select-round-product-ids-by-doc-id doc-id)
+        {:keys [from-org-id]} (->> [[:form-docs {:doc-id doc-id}
+                                   [:from-org-id]]]
+                                 ha/sync-query
+                                 :form-docs
+                                 first)]
     (->> doc-id
          select-missing-prompt-responses-by-doc-id
-         (select-reusable-response-fields product-ids)
+         (select-reusable-response-fields product-ids from-org-id)
          (reuse-responses doc-id))))
 
 (defn set-form-template-prompts-order
