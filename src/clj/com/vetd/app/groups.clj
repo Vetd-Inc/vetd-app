@@ -104,12 +104,6 @@
   (create-or-find-group-org-memb org-id group-id)
   {})
 
-(defmethod com/handle-ws-inbound :g/add-orgs-to-group
-  [{:keys [org-ids group-id]} ws-id sub-fn]
-  (doseq [org-id org-ids]
-    (create-or-find-group-org-memb org-id group-id))
-  {})
-
 (defmethod com/handle-ws-inbound :g/remove-org
   [{:keys [org-id group-id]} ws-id sub-fn]
   (when-let [{:keys [id]} (select-group-org-memb-by-ids org-id group-id)]
