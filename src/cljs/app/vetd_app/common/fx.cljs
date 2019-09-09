@@ -61,7 +61,10 @@
                                        {:ms 200 :dispatch [:nav-home]}]}
      :invite-user-to-org (if (:user-exists? output-data)
                            {:toast {:type "success"
-                                    :title "Organization Joined"
+                                    ;; this is a vague "Joined!" because it could
+                                    ;; be an org or a community
+                                    ;; also see fx :join-org-signup-return
+                                    :title "Joined!"
                                     :message (str "You accepted an invitation to join " (:org-name output-data))}
                             :local-store {:session-token (:session-token output-data)}
                             :dispatch-later [{:ms 100 :dispatch [:ws-get-session-user]}

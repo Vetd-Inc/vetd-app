@@ -200,16 +200,21 @@
     {:no-account? true}))
 
 (defn send-invite-user-to-org-email
-  [{:keys [email org-id from-user-id] :as invite}]
+  "override-from-org-name is useful for invites that originated from a community 
+  adding an new org (it makes more sense to saw the invite is from the community
+  rather than the inviter's org)."
+  [{:keys [email org-id from-user-id override-from-org-name] :as invite}]
   (let [link-key (l/create {:cmd :invite-user-to-org
                             :input-data (select-keys invite
                                                      [:email
                                                       :org-id
-                                                      :from-user-id])
+                                                      :from-user-id
+                                                      :override-from-org-name])
                             ;; 30 days from now
                             :expires-action (+ (ut/now) (* 1000 60 60 24 30))})
         from-user-name (:uname (select-user-by-id from-user-id :uname))
-        from-org-name (:oname (select-org-by-id org-id))]
+        from-org-name (or override-from-org-name
+                          (:oname (select-org-by-id org-id)))]
     (ec/send-template-email
      email
      {:invite-link (str l/base-url link-key)
@@ -309,7 +314,7 @@
   (password-reset-request req))
 
 (defn invite-user-to-org
-  [email org-id from-user-id]
+  [email org-id from-user-id & [override-from-org-name]]
   (let [user (select-user-by-email email)]
     (if (and user
              (select-memb-by-ids (:id user) org-id))
@@ -317,7 +322,8 @@
       (do (future (send-invite-user-to-org-email
                    {:email email
                     :org-id org-id
-                    :from-user-id from-user-id}))
+                    :from-user-id from-user-id
+                    :override-from-org-name override-from-org-name}))
           {}))))
 
 (defmethod com/handle-ws-inbound :invite-user-to-org
@@ -329,20 +335,32 @@
 ;; TODO what security holes does this open by allow any community admin to
 ;; add whatever email address they want to a made up new org?
 
+;; TODO what happens if new-orgs contains an oname that already exists?
+;; this could occur accidentally if the community admin was in the process
+;; of inviting a 'non-existent' org and their frontend was outdated.
+;; i.e., someone created the org while the community admin after their search was loaded
+
 ;; org-ids are ids of orgs that presumably exist in our database
 ;; new-orgs is a coll of maps, e.g.:
 ;; [{:oname "Hartford Electronics", :email "jerry@hec.org"}
 ;;  {:oname "Fourier Method Co", :email "thomas@sorkin.edu"}]
 (defmethod com/handle-ws-inbound :g/add-orgs-to-group
   [{:keys [org-ids new-orgs group-id from-user-id]} ws-id sub-fn]
-  (doseq [org-id org-ids]
-    (g/create-or-find-group-org-memb org-id group-id))
-  (doseq [{:keys [oname email]} new-orgs]
-    (let [[_ {:keys [id]}] (create-or-find-org oname "" true false)]
-      (do (g/create-or-find-group-org-memb id group-id)
-          ;; TODO would it be better for UX
-          ;; to use something like from-org than from-user-id
-          (invite-user-to-org email id from-user-id))))
+  (when-let [{:keys [gname]} (some-> [[:groups {:id group-id}
+                                       [:gname]]]
+                                     ha/sync-query
+                                     vals
+                                     ffirst)]
+    (doseq [org-id org-ids]
+      (g/create-or-find-group-org-memb org-id group-id))
+    (doseq [{:keys [oname email]} new-orgs]
+      (let [[_ {:keys [id]}] (create-or-find-org oname "" true false)]
+        (do (g/create-or-find-group-org-memb id group-id)
+            (invite-user-to-org email
+                                id
+                                from-user-id
+                                ;; optional from-org-name override
+                                (str "the " gname " community"))))))
   {})
 
 (defmethod com/handle-ws-inbound :create-membership
@@ -398,8 +416,9 @@
 
 (defmethod l/action :invite-user-to-org
   [{:keys [input-data] :as link} account]
-  (let [{:keys [email org-id]} input-data
-        org-name (:oname (select-org-by-id org-id))
+  (let [{:keys [email org-id override-from-org-name]} input-data
+        org-name (or override-from-org-name
+                     (:oname (select-org-by-id org-id)))
         signup-flow? (every? (partial contains? account) [:uname :pwd])]
     ;; this link action is 'overloaded'
     (if-not signup-flow?

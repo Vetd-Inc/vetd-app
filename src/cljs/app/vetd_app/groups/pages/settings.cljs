@@ -183,7 +183,7 @@
                :disabled (empty? @value&)
                :on-click #(rf/dispatch [:g/add-orgs-to-group (:id group) (js->clj @value&)])}
               "Add"])]]
-         ;; yeah... it's outside the Form, but that because of formatting issues
+         ;; this is in a second Form to fix formatting issues (TODO could be better)
          (when (seq @new-orgs&)
            [:> ui/Form {:as "div"}
             (for [{:keys [oname email&]} @new-orgs&]
@@ -210,8 +210,7 @@
                                                   (assoc :email @(:email& %))
                                                   (dissoc :email&))
                                              @new-orgs&)]))}
-             (str "Invite (" (count @value&) ")")]])]
-        ))))
+             (str "Invite (" (count @value&) ")")]])]))))
 
 (defn c-org
   [org group]
