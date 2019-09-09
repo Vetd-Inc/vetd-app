@@ -1,5 +1,6 @@
 (ns vetd-app.groups.pages.settings
   (:require [vetd-app.ui :as ui]
+            [vetd-app.util :as util]
             [vetd-app.common.components :as cc]
             [vetd-app.buyers.components :as bc]
             [vetd-app.common.fx :as cfx]
@@ -22,6 +23,17 @@
                :page :g/settings
                :page-params {:fields-editing #{}})
     :analytics/page {:name "Groups Settings"}}))
+
+(rf/reg-event-fx
+ :g/add-orgs-to-group.submit
+ (fn [{:keys [db]} [_ group-id org-ids new-orgs]]
+   (cfx/validated-dispatch-fx db
+                              [:g/add-orgs-to-group group-id org-ids new-orgs]
+                              #(cond
+                                 (some (complement util/valid-email-address?) (map :email new-orgs))
+                                 [:invite-email-address "Please enter a valid email address."]
+                                 
+                                 :else nil))))
 
 (rf/reg-event-fx
  :g/add-orgs-to-group
@@ -191,7 +203,7 @@
              [:> ui/Button
               {:color "teal"
                :disabled (empty? @value&)
-               :on-click #(rf/dispatch [:g/add-orgs-to-group (:id group) (js->clj @value&)])}
+               :on-click #(rf/dispatch [:g/add-orgs-to-group.submit (:id group) (js->clj @value&)])}
               "Add"])]]
          ;; this is in a second Form to fix formatting issues (TODO could be better)
          (when (seq @new-orgs&)
@@ -211,7 +223,7 @@
              {:color "teal"
               :style {:margin-top 10}
               :on-click (fn []
-                          (rf/dispatch [:g/add-orgs-to-group
+                          (rf/dispatch [:g/add-orgs-to-group.submit
                                         (:id group)
                                         ;; orgs that exist
                                         (remove (set (map :oname @new-orgs&)) @value&)
