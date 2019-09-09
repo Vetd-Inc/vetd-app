@@ -993,6 +993,7 @@
          (map (partial upsert-prompts-to-form prompts))
          doall)))
 
+;; TODO check not deleted
 (defn select-missing-prompt-responses-by-doc-id
   [doc-id]
   (->> {:select [[:p.id :prompt-id]
