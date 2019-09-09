@@ -33,6 +33,28 @@
   (let [now (ut/now)]
     (- now (mod now (* 1000 60 5)))))
 
+(def recent-ws-ids& (atom []))
+
+(defn push-ws-ids [ids]
+  (swap! recent-ws-ids&
+         (fn [recent-ws-ids]
+           (->> recent-ws-ids
+                (concat ids)
+                (take 1000)))))
+
+(defn filter-by-recent-ws-ids& [msgs-by-id]
+  (reduce dissoc msgs-by-id @recent-ws-ids&))
+
+(defn process-ws-payloads
+  [payloads]
+  (let [r (->> payloads
+               filter-by-recent-ws-ids&
+               vals
+               (sort-by :ws/ts)
+               vec)]
+    (push-ws-ids (keys payloads))
+    r))
+
 (defn uri->content-type
   [uri]
   (or (-> uri
@@ -111,6 +133,8 @@
 
 (defn ws-outbound-handler
   [ws ws-id {:keys [cmd return] :as req} counter& req-ts data]
+  (println "ws-outbound-handler -- data")
+  (clojure.pprint/pprint data)
   (com/hc-send {:type "ws-outbound-handler:respond"
                 :ws-id ws-id
                 :cmd cmd
@@ -125,10 +149,12 @@
                     :response data}
                    ws))
 
-(defn ws-inbound-handler
+(defn ws-inbound-handler*
   [ws ws-id data]
   (try
-    (let [{:keys [cmd return] :as data'} (read-transit-string data)
+    (let [{:keys [cmd return] :as data'} (if (string? data) ; HACK this sucks -- Bill
+                                           (read-transit-string data)
+                                           data)
           _ (com/hc-send {:type "ws-inbound-handler:receive"
                           :ws-id ws-id
                           :cmd cmd
@@ -144,6 +170,27 @@
       (when (and return resp)
         (resp-fn resp)))
     (catch Exception e
+      (com/log-error e))))
+
+(defn ws-inbound-handler
+  [ws ws-id data]
+  (try
+    (let [{:keys [payloads] :as data'} (read-transit-string data)
+          payloads' (process-ws-payloads payloads)]
+      (println "ws-inbound-handler -- data'")
+      (clojure.pprint/pprint data')
+      (println "ws-inbound-handler -- payloads'")
+      (clojure.pprint/pprint payloads')
+      (#'ws-outbound-handler ws
+                             ws-id
+                             {:cmd nil
+                              :return :ws/ack}
+                             (atom 0)
+                             (ut/now)
+                             {:ws-ids (distinct @recent-ws-ids&)})
+      (doseq [p payloads']
+        (ws-inbound-handler* ws ws-id p)))
+    (catch Throwable e
       (com/log-error e))))
 
 (defn ws-on-closed
