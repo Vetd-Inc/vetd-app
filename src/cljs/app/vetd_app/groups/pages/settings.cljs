@@ -176,7 +176,11 @@
                                                (swap! new-orgs& conj {:oname (first new-value)
                                                                       :email& (atom nil)}))))
                             :onSearchChange (fn [_ this] (reset! search-query& (aget this "searchQuery")))
-                            :onChange (fn [_ this] (reset! value& (.-value this)))}]
+                            :onChange (fn [_ this]
+                                        (reset! value& (.-value this))
+                                        (reset! new-orgs&
+                                                (remove (comp not (set (js->clj (.-value this))) :oname)
+                                                        @new-orgs&)))}]
            (when (empty? @new-orgs&)
              [:> ui/Button
               {:color "teal"
