@@ -137,8 +137,6 @@
 
 (defn ws-outbound-handler
   [ws ws-id {:keys [cmd return] :as req} counter& req-ts data]
-  (println "ws-outbound-handler -- data")
-  (clojure.pprint/pprint data)
   (com/hc-send {:type "ws-outbound-handler:respond"
                 :ws-id ws-id
                 :cmd cmd
@@ -156,9 +154,7 @@
 (defn ws-inbound-handler*
   [ws ws-id data]
   (try
-    (let [{:keys [cmd return] :as data'} (if (string? data) ; HACK this sucks -- Bill
-                                           (read-transit-string data)
-                                           data)
+    (let [{:keys [cmd return] :as data'} (read-transit-string data)
           _ (com/hc-send {:type "ws-inbound-handler:receive"
                           :ws-id ws-id
                           :cmd cmd
@@ -181,10 +177,6 @@
   (try
     (let [{:keys [payloads] :as data'} (read-transit-string data)
           payloads' (process-ws-payloads ws-id payloads)]
-      (println "ws-inbound-handler -- data'")
-      (clojure.pprint/pprint data')
-      (println "ws-inbound-handler -- payloads'")
-      (clojure.pprint/pprint payloads')
       (#'ws-outbound-handler ws
                              ws-id
                              {:cmd nil

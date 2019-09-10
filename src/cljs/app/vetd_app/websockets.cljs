@@ -24,15 +24,12 @@
 (def ws-buffer& (atom {}))
 (def ws-subsciption-buffer& (atom {}))
 
-#_ (cljs.pprint/pprint @ws-subsciption-buffer&)
-
 (def last-send-ts& (atom 0))
 (def last-ack-ts& (atom 0))
 
 (defn log-ws? []
   (and (exists? js/log_ws)
        (true? js/log_ws)))
-
 
 (declare ws-reconnect)
 (declare ws-send-buffer)
@@ -69,7 +66,7 @@
 (rf/reg-event-fx
  :ws-inbound
  (fn [cofx [_ data]]
-   (when true #_(log-ws?)
+   (when (log-ws?)
      (.log js/console "ws-inbound")
      (.log js/console (str data)))
    (or (when (map? data)
@@ -77,15 +74,12 @@
                handler (or (and (keyword? return) return)
                            (:handler return))]
            (when handler
-             (cljs.pprint/pprint {:dispatch [handler response data]})
              {:dispatch [handler response data]})))
        {})))
 
 (rf/reg-event-fx
  :ws/ack
  (fn [_ [_ {:keys [msg-ids]} data]]
-   (.log js/console ":ws/ack")
-   (cljs.pprint/pprint msg-ids)
    (reset! last-ack-ts& (util/now))
    (swap! ws-buffer&
           (partial reduce dissoc)
@@ -139,28 +133,15 @@
  (fn [{:keys [db ws-conn]} _]
    {}))
 
-(defn ws-send [{:keys [ws payload]}]
-  (.log js/console "ws-send")
-  (when (log-ws?)
-    (.log js/console (str payload)))
-  (let [ws @ws&]   
-    (if (and ws
-             (= 1 (.-readyState ws)))
-      (.send ws (t/write json-writer payload))
-      (swap! ws-queue conj #(.send % (t/write json-writer payload))))))
-
 (defn ws-send-buffer [buffer-map]
-  (.log js/console "ws-send-buffer")
-  (when true #_(log-ws?)
-        (.log js/console (str buffer-map)))
+  (when (log-ws?)
+    (.log js/console (str buffer-map)))
   (let [ws @ws&]   
-    (if (and ws
-             (= 1 (.-readyState ws)))
-      (do (.log js/console "ws-send-buffer -- SENDING")
-          (reset! last-send-ts& (util/now))
+    (when (and ws
+               (= 1 (.-readyState ws)))
+      (do (reset! last-send-ts& (util/now))
           (.send ws (t/write json-writer
-                             {:payloads buffer-map})))
-      (.log js/console "ws-send-buffer -- NOT READY, NOT SENDING "))))
+                             {:payloads buffer-map}))))))
 
 (rf/reg-fx
  :ws-send
