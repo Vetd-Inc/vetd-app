@@ -52,7 +52,8 @@
                                        :message "Thank you for verifying your email address."}
                                :local-store {:session-token (:session-token output-data)}
                                :dispatch-later [{:ms 100 :dispatch [:ws-get-session-user]}
-                                                {:ms 200 :dispatch [:nav-home]}]}
+                                                ;; first-time login, go to stack page
+                                                {:ms 200 :dispatch [:b/nav-stack]}]}
      :password-reset {:toast {:type "success"
                               :title "Password Updated"
                               :message "Your password has been successfully updated."}
