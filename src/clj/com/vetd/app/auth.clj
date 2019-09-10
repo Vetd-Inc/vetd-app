@@ -330,16 +330,6 @@
   [{:keys [email org-id from-user-id] :as req} ws-id sub-fn]
   (invite-user-to-org email org-id from-user-id))
 
-
-
-;; TODO what security holes does this open by allow any community admin to
-;; add whatever email address they want to a made up new org?
-
-;; TODO what happens if new-orgs contains an oname that already exists?
-;; this could occur accidentally if the community admin was in the process
-;; of inviting a 'non-existent' org and their frontend was outdated.
-;; i.e., someone created the org while the community admin after their search was loaded
-
 ;; org-ids are ids of orgs that presumably exist in our database
 ;; new-orgs is a coll of maps, e.g.:
 ;; [{:oname "Hartford Electronics", :email "jerry@hec.org"}
@@ -354,13 +344,14 @@
     (doseq [org-id org-ids]
       (g/create-or-find-group-org-memb org-id group-id))
     (doseq [{:keys [oname email]} new-orgs]
-      (let [[_ {:keys [id]}] (create-or-find-org oname "" true false)]
-        (do (g/create-or-find-group-org-memb id group-id)
-            (invite-user-to-org email
-                                id
-                                from-user-id
-                                ;; optional from-org-name override
-                                (str "the " gname " community"))))))
+      (let [[created? {:keys [id]}] (create-or-find-org oname "" true false)]
+        (when created? ;; if false, the ui was probably out-of-date (same org was recently created)
+          (do (g/create-or-find-group-org-memb id group-id)
+              (invite-user-to-org email
+                                  id
+                                  from-user-id
+                                  ;; optional from-org-name override
+                                  (str "the " gname " community")))))))
   {})
 
 (defmethod com/handle-ws-inbound :create-membership
