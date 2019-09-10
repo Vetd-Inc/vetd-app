@@ -138,7 +138,7 @@
                :where [:= :id memb-id]}))
 
 (defn create-or-find-memb
-  [user-id org-id]
+  [user-id org-id & [{:keys [suppress-notification?]}]]
   (if-let [memb (select-memb-by-ids user-id org-id)]
     [false memb]
     (when-let [inserted (insert-memb user-id org-id)]
@@ -151,8 +151,9 @@
                                       [:oname]]]
                                     ha/sync-query
                                     vals
-                                    ffirst)
-            _ (com/sns-publish :ui-misc "User Added to Org" (str uname " (user) was added to " oname " (org)"))]
+                                    ffirst)]
+        (when-not suppress-notification?
+          (com/sns-publish :ui-misc "User Added to Org" (str uname " (user) was added to " oname " (org)")))
         [true inserted]))))
 
 (defn prepare-account-map
@@ -376,11 +377,12 @@
   (delete-memb id)
   {})
 
-(defmethod com/handle-ws-inbound :switch-membership
+;; only used by admin
+(defmethod com/handle-ws-inbound :a/switch-membership
   [{:keys [user-id org-id]} ws-id sub-fn]
   (doseq [{:keys [id]} (select-memb-org-by-user-id user-id)]
     (delete-memb id))
-  (create-or-find-memb user-id org-id))
+  (create-or-find-memb user-id org-id {:suppress-notification? true}))
 
 (defmethod com/handle-ws-inbound :update-user
   [{:keys [user-id uname]} ws-id sub-fn]
