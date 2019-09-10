@@ -48,14 +48,20 @@
 (defonce watch-send-ack-ts-id
   (js/setInterval watch-send-ack-ts 4000))
 
+(defn get-buffer-by-msg-id [ws-subsciption-buffer]
+  (->> ws-subsciption-buffer
+       vals
+       (group-by :msg-id)
+       (util/fmap first)))
+
 (rf/reg-event-db
  :ws-connected
  (fn [db [_ url]]
    (println "Websocket connected to: " url)
-   (let [ws-buffer& @ws-buffer&
-         ws-subsciption-buffer& @ws-subsciption-buffer&
-         buffer (merge ws-buffer&
-                       ws-subsciption-buffer&)]
+   (let [ws-buffer @ws-buffer&
+         ws-subsciption-buffer @ws-subsciption-buffer&
+         buffer (merge ws-buffer
+                       (get-buffer-by-msg-id ws-subsciption-buffer))]
      (when-not (empty? buffer)
        (ws-send-buffer buffer)))
    db))
@@ -78,6 +84,7 @@
 (rf/reg-event-fx
  :ws/ack
  (fn [_ [_ {:keys [msg-ids]} data]]
+   (.log js/console ":ws/ack")
    (cljs.pprint/pprint msg-ids)
    (reset! last-ack-ts& (util/now))
    (swap! ws-buffer&
@@ -165,7 +172,7 @@
                      :ws/ts (util/now))]
        (swap! ws-buffer& assoc msg-id p)
        (case (:subscription r)
-         :start (swap! ws-subsciption-buffer& assoc msg-id p)
-         :stop (swap! ws-subsciption-buffer& dissoc msg-id)
+         :start (swap! ws-subsciption-buffer& assoc (:sub-id p) p)
+         :stop (swap! ws-subsciption-buffer& dissoc (:sub-id p))
          nil)))
    (ws-send-buffer @ws-buffer&)))

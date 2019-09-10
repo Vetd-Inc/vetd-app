@@ -43,7 +43,8 @@
                   (->> ws-id
                        msg-ids-by-ws-id
                        (concat ids)
-                       (take 1000))))))
+                       ;; TODO 30 is good?????
+                       (take 30))))))
 
 (defn filter-by-msg-ids-by-ws-id& [ws-id msgs-by-id]
   (reduce dissoc msgs-by-id (@msg-ids-by-ws-id& ws-id)))
@@ -190,7 +191,7 @@
                               :return :ws/ack}
                              (atom 0)
                              (ut/now)
-                             {:ws-ids (distinct (@msg-ids-by-ws-id& ws-id))})
+                             {:msg-ids (distinct (@msg-ids-by-ws-id& ws-id))})
       (doseq [p payloads']
         (ws-inbound-handler* ws ws-id p)))
     (catch Throwable e

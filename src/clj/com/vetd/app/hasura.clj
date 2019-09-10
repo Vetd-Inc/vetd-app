@@ -337,9 +337,9 @@
 
 (defn ws-ib-handler
   [id data]
-  (println "HASURA -- ws-ib-handler")
-  (println id)
-  (clojure.pprint/pprint data)
+#_  (println "HASURA -- ws-ib-handler")
+#_  (println id)
+#_  (clojure.pprint/pprint data)
   (let [data' (json/parse-string data keyword)]
     (when-let [errors (-> data' :payload :errors)]
       (com/log-error errors))
