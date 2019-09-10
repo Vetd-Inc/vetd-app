@@ -61,7 +61,8 @@
                         :props {:category "Accounts"
                                 :label "By Invite"}}
       :dispatch-later [{:ms 100 :dispatch [:ws-get-session-user]}
-                       {:ms 200 :dispatch [:nav-home]}]}
+                       ;; first-time login, go to stack page
+                       {:ms 200 :dispatch [:b/nav-stack]}]}
      {:toast {:type "error"
               :title "Sorry, that invitation is invalid or has expired."}
       :dispatch [:nav-home]})))
