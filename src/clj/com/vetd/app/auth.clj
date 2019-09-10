@@ -139,9 +139,21 @@
 
 (defn create-or-find-memb
   [user-id org-id]
-  (if (select-memb-by-ids user-id org-id)
-    [false nil]
-    [true (insert-memb user-id org-id)]))
+  (if-let [memb (select-memb-by-ids user-id org-id)]
+    [false memb]
+    (when-let [inserted (insert-memb user-id org-id)]
+      (let [{:keys [uname]} (some-> [[:users {:id user-id}
+                                      [:uname]]]
+                                    ha/sync-query
+                                    vals
+                                    ffirst)
+            {:keys [oname]} (some-> [[:orgs {:id org-id}
+                                      [:oname]]]
+                                    ha/sync-query
+                                    vals
+                                    ffirst)
+            _ (com/sns-publish :ui-misc "User Added to Org" (str uname " (user) was added to " oname " (org)"))]
+        [true inserted]))))
 
 (defn prepare-account-map
   "Normalizes and otherwise prepares an account map for insertion in DB."

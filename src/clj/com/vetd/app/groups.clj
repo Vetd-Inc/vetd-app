@@ -45,7 +45,19 @@
   [org-id group-id]
   (if-let [memb (select-group-org-memb-by-ids org-id group-id)]
     [false memb]
-    [true (insert-group-org-membership org-id group-id)]))
+    (when-let [inserted (insert-group-org-membership org-id group-id)]
+      (let [{:keys [gname]} (some-> [[:groups {:id group-id}
+                                      [:gname]]]
+                                    ha/sync-query
+                                    vals
+                                    ffirst)
+            {:keys [oname]} (some-> [[:orgs {:id org-id}
+                                      [:oname]]]
+                                    ha/sync-query
+                                    vals
+                                    ffirst)
+            _ (com/sns-publish :ui-misc "Org Added to Community" (str oname " (org) was added to " gname " (community)"))]
+        [true inserted]))))
 
 (defn delete-group-org-memb
   [group-org-memb-id]
