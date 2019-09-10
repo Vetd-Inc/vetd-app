@@ -5,14 +5,14 @@
 
 (def magic-number 100000)
 
-(def ws-id-base (mod (util/now) (* 1000 60 60 24)))
+(def msg-id-base (mod (util/now) (* 1000 60 60 24)))
 
-(def last-ws-id& (atom (rand-int magic-number)))
+(def last-msg-id& (atom (rand-int magic-number)))
 
-(defn get-next-ws-id []
-  (str ws-id-base
+(defn get-next-msg-id []
+  (str msg-id-base
        "-"
-       (swap! last-ws-id& #(-> % inc (mod magic-number)))))
+       (swap! last-msg-id& #(-> % inc (mod magic-number)))))
 
 (def json-writer (t/writer :json))
 (def json-reader (t/reader :json))
@@ -23,6 +23,8 @@
 
 (def ws-buffer& (atom {}))
 (def ws-subsciption-buffer& (atom {}))
+
+#_ (cljs.pprint/pprint @ws-subsciption-buffer&)
 
 (def last-send-ts& (atom 0))
 (def last-ack-ts& (atom 0))
@@ -75,12 +77,12 @@
 
 (rf/reg-event-fx
  :ws/ack
- (fn [_ [_ {:keys [ws-ids]} data]]
-   (cljs.pprint/pprint ws-ids)
+ (fn [_ [_ {:keys [msg-ids]} data]]
+   (cljs.pprint/pprint msg-ids)
    (reset! last-ack-ts& (util/now))
    (swap! ws-buffer&
           (partial reduce dissoc)
-          ws-ids)
+          msg-ids)
    {}))
 
 (defn ws-onmessage
@@ -89,20 +91,22 @@
     (rf/dispatch [:ws-inbound d])))
 
 (defn mk-ws-conn [url]
- (println "attempting to connect websocket")
- (if-let [ws (js/WebSocket. url)]
-   (do
-     (set! (.-onmessage ws) ws-onmessage)
-     (set! (.-onclose ws)
-           (fn []
-             (.log js/console "Websocket closed. Reconnecting in 1 sec...")
-             (js/setTimeout #(mk-ws-conn url) 1000)))
-     (set! (.-onopen ws)
-           #(rf/dispatch [:ws-connected url]))
-     (println "Websocket connection initiated with: " url)
-     (reset! ws& ws)
-     ws)
-   (throw (js/Error. "Websocket connection failed!"))))
+  (println "attempting to connect websocket")
+  (reset! last-send-ts& 0)
+  (reset! last-ack-ts& 0)
+  (if-let [ws (js/WebSocket. url)]
+    (do
+      (set! (.-onmessage ws) ws-onmessage)
+      (set! (.-onclose ws)
+            (fn []
+              (.log js/console "Websocket closed. Reconnecting in 1 sec...")
+              (js/setTimeout #(mk-ws-conn url) 1000)))
+      (set! (.-onopen ws)
+            #(rf/dispatch [:ws-connected url]))
+      (println "Websocket connection initiated with: " url)
+      (reset! ws& ws)
+      ws)
+    (throw (js/Error. "Websocket connection failed!"))))
 
 (defn ws-reconnect []
   (when-let [ws @ws&]
@@ -141,25 +145,27 @@
 (defn ws-send-buffer [buffer-map]
   (.log js/console "ws-send-buffer")
   (when true #_(log-ws?)
-    (.log js/console (str buffer-map)))
+        (.log js/console (str buffer-map)))
   (let [ws @ws&]   
-    (when (and ws
-               (= 1 (.-readyState ws)))
-      (do (reset! last-send-ts& (util/now))
+    (if (and ws
+             (= 1 (.-readyState ws)))
+      (do (.log js/console "ws-send-buffer -- SENDING")
+          (reset! last-send-ts& (util/now))
           (.send ws (t/write json-writer
-                             {:payloads buffer-map}))))))
+                             {:payloads buffer-map})))
+      (.log js/console "ws-send-buffer -- NOT READY, NOT SENDING "))))
 
 (rf/reg-fx
  :ws-send
  (fn [rs]
    (doseq [r (util/->vec rs)]
-     (let [ws-id (get-next-ws-id)
+     (let [msg-id (get-next-msg-id)
            p (assoc (:payload r)
-                     :ws/ws-id ws-id
+                     :ws/msg-id msg-id
                      :ws/ts (util/now))]
-       (swap! ws-buffer& assoc ws-id p)
+       (swap! ws-buffer& assoc msg-id p)
        (case (:subscription r)
-         :start (swap! ws-subsciption-buffer& assoc ws-id p)
-         :stop (swap! ws-subsciption-buffer& dissoc ws-id)
+         :start (swap! ws-subsciption-buffer& assoc msg-id p)
+         :stop (swap! ws-subsciption-buffer& dissoc msg-id)
          nil)))
    (ws-send-buffer @ws-buffer&)))

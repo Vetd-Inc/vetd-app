@@ -39,8 +39,7 @@
                         :query q
                         :subscription? true
                         :sub-id sub-id}
-;              :subscription :start
-              }}))
+              :subscription :start}}))
 
 (rf/reg-event-fx
  :gql/data
@@ -67,8 +66,7 @@
                                  :sub-id sub-id}
                         :stop true
                         :sub-id sub-id}
-;              :subscription :stop
-              }}))
+              :subscription :stop}}))
 
 (util/reg-sub-special
  :gql/q
