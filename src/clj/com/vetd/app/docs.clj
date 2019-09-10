@@ -1022,7 +1022,7 @@
   (or jval dval nval sval))
 
 (defn select-reusable-response-fields
-  [subject from-org-id prompt-rows]
+  [subject from-org-id to-org-id prompt-rows]
   (let [prompt-ids (->> prompt-rows (map :prompt-id) distinct)
         prompt-terms (->> prompt-rows (map :prompt-term) distinct)
         prompt-field-ids (->> prompt-rows (map :prompt-field-id) distinct)]
@@ -1037,11 +1037,16 @@
           :from [:docs_to_fields]
           :where [:and
                   [:or
-                   [:= :doc_dtype "product-profile"]
                    [:and
-                    [:= :doc_dtype "preposal"]
-                    [:= :doc_to_org_id from-org-id]]]
-                  [:in :doc_subject subject]
+                    [:in :doc_subject subject]
+                    [:or
+                     [:= :doc_dtype "product-profile"]
+                     [:and
+                      [:= :doc_dtype "preposal"]
+                      [:= :doc_to_org_id from-org-id]]]]
+                   [:and
+                    [:= :doc_dtype "vendor-profile"]
+                    [:= :doc_from_org_id to-org-id]]]
                   [:or
                    [:in :prompt_id prompt-ids]
                    [:in :prompt_term prompt-terms]]]}
@@ -1075,14 +1080,14 @@
 (defn auto-pop-missing-responses-by-doc-id
   [doc-id]
   (let [product-ids (select-round-product-ids-by-doc-id doc-id)
-        {:keys [from-org-id]} (->> [[:form-docs {:doc-id doc-id}
-                                   [:from-org-id]]]
-                                 ha/sync-query
-                                 :form-docs
-                                 first)]
+        {:keys [from-org-id to-org-id]} (->> [[:form-docs {:doc-id doc-id}
+                                               [:from-org-id :to-org-id]]]
+                                             ha/sync-query
+                                             :form-docs
+                                             first)]
     (->> doc-id
          select-missing-prompt-responses-by-doc-id
-         (select-reusable-response-fields product-ids from-org-id)
+         (select-reusable-response-fields product-ids from-org-id to-org-id)
          (reuse-responses doc-id))))
 
 (defn set-form-template-prompts-order
