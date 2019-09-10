@@ -348,7 +348,9 @@
 (defn mk-ws []
   (log/info "hasura mk-ws")  
   (let [ws @(ah/websocket-client env/hasura-ws-url
-                                 {:sub-protocols "graphql-ws"})]
+                                 {:sub-protocols "graphql-ws"
+                                  :max-frame-payload (* 2 65536)
+                                  :max-frame-size (* 2 65536)})]
     (ms/on-closed ws ws-on-closed)
     (ms/consume (partial ws-ib-handler (gensym "gql"))
                 ws)
