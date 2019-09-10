@@ -73,7 +73,7 @@
    (let [qid (get-next-query-id)]
      {:db (assoc db
                  :buyer-qid qid)
-      :ws-send {:payload {:cmd :switch-membership
+      :ws-send {:payload {:cmd :a/switch-membership
                           :return nil
                           :user-id user-id
                           :org-id org-id}}})))
