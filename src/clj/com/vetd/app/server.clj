@@ -33,6 +33,32 @@
   (let [now (ut/now)]
     (- now (mod now (* 1000 60 5)))))
 
+(def msg-ids-by-ws-id& (atom {}))
+
+(defn push-msg-ids [ws-id ids]
+  (swap! msg-ids-by-ws-id&
+         (fn [msg-ids-by-ws-id]
+           (assoc msg-ids-by-ws-id
+                  ws-id
+                  (->> ws-id
+                       msg-ids-by-ws-id
+                       (concat ids)
+                       ;; TODO 30 is good?????
+                       (take 30))))))
+
+(defn filter-by-msg-ids-by-ws-id& [ws-id msgs-by-id]
+  (reduce dissoc msgs-by-id (@msg-ids-by-ws-id& ws-id)))
+
+(defn process-ws-payloads
+  [ws-id payloads]
+  (let [r (->> payloads
+               (filter-by-msg-ids-by-ws-id& ws-id)
+               vals
+               (sort-by :ws/ts)
+               vec)]
+    (push-msg-ids ws-id (keys payloads))
+    r))
+
 (defn uri->content-type
   [uri]
   (or (-> uri
@@ -125,25 +151,41 @@
                     :response data}
                    ws))
 
-(defn ws-inbound-handler
-  [ws ws-id data]
+(defn ws-inbound-handler*
+  [ws ws-id {:keys [cmd return] :as data}]
   (try
-    (let [{:keys [cmd return] :as data'} (read-transit-string data)
-          _ (com/hc-send {:type "ws-inbound-handler:receive"
-                          :ws-id ws-id
-                          :cmd cmd
-                          :return return
-                          :request data'})
-          resp-fn (partial #'ws-outbound-handler
+    (com/hc-send {:type "ws-inbound-handler:receive"
+                  :ws-id ws-id
+                  :cmd cmd
+                  :return return
+                  :request data})
+    (let [resp-fn (partial #'ws-outbound-handler
                            ws
                            ws-id
-                           data'
+                           data
                            (atom 0)
                            (ut/now))
-          resp (com/handle-ws-inbound data' ws-id resp-fn)]
+          resp (com/handle-ws-inbound data ws-id resp-fn)]
       (when (and return resp)
         (resp-fn resp)))
     (catch Exception e
+      (com/log-error e))))
+
+(defn ws-inbound-handler
+  [ws ws-id data]
+  (try
+    (let [{:keys [payloads] :as data'} (read-transit-string data)
+          payloads' (process-ws-payloads ws-id payloads)]
+      (#'ws-outbound-handler ws
+                             ws-id
+                             {:cmd nil
+                              :return :ws/ack}
+                             (atom 0)
+                             (ut/now)
+                             {:msg-ids (distinct (@msg-ids-by-ws-id& ws-id))})
+      (doseq [p payloads']
+        (ws-inbound-handler* ws ws-id p)))
+    (catch Throwable e
       (com/log-error e))))
 
 (defn ws-on-closed
@@ -154,6 +196,7 @@
       (catch Throwable t
         (com/log-error t))))
   (swap! ws-conns disj ws)
+  (swap! msg-ids-by-ws-id& dissoc ws-id)
   (swap! com/ws-on-close-fns& dissoc ws-id)
   true)
 
