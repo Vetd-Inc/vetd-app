@@ -152,21 +152,20 @@
                    ws))
 
 (defn ws-inbound-handler*
-  [ws ws-id data]
+  [ws ws-id {:keys [cmd return] :as data}]
   (try
-    (let [{:keys [cmd return] :as data'} (read-transit-string data)
-          _ (com/hc-send {:type "ws-inbound-handler:receive"
-                          :ws-id ws-id
-                          :cmd cmd
-                          :return return
-                          :request data'})
-          resp-fn (partial #'ws-outbound-handler
+    (com/hc-send {:type "ws-inbound-handler:receive"
+                  :ws-id ws-id
+                  :cmd cmd
+                  :return return
+                  :request data})
+    (let [resp-fn (partial #'ws-outbound-handler
                            ws
                            ws-id
-                           data'
+                           data
                            (atom 0)
                            (ut/now))
-          resp (com/handle-ws-inbound data' ws-id resp-fn)]
+          resp (com/handle-ws-inbound data ws-id resp-fn)]
       (when (and return resp)
         (resp-fn resp)))
     (catch Exception e
