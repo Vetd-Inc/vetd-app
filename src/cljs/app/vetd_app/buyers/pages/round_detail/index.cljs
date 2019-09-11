@@ -24,6 +24,7 @@
 
 (rf/reg-sub
  :b/topics
+ :<- [:b/round]
  (fn [{:keys [topics]}] topics))
 
 (rf/reg-sub

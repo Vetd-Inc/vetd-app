@@ -20,7 +20,12 @@
 
 ;;;; Subscriptions
 (rf/reg-sub
+ :b/round
+ (fn [{:keys [round]}] round))
+
+(rf/reg-sub
  :b/products-order
+ :<- [:b/round]
  (fn [{:keys [products-order]}] products-order))
 
 ;;;; Events
@@ -159,14 +164,14 @@
 (rf/reg-event-fx
  :b/set-products-order
  (fn [{:keys [db]} [_ new-products-order]]
-   {:db (assoc db :products-order new-products-order)}))
+   {:db (assoc-in db [:round :products-order] new-products-order)}))
 
 ;; persist any changes to round products sort order to backend
 (rf/reg-event-fx
  :b/store-products-order
  (fn [{:keys [db]} [_ round-id]]
    {:ws-send {:payload {:cmd :b/set-round-products-order
-                        :product-ids (:products-order db)
+                        :product-ids (-> db :round :products-order)
                         :round-id round-id                        
                         :user-id (-> db :user :id)
                         :org-id (util/db->current-org-id db)}}}))
