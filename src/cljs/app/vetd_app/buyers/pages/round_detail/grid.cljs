@@ -863,12 +863,13 @@
   (let [value& (r/atom [])
         ;; TODO remove requirements that have already been added to the round.
         ;; they are already ignored on the backend, but shouldn't even be shown to user.
-        options& (r/atom (initiation/get-requirements-options))]
+        topic-options (rf/subscribe [:b/topics.data-as-dropdown-options])
+        new-topic-options (r/atom [])]
     (fn [round-id popup-open?&]
       [:> ui/Form {:as "div"
                    :class "popup-dropdown-form"}
        [:> ui/Dropdown {:style {:width "100%"}
-                        :options @options&
+                        :options (concat @topic-options @new-topic-options)
                         :placeholder "Enter topic..."
                         :search true
                         :selection true
@@ -881,12 +882,14 @@
                         :additionLabel "Hit 'Enter' to Add "
                         :noResultsMessage "Type to add a new topic..."
                         :onAddItem (fn [_ this]
-                                     (->> this
-                                          .-value
-                                          vector
-                                          ui/as-dropdown-options
-                                          (swap! options& concat)))
-                        :onChange (fn [_ this] (reset! value& (.-value this)))}]
+                                     (let [value (.-value this)]
+                                       (swap! new-topic-options
+                                              conj
+                                              {:key (str "new-topic-" value)
+                                               :text value
+                                               :value value})))
+                        :onChange (fn [_ this]
+                                    (reset! value& (.-value this)))}]
        [:> ui/Button
         {:color "teal"
          :disabled (empty? @value&)
@@ -913,9 +916,13 @@
                                  :fluid true
                                  :icon true
                                  :labelPosition "left"
-                                 :on-mouse-over #(when-not @popup-open?
-                                                   (util/add-class (get-round-grid-node) "highlight-topics"))
-                                 :on-mouse-leave #(util/remove-class (get-round-grid-node) "highlight-topics")}
+                                 :on-mouse-over
+                                 #(when-not @popup-open?
+                                    (when-let [grid (get-round-grid-node)]
+                                      (util/add-class grid "highlight-topics")))
+                                 :on-mouse-leave
+                                 #(when-let [grid (get-round-grid-node)]
+                                    (util/remove-class grid "highlight-topics"))}
                    "Add Topics"
                    [:> ui/Icon {:name "plus"}]])}])))
 
@@ -996,8 +1003,12 @@
                                  :fluid true
                                  :icon true
                                  :labelPosition "left"
-                                 :on-mouse-over #(when-not @popup-open?
-                                                   (util/add-class (get-round-grid-node) "highlight-products"))
-                                 :on-mouse-leave #(util/remove-class (get-round-grid-node) "highlight-products")}
+                                 :on-mouse-over
+                                 #(when-not @popup-open?
+                                    (when-let [grid (get-round-grid-node)]
+                                      (util/add-class grid "highlight-products")))
+                                 :on-mouse-leave
+                                 #(when-let [grid (get-round-grid-node)]
+                                    (util/remove-class grid "highlight-products"))}
                    "Add Products"
                    [:> ui/Icon {:name "plus"}]])}])))

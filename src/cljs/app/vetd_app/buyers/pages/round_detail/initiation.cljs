@@ -9,38 +9,37 @@
             [re-frame.core :as rf]
             [clojure.string :as s]))
 
-;; TODO retrieve from server and store in app-db
-
-(defn get-requirements-options []
-  (ui/as-dropdown-options
-   ["Pricing Estimate"
-    "Pricing Model"
-    "Free Trial"
-    "Payment Options"
-    "Minimum Contract Length"
-    "Cancellation Process"
-    "Company Funding Status"
-    "Company Headquarters"
-    "Company Year Founded"
-    "Number of Employees at Company"
-    "How long does it take to onboard?"
-    "Onboarding Process"
-    "How involved do we need to be in the onboarding process?"
-    "What is our point of contact after signing?"
-    "How often will we have meetings after signing?"
-    "What KPIs do you provide?"
-    "Integrations with other services"
-    "Describe your Data Security"
-    "Who are some of your current clients?"
-    "Number of Current Clients"
-    "Case Studies of Current Clients"
-    "Key Differences from Competitors"
-    "What is your Product Roadmap?"]))
-
-;; TODO this could be prompt-ids instead
+#_(defn get-requirements-options []
+    (ui/as-dropdown-options
+     ["Pricing Estimate"
+      "Pricing Model"
+      "Free Trial"
+      "Payment Options"
+      "Minimum Contract Length"
+      "Cancellation Process"
+      "Company Funding Status"
+      "Company Headquarters"
+      "Company Year Founded"
+      "Number of Employees at Company"
+      "How long does it take to onboard?"
+      "Onboarding Process"
+      "How involved do we need to be in the onboarding process?"
+      "What is our point of contact after signing?"
+      "How often will we have meetings after signing?"
+      "What KPIs do you provide?"
+      "Integrations with other services"
+      "Describe your Data Security"
+      "Who are some of your current clients?"
+      "Number of Current Clients"
+      "Case Studies of Current Clients"
+      "Key Differences from Competitors"
+      "What is your Product Roadmap?"]))
 
 ;; topics that are selected by default in the Round Initiation Form
-(def default-requirements ["Pricing Estimate" "Pricing Model" "Free Trial"])
+(def default-topics-terms
+  ["preposal/pricing-estimate"
+   "product/pricing-model"
+   "product/free-trial?"])
 
 
 ;;;; Events
@@ -93,12 +92,13 @@
 
 (defn c-round-initiation-form
   [round-id]
-  (let [requirements-options (r/atom (get-requirements-options))
-        goal (r/atom "")
+  (let [goal (r/atom "")
         start-using (r/atom "")
         num-users (r/atom "")
         budget (r/atom "")
-        requirements (r/atom default-requirements)
+        topic-options (rf/subscribe [:b/topics.data-as-dropdown-options])
+        new-topic-options (r/atom [])
+        topics (r/atom default-topics-terms)
         add-products-by-name (r/atom "")
         topics-explainer-modal-showing?& (r/atom false)]
     (fn [round-id]
@@ -114,8 +114,8 @@
                :style {:float "right"}}
            [:> ui/Icon {:name "question circle"}]
            "Learn more about topics"]]
-         [:> ui/Dropdown {:value @requirements
-                          :options @requirements-options
+         [:> ui/Dropdown {:value @topics
+                          :options (concat @topic-options @new-topic-options)
                           :placeholder "Add topics..."
                           :search true
                           :selection true
@@ -126,13 +126,13 @@
                           :noResultsMessage "Type to add a new topic..."
                           :onAddItem (fn [_ this]
                                        (let [value (.-value this)]
-                                         (swap! requirements-options
+                                         (swap! new-topic-options
                                                 conj
-                                                {:key value
+                                                {:key (str "new-topic-" value)
                                                  :text value
                                                  :value value})))
                           :onChange (fn [_ this]
-                                      (reset! requirements (.-value this)))}]]
+                                      (reset! topics (.-value this)))}]]
         [:> ui/FormGroup {:widths "equal"}
          [:> ui/FormField
           [:label "When do you need to decide by?"]
@@ -182,7 +182,7 @@
                :rounds/start-using {:value @start-using}
                :rounds/num-users {:value @num-users}
                :rounds/budget {:value @budget}
-               :rounds/requirements {:value @requirements}
+               :rounds/requirements {:value @topics}
                :rounds/add-products-by-name {:value @add-products-by-name}}}])}
          "Submit"]]
        [c-topics-explainer-modal topics-explainer-modal-showing?&]])))
