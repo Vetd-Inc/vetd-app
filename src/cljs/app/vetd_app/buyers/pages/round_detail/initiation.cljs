@@ -9,6 +9,8 @@
             [re-frame.core :as rf]
             [clojure.string :as s]))
 
+;; TODO retrieve from server and store in app-db
+
 (defn get-requirements-options []
   (ui/as-dropdown-options
    ["Pricing Estimate"
@@ -35,8 +37,11 @@
     "Key Differences from Competitors"
     "What is your Product Roadmap?"]))
 
+;; TODO this could be prompt-ids instead
+
 ;; topics that are selected by default in the Round Initiation Form
 (def default-requirements ["Pricing Estimate" "Pricing Model" "Free Trial"])
+
 
 ;;;; Events
 (rf/reg-event-fx

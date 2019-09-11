@@ -91,14 +91,16 @@
  (constantly
   {:search p-bsearch/init-db
    :stack p-bstack/init-db
+   :round p-bround-detail/init-db
    ;; stores refs by keywords, that can be used with :scroll-to fx
    :scroll-to-refs {}
    ;; TODO refactor these to match the pattern of the above ":search"
    :preposals-filter p-bpreposals/default-preposals-filter
    :rounds-filter {:selected-statuses #{}}
    ;; it think this for within the round grid, not sure if it's currently being used
-   :loading? {:products #{}} ; entities (by ID) that are in a loading?=true state (for UI display)
-   :round-products-order []}))
+   ;; in fact, I'm almost certain it's not being used
+   ;; entities (by ID) that are in a loading?=true state (for UI display)
+   :loading? {:products #{}}}))
 
 (def public-pages #{:login :signup :join-org-signup :forgot-password})
 

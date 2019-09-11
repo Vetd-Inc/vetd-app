@@ -20,8 +20,8 @@
 
 ;;;; Subscriptions
 (rf/reg-sub
- :round-products-order
- (fn [{:keys [round-products-order]}] round-products-order))
+ :b/products-order
+ (fn [{:keys [products-order]}] products-order))
 
 ;;;; Events
 (rf/reg-event-fx
@@ -157,16 +157,16 @@
 
 ;; sets round products sort order locally (app-db)
 (rf/reg-event-fx
- :b/set-round-products-order
- (fn [{:keys [db]} [_ new-round-products-order]]
-   {:db (assoc db :round-products-order new-round-products-order)}))
+ :b/set-products-order
+ (fn [{:keys [db]} [_ new-products-order]]
+   {:db (assoc db :products-order new-products-order)}))
 
 ;; persist any changes to round products sort order to backend
 (rf/reg-event-fx
- :b/store-round-products-order
+ :b/store-products-order
  (fn [{:keys [db]} [_ round-id]]
    {:ws-send {:payload {:cmd :b/set-round-products-order
-                        :product-ids (:round-products-order db)
+                        :product-ids (:products-order db)
                         :round-id round-id                        
                         :user-id (-> db :user :id)
                         :org-id (util/db->current-org-id db)}}}))
@@ -460,7 +460,7 @@
 
 (defn c-column
   [round req-form-template rp show-modal-fn]
-  (let [products-order& (rf/subscribe [:round-products-order])]
+  (let [products-order& (rf/subscribe [:b/products-order])]
     (fn [{:keys [id status] :as round}
          {:keys [prompts] :as req-form-template}
          rp
@@ -552,7 +552,7 @@
       (let [default-products-order (vec (map (comp :id :product) round-product))]
         (when (not= @last-default-products-order& default-products-order)
           (reset! last-default-products-order& default-products-order)
-          (rf/dispatch [:b/set-round-products-order default-products-order])))
+          (rf/dispatch [:b/set-products-order default-products-order])))
       [:div.round-grid-container ; c-round-grid expects a certain order of children
        [:div.round-grid-top-scrollbar {:style {:display (if show-top-scrollbar? "block" "none")}}
         [:div {:style {:width (* col-width (count round-product))
@@ -677,7 +677,7 @@
                       (max 0) ; clamp between 0 and max index
                       (min (dec (count @products-order&))))]
     (when (not= old-index new-index)
-      (rf/dispatch [:b/set-round-products-order
+      (rf/dispatch [:b/set-products-order
                     (assoc @products-order&
                            old-index (@products-order& new-index)
                            new-index @reordering-product)]))))
@@ -713,7 +713,7 @@
     (when @reordering-product
       (do (util/remove-class @(:reordering-col nodes) "reordering")
           (reset! reordering-product nil)
-          (rf/dispatch [:b/store-round-products-order @round-id])))
+          (rf/dispatch [:b/store-products-order @round-id])))
     (reset! (:grabbing? scroll) false)
     (util/remove-class @(:grid nodes) "dragging")))
 
@@ -826,7 +826,7 @@
                         :hovering-top-scrollbar? (atom false)} ;; is the mouse over the top scrollbar?
                :drag {:direction-intention (atom nil) ;; (left/right) direction user is intending to drag a column
                       :handle-offset (atom nil)} ;; distance that user mousedown'd from left side of column being dragged
-               :products-order& (rf/subscribe [:round-products-order])}
+               :products-order& (rf/subscribe [:b/products-order])}
         window-scroll-ref (partial window-scroll state)]
     (with-meta c-round-grid*
       {:component-did-mount

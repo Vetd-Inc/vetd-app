@@ -11,11 +11,30 @@
             [re-frame.core :as rf]
             [clojure.string :as s]))
 
+(def init-db
+  {:topics {:loading? true
+            :data []}
+   :products-order []})
+
 ;;;; Subscriptions
 (rf/reg-sub
  :round-idstr
  :<- [:page-params] 
  (fn [{:keys [round-idstr]}] round-idstr))
+
+(rf/reg-sub
+ :b/topics
+ (fn [{:keys [topics]}] topics))
+
+(rf/reg-sub
+ :b/topics.loading?
+ :<- [:b/topics]
+ (fn [{:keys [loading?]}] loading?))
+
+(rf/reg-sub
+ :b/topics.data
+ :<- [:b/topics]
+ (fn [{:keys [data]}] data))
 
 ;;;; Events
 (rf/reg-event-fx
