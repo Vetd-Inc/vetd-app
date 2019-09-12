@@ -11,11 +11,84 @@
             [re-frame.core :as rf]
             [clojure.string :as s]))
 
+(def init-db
+  {:products-order []})
+
 ;;;; Subscriptions
 (rf/reg-sub
  :round-idstr
  :<- [:page-params] 
  (fn [{:keys [round-idstr]}] round-idstr))
+
+(def curated-topics-terms
+  [;; "preposal/pitch"
+   "preposal/pricing-estimate"
+   "product/cancellation-process"
+   "product/case-studies"
+   ;; "product/categories"
+   "product/clients"
+   "product/competitive-differentiator"
+   "product/competitors"
+   "product/data-security"
+   "product/demo"
+   ;; "product/description"
+   ;; "product/free-trial-terms"
+   "product/free-trial?"
+   "product/ideal-client"
+   "product/integrations"
+   "product/kpis"
+   ;; "product/logo"
+   "product/meeting-frequency"
+   "product/minimum-contract"
+   "product/num-clients"
+   "product/onboarding-estimated-time"
+   "product/onboarding-process"
+   "product/onboarding-team-involvement"
+   "product/payment-options"
+   "product/point-of-contact"
+   "product/price-range"
+   "product/pricing-model"
+   "product/reporting"
+   "product/roadmap"
+   "product/tagline"
+   ;; "product/website"
+   "vendor/employee-count"
+   "vendor/funding"
+   "vendor/headquarters"
+   ;; "vendor/logo"
+   ;; "vendor/website"
+   "vendor/year-founded"])
+
+(def topics-gql
+  [:gql/q
+   {:queries
+    [[:prompts {:term curated-topics-terms
+                :deleted nil
+                :_limit 500 ;; sanity check
+                :_order_by {:term :asc}} ;; a little easier to read
+      [:id :prompt :term]]]}])
+
+(rf/reg-sub
+ :b/topics.loading?
+ :<- topics-gql
+ (fn [x] (= x :loading)))
+
+(rf/reg-sub
+ :b/topics.data
+ :<- topics-gql
+ (fn [x]
+   (if-not (= x :loading)
+     (:prompts x)
+     [])))
+
+(rf/reg-sub
+ :b/topics.data-as-dropdown-options
+ :<- [:b/topics.data]
+ (fn [data]
+   (map #(hash-map :key (:term %)
+                   :text (:prompt %)
+                   :value (:term %))
+        data)))
 
 ;;;; Events
 (rf/reg-event-fx
@@ -150,7 +223,7 @@
                                     [:id
                                      [:prompts {:ref-deleted nil
                                                 :_order_by {:sort :asc}}
-                                      [:id :idstr :prompt :descr :sort]]]]
+                                      [:id :idstr :prompt :term :descr :sort]]]]
                                    ;; round initiation form response
                                    [:init-doc
                                     [:id

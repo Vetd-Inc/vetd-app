@@ -20,8 +20,13 @@
 
 ;;;; Subscriptions
 (rf/reg-sub
- :round-products-order
- (fn [{:keys [round-products-order]}] round-products-order))
+ :b/round
+ (fn [{:keys [round]}] round))
+
+(rf/reg-sub
+ :b/products-order
+ :<- [:b/round]
+ (fn [{:keys [products-order]}] products-order))
 
 ;;;; Events
 (rf/reg-event-fx
@@ -157,16 +162,16 @@
 
 ;; sets round products sort order locally (app-db)
 (rf/reg-event-fx
- :b/set-round-products-order
- (fn [{:keys [db]} [_ new-round-products-order]]
-   {:db (assoc db :round-products-order new-round-products-order)}))
+ :b/set-products-order
+ (fn [{:keys [db]} [_ new-products-order]]
+   {:db (assoc-in db [:round :products-order] new-products-order)}))
 
 ;; persist any changes to round products sort order to backend
 (rf/reg-event-fx
- :b/store-round-products-order
+ :b/store-products-order
  (fn [{:keys [db]} [_ round-id]]
    {:ws-send {:payload {:cmd :b/set-round-products-order
-                        :product-ids (:round-products-order db)
+                        :product-ids (-> db :round :products-order)
                         :round-id round-id                        
                         :user-id (-> db :user :id)
                         :org-id (util/db->current-org-id db)}}}))
@@ -460,7 +465,7 @@
 
 (defn c-column
   [round req-form-template rp show-modal-fn]
-  (let [products-order& (rf/subscribe [:round-products-order])]
+  (let [products-order& (rf/subscribe [:b/products-order])]
     (fn [{:keys [id status] :as round}
          {:keys [prompts] :as req-form-template}
          rp
@@ -498,7 +503,8 @@
          (if (seq prompts)
            (for [req prompts
                  :let [{req-prompt-id :id
-                        req-prompt-text :prompt} req
+                        req-prompt-text :prompt
+                        req-prompt-term :term} req
                        response-prompts (-> rp :vendor-response-form-docs first :response-prompts)
                        response-prompt (docs/get-response-prompt-by-prompt-id
                                         response-prompts
@@ -513,7 +519,13 @@
                        resps (docs/get-response-fields-by-prompt-id response-prompts req-prompt-id)
                        resp-id (-> resps first :resp-id)
                        resp-text (->> resps
-                                      (map #(or (:sval %) (:nval %) (:dval %)))
+                                      (map #(cond
+                                              (and (:nval %)
+                                                   (= req-prompt-term "preposal/pricing-estimate")) (str "$" (util/decimal-format (:nval %)) " / ")
+                                              (:nval %) (util/decimal-format (:nval %))
+                                              (:dval %) (:dval %)
+                                              (:sval %) (:sval %)
+                                              :else nil))
                                       (apply str))]]
              ^{:key (str req-prompt-id "-" product-id)}
              [:div.cell {:class (str (when (= 1 resp-rating) "response-approved ")
@@ -552,7 +564,7 @@
       (let [default-products-order (vec (map (comp :id :product) round-product))]
         (when (not= @last-default-products-order& default-products-order)
           (reset! last-default-products-order& default-products-order)
-          (rf/dispatch [:b/set-round-products-order default-products-order])))
+          (rf/dispatch [:b/set-products-order default-products-order])))
       [:div.round-grid-container ; c-round-grid expects a certain order of children
        [:div.round-grid-top-scrollbar {:style {:display (if show-top-scrollbar? "block" "none")}}
         [:div {:style {:width (* col-width (count round-product))
@@ -677,7 +689,7 @@
                       (max 0) ; clamp between 0 and max index
                       (min (dec (count @products-order&))))]
     (when (not= old-index new-index)
-      (rf/dispatch [:b/set-round-products-order
+      (rf/dispatch [:b/set-products-order
                     (assoc @products-order&
                            old-index (@products-order& new-index)
                            new-index @reordering-product)]))))
@@ -713,7 +725,7 @@
     (when @reordering-product
       (do (util/remove-class @(:reordering-col nodes) "reordering")
           (reset! reordering-product nil)
-          (rf/dispatch [:b/store-round-products-order @round-id])))
+          (rf/dispatch [:b/store-products-order @round-id])))
     (reset! (:grabbing? scroll) false)
     (util/remove-class @(:grid nodes) "dragging")))
 
@@ -826,7 +838,7 @@
                         :hovering-top-scrollbar? (atom false)} ;; is the mouse over the top scrollbar?
                :drag {:direction-intention (atom nil) ;; (left/right) direction user is intending to drag a column
                       :handle-offset (atom nil)} ;; distance that user mousedown'd from left side of column being dragged
-               :products-order& (rf/subscribe [:round-products-order])}
+               :products-order& (rf/subscribe [:b/products-order])}
         window-scroll-ref (partial window-scroll state)]
     (with-meta c-round-grid*
       {:component-did-mount
@@ -858,12 +870,13 @@
   (let [value& (r/atom [])
         ;; TODO remove requirements that have already been added to the round.
         ;; they are already ignored on the backend, but shouldn't even be shown to user.
-        options& (r/atom (initiation/get-requirements-options))]
+        topic-options (rf/subscribe [:b/topics.data-as-dropdown-options])
+        new-topic-options (r/atom [])]
     (fn [round-id popup-open?&]
       [:> ui/Form {:as "div"
                    :class "popup-dropdown-form"}
-       [:> ui/Dropdown {:style {:width "100%"}
-                        :options @options&
+       [:> ui/Dropdown {:value @value&
+                        :options (concat @topic-options @new-topic-options)
                         :placeholder "Enter topic..."
                         :search true
                         :selection true
@@ -876,12 +889,23 @@
                         :additionLabel "Hit 'Enter' to Add "
                         :noResultsMessage "Type to add a new topic..."
                         :onAddItem (fn [_ this]
-                                     (->> this
-                                          .-value
-                                          vector
-                                          ui/as-dropdown-options
-                                          (swap! options& concat)))
-                        :onChange (fn [_ this] (reset! value& (.-value this)))}]
+                                     (let [value (.-value this)]
+                                       (swap! new-topic-options
+                                              conj
+                                              {:key (str "new-topic-" value)
+                                               :text value
+                                               :value (str "new-topic/" value)})))
+                        :onChange
+                        (fn [_ this]
+                          (reset! value&
+                                  (let [db-topic-set (set (map :value @topic-options))
+                                        has-term? (some-fn db-topic-set
+                                                           #(s/starts-with? % "new-topic/"))]
+                                    (->> (.-value this)
+                                         (map #(if (has-term? %)
+                                                 %
+                                                 (str "new-topic/" %)))))))
+                        :style {:width "100%"}}]
        [:> ui/Button
         {:color "teal"
          :disabled (empty? @value&)
@@ -908,9 +932,13 @@
                                  :fluid true
                                  :icon true
                                  :labelPosition "left"
-                                 :on-mouse-over #(when-not @popup-open?
-                                                   (util/add-class (get-round-grid-node) "highlight-topics"))
-                                 :on-mouse-leave #(util/remove-class (get-round-grid-node) "highlight-topics")}
+                                 :on-mouse-over
+                                 #(when-not @popup-open?
+                                    (when-let [grid (get-round-grid-node)]
+                                      (util/add-class grid "highlight-topics")))
+                                 :on-mouse-leave
+                                 #(when-let [grid (get-round-grid-node)]
+                                    (util/remove-class grid "highlight-topics"))}
                    "Add Topics"
                    [:> ui/Icon {:name "plus"}]])}])))
 
@@ -920,9 +948,11 @@
         options& (r/atom []) ; options from search results + current values
         search-query& (r/atom "")
         products->options (fn [products]
-                            (for [{:keys [id pname]} products]
+                            (for [{:keys [id pname vendor]} products]
                               {:key id
-                               :text pname
+                               :text (str pname
+                                          (when-not (= pname (:oname vendor))
+                                            (str " by " (:oname vendor))))
                                :value id}))]
     (fn [round-id round-product popup-open?&]
       (let [products& (rf/subscribe
@@ -932,7 +962,9 @@
                                                       {:deleted {:_is_null true}}]}
                                       :_limit 100
                                       :_order_by {:pname :asc}}
-                           [:id :pname]]]}])
+                           [:id :pname
+                            [:vendor
+                             [:oname]]]]]}])
             product-ids-already-in-round (set (map (comp :id :product) round-product))
             _ (when-not (= :loading @products&)
                 (let [options (->> @products&
@@ -991,8 +1023,12 @@
                                  :fluid true
                                  :icon true
                                  :labelPosition "left"
-                                 :on-mouse-over #(when-not @popup-open?
-                                                   (util/add-class (get-round-grid-node) "highlight-products"))
-                                 :on-mouse-leave #(util/remove-class (get-round-grid-node) "highlight-products")}
+                                 :on-mouse-over
+                                 #(when-not @popup-open?
+                                    (when-let [grid (get-round-grid-node)]
+                                      (util/add-class grid "highlight-products")))
+                                 :on-mouse-leave
+                                 #(when-let [grid (get-round-grid-node)]
+                                    (util/remove-class grid "highlight-products"))}
                    "Add Products"
                    [:> ui/Icon {:name "plus"}]])}])))

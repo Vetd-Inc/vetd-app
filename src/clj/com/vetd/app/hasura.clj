@@ -307,7 +307,7 @@
 (defmulti handle-from-graphql (fn [{gtype :type}] (gql-msg-types-str->kw gtype)))
 
 (defn ws-send [ws msg]
- (try
+  (try
     (ut/$- -> msg
            json/generate-string
            (ms/try-put! ws
@@ -349,8 +349,8 @@
   (log/info "hasura mk-ws")  
   (let [ws @(ah/websocket-client env/hasura-ws-url
                                  {:sub-protocols "graphql-ws"
-                                  :max-frame-payload (* 2 65536)
-                                  :max-frame-size (* 2 65536)})]
+                                  :max-frame-payload (* 8 65536)
+                                  :max-frame-size (* 8 65536)})]
     (ms/on-closed ws ws-on-closed)
     (ms/consume (partial ws-ib-handler (gensym "gql"))
                 ws)

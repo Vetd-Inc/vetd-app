@@ -298,7 +298,7 @@ Round URL: https://app.vetd.com/b/rounds/%s"
 
 (defn add-requirement-to-round
   "Add requirement to round by Round ID or by the form template ID of requirements form template."
-  [requirement-text & [{:keys [round-id form-template-id]}]]
+  [requirement-term & [{:keys [round-id form-template-id]}]]
   (let [req-form-template-id (or form-template-id
                                  (-> [[:rounds {:id round-id}
                                        [:req-form-template-id]]]
@@ -306,10 +306,16 @@ Round URL: https://app.vetd.com/b/rounds/%s"
                                      vals
                                      ffirst
                                      :req-form-template-id))
-        {:keys [id]} (-> requirement-text
-                         docs/get-prompts-by-sval
-                         first
-                         (or (docs/create-round-req-prompt&fields requirement-text)))
+        new-req? (s/starts-with? requirement-term "new-topic/")
+        {:keys [id]} (if new-req?
+                       ;; In frontend, new topics are given a fake term
+                       ;; like so: "new-topic/Topic Text That User Entered"
+                       (-> requirement-term 
+                           (s/replace #"new-topic/" "")
+                           docs/create-round-req-prompt&fields)
+                       (-> requirement-term
+                           docs/get-prompts-by-term
+                           first))
         existing-prompts (docs/select-form-template-prompts-by-parent-id req-form-template-id)]
     (when-not (some #(= id (:prompt-id %)) existing-prompts)
       (docs/insert-form-template-prompt req-form-template-id id)
