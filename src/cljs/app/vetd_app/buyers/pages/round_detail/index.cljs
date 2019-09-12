@@ -37,7 +37,7 @@
    "product/ideal-client"
    "product/integrations"
    "product/kpis"
-   "product/logo"
+   ;; "product/logo"
    "product/meeting-frequency"
    "product/minimum-contract"
    "product/num-clients"
@@ -51,12 +51,12 @@
    "product/reporting"
    "product/roadmap"
    "product/tagline"
-   "product/website"
+   ;; "product/website"
    "vendor/employee-count"
    "vendor/funding"
    "vendor/headquarters"
-   "vendor/logo" 
-   "vendor/website" 
+   ;; "vendor/logo"
+   ;; "vendor/website"
    "vendor/year-founded"])
 
 (def topics-gql
