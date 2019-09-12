@@ -6,6 +6,7 @@
             [com.vetd.app.hasura :as ha]
             [taoensso.timbre :as log]
             [honeysql.core :as hs]
+            [clojure.string :as s]
             clojure.data
             clojure.set))
 
@@ -916,6 +917,13 @@
       ha/sync-query
       :prompts))
 
+(defn get-prompts-by-term [term]
+  (-> [[:prompts
+        {:term term} 
+        [:id]]]
+      ha/sync-query
+      :prompts))
+
 ;; TODO the prompt-id for existing prompts should be present in field jval
 (defn group-by-prompt-exists
   [prompts]
@@ -924,7 +932,8 @@
                 {:item
                  (merge (-> item
                             :sval
-                            get-prompts-by-sval
+                            ;; actually the prompt's term
+                            get-prompts-by-term
                             first)
                         (dissoc item :id))}))
          (group-by (comp nil? :id :item))
@@ -956,6 +965,9 @@
           :prompt-new [(tree-assoc-fn [item]
                                       (let [{:keys [sval idx]} item]
                                         [:item (-> sval
+                                                   ;; In frontend, new topics are given a fake term
+                                                   ;; like so: "new-topic/Topic Text That User Entered"
+                                                   (s/replace #"new-topic/" "")
                                                    create-round-req-prompt&fields
                                                    (assoc :idx idx))]))]}
          (tree-assoc-fn [children]
