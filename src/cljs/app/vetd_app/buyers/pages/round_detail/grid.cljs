@@ -892,7 +892,7 @@
                         (fn [_ this]
                           (reset! value&
                                   (let [db-topic-set (set (map :value @topic-options))
-                                        has-term? (some-fn db-topic-set              
+                                        has-term? (some-fn db-topic-set
                                                            #(s/starts-with? % "new-topic/"))]
                                     (->> (.-value this)
                                          (map #(if (has-term? %)
