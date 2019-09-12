@@ -518,15 +518,22 @@
                        
                        resps (docs/get-response-fields-by-prompt-id response-prompts req-prompt-id)
                        resp-id (-> resps first :resp-id)
-                       resp-text (->> resps
-                                      (map #(cond
-                                              (and (:nval %)
-                                                   (= req-prompt-term "preposal/pricing-estimate")) (str "$" (util/decimal-format (:nval %)) " / ")
-                                              (:nval %) (util/decimal-format (:nval %))
-                                              (:dval %) (:dval %)
-                                              (:sval %) (:sval %)
-                                              :else nil))
-                                      (apply str))]]
+                       display-resp (fn [{:keys [sval nval dval prompt-field-fname] :as resp}]
+                                      (cond
+                                        nval (util/decimal-format nval)
+                                        dval dval ;; TODO process date -> human readable
+                                        sval sval
+                                        :else nil))
+                       resp-text (cond ;; some terms get special treatment
+                                   (= req-prompt-term "preposal/pricing-estimate")
+                                   (let [fname->resps (group-by :prompt-field-fname resps)
+                                         fname->resp (comp first fname->resps)
+                                         [value unit details] (map fname->resp ["value" "unit" "details"])]
+                                     (if (:nval value)
+                                       (str "$" (util/decimal-format (:nval value)) " / " (:sval unit) " " (:sval details))
+                                       (:sval details)))
+
+                                   :else (apply str (map display-resp resps)))]]
              ^{:key (str req-prompt-id "-" product-id)}
              [:div.cell {:class (str (when (= 1 resp-rating) "response-approved ")
                                      (when (= 0 resp-rating) "response-disapproved "))
