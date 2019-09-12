@@ -868,7 +868,7 @@
     (fn [round-id popup-open?&]
       [:> ui/Form {:as "div"
                    :class "popup-dropdown-form"}
-       [:> ui/Dropdown {:style {:width "100%"}
+       [:> ui/Dropdown {:value @value&
                         :options (concat @topic-options @new-topic-options)
                         :placeholder "Enter topic..."
                         :search true
@@ -887,9 +887,18 @@
                                               conj
                                               {:key (str "new-topic-" value)
                                                :text value
-                                               :value value})))
-                        :onChange (fn [_ this]
-                                    (reset! value& (.-value this)))}]
+                                               :value (str "new-topic/" value)})))
+                        :onChange
+                        (fn [_ this]
+                          (reset! value&
+                                  (let [db-topic-set (set (map :value @topic-options))
+                                        has-term? (some-fn db-topic-set              
+                                                           #(s/starts-with? % "new-topic/"))]
+                                    (->> (.-value this)
+                                         (map #(if (has-term? %)
+                                                 %
+                                                 (str "new-topic/" %)))))))
+                        :style {:width "100%"}}]
        [:> ui/Button
         {:color "teal"
          :disabled (empty? @value&)

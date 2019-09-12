@@ -9,38 +9,11 @@
             [re-frame.core :as rf]
             [clojure.string :as s]))
 
-#_(defn get-requirements-options []
-    (ui/as-dropdown-options
-     ["Pricing Estimate"
-      "Pricing Model"
-      "Free Trial"
-      "Payment Options"
-      "Minimum Contract Length"
-      "Cancellation Process"
-      "Company Funding Status"
-      "Company Headquarters"
-      "Company Year Founded"
-      "Number of Employees at Company"
-      "How long does it take to onboard?"
-      "Onboarding Process"
-      "How involved do we need to be in the onboarding process?"
-      "What is our point of contact after signing?"
-      "How often will we have meetings after signing?"
-      "What KPIs do you provide?"
-      "Integrations with other services"
-      "Describe your Data Security"
-      "Who are some of your current clients?"
-      "Number of Current Clients"
-      "Case Studies of Current Clients"
-      "Key Differences from Competitors"
-      "What is your Product Roadmap?"]))
-
 ;; topics that are selected by default in the Round Initiation Form
 (def default-topics-terms
   ["preposal/pricing-estimate"
    "product/pricing-model"
    "product/free-trial?"])
-
 
 ;;;; Events
 (rf/reg-event-fx
@@ -130,9 +103,17 @@
                                                 conj
                                                 {:key (str "new-topic-" value)
                                                  :text value
-                                                 :value value})))
-                          :onChange (fn [_ this]
-                                      (reset! topics (.-value this)))}]]
+                                                 :value (str "new-topic/" value)})))
+                          :onChange
+                          (fn [_ this]
+                            (reset! topics
+                                    (let [db-topic-set (set (map :value @topic-options))
+                                          has-term? (some-fn db-topic-set              
+                                                             #(s/starts-with? % "new-topic/"))]
+                                      (->> (.-value this)
+                                           (map #(if (has-term? %)
+                                                   %
+                                                   (str "new-topic/" %)))))))}]]
         [:> ui/FormGroup {:widths "equal"}
          [:> ui/FormField
           [:label "When do you need to decide by?"]
