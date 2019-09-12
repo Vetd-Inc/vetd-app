@@ -503,7 +503,8 @@
          (if (seq prompts)
            (for [req prompts
                  :let [{req-prompt-id :id
-                        req-prompt-text :prompt} req
+                        req-prompt-text :prompt
+                        req-prompt-term :term} req
                        response-prompts (-> rp :vendor-response-form-docs first :response-prompts)
                        response-prompt (docs/get-response-prompt-by-prompt-id
                                         response-prompts
@@ -518,7 +519,13 @@
                        resps (docs/get-response-fields-by-prompt-id response-prompts req-prompt-id)
                        resp-id (-> resps first :resp-id)
                        resp-text (->> resps
-                                      (map #(or (:sval %) (:nval %) (:dval %)))
+                                      (map #(cond
+                                              (and (:nval %)
+                                                   (= req-prompt-term "preposal/pricing-estimate")) (str "$" (util/decimal-format (:nval %)) " / ")
+                                              (:nval %) (util/decimal-format (:nval %))
+                                              (:dval %) (:dval %)
+                                              (:sval %) (:sval %)
+                                              :else nil))
                                       (apply str))]]
              ^{:key (str req-prompt-id "-" product-id)}
              [:div.cell {:class (str (when (= 1 resp-rating) "response-approved ")
@@ -941,9 +948,11 @@
         options& (r/atom []) ; options from search results + current values
         search-query& (r/atom "")
         products->options (fn [products]
-                            (for [{:keys [id pname]} products]
+                            (for [{:keys [id pname vendor]} products]
                               {:key id
-                               :text pname
+                               :text (str pname
+                                          (when-not (= pname (:oname vendor))
+                                            (str " by " (:oname vendor))))
                                :value id}))]
     (fn [round-id round-product popup-open?&]
       (let [products& (rf/subscribe
@@ -953,7 +962,9 @@
                                                       {:deleted {:_is_null true}}]}
                                       :_limit 100
                                       :_order_by {:pname :asc}}
-                           [:id :pname]]]}])
+                           [:id :pname
+                            [:vendor
+                             [:oname]]]]]}])
             product-ids-already-in-round (set (map (comp :id :product) round-product))
             _ (when-not (= :loading @products&)
                 (let [options (->> @products&
