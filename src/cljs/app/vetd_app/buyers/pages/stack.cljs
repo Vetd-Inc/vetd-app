@@ -313,10 +313,11 @@
             [:> ui/TableCell "2019-09-13"]
             [:> ui/TableCell "Carta"]
             [:> ui/TableCell "$2000.00"]]]]
+         ]
+        [:> ui/ModalActions
          [:> ui/Form {:method "post"
                       :enc-type "multipart/form-data"
-                      :style {:background "#f8f9fa"
-                              :margin "30px auto 20px auto"}}
+                      :style {:margin "5px auto 15px auto"}}
           [:input {:type "file"
                    :accept "text/csv" ;; not sure how much this does...
                    :on-change (fn [e]
@@ -328,8 +329,8 @@
                                       (.readAsBinaryString reader file))
                                     (do (rf/dispatch [:toast {:type "error"
                                                               :title "Only CSV files are accepted."}])
-                                        (aset (aget e "target") "value" "")))))}]]]
-        [:> ui/ModalActions
+                                        (aset (aget e "target") "value" "")))))}]]
+         [:div {:style {:clear "both"}}]
          [:> ui/Button {:onClick #(do (reset! file-contents& nil)
                                       (reset! modal-showing?& false))}
           "Cancel"]
