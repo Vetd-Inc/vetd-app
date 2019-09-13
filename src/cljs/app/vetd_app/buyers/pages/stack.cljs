@@ -39,10 +39,14 @@
  (fn [{:keys [db]} [_ param]]
    (merge {:db (assoc db :page :b/stack)
            :analytics/page {:name "Buyers Stack"}}
-          (when (= param "qb-return")
-            {:toast {:type "success"
-                     :title "Connected to Quickbooks"
-                     :message "We will notify you after your data has been processed and added to your stack."}}))))
+          (case param 
+            "qb-return" {:toast {:type "success"
+                                 :title "Connected to Quickbooks"
+                                 :message "We will notify you after your data has been processed and added to your stack."}}
+            "qb-return-access-denied" {:toast {:type "error"
+                                               :title "Quickbooks Not Connected"
+                                               :message "We were not able to connect to your Quickbooks account."}}
+            nil))))
 
 (rf/reg-event-fx
  :b/stack.add-items
