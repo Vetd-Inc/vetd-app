@@ -110,6 +110,15 @@
        first
        :text))
 
+;; Table
+(def Table (component "Table"))
+(def TableHeader (component "Table" "Header"))
+(def TableRow (component "Table" "Row"))
+(def TableHeaderCell (component "Table" "HeaderCell"))
+(def TableBody (component "Table" "Body"))
+(def TableCell (component "Table" "Cell"))
+(def TableFooter (component "Table" "Footer"))
+
 ;; Misc
 (def Image (component "Image"))
 (def Step (component "Step"))

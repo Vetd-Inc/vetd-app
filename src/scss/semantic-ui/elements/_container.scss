@@ -49,6 +49,7 @@
   padding: 10px;
   animation: fade-out-up 1s 8s ease-in;
   animation-fill-mode: forwards;
+  z-index: 9999;
 }
 @keyframes fade-out-up {
   from {
