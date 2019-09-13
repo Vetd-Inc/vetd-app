@@ -227,7 +227,7 @@
   (let [popup-open? (r/atom false)]
     (fn [stack-items]
       [:> ui/Popup
-       {:position "bottom left"
+       {:position "right center"
         :on "click"
         :open @popup-open?
         :onOpen #(reset! popup-open? true)
@@ -318,15 +318,20 @@
                       :style {:background "#f8f9fa"
                               :margin "30px auto 20px auto"}}
           [:input {:type "file"
-                   :accept ".csv"
+                   :accept "text/csv" ;; not sure how much this does...
                    :on-change (fn [e]
-                                (let [file (aget e "target" "files" 0)
-                                      onloadend #(reset! file-contents& (aget % "target" "result"))
-                                      reader (doto (js/FileReader.)
-                                               (aset "onloadend" onloadend))]
-                                  (.readAsBinaryString reader file)))}]]]
+                                (let [file (aget e "target" "files" 0)]
+                                  (if (= (aget file "type") "text/csv")
+                                    (let [onloadend #(reset! file-contents& (aget % "target" "result"))
+                                          reader (doto (js/FileReader.)
+                                                   (aset "onloadend" onloadend))]
+                                      (.readAsBinaryString reader file))
+                                    (do (rf/dispatch [:toast {:type "error"
+                                                              :title "Only CSV files are accepted."}])
+                                        (aset (aget e "target") "value" "")))))}]]]
         [:> ui/ModalActions
-         [:> ui/Button {:onClick #(reset! modal-showing?& false)}
+         [:> ui/Button {:onClick #(do (reset! file-contents& nil)
+                                      (reset! modal-showing?& false))}
           "Cancel"]
          [:> ui/Button
           {:disabled (nil? @file-contents&)
