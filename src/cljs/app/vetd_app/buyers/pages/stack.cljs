@@ -322,7 +322,8 @@
                    :accept "text/csv" ;; not sure how much this does...
                    :on-change (fn [e]
                                 (let [file (aget e "target" "files" 0)]
-                                  (if (= (aget file "type") "text/csv")
+                                  (if (or (= (aget file "type") "text/csv")
+                                          (= "csv" (s/lower-case (last (s/split (aget file "name") #"\.")))))
                                     (let [onloadend #(reset! file-contents& (aget % "target" "result"))
                                           reader (doto (js/FileReader.)
                                                    (aset "onloadend" onloadend))]
