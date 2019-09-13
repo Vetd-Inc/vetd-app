@@ -144,6 +144,25 @@
                         :stack-item-id id
                         :renewal-reminder renewal-reminder}}}))
 
+(rf/reg-event-fx
+ :b/stack.upload-csv
+ (fn [{:keys [db]} [_ file-contents]]
+   (let [buyer-id (util/db->current-org-id db)]
+     {:ws-send {:payload {:cmd :b/stack.upload-csv
+                          :return {:handler :b/stack.upload-csv.return}
+                          :buyer-id buyer-id
+                          :file-contents file-contents}}
+      :analytics/track {:event "CSV Uploaded"
+                        :props {:category "Stack"
+                                :label buyer-id}}})))
+
+(rf/reg-event-fx
+ :b/stack.upload-csv.return
+ (fn []
+   {:toast {:type "success"
+            :title "CSV File Uploaded"
+            :message "We will notify you after your data has been processed and added to your stack."}}))
+
 ;;;; Components
 (defn c-add-product-form
   [stack-items popup-open?&]
@@ -221,7 +240,7 @@
                                  :icon true
                                  :labelPosition "left"
                                  :fluid true}
-                   "Add Product"
+                   "Add Products"
                    [:> ui/Icon {:name "plus"}]])}])))
 
 (defn c-qb-import-button
@@ -230,7 +249,8 @@
                :action "https://quickbooks.vetd.com/"
                :style {:margin-top 14}}
    [:> ui/Popup
-    {:position "bottom left"
+    {:position "right center"
+     :header "Import Quickbooks"
      :content "Connect to your Quickbooks account and Vetd will add your vendor stack for you."
      :trigger (r/as-element
                [:> ui/Button {:color "lightteal"
@@ -239,6 +259,82 @@
                               :fluid true}
                 "Import Quickbooks"
                 [:> ui/Icon {:name "quickbooks"}]])}]])
+
+(defn c-csv-upload-button
+  []
+  (let [modal-showing?& (r/atom false)
+        file-contents& (r/atom nil)]
+    (fn []
+      [:<>
+       [:> ui/Popup
+        {:position "right center"
+         :header "Upload Transactions CSV"
+         :content "Upload a .csv file, and Vetd will add your vendor stack for you."
+         :trigger (r/as-element
+                   [:> ui/Button {:on-click #(reset! modal-showing?& true)
+                                  :color "lightteal"
+                                  :icon true
+                                  :labelPosition "left"
+                                  :fluid true}
+                    "Upload CSV"
+                    [:> ui/Icon {:name "upload"}]])}]
+       [:> ui/Modal {:open @modal-showing?&
+                     :on-close #(reset! modal-showing?& false)
+                     :size "tiny"
+                     :dimmer "inverted"
+                     :closeOnDimmerClick false
+                     :closeOnEscape true
+                     :closeIcon true}
+        [:> ui/ModalHeader "Upload a CSV File of Transaction Data"]
+        [:> ui/ModalContent
+         [:p "Upload a .csv file, and Vetd will add your vendor stack for you."]
+         [:p "For best results, include the last 12 months of transaction data."]
+         [:h4 "Suggested format:"]
+         [:> ui/Table
+          [:> ui/TableHeader
+           [:> ui/TableRow
+            [:> ui/TableHeaderCell "Transaction Date"]
+            [:> ui/TableHeaderCell "Vendor/Product Name"]
+            [:> ui/TableHeaderCell "Amount"]]]
+          [:> ui/TableBody
+           [:> ui/TableRow
+            [:> ui/TableCell "2019-08-05"]
+            [:> ui/TableCell "Slack"]
+            [:> ui/TableCell "$25.00"]]
+           [:> ui/TableRow
+            [:> ui/TableCell "2019-09-05"]
+            [:> ui/TableCell "Slack"]
+            [:> ui/TableCell "$25.00"]]
+           [:> ui/TableRow
+            [:> ui/TableCell "2019-09-08"]
+            [:> ui/TableCell "Mailchimp"]
+            [:> ui/TableCell "$75.00"]]
+           [:> ui/TableRow
+            [:> ui/TableCell "2019-09-13"]
+            [:> ui/TableCell "Carta"]
+            [:> ui/TableCell "$2000.00"]]]]
+         [:> ui/Form {:method "post"
+                      :enc-type "multipart/form-data"
+                      :style {:background "#f8f9fa"
+                              :margin "30px auto 20px auto"}}
+          [:input {:type "file"
+                   :accept ".csv"
+                   :on-change (fn [e]
+                                (let [file (aget e "target" "files" 0)
+                                      onloadend #(reset! file-contents& (aget % "target" "result"))
+                                      reader (doto (js/FileReader.)
+                                               (aset "onloadend" onloadend))]
+                                  (.readAsBinaryString reader file)))}]]]
+        [:> ui/ModalActions
+         [:> ui/Button {:onClick #(reset! modal-showing?& false)}
+          "Cancel"]
+         [:> ui/Button
+          {:disabled (nil? @file-contents&)
+           :color "blue"
+           :on-click #(do (rf/dispatch [:b/stack.upload-csv @file-contents&])
+                          (reset! file-contents& nil)
+                          (reset! modal-showing?& false))}
+          "Upload"]]]])))
 
 (defn c-subscription-type-checkbox
   [s-type subscription-type&]
@@ -484,7 +580,8 @@
                [:div.sidebar
                 [:> ui/Segment
                  [c-add-product-button unfiltered-stack]
-                 [c-qb-import-button]]
+                 [c-qb-import-button]
+                 [c-csv-upload-button]]
                 [:> ui/Segment {:class "top-categories"}
                  [:h4 "Jump To"]
                  [:div

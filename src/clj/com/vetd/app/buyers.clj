@@ -644,3 +644,10 @@ Round URL: https://app.vetd.com/b/rounds/%s"
                                       rating)}))
                   :stack_items)
   {})
+
+(defmethod com/handle-ws-inbound :b/stack.upload-csv
+  [{:keys [buyer-id file-contents]} ws-id sub-fn]
+  (com/s3-put "vetd-stack-csv-uploads"
+              (str (-> buyer-id auth/select-org-by-id :oname) " "(ut/now-ts) ".csv")
+              file-contents))
+

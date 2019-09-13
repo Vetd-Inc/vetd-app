@@ -1011,7 +1011,7 @@ $cell-height: 201px;
     margin-bottom: 0;
     background-image: radial-gradient(at center 100px, #f5f5f5 0px, #eee 120px);
     background-repeat: no-repeat;
-    z-index: 1003;
+    z-index: 1000;
   }
 
   & > .results > .item {
@@ -1176,7 +1176,7 @@ $cell-height: 201px;
     margin-bottom: 0;
     background-image: radial-gradient(at center 100px, #f5f5f5 0px, #eee 120px);
     background-repeat: no-repeat;
-    z-index: 1003;
+    z-index: 1000;
     font-size: 22px;
     font-weight: 700;
   }
