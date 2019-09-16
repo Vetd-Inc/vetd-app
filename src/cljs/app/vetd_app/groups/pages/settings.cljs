@@ -87,7 +87,9 @@
                                                             (doto (util/node-by-id "group-invite-url")
                                                               .focus
                                                               .select)
-                                                            (.execCommand js/document "copy")))
+                                                            (.execCommand js/document "copy")
+                                                            (rf/dispatch [:toast {:type "success"
+                                                                                  :title "Invite link copied!"}])))
                                               :color "teal"
                                               :labelPosition "right"
                                               :icon "copy"
@@ -422,25 +424,25 @@
                     [:<>
                      [:> ui/Popup
                       {:position "bottom center"
-                       :content "Create a shareable invite link that lasts for 45 days."
-                       :trigger (r/as-element 
-                                 [:> ui/Label {:on-click #(rf/dispatch [:g/create-invite-link id])
-                                               :as "a"
-                                               :color "blue"
-                                               :style {:float "right"}}
-                                  [:> ui/Icon {:name "linkify"}]
-                                  "Invite Link"])}]
-                     [:> ui/Popup
-                      {:position "bottom center"
                        :content "Add (or invite) an organization to your community."
                        :trigger (r/as-element 
                                  [:> ui/Label {:on-click #(rf/dispatch [:edit-field field-name])
                                                :as "a"
+                                               :color "blue"
+                                               :style {:float "right"}}
+                                  [:> ui/Icon {:name "add group"}]
+                                  "Add by Name"])}]
+                     [:> ui/Popup
+                      {:position "bottom center"
+                       :content "Create a shareable invite link that lasts for 45 days."
+                       :trigger (r/as-element 
+                                 [:> ui/Label {:on-click #(rf/dispatch [:g/create-invite-link id])
+                                               :as "a"
                                                :color "teal"
                                                :style {:float "right"
                                                        :margin-right 10}}
-                                  [:> ui/Icon {:name "add group"}]
-                                  "Add by Name"])}]])
+                                  [:> ui/Icon {:name "linkify"}]
+                                  "Invite Link"])}]])
                   "Organizations"
                   (when (@fields-editing& field-name)
                     [c-add-orgs-form group])]}
