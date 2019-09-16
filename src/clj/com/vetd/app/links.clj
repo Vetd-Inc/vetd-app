@@ -28,9 +28,10 @@
 ;; Output data will be determined by method implementation for that cmd.
 (defn create
   [{:keys [cmd input-data max-uses-action max-uses-read
-           expires-action expires-read] :as link}]
+           expires-action expires-read short?] :as link}]
   (let [[id idstr] (ut/mk-id&str)
-        k (ut/mk-strong-key)]
+        k (cond-> (ut/mk-strong-key)
+            short? (subs 0 10))]
     (db/insert! :links
                 {:id id
                  :idstr idstr

@@ -80,3 +80,13 @@
  :bad-input
  :<- [:page-params]
  (fn [{:keys [bad-input]}] bad-input))
+
+(rf/reg-event-fx
+ :modal
+ (fn [{:keys [db]} [_ {:keys [header content size] :as props}]]
+   (do (-> db :modal :showing?& (reset! true)) ;; nastiness
+       {:db (update db :modal merge props)})))
+
+(rf/reg-sub
+ :modal
+ (fn [{:keys [modal]}] modal))

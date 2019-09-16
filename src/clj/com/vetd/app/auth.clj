@@ -367,6 +367,16 @@
                                   (str "the " gname " community")))))))
   {})
 
+(defmethod com/handle-ws-inbound :g/create-invite-link
+  [{:keys [group-id] :as req} ws-id sub-fn]
+  (let [link-key (l/create {:cmd :join-group
+                            :input-data {:group-id group-id}
+                            ;; 45 days from now
+                            :expires-action (+ (ut/now) (* 1000 60 60 24 45))
+                            :max-uses-action 9999999
+                            :short? true})]
+    {:url (str l/base-url link-key)}))
+
 (defmethod com/handle-ws-inbound :create-membership
   [{:keys [user-id org-id]} ws-id sub-fn]
   (create-or-find-memb user-id org-id)
