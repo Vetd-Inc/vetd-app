@@ -74,10 +74,15 @@
                             :dispatch [:nav-join-org-signup link-key]})
      :g/join (if (:logged-in? db)
                {:dispatch-later [{:ms 100 :dispatch [:nav-home]}
-                                 {:ms 200 :dispatch [:modal
-                                                     {:header (str "Join the " (:group-name output-data) " community")
-                                                      :content (str "Do you want to join " (:group-name output-data) "?")
-                                                      :size "small"}]}]}
+                                 {:ms 200
+                                  :dispatch [:modal
+                                             {:header (str "Join the " (:group-name output-data) " community")
+                                              :content (str "Do you want to join the " (:group-name output-data) " community?")
+                                              :buttons [{:text "Cancel"}
+                                                        {:text "Join"
+                                                         :event [:g/accept-invite link-key]
+                                                         :color "blue"}]
+                                              :size "tiny"}]}]}
                {:toast {:type "error"
                         :title "This link only works when you are logged in."}
                 :dispatch-later [{:ms 100 :dispatch [:nav-login]}]})

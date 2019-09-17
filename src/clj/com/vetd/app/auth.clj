@@ -464,31 +464,36 @@
            :session-token (-> id insert-session :token)})))))
 
 (defmethod l/action :g/join
-  [{:keys [input-data] :as link} account]
+  [{:keys [input-data] :as link} args]
   (let [{:keys [group-id]} input-data
         {:keys [gname]} (some-> [[:groups {:id group-id}
                                   [:gname]]]
                                 ha/sync-query
                                 vals
                                 ffirst)
-        signup-flow? (every? (partial contains? account)
+        {:keys [org-id]} args
+        signup-flow? (every? (partial contains? args)
                              ;; TODO also check for org name?
                              [:uname :pwd])]
     ;; this link action is 'overloaded'
     (if-not signup-flow?
-      ;; Step 1 (immediately upon the link being visited)
-      ;; If the client is logged in, they will see a modal with the option to join the community.
-      ;; If not logged in, they will see a page inviting them to join the community, and that they
-      ;; need to either log in, or create an account.
-      {:group-id group-id
-       :group-name gname}
-      ;; Step 2 Was Logged In Or Logged In Branch
+      (if-not org-id
+        ;; Step 1 (immediately upon the link being visited)
+        ;; If the client is logged in, they will see a modal with the option to join the community.
+        ;; If not logged in, they will see a page inviting them to join the community, and that they
+        ;; need to either log in, or create an account.
+        {:group-id group-id
+         :group-name gname}
+        ;; Final Step (2 or 3)
+        (do (g/create-or-find-group-org-memb org-id group-id)
+            {}))
       
       ;; Step 2 Signup Branch (link is being used from ws, :do-link-action cmd
       ;; reusing link action from
+      
       {:error "NOT IMPLEMENTED YET"}
       ;; (let [ ;; additional fields here?
-      ;;       {:keys [uname pwd]} account
+      ;;       {:keys [uname pwd]} args
       ;;       {:keys [id]} (insert-user uname email (bhsh/derive pwd))]
       ;;   (when id                       ; user was successfully created
       ;;     (create-or-find-memb id org-id)
