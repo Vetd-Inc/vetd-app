@@ -61,6 +61,42 @@
             :title (str "Organization" (when (> (count (concat org-ids new-orgs)) 1) "s") " added to your community!")}
     :dispatch [:stop-edit-field (str "add-orgs-to-group-" group-id)]}))
 
+(rf/reg-event-fx
+ :g/create-invite-link
+ (fn [{:keys [db]} [_ group-id]]
+   {:ws-send {:payload {:cmd :g/create-invite-link
+                        :return {:handler :g/create-invite-link.return}
+                        :group-id group-id}}}))
+
+(rf/reg-event-fx
+ :g/create-invite-link.return
+ (fn [{:keys [db]} [_ {:keys [url]}]]
+   {:dispatch [:modal {:header "Shareable Invite Link"
+                       :size "tiny"
+                       :content [:<>
+                                 [:p
+                                  "Share this link with anyone you want to join your community."
+                                  [:br]
+                                  [:em "It can be used an unlimited number of times, but will expire in 45 days."]]
+                                 [:> ui/Input
+                                  {:id "group-invite-url"
+                                   :action (r/as-element
+                                            [:> ui/Button
+                                             {:on-click (fn []
+                                                          (do
+                                                            (doto (util/node-by-id "group-invite-url")
+                                                              .focus
+                                                              .select)
+                                                            (.execCommand js/document "copy")
+                                                            (rf/dispatch [:toast {:type "success"
+                                                                                  :title "Link copied"}])))
+                                              :color "teal"
+                                              :labelPosition "right"
+                                              :icon "copy"
+                                              :content "Copy"}])
+                                   :default-value url
+                                   :fluid true}]]}]}))
+
 ;; remove an org from a group
 (rf/reg-event-fx
  :g/remove-org
@@ -171,7 +207,7 @@
                             :class "ui action input"}
            [:> ui/Dropdown {:loading (= :loading @orgs&)
                             :options @options&
-                            :placeholder "Search organizations..."
+                            :placeholder "Enter the name of the organization..."
                             :search true
                             :selection true
                             :multiple true
@@ -385,12 +421,28 @@
                                   :as "a"
                                   :style {:float "right"}}
                      "Cancel"]
-                    [:> ui/Label {:on-click #(rf/dispatch [:edit-field field-name])
-                                  :as "a"
-                                  :color "teal"
-                                  :style {:float "right"}}
-                     [:> ui/Icon {:name "add group"}]
-                     "Add or Invite Organization"])
+                    [:<>
+                     [:> ui/Popup
+                      {:position "bottom center"
+                       :content "Add (or invite) an organization to your community."
+                       :trigger (r/as-element 
+                                 [:> ui/Label {:on-click #(rf/dispatch [:edit-field field-name])
+                                               :as "a"
+                                               :color "blue"
+                                               :style {:float "right"}}
+                                  [:> ui/Icon {:name "add group"}]
+                                  "Add by Name"])}]
+                     [:> ui/Popup
+                      {:position "bottom center"
+                       :content "Create a shareable invite link that lasts for 45 days."
+                       :trigger (r/as-element 
+                                 [:> ui/Label {:on-click #(rf/dispatch [:g/create-invite-link id])
+                                               :as "a"
+                                               :color "teal"
+                                               :style {:float "right"
+                                                       :margin-right 10}}
+                                  [:> ui/Icon {:name "linkify"}]
+                                  "Invite Link"])}]])
                   "Organizations"
                   (when (@fields-editing& field-name)
                     [c-add-orgs-form group])]}

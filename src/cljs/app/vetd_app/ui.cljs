@@ -119,6 +119,10 @@
 (def TableCell (component "Table" "Cell"))
 (def TableFooter (component "Table" "Footer"))
 
+;; Tab
+(def Tab (component "Tab"))
+(def TabPane (component "Tab" "Pane"))
+
 ;; Misc
 (def Image (component "Image"))
 (def Step (component "Step"))

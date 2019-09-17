@@ -12,7 +12,9 @@
 
 (rf/reg-fx
  :local-store
- (fn [m]
+ (fn [m] ;; use nil to unset an item
    (doseq [[k v] m]
-     (.setItem js/localStorage (util/kw->str k) (clj->js v)))))
+     (if (nil? v)
+       (.removeItem js/localStorage (util/kw->str k))
+       (.setItem js/localStorage (util/kw->str k) (clj->js v))))))
 
