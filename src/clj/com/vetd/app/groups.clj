@@ -127,6 +127,11 @@
   (set-group-discount group-id product-id descr)
   {})
 
+(defmethod com/handle-ws-inbound :g/add-discount
+  [{:keys [group-id product-id descr]} ws-id sub-fn]
+  (insert-group-discount group-id product-id descr)
+  {})
+
 (defmethod com/handle-ws-inbound :g/delete-discount
   [{:keys [discount-id]} ws-id sub-fn]
   (delete-group-discount discount-id)
