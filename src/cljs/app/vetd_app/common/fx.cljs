@@ -72,6 +72,15 @@
                                              {:ms 200 :dispatch [:nav-home]}]}
                            {:db (assoc db :signup-by-link-org-name (:org-name output-data))
                             :dispatch [:nav-join-org-signup link-key]})
+     :g/join (if (:logged-in? db)
+               {:dispatch-later [{:ms 100 :dispatch [:nav-home]}
+                                 {:ms 200 :dispatch [:modal
+                                                     {:header (str "Join the " (:group-name output-data) " community")
+                                                      :content (str "Do you want to join " (:group-name output-data) "?")
+                                                      :size "small"}]}]}
+               {:toast {:type "error"
+                        :title "This link only works when you are logged in."}
+                :dispatch-later [{:ms 100 :dispatch [:nav-login]}]})
      {:toast {:type "error"
               :title "That link is expired or invalid."}
       :dispatch [:nav-home]})))

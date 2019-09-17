@@ -369,12 +369,14 @@
 
 (defmethod com/handle-ws-inbound :g/create-invite-link
   [{:keys [group-id] :as req} ws-id sub-fn]
-  (let [link-key (l/create {:cmd :join-group
+  (let [link-key (l/create {:cmd :g/join
                             :input-data {:group-id group-id}
                             ;; 45 days from now
                             :expires-action (+ (ut/now) (* 1000 60 60 24 45))
                             :max-uses-action 9999999
-                            :short? true})]
+                            :max-uses-read 9999999
+                            :expires-read (+ (ut/now) (* 1000 60 60 24 45))
+                            :short-key? true})]
     {:url (str l/base-url link-key)}))
 
 (defmethod com/handle-ws-inbound :create-membership
@@ -460,3 +462,38 @@
           ;; i.e., it won't be read from a link read
           {:org-name org-name
            :session-token (-> id insert-session :token)})))))
+
+(defmethod l/action :g/join
+  [{:keys [input-data] :as link} account]
+  (let [{:keys [group-id]} input-data
+        {:keys [gname]} (some-> [[:groups {:id group-id}
+                                  [:gname]]]
+                                ha/sync-query
+                                vals
+                                ffirst)
+        signup-flow? (every? (partial contains? account)
+                             ;; TODO also check for org name?
+                             [:uname :pwd])]
+    ;; this link action is 'overloaded'
+    (if-not signup-flow?
+      ;; Step 1 (immediately upon the link being visited)
+      ;; If the client is logged in, they will see a modal with the option to join the community.
+      ;; If not logged in, they will see a page inviting them to join the community, and that they
+      ;; need to either log in, or create an account.
+      {:group-id group-id
+       :group-name gname}
+      ;; Step 2 Was Logged In Or Logged In Branch
+      
+      ;; Step 2 Signup Branch (link is being used from ws, :do-link-action cmd
+      ;; reusing link action from
+      {:error "NOT IMPLEMENTED YET"}
+      ;; (let [ ;; additional fields here?
+      ;;       {:keys [uname pwd]} account
+      ;;       {:keys [id]} (insert-user uname email (bhsh/derive pwd))]
+      ;;   (when id                       ; user was successfully created
+      ;;     (create-or-find-memb id org-id)
+      ;;     ;; this 'output' will be read immediately from the ws results
+      ;;     ;; i.e., it won't be read from a link read
+      ;;     {:org-name org-name
+      ;;      :session-token (-> id insert-session :token)}))
+      )))
