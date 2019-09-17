@@ -22,15 +22,15 @@
   [product-id round-id]
   (insert-round-product round-id product-id))
 
-(defn sync-round-vendor-req-forms-to-add
-  [prod-id->exists {:keys [product-id] forms :vendor-response-form-docs}]
+(defn sync-round-vendor-req-forms-to-add?
+  [{:keys [deleted] forms :vendor-response-form-docs}]
   (and (empty? forms)
-       (prod-id->exists product-id)))
+       (nil? deleted)))
 
-(defn sync-round-vendor-req-forms-to-remove
-  [prod-id->exists {:keys [product-id] forms :vendor-response-form-docs}]
+(defn sync-round-vendor-req-forms-to-remove?
+  [{:keys [deleted] forms :vendor-response-form-docs}]
   (not (or (empty? forms)
-           (prod-id->exists product-id))))
+           (nil? deleted))))
 
 (defn sync-round-vendor-req-forms
   [round-id]
@@ -54,11 +54,9 @@
                              (group-by :product-id)
                              (ut/fmap (partial some
                                                (comp nil? :deleted))))
-        to-add (filter (partial sync-round-vendor-req-forms-to-add
-                                prod-id->exists)
+        to-add (filter sync-round-vendor-req-forms-to-add?
                        rps)
-        to-remove (filter (partial sync-round-vendor-req-forms-to-remove
-                                   prod-id->exists)
+        to-remove (filter sync-round-vendor-req-forms-to-remove?
                           rps)
         added (-> (for [{:keys [id vendor-id product]} to-add]
                     (docs/create-form-from-template {:form-template-id form-template-id
@@ -77,3 +75,18 @@
         (docs/update-deleted :forms form-id)))
     {:added (map vector added to-add)
      :to-remove to-remove}))
+
+(defn sync-round-vendor-req-forms&docs [round-id]
+  (let [{:keys [added]} (sync-round-vendor-req-forms round-id)]
+    (doseq [[{:keys [id subject from-org-id to-org-id]}
+             {:keys [product-id]}]
+            added]
+      (let [doc (docs/create-doc {:form-id id
+                                  :subject subject
+                                  :data {}
+                                  :to-org-id from-org-id
+                                  :from-org-id to-org-id})]
+        (-> doc
+            :item
+            :id
+            docs/auto-pop-missing-responses-by-doc-id)))))
