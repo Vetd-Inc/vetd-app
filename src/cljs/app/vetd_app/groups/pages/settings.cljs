@@ -89,7 +89,7 @@
                                                               .select)
                                                             (.execCommand js/document "copy")
                                                             (rf/dispatch [:toast {:type "success"
-                                                                                  :title "Invite link copied!"}])))
+                                                                                  :title "Link copied"}])))
                                               :color "teal"
                                               :labelPosition "right"
                                               :icon "copy"

@@ -207,7 +207,6 @@
   (.log js/console "mount-components STARTED")
   (rf/clear-subscription-cache!)
   (r/render [c-page] (.getElementById js/document "app"))
-  ;; (r/render [#'c-page] (.getElementById js/document "app"))
   (.log js/console "mount-components DONE"))
 
 
