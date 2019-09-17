@@ -79,14 +79,20 @@
                {:dispatch-later [(when-not (= (:page db) :b/stack)
                                    {:ms 100 :dispatch [:nav-home]})
                                  {:ms 200
-                                  :dispatch [:modal
-                                             {:header (str "Join the " (:group-name output-data) " community")
-                                              :content (str "Do you want to join the " (:group-name output-data) " community?")
-                                              :buttons [{:text "Cancel"}
-                                                        {:text "Join"
-                                                         :event [:g/accept-invite link-key]
-                                                         :color "blue"}]
-                                              :size "tiny"}]}]
+                                  :dispatch
+                                  (if (:join-group-link-key local-store)
+                                    ;; they don't need to visually consent because they were on a custom login or signup page
+                                    ;; that already informed them that they will be join to the community
+                                    [:g/accept-invite link-key]
+                                    ;; they need to consent
+                                    [:modal
+                                     {:header (str "Join the " (:group-name output-data) " community")
+                                      :content (str "Do you want to join the " (:group-name output-data) " community?")
+                                      :buttons [{:text "Cancel"}
+                                                {:text "Join"
+                                                 :event [:g/accept-invite link-key]
+                                                 :color "blue"}]
+                                      :size "tiny"}])}]
                 :local-store {:join-group-link-key nil
                               :join-group-name nil}}
                {:local-store {:join-group-link-key link-key
