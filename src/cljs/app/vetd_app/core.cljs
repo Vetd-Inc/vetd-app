@@ -305,7 +305,7 @@
 
 (rf/reg-event-fx
  :ws/req-session
- [(rf/inject-cofx :local-store [:session-token])]  
+ [(rf/inject-cofx :local-store [:session-token])]
  (fn [{:keys [db local-store]} [_ {:keys [logged-in? user memberships
                                           admin-of-groups admin?]}]]
    (if logged-in?

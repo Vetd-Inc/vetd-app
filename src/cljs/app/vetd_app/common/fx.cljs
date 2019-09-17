@@ -45,7 +45,8 @@
 
 (rf/reg-event-fx
  :read-link-result
- (fn [{:keys [db]} [_ {:keys [cmd output-data] :as results} {{:keys [link-key]} :return}]]
+ [(rf/inject-cofx :local-store [:join-group-link-key])]
+ (fn [{:keys [db local-store]} [_ {:keys [cmd output-data] :as results} {{:keys [link-key]} :return}]]
    (case cmd ; make sure your case nav's the user somewhere (often :nav-home)
      :create-verified-account {:toast {:type "success"
                                        :title "Account Verified"
@@ -53,7 +54,9 @@
                                :local-store {:session-token (:session-token output-data)}
                                :dispatch-later [{:ms 100 :dispatch [:ws-get-session-user]}
                                                 ;; first-time login, go to stack page
-                                                {:ms 200 :dispatch [:b/nav-stack]}]}
+                                                {:ms 200 :dispatch [:b/nav-stack]}
+                                                (when (:join-group-link-key local-store)
+                                                  {:ms 300 :dispatch [:read-link (:join-group-link-key local-store)]})]}
      :password-reset {:toast {:type "success"
                               :title "Password Updated"
                               :message "Your password has been successfully updated."}
@@ -73,7 +76,8 @@
                            {:db (assoc db :signup-by-link-org-name (:org-name output-data))
                             :dispatch [:nav-join-org-signup link-key]})
      :g/join (if (:logged-in? db)
-               {:dispatch-later [{:ms 100 :dispatch [:nav-home]}
+               {:dispatch-later [(when-not (= (:page db) :b/stack)
+                                   {:ms 100 :dispatch [:nav-home]})
                                  {:ms 200
                                   :dispatch [:modal
                                              {:header (str "Join the " (:group-name output-data) " community")
@@ -82,10 +86,12 @@
                                                         {:text "Join"
                                                          :event [:g/accept-invite link-key]
                                                          :color "blue"}]
-                                              :size "tiny"}]}]}
-               {:toast {:type "error"
-                        :title "This link only works when you are logged in."}
-                :dispatch-later [{:ms 100 :dispatch [:nav-login]}]})
+                                              :size "tiny"}]}]
+                :local-store {:join-group-link-key nil
+                              :join-group-name nil}}
+               {:local-store {:join-group-link-key link-key
+                              :join-group-name (:group-name output-data)}
+                :dispatch-later [{:ms 100 :dispatch [:nav-signup :buyer]}]})
      {:toast {:type "error"
               :title "That link is expired or invalid."}
       :dispatch [:nav-home]})))

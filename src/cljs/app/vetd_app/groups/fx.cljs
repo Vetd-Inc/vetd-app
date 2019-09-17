@@ -21,4 +21,5 @@
               :title "Community Joined!"}
       :dispatch-later [;; TODO needs to refresh page or need to refresh memberships in app-db
                        {:ms 100 :dispatch [:ws-get-session-user]}
-                       {:ms 200 :dispatch [:g/nav-home]}]})))
+                       (when-not (= (:page db) :b/stack)
+                         {:ms 200 :dispatch [:g/nav-home]})]})))
