@@ -46,7 +46,7 @@
 
 (defn c-modal
   "showing?& - ratom to toggle visibility of modal"
-  [{:keys [showing?& header content size]}]
+  [{:keys [showing?& header content buttons size]}]
   [:> ui/Modal {:open @showing?&
                 :on-close #(reset! showing?& false)
                 :size size
@@ -55,4 +55,13 @@
                 :closeOnEscape true
                 :closeIcon true}
    [:> ui/ModalHeader header]
-   [:> ui/ModalContent content]])
+   [:> ui/ModalContent content]
+   (when buttons
+     [:> ui/ModalActions
+      (for [{:keys [text event color]} buttons]
+        ^{:key text}
+        [:> ui/Button {:on-click (fn []
+                                   (do (when event (rf/dispatch event))
+                                       (reset! showing?& false)))
+                       :color color}
+         text])])])

@@ -15,8 +15,11 @@
 
 (rf/reg-event-fx
  :route-login
- (fn [{:keys [db]}]
-   {:db (assoc db :page :login)
+ [(rf/inject-cofx :local-store [:join-group-name])]
+ (fn [{:keys [db local-store]}]
+   {:db (assoc db
+               :page :login
+               :page-params {:join-group-name (:join-group-name local-store)})
     :analytics/page {:name "Login"}}))
 
 (rf/reg-event-fx
@@ -37,9 +40,10 @@
 
 (rf/reg-event-fx
  :login-result
- (fn [{:keys [db]} [_ {:keys [logged-in? user session-token memberships
-                              admin-of-groups admin?]
-                       :as results}]]
+ [(rf/inject-cofx :local-store [:join-group-link-key])]
+ (fn [{:keys [db local-store]} [_ {:keys [logged-in? user session-token memberships
+                                          admin-of-groups admin?]
+                                   :as results}]]
    (if logged-in?
      (let [org-id (some-> memberships first :org-id)] ; TODO support users with multi-orgs
        {:db (assoc db
@@ -65,7 +69,9 @@
                                       :oName (some-> memberships first :org :oname)}}
         :analytics/group {:group-id org-id
                           :traits {:name (some-> memberships first :org :oname)}}
-        :dispatch-later [{:ms 100 :dispatch [:nav-home]}
+        :dispatch-later [{:ms 100 :dispatch (if (:join-group-link-key local-store)
+                                              [:read-link (:join-group-link-key local-store)]
+                                              [:nav-home])}
                          ;; to prevent the login form from flashing briefly
                          {:ms 200 :dispatch [:hide-login-loading]}]})
      {:db (assoc db
@@ -94,7 +100,8 @@
   (let [email (r/atom "")
         pwd (r/atom "")
         login-failed? (rf/subscribe [:login-failed?])
-        login-loading? (rf/subscribe [:login-loading?])]
+        login-loading? (rf/subscribe [:login-loading?])
+        join-group-name& (rf/subscribe [:join-group-name])]
     (r/create-class
      {:component-will-unmount #(rf/dispatch [:clear-login-form])
       :reagent-render
@@ -103,6 +110,10 @@
           [cc/c-loader {:props {:style {:margin-top 175}}}]
           [:div.centerpiece
            [:img.logo {:src "https://s3.amazonaws.com/vetd-logos/vetd.svg"}]
+           (when @join-group-name&
+             [:> ui/Header {:as "h2"
+                            :class "teal"}
+              (str "Join the " @join-group-name& " community on Vetd")])
            [:> ui/Form {:error @login-failed?}
             (when @login-failed?
               [:> ui/Message {:error true

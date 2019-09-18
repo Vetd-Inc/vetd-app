@@ -16,10 +16,12 @@
 
 (rf/reg-event-fx
  :route-signup
- (fn [{:keys [db]} [_ org-type]]
+ [(rf/inject-cofx :local-store [:join-group-name])]
+ (fn [{:keys [db local-store]} [_ org-type]]
    {:db (assoc db
                :page :signup
-               :page-params {:org-type (keyword org-type)})
+               :page-params {:org-type (keyword org-type)
+                             :join-group-name (:join-group-name local-store)})
     :analytics/page {:name (str (s/capitalize (name org-type)) " Signup")}}))
 
 (rf/reg-event-fx
@@ -72,9 +74,15 @@
  :<- [:page-params] 
  (fn [{:keys [org-type]}] org-type))
 
+(rf/reg-sub
+ :join-group-name
+ :<- [:page-params] 
+ (fn [{:keys [join-group-name]}] join-group-name))
+
 ;; Components
 (defn c-page []
   (let [signup-org-type& (rf/subscribe [:signup-org-type])
+        join-group-name& (rf/subscribe [:join-group-name])
         uname (r/atom "")
         email (r/atom "")
         org-name (r/atom "")
@@ -90,7 +98,9 @@
         [:img.logo {:src "https://s3.amazonaws.com/vetd-logos/vetd.svg"}]]
        [:> ui/Header {:as "h2"
                       :class (case @signup-org-type& :buyer "teal" :vendor "blue")}
-        "Sign Up as a " (case @signup-org-type& :buyer "Buyer" :vendor "Vendor")]
+        (if @join-group-name&
+          (str "Join the " @join-group-name& " community on Vetd")
+          (str "Sign Up as a " (case @signup-org-type& :buyer "Buyer" :vendor "Vendor")))]
        [:> ui/Form {:style {:margin-top 25}}
         [:> ui/FormField {:error (= @bad-input& :uname)}
          [:label "Full Name"

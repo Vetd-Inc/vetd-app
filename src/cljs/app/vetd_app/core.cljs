@@ -8,6 +8,7 @@
             vetd-app.debounce
             vetd-app.common.fx
             vetd-app.orgs.fx
+            vetd-app.groups.fx
             [vetd-app.util :as util]
             [vetd-app.hooks :as hooks]
             [vetd-app.buyers.fixtures :as b-fix]
@@ -27,6 +28,7 @@
             [vetd-app.vendors.pages.round-product-detail :as p-vround-product-detail]
             [vetd-app.groups.pages.home :as p-ghome]
             [vetd-app.groups.pages.settings :as p-gsettings]
+            [vetd-app.common.components :as cc]
             [vetd-app.common.fixtures :as pub-fix]
             [vetd-app.common.pages.signup :as p-signup]
             [vetd-app.common.pages.join-org-signup :as p-join-org-signup]
@@ -100,7 +102,10 @@
    ;; it think this for within the round grid, not sure if it's currently being used
    ;; in fact, I'm almost certain it's not being used
    ;; entities (by ID) that are in a loading?=true state (for UI display)
-   :loading? {:products #{}}}))
+   :loading? {:products #{}}
+   ;; a multi-purpose modal that can be used via event dispatch
+   ;; see event :modal
+   :modal {:showing?& (r/atom false)}}))
 
 (def public-pages #{:login :signup :join-org-signup :forgot-password})
 
@@ -189,17 +194,20 @@
      {:nav {:path (->home-url memberships admin?)}})))
 
 (defn c-page []
-  (let [page @(rf/subscribe [:page])]
-    [:div#page
-     [(hooks/c-container :admin-overlay)
-      [(hooks/c-admin page)]]
-     [(hooks/c-container page)
-      [(hooks/c-page page)]]]))
+  (let [page& (rf/subscribe [:page])
+        modal& (rf/subscribe [:modal])]
+    (fn []
+      [:div#page
+       [(hooks/c-container :admin-overlay)
+        [(hooks/c-admin @page&)]]
+       [(hooks/c-container @page&)
+        [(hooks/c-page @page&)]]
+       [cc/c-modal @modal&]])))
 
 (defn mount-components []
   (.log js/console "mount-components STARTED")
   (rf/clear-subscription-cache!)
-  (r/render [#'c-page] (.getElementById js/document "app"))
+  (r/render [c-page] (.getElementById js/document "app"))
   (.log js/console "mount-components DONE"))
 
 
@@ -297,7 +305,7 @@
 
 (rf/reg-event-fx
  :ws/req-session
- [(rf/inject-cofx :local-store [:session-token])]  
+ [(rf/inject-cofx :local-store [:session-token])]
  (fn [{:keys [db local-store]} [_ {:keys [logged-in? user memberships
                                           admin-of-groups admin?]}]]
    (if logged-in?
