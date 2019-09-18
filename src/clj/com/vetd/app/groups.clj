@@ -89,7 +89,7 @@
                      group-discount-id))
 
 (defn insert-group-discount
-  [group-id product-id descr]
+  [group-id product-id descr & [origin-id]]
   (let [[id idstr] (ut/mk-id&str)]
     (-> (db/insert! :group_discounts
                     {:id id
@@ -98,7 +98,8 @@
                      :updated (ut/now-ts)
                      :group_id group-id
                      :product_id product-id
-                     :descr descr})
+                     :descr descr
+                     :origin_id origin-id})
         first)))
 
 (defn set-group-discount
@@ -136,4 +137,3 @@
   [{:keys [discount-id]} ws-id sub-fn]
   (delete-group-discount discount-id)
   {})
-

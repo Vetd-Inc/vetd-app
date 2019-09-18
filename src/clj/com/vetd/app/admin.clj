@@ -2,11 +2,15 @@
   (:require [com.vetd.app.db :as db]
             [com.vetd.app.hasura :as ha]
             [com.vetd.app.rounds :as rounds]
+            [com.vetd.app.groups :as gr]
             [com.vetd.app.common :as com]
             [com.vetd.app.util :as ut]
             [com.vetd.app.docs :as docs]
             [taoensso.timbre :as log]
             clojure.data))
+
+;; HACK
+(def magic-universal-community-discount-id 100)
 
 (defn search-orgs->ids
   [q]
@@ -102,3 +106,36 @@
     (doseq [product-id add-ids]
       (rounds/invite-product-to-round product-id round-id))
     (rounds/sync-round-vendor-req-forms&docs round-id)))
+
+
+(defn select-discounts-to-broadcast
+  [group-id]
+  (-> {:select [[:gd1.id :origin-id]
+                [:g.id :group-id]
+                [:gd1.product_id :product-id]
+                :gd1.descr]
+       :from [[:group_discounts :gd1]]
+       :join [[:groups :g]
+              [:and
+               [:= :g.deleted nil]
+               [:!= :g.id group-id]]]
+       :left-join [[:group_discounts :gd2]
+                   [:and
+                    [:= :g.id :gd2.group_id]
+                    [:= :gd1.id :gd2.origin_id]]]
+       :where [:and
+               [:= :gd1.group_id group-id]
+               [:= :gd2.id nil]]}
+      db/hs-query))
+
+(defn broadcast-discounts []
+  (doseq [{:keys [origin-id product-id descr group-id]} (select-discounts-to-broadcast magic-universal-community-discount-id)]
+    (gr/insert-group-discount group-id
+                              product-id
+                              descr
+                              origin-id)))
+
+(defmethod com/handle-ws-inbound :a/broadcast-discounts
+  [{:keys []} ws-id sub-fn]
+  (future (broadcast-discounts))
+  {})
