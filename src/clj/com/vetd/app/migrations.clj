@@ -1882,7 +1882,15 @@
                    :name :group_discounts
                    :columns
                    {:add {:origin_id [:bigint]
-                          :long_descr [:text]}}}]]])
+                          ;; TODO this sould be removed as it's unused
+                          :long_descr [:text]}}}]]
+   
+   [[2019 9 19 00 00]
+
+    [:alter-table {:schema :vetd
+                   :name :group_discounts
+                   :columns
+                   {:add {:redemption_descr [:text]}}}]]])
 
 
 #_(mig/mk-migration-files migrations

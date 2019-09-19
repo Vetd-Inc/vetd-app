@@ -471,34 +471,15 @@
                                 ha/sync-query
                                 vals
                                 ffirst)
-        {:keys [org-id]} args
-        signup-flow? (every? (partial contains? args)
-                             ;; TODO also check for org name?
-                             [:uname :pwd])]
-    ;; this link action is 'overloaded'
-    (if-not signup-flow?
-      (if-not org-id
-        ;; Step 1 (immediately upon the link being visited)
-        ;; If the client is logged in, they will see a modal with the option to join the community.
-        ;; If not logged in, they will see a page inviting them to join the community, and that they
-        ;; need to either log in, or create an account.
-        {:group-id group-id
-         :group-name gname}
-        ;; Final Step (2 or 3)
-        (do (g/create-or-find-group-org-memb org-id group-id)
-            {}))
-      
-      ;; Step 2 Signup Branch (link is being used from ws, :do-link-action cmd
-      ;; reusing link action from
-      
-      {:error "NOT IMPLEMENTED YET"}
-      ;; (let [ ;; additional fields here?
-      ;;       {:keys [uname pwd]} args
-      ;;       {:keys [id]} (insert-user uname email (bhsh/derive pwd))]
-      ;;   (when id                       ; user was successfully created
-      ;;     (create-or-find-memb id org-id)
-      ;;     ;; this 'output' will be read immediately from the ws results
-      ;;     ;; i.e., it won't be read from a link read
-      ;;     {:org-name org-name
-      ;;      :session-token (-> id insert-session :token)}))
-      )))
+        {:keys [org-id]} args]
+    ;; this link action is 'overloaded' to allow a 2 step process
+    (if-not org-id
+      ;; Step 1 (immediately upon the link being visited)
+      ;; If the client is logged in, they will see a modal with the option to join the community.
+      ;; If not logged in, they will see a page inviting them to join the community, and that they
+      ;; need to either log in, or create an account.
+      {:group-id group-id
+       :group-name gname}
+      ;; Step 2 (final step) 
+      (do (g/create-or-find-group-org-memb org-id group-id)
+          {}))))
