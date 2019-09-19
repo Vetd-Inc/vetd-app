@@ -12,7 +12,7 @@
    {:ws-send {:payload {:cmd :a/broadcast-discounts}}}))
 
 (defn c-overlay []
-  [:div "admin-c-settings"
+  [:div 
    [:> ui/Button {:color "teal"
                   :on-click #(rf/dispatch [:a/broadcast-discounts])}
     "Propagate Discounts"]])
