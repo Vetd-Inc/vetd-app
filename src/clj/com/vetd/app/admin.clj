@@ -139,3 +139,8 @@
   [{:keys []} ws-id sub-fn]
   (future (broadcast-discounts))
   {})
+
+(defmethod com/handle-ws-inbound :a/create-community
+  [{:keys [admin-org-id community-name]} ws-id sub-fn]
+  (gr/insert-group community-name admin-org-id)
+  {})
