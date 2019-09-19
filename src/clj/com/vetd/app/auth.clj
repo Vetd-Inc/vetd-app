@@ -224,7 +224,9 @@
                                                       :from-user-id
                                                       :override-from-org-name])
                             ;; 30 days from now
-                            :expires-action (+ (ut/now) (* 1000 60 60 24 30))})
+                            :expires-action (+ (ut/now) (* 1000 60 60 24 30))
+                            :max-uses-action 10
+                            :max-uses-read 10})
         from-user-name (:uname (select-user-by-id from-user-id :uname))
         from-org-name (or override-from-org-name
                           (:oname (select-org-by-id org-id)))]
@@ -432,7 +434,7 @@
           {:session-token (:token (insert-session id))}))))
 
 (defmethod l/action :invite-user-to-org
-  [{:keys [input-data] :as link} account]
+  [{:keys [input-data uses-action] :as link} account]
   (let [{:keys [email org-id override-from-org-name]} input-data
         org-name (or override-from-org-name
                      (:oname (select-org-by-id org-id)))
@@ -443,13 +445,15 @@
       (if-let [{:keys [id]} (select-user-by-email email)]
         ;; the account already exists, just add them to org, and give a session token
         (do (create-or-find-memb id org-id)
+            ;; this link is now maxed out for actions
+            ;; the (inc) is because the uses-actions will be incremented after this method evals
+            (l/update-max-uses link "action" (inc uses-action))
             (l/update-expires link "read" (+ (ut/now) (* 1000 60 5))) ; allow read for next 5 mins
             {:user-exists? true
              :org-name org-name
              :session-token (-> id insert-session :token)})
         ;; they will need to "signup by invite"
-        (do (l/update-max-uses link "action" 2) ; allow another use (will be via ws :do-link-action)
-            (l/update-expires link "read" (+ (ut/now) (* 1000 60 5))) ; allow read for next 5 mins
+        (do (l/update-expires link "read" (+ (ut/now) (* 1000 60 5))) ; allow read for next 5 mins
             {:user-exists? false
              :org-name org-name}))
       ;; reusing link action to create account + add to org
@@ -458,6 +462,9 @@
             {:keys [id]} (insert-user uname email (bhsh/derive pwd))]
         (when id ; user was successfully created
           (create-or-find-memb id org-id)
+          ;; this link is now maxed out for actions
+          ;; the (inc) is because the uses-actions will be incremented after this method evals
+          (l/update-max-uses link "action" (inc uses-action))
           ;; this 'output' will be read immediately from the ws results
           ;; i.e., it won't be read from a link read
           {:org-name org-name
