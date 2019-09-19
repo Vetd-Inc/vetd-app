@@ -1874,11 +1874,16 @@
                                              [:prompt_fields :pf] [:and [:= :pf.id :rf.pf_id] [:= :pf.deleted nil]]]
                                       :where [:= :d.deleted nil]}
                               :owner :vetd
-                              :grants {:hasura [:SELECT]}}]]])
+                              :grants {:hasura [:SELECT]}}]]
+
+   [[2019 9 18 00 00]
+
+    [:alter-table {:schema :vetd
+                   :name :group_discounts
+                   :columns
+                   {:add {:origin_id [:bigint]
+                          :long_descr [:text]}}}]]])
 
 
 #_(mig/mk-migration-files migrations
                           "migrations")
-
-
-

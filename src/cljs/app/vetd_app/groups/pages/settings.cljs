@@ -129,7 +129,7 @@
 (rf/reg-event-fx
  :g/add-discount-to-group
  (fn [{:keys [db]} [_ group-id product-id details]]
-   {:ws-send {:payload {:cmd :g/set-discount
+   {:ws-send {:payload {:cmd :g/add-discount
                         :return {:handler :g/add-discount-to-group-return
                                  :group-id group-id}
                         :group-id group-id
