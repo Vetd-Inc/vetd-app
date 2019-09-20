@@ -1,5 +1,6 @@
 (ns vetd-app.common.fx
-  (:require [re-frame.core :as rf]))
+  (:require [accountant.core :as acct]
+            [re-frame.core :as rf]))
 
 (defn validated-dispatch-fx
   [db event validator-fn]
@@ -116,3 +117,10 @@
 (rf/reg-sub
  :modal
  (fn [{:keys [modal]}] modal))
+
+(rf/reg-fx
+ :nav
+ (fn nav-fx [{:keys [path query external-url]}]
+   (if external-url
+     (aset (aget js/window "location") "href" external-url)
+     (acct/navigate! path query))))

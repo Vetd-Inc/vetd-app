@@ -83,14 +83,16 @@
        [:> ui/Form {:style {:margin-top 25}}
         [:> ui/FormField {:error (= @bad-input& :email)}
          [:label "Work Email Address"
-          [:> ui/Input {:class "borderless"
-                        :defaultValue @email
-                        :type "email"
-                        :spellCheck false
-                        :autoFocus true
-                        :on-invalid #(.preventDefault %) ; no type=email error message (we'll show our own)
-                        :on-change (fn [_ this]
-                                     (reset! email (.-value this)))}]]]
+          [ui/input {:class "borderless"
+                     :value @email
+                     :attrs {:type "email"
+                             ;; no type=email error message (we'll show our own)
+                             :on-invalid #(.preventDefault %)}
+                     :spellCheck false
+                     :autoFocus true
+                     :on-change (fn [e]
+                                  (println "something " (-> e .-target .-value))
+                                  (reset! email (-> e .-target .-value)))}]]]
         [:> ui/FormField {:error (= @bad-input& :pwd)}
          [:label "New Password"
           [:> ui/Input {:class "borderless"

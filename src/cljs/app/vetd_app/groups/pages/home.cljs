@@ -26,22 +26,25 @@
 (defn c-org
   [org group]
   (let [org-id& (rf/subscribe [:org-id])]
-    (fn [{:keys [id idstr oname memberships] :as org}
+    (fn [{:keys [id idstr oname memberships stack-items] :as org}
          {:keys [gname] :as group}]
-      (let [num-members (count memberships)]
+      (let [num-members (count memberships)
+            num-stack-items (count stack-items)]
         [cc/c-field {:label [:<>
-                             [:> ui/Button {:on-click (fn []
-                                                        (if (= id @org-id&)
-                                                          (rf/dispatch [:b/nav-stack])
-                                                          (rf/dispatch [:b/nav-stack-detail idstr])))
-                                            :as "a"
-                                            :size "small"
-                                            :color "lightblue"
-                                            :style {:float "right"
-                                                    :margin-top 7}}
-                              [:> ui/Icon {:name "grid layout"}]
-                              ;; TODO ? number of items in stack
-                              "View Stack"]
+                             (when (pos? num-stack-items)
+                               [:> ui/Button {:on-click (fn []
+                                                          (if (= id @org-id&)
+                                                            (rf/dispatch [:b/nav-stack])
+                                                            (rf/dispatch [:b/nav-stack-detail idstr])))
+                                              :as "a"
+                                              :size "small"
+                                              :color "lightblue"
+                                              :style {:float "right"
+                                                      :width 165
+                                                      :text-align "left"
+                                                      :margin-top 7}}
+                                [:> ui/Icon {:name "grid layout"}]
+                                (str " " num-stack-items " Stack Item" (when-not (= num-stack-items 1) "s"))])
                              oname]
                      :value [:<> (str num-members " member" (when-not (= num-members 1) "s") " ")
                              [:> ui/Popup
@@ -176,7 +179,9 @@
                                      [:memberships
                                       [:id
                                        [:user
-                                        [:id :uname]]]]]]
+                                        [:id :uname]]]]
+                                     [:stack-items
+                                      [:id :idstr :status]]]]
                                    [:top-products {:_order_by {:count-stack-items :desc}
                                                    :_limit 10}
                                     [:group-id :product-id :count-stack-items]]]]]}])]

@@ -169,29 +169,21 @@
  :admin?
  (fn [{:keys [admin?]}] admin?))
 
-
-(rf/reg-fx
- :nav
- (fn nav-fx [{:keys [path query]}]
-   (acct/navigate! path query)))
-
-(defn ->home-url
-  [membs admin?]
-  (if admin?
-    "/a/search"
-    (if-let [active-memb (first membs)]
-      "/b/search"
-      ;; TODO use code below when vendor pages are ready
-      #_      (if (-> active-memb :org :buyer?)
-                "/b/search"
-                "/v/preposals")
-      "/login")))
-
 (rf/reg-event-fx
  :nav-home
  (fn [{:keys [db]} _]
    (let [{:keys [memberships admin?]} db]
-     {:nav {:path (->home-url memberships admin?)}})))
+     {:nav (if admin?
+             {:path "/a/search"}
+             ;; TODO support multiple orgs
+             (if-let [active-memb (first memberships)]
+               (if (-> active-memb :org :buyer?)
+                 {:path "/b/search"}
+                 {:external-url "https://vetd.com/thank-you-vendor"}
+                 ;; when vendor-side is ready
+                 ;; {:path "/v/preposals"}
+                 )
+               {:path "/login"}))})))
 
 (defn c-page []
   (let [page& (rf/subscribe [:page])

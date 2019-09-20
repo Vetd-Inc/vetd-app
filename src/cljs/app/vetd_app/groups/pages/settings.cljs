@@ -361,18 +361,19 @@
                            :onSearchChange (fn [_ this] (reset! search-query& (aget this "searchQuery")))
                            :onChange (fn [_ this] (reset! product& (.-value this)))}]]
          [:> ui/FormField {:error (= @bad-input& (keyword (str "add-discount-to-group" (:id group) ".details")))}
-          [:> ui/Input
+          [:> ui/TextArea
            {:placeholder "Discount details..."
-            :fluid true
-            :on-change #(reset! details& (-> % .-target .-value))
-            :action (r/as-element
-                     [:> ui/Button {:on-click #(rf/dispatch [:g/add-discount-to-group.submit
-                                                             (:id group)
-                                                             (js->clj @product&)
-                                                             @details&])
-                                    :disabled (nil? @product&)
-                                    :color "blue"}
-                      "Add"])}]]]))))
+            :fluid "true"
+            :spellCheck true
+            :on-change (fn [_ this]
+                         (reset! details& (.-value this)))}]]
+         [:> ui/Button {:on-click #(rf/dispatch [:g/add-discount-to-group.submit
+                                                 (:id group)
+                                                 (js->clj @product&)
+                                                 @details&])
+                        :disabled (nil? @product&)
+                        :color "blue"}
+          "Add"]]))))
 
 (defn c-discount
   [discount]
@@ -407,7 +408,7 @@
                            [:a.name {:on-click #(rf/dispatch [:b/nav-product-detail idstr])}
                             pname]
                            [:small " by " (:oname vendor)]]
-                   :value group-discount-descr}])))
+                   :value (util/parse-md group-discount-descr)}])))
 
 (defn c-orgs
   [group]
