@@ -1,5 +1,6 @@
 (ns vetd-app.common.fx
-  (:require [re-frame.core :as rf]))
+  (:require [accountant.core :as acct]
+            [re-frame.core :as rf]))
 
 (defn validated-dispatch-fx
   [db event validator-fn]

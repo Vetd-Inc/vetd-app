@@ -63,6 +63,24 @@
            :message "We'll set up a call for you soon."}}))
 
 (rf/reg-event-fx
+ :b/buy
+ (fn [{:keys [db]} [_ product-id product-name]]
+   {:ws-send {:payload {:cmd :b/buy
+                        :return {:handler :b/buy.return}
+                        :product-id product-id
+                        :buyer-id (util/db->current-org-id db)}}
+    :analytics/track {:event "Buy"
+                      :props {:category "Product"
+                              :label product-name}}}))
+
+(rf/reg-event-fx
+ :b/buy.return
+ (constantly
+  {:toast {:type "success"
+           :title "Buying Process Started!"
+           :message "We'll be in touch with next steps shortly."}}))
+
+(rf/reg-event-fx
  :b/ask-a-question
  (fn [{:keys [db]} [_ product-id product-name message]]
    {:ws-send {:payload {:cmd :b/ask-a-question
@@ -255,7 +273,7 @@
                                           :ename (:pname product)
                                           :props {:fluid true}}]
                 [c-preposal-request-button product]
-                [bc/c-setup-call-button product vendor]
+                [bc/c-buy-button product vendor]
                 [bc/c-ask-a-question-button product vendor]])
              [:> ui/Segment {:class "top-categories"}
               [:h4 "Jump To"]

@@ -264,6 +264,27 @@
                        "Undo Reject"
                        [:> ui/Icon {:name "undo"}]]))}]))))
 
+(defn c-buy-button
+  [{:keys [id pname] :as product}
+   {:keys [oname] :as vendor}
+   props]
+  [:> ui/Popup
+   {:content (r/as-element
+              [:div.contentp
+               "Start the buying process for " [:strong pname] " and we will activate any eligible discounts."])
+    :header (str "Buy " pname)
+    :position "bottom left"
+    :trigger (r/as-element
+              [:> ui/Button (merge {:onClick #(rf/dispatch [:b/buy id pname])
+                                    :color "lightblue"
+                                    :fluid true
+                                    :icon true
+                                    :labelPosition "left"}
+                                   props)
+               "Buy"
+               [:> ui/Icon {:name "shopping cart"}]])}])
+
+;; unused
 (defn c-setup-call-button
   [{:keys [id pname] :as product}
    {:keys [oname] :as vendor}

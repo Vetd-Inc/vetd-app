@@ -190,6 +190,27 @@ User '%s'
                           (name etype) ": " ename " (ID: " eid ")\n"
                           "field name: " field-key))))
 
+(defn send-buy-req [buyer-id product-id]
+  (let [{:keys [pname rounds]} (-> [[:products {:id product-id}
+                                     [:pname
+                                      [:rounds {:deleted nil}
+                                       [:idstr]]]]]
+                                   ha/sync-query
+                                   :products
+                                   first)]
+    (com/sns-publish :ui-misc
+                     "Buy Request"
+                     (format
+                      "Buy Request
+Buyer (Org): '%s'
+Product: '%s'
+Round URLs (if any):
+%s"
+                      (-> buyer-id auth/select-org-by-id :oname) ; buyer name
+                      pname
+                      (->> (for [{:keys [idstr]} rounds]
+                             (str "https://app.vetd.com/b/rounds/" idstr))
+                           (clojure.string/join "\n"))))))
 
 (defn send-setup-call-req [buyer-id product-id]
   (let [{:keys [pname rounds]} (-> [[:products {:id product-id}
@@ -365,6 +386,10 @@ Round URL: https://app.vetd.com/b/rounds/%s"
 (defmethod com/handle-ws-inbound :b/request-complete-profile
   [{:keys [etype eid field-key buyer-id]} ws-id sub-fn]
   (send-complete-profile-req etype eid field-key buyer-id))
+
+(defmethod com/handle-ws-inbound :b/buy
+  [{:keys [buyer-id product-id]} ws-id sub-fn]
+  (send-buy-req buyer-id product-id))
 
 ;; Have Vetd set up a phone call for the buyer with the vendor
 (defmethod com/handle-ws-inbound :b/setup-call
