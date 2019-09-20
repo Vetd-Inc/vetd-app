@@ -116,3 +116,10 @@
 (rf/reg-sub
  :modal
  (fn [{:keys [modal]}] modal))
+
+(rf/reg-fx
+ :nav
+ (fn nav-fx [{:keys [path query external-url]}]
+   (if external-url
+     (aset (aget js/window "location") "href" external-url)
+     (acct/navigate! path query))))

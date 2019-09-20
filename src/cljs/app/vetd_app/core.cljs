@@ -169,14 +169,6 @@
  :admin?
  (fn [{:keys [admin?]}] admin?))
 
-
-(rf/reg-fx
- :nav
- (fn nav-fx [{:keys [path query external-url]}]
-   (if external-url
-     (.replace (aget js/window "location") external-url)
-     (acct/navigate! path query))))
-
 (rf/reg-event-fx
  :nav-home
  (fn [{:keys [db]} _]
