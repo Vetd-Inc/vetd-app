@@ -368,14 +368,13 @@
   [discounts]
   (util/augment-with-keys
    (for [{:keys [gname group-discount-descr]} discounts]
-     [:div group-discount-descr
-      (when (> (count discounts) 1)
-        (str " (" gname ")"))])))
+     [:div.discount
+      [:h4 gname]
+      (util/parse-md group-discount-descr)])))
 
 (defn c-discount-tag [discounts]
   [:> ui/Popup
    {:content (r/as-element (c-discount-details discounts))
-    :header "Community Discount"
     :position "bottom center"
     :trigger (r/as-element
               [:> ui/Label {:color "blue"

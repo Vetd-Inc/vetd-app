@@ -196,8 +196,9 @@
                                          [:id :idstr :created :status]]
                                         [:categories {:ref-deleted nil}
                                          [:id :idstr :cname]]
-                                        [:discounts {:id @group-ids&}
-                                         [:group-discount-descr]]]]
+                                        [:discounts {:id @group-ids&
+                                                     :ref-deleted nil}
+                                         [:group-discount-descr :gname]]]]
                                       [:from-org [:id :oname]]
                                       [:from-user [:id :uname]]
                                       [:to-org [:id :oname]]

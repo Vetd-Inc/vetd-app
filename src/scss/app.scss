@@ -45,6 +45,21 @@ a.label {
   color: $blue;
 }
 
+ul {
+  margin: 0;
+  padding: 0 0 0 18px;
+}
+
+.discount {
+  h4 {
+    margin: 0 0 4px 0;
+  }
+  
+  &:not(:first-of-type) {
+    margin-top: 12px;
+  }
+}
+
 .ui.dropdown .menu > .header {
   text-transform: none;
   background-color: #4ec2c4;
