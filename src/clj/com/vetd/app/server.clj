@@ -96,9 +96,12 @@
 
 (defn respond-transit
   [data ws]
-  (ms/try-put! ws
-               (String. (->transit data)) ;; TODO this can't be a byte array or something???
-               200))
+  (try
+    (ms/try-put! ws
+                 (String. (->transit data)) ;; TODO this can't be a byte array or something???
+                 200)
+    (catch Throwable e
+      (com/log-error e))))
 
 ;; use muutanja??
 (defn read-transit-string

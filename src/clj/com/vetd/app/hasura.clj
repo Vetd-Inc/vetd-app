@@ -38,7 +38,8 @@
             (future
               (log/info "Starting sub-count-monitor")
               (while (not @com/shutdown-signal)
-                (com/hc-send {:hasura-sub-count (count @sub-id->resp-fn&)})
+                (com/hc-send {:type :stats
+                              :hasura-sub-count (count @sub-id->resp-fn&)})
                 (Thread/sleep 5000))
               (log/info "Stopped sub-count-monitor")))))
 
