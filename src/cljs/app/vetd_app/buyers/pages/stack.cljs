@@ -29,7 +29,7 @@
 (rf/reg-event-fx
  :b/nav-stack
  (constantly
-  {:nav {:path "/b/stack"}
+  {:nav {:path "/b/stack"} ;; see also core.cljs :nav-home
    :analytics/track {:event "Navigate"
                      :props {:category "Navigation"
                              :label "Buyers Stack"}}}))

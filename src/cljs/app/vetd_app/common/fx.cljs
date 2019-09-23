@@ -55,7 +55,7 @@
                                :local-store {:session-token (:session-token output-data)}
                                :dispatch-later [{:ms 100 :dispatch [:ws-get-session-user]}
                                                 ;; first-time login, go to stack page
-                                                {:ms 200 :dispatch [:b/nav-stack]}
+                                                {:ms 200 :dispatch [:nav-home true]}
                                                 (when (:join-group-link-key local-store)
                                                   {:ms 300 :dispatch [:read-link (:join-group-link-key local-store)]})]}
      :password-reset {:toast {:type "success"
