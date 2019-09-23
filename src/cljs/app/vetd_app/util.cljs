@@ -6,6 +6,8 @@
             [reagent.ratom :as rr]
             [reagent.format :as format]
             [re-frame.registrar :as rf-reg]
+            [clojure.walk :as w]
+            [clojure.zip :as z]
             [markdown-to-hiccup.core :as md])
   (:import [goog.functions]))
 
@@ -224,6 +226,55 @@
   (str (s/trim (subs string 0 length))
        (when (> (count string) length)
          "...")))
+
+
+(defn zip-walk [f z]
+  (if (z/end? z)
+    (z/root z)
+    (recur f (z/next (f z)))))
+
+
+(defn truncate-hiccup
+  "Truncates based on total number of text characters in some hiccup form(s)."
+  [hiccup length]
+  (let [length-seen (atom 0)]
+
+    ;; (take-while (< @length-seen length) (iterate z/next (z/vector-zip hiccup)))
+    
+    (println 
+
+     (zip-walk
+      (fn [loc] 
+        (if (z/branch? loc) 
+          loc
+          (do (println (z/node loc))
+              loc
+              #_(if (string? (z/node loc))
+                  (z/remove loc)
+                  loc))))
+      (z/vector-zip hiccup))
+     
+     )
+    
+    
+    
+    ;; (println  hiccup)
+    ;; (println (tree-seq seq? identity hiccup))
+    
+    ;; (w/postwalk (fn [h]
+    ;;               ;; (println @length-seen length)
+    ;;               (if (< @length-seen length)
+    ;;                 (if (string? h)
+    ;;                   (do (swap! length-seen + (count h))
+    ;;                       ;; (truncate-text h 5)
+    ;;                       h
+    
+    ;;                       )
+    ;;                   h)
+    ;;                 [])
+    ;;               )
+    ;;             hiccup)
+    ))
 
 (defn valid-email-address?
   [string] ;; source: https://emailregex.com/ "JavaScript" version

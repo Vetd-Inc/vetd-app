@@ -91,7 +91,6 @@
                      :spellCheck false
                      :autoFocus true
                      :on-change (fn [e]
-                                  (println "something " (-> e .-target .-value))
                                   (reset! email (-> e .-target .-value)))}]]]
         [:> ui/FormField {:error (= @bad-input& :pwd)}
          [:label "New Password"
