@@ -171,14 +171,16 @@
 
 (rf/reg-event-fx
  :nav-home
- (fn [{:keys [db]} _]
+ (fn [{:keys [db]} [_ first-session?]]
    (let [{:keys [memberships admin?]} db]
      {:nav (if admin?
              {:path "/a/search"}
              ;; TODO support multiple orgs
              (if-let [active-memb (first memberships)]
                (if (-> active-memb :org :buyer?)
-                 {:path "/b/search"}
+                 (if first-session?
+                   {:path "/b/stack"}
+                   {:path "/b/search"})
                  {:external-url "https://vetd.com/thank-you-vendor"}
                  ;; when vendor-side is ready
                  ;; {:path "/v/preposals"}
