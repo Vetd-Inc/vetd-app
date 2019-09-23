@@ -122,5 +122,5 @@
  :nav
  (fn nav-fx [{:keys [path query external-url]}]
    (if external-url
-     (.assign (aget js/window "location") external-url)
+     (js/setTimeout #(.assign (aget js/window "location") external-url) 1000)
      (acct/navigate! path query))))
