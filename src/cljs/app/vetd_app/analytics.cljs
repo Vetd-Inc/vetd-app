@@ -24,3 +24,17 @@
  :analytics/group
  (fn [{:keys [group-id traits]}]
    (js/analytics.group group-id (clj->js traits))))
+
+(defn identify-map
+  [{:keys [id uname email] :as user} memberships admin-of-groups]
+  (let [{:keys [buyer? oname]} (some-> memberships first :org)]
+    {:user-id id
+     :traits {:name uname
+              :displayName uname                                      
+              :email email
+              :userStatus (if buyer? "Buyer" "Vendor")
+              :oName oname
+              ;; :gName
+              ;; :admin
+              ;; only for MailChimp integration
+              :fullName uname}}))

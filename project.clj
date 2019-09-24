@@ -34,6 +34,7 @@
                  [hiccup "1.0.5"]
                  
                  [re-frame "0.10.5"]
+                 [re-frame-utils "0.1.0"]
                  [reagent "0.8.1"]
                  [reagent-utils "0.3.2"]
                  [re-frisk "0.4.5"]
@@ -159,7 +160,7 @@
                   {:builds
                    [{:id "dev-full"
                      :source-paths ["src/clj" "src/cljc" "src/cljs/admin" "src/cljs/app"]
-                     :figwheel {:on-jsload "vetd-app.core/mount-components"}
+                     :figwheel {:on-jsload "vetd-app.core/mount-components-dev"}
                      :compiler
                      {:main "vetd-admin.full"
                       :asset-path "/js/full-out"
