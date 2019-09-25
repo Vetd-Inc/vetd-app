@@ -366,5 +366,3 @@
       (println "init! END"))))
 
 (println "END core")
-
-#_(rf/dispatch-sync [:reg-sub-trackers])
