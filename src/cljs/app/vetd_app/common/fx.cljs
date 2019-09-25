@@ -57,7 +57,11 @@
                                                 ;; first-time login, go to stack page
                                                 {:ms 200 :dispatch [:nav-home true]}
                                                 (when (:join-group-link-key local-store)
-                                                  {:ms 300 :dispatch [:read-link (:join-group-link-key local-store)]})]}
+                                                  {:ms 300 :dispatch [:read-link (:join-group-link-key local-store)]})
+                                                {:ms 500 :dispatch [:do-fx {:analytics/track
+                                                                            {:event "Signup Complete"
+                                                                             :props {:category "Accounts"
+                                                                                     :label "Standard"}}}]}]}
      :password-reset {:toast {:type "success"
                               :title "Password Updated"
                               :message "Your password has been successfully updated."}

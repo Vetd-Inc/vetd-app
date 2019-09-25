@@ -59,10 +59,7 @@
      {:dispatch [:nav-login]
       :toast {:type "success"
               :title "Please check your email"
-              :message (str "We've sent an email to " email " with a link to activate your account.")}
-      :analytics/track {:event "Signup Complete"
-                        :props {:category "Accounts"
-                                :label org-type}}}
+              :message (str "We've sent an email to " email " with a link to activate your account.")}}
      {:db (assoc-in db [:page-params :bad-input] :email)
       :toast {:type "error" 
               :title "Error"

@@ -57,11 +57,12 @@
               :title "Joined!"
               :message (str "You accepted an invitation to join " (:org-name output-data))}
       :local-store {:session-token (:session-token output-data)}
-      :analytics/track {:event "Signup Complete"
-                        :props {:category "Accounts"
-                                :label "By Invite"}}
       :dispatch-later [{:ms 100 :dispatch [:ws-get-session-user]}
-                       {:ms 200 :dispatch [:nav-home true]}]}
+                       {:ms 200 :dispatch [:nav-home true]}
+                       {:ms 500 :dispatch [:do-fx {:analytics/track
+                                                   {:event "Signup Complete"
+                                                    :props {:category "Accounts"
+                                                            :label "By Explicit Invite"}}}]}]}
      {:toast {:type "error"
               :title "Sorry, that invitation is invalid or has expired."}
       :dispatch [:nav-home]})))
