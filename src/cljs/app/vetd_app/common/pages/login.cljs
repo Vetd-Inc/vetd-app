@@ -108,8 +108,7 @@
            [:> ui/Form {:error @login-failed?}
             (when @login-failed?
               [:> ui/Message {:error true
-                              :header "Incorrect email / password"
-                              :content "Contact us at help@vetd.com"}])
+                              :header "Incorrect password or unverified email address."}])
             [:> ui/FormField
              [ui/input {:class "borderless"
                         :value @email
