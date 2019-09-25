@@ -307,6 +307,7 @@
                                [:> ui/Popup
                                 {:position "bottom left"
                                  :wide "very"
+                                 :offset -10
                                  :content (let [max-members-show 15]
                                             (str (s/join ", " (->> memberships
                                                                    (map (comp :uname :user))

@@ -365,17 +365,17 @@
 
 (defn c-discount-details
   "Get hiccup for displaying all the details about a discount(s)."
-  [discounts]
+  [discounts & [{:keys [truncate?]}]]
   (util/augment-with-keys
-   (for [{:keys [gname group-discount-descr]} discounts]
-     [:div group-discount-descr
-      (when (> (count discounts) 1)
-        (str " (" gname ")"))])))
+   (cond-> (for [{:keys [gname group-discount-descr]} discounts]
+             [:div.discount
+              [:h4 gname]
+              (util/parse-md group-discount-descr)])
+     truncate? (util/truncate-hiccup 130))))
 
 (defn c-discount-tag [discounts]
   [:> ui/Popup
-   {:content (r/as-element (c-discount-details discounts))
-    :header "Community Discount"
+   {:content (r/as-element (c-discount-details discounts {:truncate? true}))
     :position "bottom center"
     :trigger (r/as-element
               [:> ui/Label {:color "blue"
