@@ -20,8 +20,7 @@
  (fn [{:keys [db local-store]}]
    {:db (assoc db
                :page :login
-               :page-params {:join-group-name (:join-group-name local-store)})
-    :analytics/page {:name "Login"}}))
+               :page-params {:join-group-name (:join-group-name local-store)})}))
 
 (rf/reg-event-fx
  :nav-login

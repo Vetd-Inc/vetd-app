@@ -24,8 +24,7 @@
 (rf/reg-event-fx
  :b/route-preposals
  (fn [{:keys [db]}]
-   {:db (assoc db :page :b/preposals)
-    :analytics/page {:name "Buyers Preposals"}}))
+   {:db (assoc db :page :b/preposals)}))
 
 (rf/reg-event-fx
  :b/preposals-filter.add

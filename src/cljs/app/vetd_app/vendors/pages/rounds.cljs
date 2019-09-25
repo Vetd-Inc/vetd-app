@@ -17,8 +17,7 @@
 (rf/reg-event-fx
  :v/route-rounds
  (fn [{:keys [db]}]
-   {:db (assoc db :page :v/rounds)
-    :analytics/page {:name "Vendor Rounds"}}))
+   {:db (assoc db :page :v/rounds)}))
 
 
 (defn c-page []

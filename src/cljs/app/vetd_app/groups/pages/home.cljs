@@ -19,8 +19,7 @@
 (rf/reg-event-fx
  :g/route-home
  (fn [{:keys [db]}]
-   {:db (assoc db :page :g/home)
-    :analytics/page {:name "Groups Home"}}))
+   {:db (assoc db :page :g/home)}))
 
 ;;;; Components
 (defn c-org

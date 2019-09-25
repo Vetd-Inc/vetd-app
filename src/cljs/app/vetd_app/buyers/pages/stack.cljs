@@ -37,8 +37,7 @@
 (rf/reg-event-fx
  :b/route-stack
  (fn [{:keys [db]} [_ param]]
-   (merge {:db (assoc db :page :b/stack)
-           :analytics/page {:name "Buyers Stack"}}
+   (merge {:db (assoc db :page :b/stack)}
           (case param 
             "qb-return" {:toast {:type "success"
                                  :title "Connected to Quickbooks"

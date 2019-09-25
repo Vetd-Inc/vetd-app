@@ -21,8 +21,7 @@
  (fn [{:keys [db]}]
    {:db (assoc db
                :page :g/settings
-               :page-params {:fields-editing #{}})
-    :analytics/page {:name "Groups Settings"}}))
+               :page-params {:fields-editing #{}})}))
 
 (rf/reg-event-fx
  :g/add-orgs-to-group.submit

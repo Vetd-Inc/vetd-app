@@ -18,8 +18,7 @@
  (fn [{:keys [db]} [_ link-key]]
    {:db (assoc db
                :page :join-org-signup
-               :page-params {:link-key link-key})
-    :analytics/page {:name "Signup By Invite"}}))
+               :page-params {:link-key link-key})}))
 
 (rf/reg-event-fx
  :join-org-signup.submit

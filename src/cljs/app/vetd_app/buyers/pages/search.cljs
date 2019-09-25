@@ -117,8 +117,7 @@
  :b/route-search
  (fn [{:keys [db]} [_ search-term]]
    (merge
-    {:db (assoc db :page :b/search)
-     :analytics/page {:name "Buyers Products & Categories"}}
+    {:db (assoc db :page :b/search)}
     (when search-term
       {:dispatch [:b/search.term.update search-term :bypass-url-fx true]}))))
 

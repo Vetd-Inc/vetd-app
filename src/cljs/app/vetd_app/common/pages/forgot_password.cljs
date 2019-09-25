@@ -16,8 +16,7 @@
  (fn [{:keys [db]} [_ email-address]]
    {:db (assoc db
                :page :forgot-password
-               :page-params {:email-address email-address})
-    :analytics/page {:name "Forgot Password"}}))
+               :page-params {:email-address email-address})}))
 
 (rf/reg-event-fx
  :forgot-password.submit

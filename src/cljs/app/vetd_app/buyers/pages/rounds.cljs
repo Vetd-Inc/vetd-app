@@ -20,8 +20,7 @@
 (rf/reg-event-fx
  :b/route-rounds
  (fn [{:keys [db]}]
-   {:db (assoc db :page :b/rounds)
-    :analytics/page {:name "Buyers Rounds"}}))
+   {:db (assoc db :page :b/rounds)}))
 
 (rf/reg-event-fx
  :b/rounds-filter.add-selected-status

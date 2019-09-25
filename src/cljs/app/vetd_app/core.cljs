@@ -5,6 +5,7 @@
             vetd-app.cookies
             vetd-app.url
             vetd-app.debounce
+            vetd-app.sub-trackers
             vetd-app.common.fx
             vetd-app.orgs.fx
             vetd-app.groups.fx
@@ -37,7 +38,6 @@
             [vetd-app.common.pages.settings :as p-settings]
             [reagent.core :as r]
             [re-frame.core :as rf]
-            [vimsical.re-frame.fx.track :as track]
             [secretary.core :as sec]
             [accountant.core :as acct]
             [clerk.core :as clerk]
@@ -175,60 +175,6 @@
  (fn [_ [_ fx]]
    fx))
 
-(def sub-trackers
-  [{:id :user
-    :subscription [:user]
-    :dispatch-first? false
-    :event-fn
-    (fn [{:keys [id uname email]}]
-      [:do-fx
-       (when id
-         {:analytics/identify
-          {:user-id id
-           :traits {:name uname
-                    :displayName uname                                      
-                    :email email
-                    ;; only for MailChimp integration
-                    :fullName uname}}})])}
-   {:id :active-org
-    :subscription [:active-org]
-    :dispatch-first? false
-    :event-fn
-    (fn [{:keys [id oname buyer? groups]}]
-      [:do-fx
-       (when id
-         {:analytics/identify {:user-id @(rf/subscribe [:user-id]) ;; TODO messy
-                               :traits {:userStatus (if buyer? "Buyer" "Vendor")
-                                        :oname oname
-                                        :gname (s/join ", " (map :gname groups))}}
-          :analytics/group {:group-id id
-                            :traits {:name oname}}})])}
-   {:id :admin-of-groups
-    :subscription [:admin-of-groups]
-    :dispatch-first? false
-    :event-fn
-    (fn [admin-of-groups]
-      [:do-fx
-       (when (seq admin-of-groups)
-         {:analytics/identify
-          {:user-id @(rf/subscribe [:user-id]) ;; TODO messy
-           :traits {:groupAdmin (s/join ", " (map :id admin-of-groups))}}})])}
-   ;; TODO move page analytics to here?
-   ;; {:id :page-change
-   ;;  :subscription [:page]
-   ;;  :event-fn (fn [page]
-   ;;              [:toast {:type "success"
-   ;;                       :message (str "page changed to: " page)}])
-   ;;  :dispatch-first? false}
-   ])
-
-(rf/reg-event-fx
- :reg-sub-trackers
- (fn []
-   {::track/register sub-trackers}))
-
-
-
 (rf/reg-event-fx
  :nav-home
  (fn [{:keys [db]} [_ first-session?]]
@@ -262,11 +208,6 @@
   (.log js/console "mount-components STARTED")
   (r/render [c-page] (.getElementById js/document "app"))
   (.log js/console "mount-components DONE"))
-
-(rf/reg-event-fx
- :dispose-sub-trackers
- (fn []
-   {::track/dispose (map #(select-keys % [:id]) sub-trackers)}))
 
 (defn mount-components-dev []
   (.log js/console "mount-components-dev STARTED")
