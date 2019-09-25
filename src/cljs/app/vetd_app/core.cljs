@@ -176,20 +176,7 @@
    fx))
 
 (def sub-trackers
-  [{:id :active-org
-    :subscription [:active-org]
-    :dispatch-first? false
-    :event-fn
-    (fn [{:keys [id oname buyer? groups]}]
-      [:do-fx
-       (when id
-         {:analytics/identify {:user-id @(rf/subscribe [:user-id]) ;; TODO messy
-                               :traits {:userStatus (if buyer? "Buyer" "Vendor")
-                                        :oName oname
-                                        :gName (s/join ", " (map :gname groups))}}
-          :analytics/group {:group-id id
-                            :traits {:name oname}}})])}
-   {:id :user
+  [{:id :user
     :subscription [:user]
     :dispatch-first? false
     :event-fn
@@ -203,6 +190,19 @@
                     :email email
                     ;; only for MailChimp integration
                     :fullName uname}}})])}
+   {:id :active-org
+    :subscription [:active-org]
+    :dispatch-first? false
+    :event-fn
+    (fn [{:keys [id oname buyer? groups]}]
+      [:do-fx
+       (when id
+         {:analytics/identify {:user-id @(rf/subscribe [:user-id]) ;; TODO messy
+                               :traits {:userStatus (if buyer? "Buyer" "Vendor")
+                                        :oname oname
+                                        :gname (s/join ", " (map :gname groups))}}
+          :analytics/group {:group-id id
+                            :traits {:name oname}}})])}
    {:id :admin-of-groups
     :subscription [:admin-of-groups]
     :dispatch-first? false
@@ -212,7 +212,7 @@
        (when (seq admin-of-groups)
          {:analytics/identify
           {:user-id @(rf/subscribe [:user-id]) ;; TODO messy
-           :traits {:gAdmin (s/join ", " (map :id admin-of-groups))}}})])}
+           :traits {:groupAdmin (s/join ", " (map :id admin-of-groups))}}})])}
    ;; TODO move page analytics to here?
    ;; {:id :page-change
    ;;  :subscription [:page]

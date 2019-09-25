@@ -60,9 +60,6 @@
                    :admin? admin?)
         :local-store {:session-token session-token}
         :cookies {:admin-token (when admin? [session-token {:max-age 60 :path "/"}])}
-        :analytics/identify (analytics/identify-map user memberships admin-of-groups)
-        :analytics/group {:group-id org-id
-                          :traits {:name (some-> memberships first :org :oname)}}
         :dispatch-later [{:ms 100 :dispatch (if (:join-group-link-key local-store)
                                               [:read-link (:join-group-link-key local-store)]
                                               [:nav-home])}

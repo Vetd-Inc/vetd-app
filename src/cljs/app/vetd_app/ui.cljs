@@ -193,7 +193,8 @@
 
 (rf/reg-fx
  :toast
- (fn [{:keys [type title message]}]
+ (fn [{:keys [type title message]
+       :or {type "success"}}]
    (case type
      "success" (js/toastr.success message title)
      "error" (js/toastr.error message title)
