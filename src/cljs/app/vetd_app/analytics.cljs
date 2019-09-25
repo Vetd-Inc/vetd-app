@@ -3,7 +3,9 @@
   (:require-macros [com.vetd.app.env :as env]))
 
 (when js/analytics
-  (js/analytics.load (env/segment-frontend-write-key)))
+  (if-not js/window.suppressAnalytics
+    (js/analytics.load (env/segment-frontend-write-key))
+    (println "analytics are suppressed for admins")))
 
 (rf/reg-fx
  :analytics/identify
