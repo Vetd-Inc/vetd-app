@@ -17,8 +17,7 @@
 (rf/reg-event-fx
  :v/route-profile
  (fn [{:keys [db]}]
-   {:db (assoc db :page :v/profile)
-    :analytics/page {:name "Vendor Edit Profile"}}))
+   {:db (assoc db :page :v/profile)}))
 
 (defn c-page []
   (let [org-id& (rf/subscribe [:org-id])

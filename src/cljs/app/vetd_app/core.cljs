@@ -3,13 +3,14 @@
             vetd-app.graphql
             vetd-app.local-store
             vetd-app.cookies
-            vetd-app.analytics
             vetd-app.url
             vetd-app.debounce
+            vetd-app.sub-trackers
             vetd-app.common.fx
             vetd-app.orgs.fx
             vetd-app.groups.fx
             [vetd-app.util :as util]
+            [vetd-app.analytics :as analytics]
             [vetd-app.hooks :as hooks]
             [vetd-app.buyers.fixtures :as b-fix]
             [vetd-app.buyers.pages.search :as p-bsearch]
@@ -39,7 +40,8 @@
             [re-frame.core :as rf]
             [secretary.core :as sec]
             [accountant.core :as acct]
-            [clerk.core :as clerk]))
+            [clerk.core :as clerk]
+            [clojure.string :as s]))
 
 (println "START core")
 
@@ -86,7 +88,6 @@
                    :v/round-product-detail #'v-fix/container
                    :g/home #'b-fix/container
                    :g/settings #'b-fix/container})
-
 
 (rf/reg-event-db
  :init-db
@@ -170,6 +171,11 @@
  (fn [{:keys [admin?]}] admin?))
 
 (rf/reg-event-fx
+ :do-fx
+ (fn [_ [_ fx]]
+   fx))
+
+(rf/reg-event-fx
  :nav-home
  (fn [{:keys [db]} [_ first-session?]]
    (let [{:keys [memberships admin?]} db]
@@ -200,10 +206,16 @@
 
 (defn mount-components []
   (.log js/console "mount-components STARTED")
-  (rf/clear-subscription-cache!)
   (r/render [c-page] (.getElementById js/document "app"))
   (.log js/console "mount-components DONE"))
 
+(defn mount-components-dev []
+  (.log js/console "mount-components-dev STARTED")
+  (rf/dispatch-sync [:dispose-sub-trackers])
+  (rf/clear-subscription-cache!)
+  (rf/dispatch-sync [:reg-sub-trackers])
+  (mount-components)
+  (.log js/console "mount-components-dev DONE"))
 
 ;;;; Routes
 
@@ -313,18 +325,7 @@
                    :admin-of-groups admin-of-groups
                    ;; a Vetd employee with admin access?
                    :admin? admin?)
-        :cookies {:admin-token (when admin? [(:session-token local-store)
-                                             {:max-age 3600 :path "/"}])}
-        :analytics/identify {:user-id (:id user)
-                             :traits {:name (:uname user)
-                                      :displayName (:uname user)                                      
-                                      :email (:email user)
-                                      ;; only for MailChimp integration
-                                      :fullName (:uname user)
-                                      :userStatus (if (some-> memberships first :org :buyer?) "Buyer" "Vendor")
-                                      :oName (some-> memberships first :org :oname)}}
-        :analytics/group {:group-id org-id
-                          :traits {:name (some-> memberships first :org :oname)}}
+        :cookies {:admin-token (when admin? [(:session-token local-store) {:max-age 3600 :path "/"}])}
         :after-req-session nil})
      {:after-req-session nil})))
 
@@ -359,6 +360,7 @@
       (println "init! START")
       (vreset! init-done? true)
       (rf/dispatch-sync [:init-db])
+      (rf/dispatch-sync [:reg-sub-trackers])
       (rf/dispatch-sync [:ws-init])
       (rf/dispatch-sync [:ws-get-session-user])
       (println "init! END"))))

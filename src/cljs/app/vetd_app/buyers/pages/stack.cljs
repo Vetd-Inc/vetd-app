@@ -37,15 +37,20 @@
 (rf/reg-event-fx
  :b/route-stack
  (fn [{:keys [db]} [_ param]]
-   (merge {:db (assoc db :page :b/stack)
-           :analytics/page {:name "Buyers Stack"}}
+   (merge {:db (assoc db :page :b/stack)}
           (case param 
             "qb-return" {:toast {:type "success"
                                  :title "Connected to Quickbooks"
-                                 :message "We will notify you after your data has been processed and added to your stack."}}
+                                 :message "We will notify you after your data has been processed and added to your stack."}
+                         :analytics/track {:event "Quickbooks Connected"
+                                           :props {:category "Stack"
+                                                   :label buyer-id}}}
             "qb-return-access-denied" {:toast {:type "error"
                                                :title "Quickbooks Not Connected"
-                                               :message "We were not able to connect to your Quickbooks account."}}
+                                               :message "We were not able to connect to your Quickbooks account."}
+                                       :analytics/track {:event "Quickbooks Failed to Connect"
+                                                         :props {:category "Stack"
+                                                                 :label buyer-id}}}
             nil))))
 
 (rf/reg-event-fx

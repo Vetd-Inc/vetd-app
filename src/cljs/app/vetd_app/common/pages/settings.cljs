@@ -22,8 +22,7 @@
  (fn [{:keys [db]}]
    {:db (assoc db
                :page :settings
-               :page-params {:fields-editing #{}})
-    :analytics/page {:name "Settings"}}))
+               :page-params {:fields-editing #{}})}))
 
 (rf/reg-event-fx
  :edit-field

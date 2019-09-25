@@ -1,6 +1,7 @@
 (ns vetd-app.common.pages.login
   (:require [vetd-app.ui :as ui]
             [vetd-app.common.components :as cc]
+            [vetd-app.analytics :as analytics]
             [reagent.core :as r]
             [re-frame.core :as rf]
             [re-com.core :as rc]))
@@ -19,8 +20,7 @@
  (fn [{:keys [db local-store]}]
    {:db (assoc db
                :page :login
-               :page-params {:join-group-name (:join-group-name local-store)})
-    :analytics/page {:name "Login"}}))
+               :page-params {:join-group-name (:join-group-name local-store)})}))
 
 (rf/reg-event-fx
  :nav-login
@@ -59,16 +59,6 @@
                    :admin? admin?)
         :local-store {:session-token session-token}
         :cookies {:admin-token (when admin? [session-token {:max-age 60 :path "/"}])}
-        :analytics/identify {:user-id (:id user)
-                             :traits {:name (:uname user)
-                                      :displayName (:uname user)
-                                      :email (:email user)
-                                      ;; only for MailChimp integration
-                                      :fullName (:uname user)
-                                      :userStatus (if (some-> memberships first :org :buyer?) "Buyer" "Vendor")
-                                      :oName (some-> memberships first :org :oname)}}
-        :analytics/group {:group-id org-id
-                          :traits {:name (some-> memberships first :org :oname)}}
         :dispatch-later [{:ms 100 :dispatch (if (:join-group-link-key local-store)
                                               [:read-link (:join-group-link-key local-store)]
                                               [:nav-home])}
@@ -89,7 +79,8 @@
  (constantly
   {:local-store {:session-token nil}
    :cookies {:admin-token [nil {:max-age 60 :path "/"}]}
-   :dispatch [:nav-login]}))
+   :dispatch-n [[:init-db]
+                [:nav-login]]}))
 
 (rf/reg-event-db
  :clear-login-form

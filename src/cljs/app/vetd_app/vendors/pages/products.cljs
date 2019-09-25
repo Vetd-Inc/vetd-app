@@ -16,8 +16,7 @@
 (rf/reg-event-fx
  :v/route-products
  (fn [{:keys [db]}]
-   {:db (assoc db :page :v/products)
-    :analytics/page {:name "Vendors Products"}}))
+   {:db (assoc db :page :v/products)}))
 
 (rf/reg-event-fx
  :v/new-product
