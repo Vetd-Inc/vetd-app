@@ -22,50 +22,51 @@
 (defn search-prods-vendors->ids
   "Get product ID's based on search query and filter (and union with related categories)."
   [q cat-ids {:keys [features groups discounts-available-to-groups] :as filter-map}]
-  (if (or (not-empty q)
-          (some seq (vals filter-map)))
-    (let [ids (db/hs-query
-               {:select [[:p.id :pid]
-                         [(honeysql.core/raw "coalesce(p.score, 1.0)") :nscore]
-                         [(honeysql.core/raw "coalesce(p.profile_score, 0.0)") :pscore]]
-                :modifiers [:distinct]
-                :from [[:products :p]]
-                :join (concat [[:orgs :o] [:= :o.id :p.vendor_id]]
-                              (when (features "free-trial")
-                                [[:docs_to_fields :d2f] [:and
-                                                         [:= :d2f.doc_subject :p.id]
-                                                         [:= :d2f.doc_dtype "product-profile"]
-                                                         [:= :d2f.prompt_term "product/free-trial?"]
-                                                         [:= :d2f.resp_field_sval "yes"]]])
-                              (when (not-empty groups)
-                                [[:group_org_memberships :gom] [:in :gom.group_id groups]
-                                 [:stack_items :si] [:and
-                                                     [:= :si.deleted nil]
-                                                     [:= :si.buyer_id :gom.org_id]
-                                                     [:= :si.product_id :p.id]]])
-                              (when (not-empty discounts-available-to-groups)
-                                [[:group_discounts :gd] [:and
-                                                         [:= :gd.deleted nil]
-                                                         [:in :gd.group_id discounts-available-to-groups]
-                                                         [:= :gd.product_id :p.id]]]))
-                :left-join (when (not-empty cat-ids)
-                             [[:product_categories :pc] [:= :p.id :pc.prod_id]])
-                :where [:and
-                        [:= :p.deleted nil]
-                        [:= :o.deleted nil]
-                        [:or
-                         [(keyword "~*") :p.pname (str ".*?\\m" q ".*")]
-                         [(keyword "~*") :o.oname (str ".*?\\m" q ".*")]
-                         (when (not-empty cat-ids)	
-                           [:in :pc.cat_id cat-ids])]
-                        (when (features "product-profile-completed")
-                          [:>= :p.profile_score 0.9])]
-                :order-by [[:pscore :desc] [:nscore :desc]]
-                ;; this will be paginated on the frontend
-                :limit 500})
-          pids (map :pid ids)]
-      {:product-ids pids})
-    {:product-ids []}))
+  (let [term (s/trim q)]
+    (if (or (not-empty term)
+            (some seq (vals filter-map)))
+      (let [ids (db/hs-query
+                 {:select [[:p.id :pid]
+                           [(honeysql.core/raw "coalesce(p.score, 1.0)") :nscore]
+                           [(honeysql.core/raw "coalesce(p.profile_score, 0.0)") :pscore]]
+                  :modifiers [:distinct]
+                  :from [[:products :p]]
+                  :join (concat [[:orgs :o] [:= :o.id :p.vendor_id]]
+                                (when (features "free-trial")
+                                  [[:docs_to_fields :d2f] [:and
+                                                           [:= :d2f.doc_subject :p.id]
+                                                           [:= :d2f.doc_dtype "product-profile"]
+                                                           [:= :d2f.prompt_term "product/free-trial?"]
+                                                           [:= :d2f.resp_field_sval "yes"]]])
+                                (when (not-empty groups)
+                                  [[:group_org_memberships :gom] [:in :gom.group_id groups]
+                                   [:stack_items :si] [:and
+                                                       [:= :si.deleted nil]
+                                                       [:= :si.buyer_id :gom.org_id]
+                                                       [:= :si.product_id :p.id]]])
+                                (when (not-empty discounts-available-to-groups)
+                                  [[:group_discounts :gd] [:and
+                                                           [:= :gd.deleted nil]
+                                                           [:in :gd.group_id discounts-available-to-groups]
+                                                           [:= :gd.product_id :p.id]]]))
+                  :left-join (when (not-empty cat-ids)
+                               [[:product_categories :pc] [:= :p.id :pc.prod_id]])
+                  :where [:and
+                          [:= :p.deleted nil]
+                          [:= :o.deleted nil]
+                          [:or
+                           [(keyword "~*") :p.pname (str ".*?\\m" term ".*")]
+                           [(keyword "~*") :o.oname (str ".*?\\m" term ".*")]
+                           (when (not-empty cat-ids)	
+                             [:in :pc.cat_id cat-ids])]
+                          (when (features "product-profile-completed")
+                            [:>= :p.profile_score 0.9])]
+                  :order-by [[:pscore :desc] [:nscore :desc]]
+                  ;; this will be paginated on the frontend
+                  :limit 500})
+            pids (map :pid ids)]
+        {:product-ids pids})
+      {:product-ids []})))
 
 (defn search-category-ids
   [q]
