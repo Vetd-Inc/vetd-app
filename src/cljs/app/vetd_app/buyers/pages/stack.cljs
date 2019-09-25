@@ -37,21 +37,22 @@
 (rf/reg-event-fx
  :b/route-stack
  (fn [{:keys [db]} [_ param]]
-   (merge {:db (assoc db :page :b/stack)}
-          (case param 
-            "qb-return" {:toast {:type "success"
-                                 :title "Connected to Quickbooks"
-                                 :message "We will notify you after your data has been processed and added to your stack."}
-                         :analytics/track {:event "Quickbooks Connected"
-                                           :props {:category "Stack"
-                                                   :label buyer-id}}}
-            "qb-return-access-denied" {:toast {:type "error"
-                                               :title "Quickbooks Not Connected"
-                                               :message "We were not able to connect to your Quickbooks account."}
-                                       :analytics/track {:event "Quickbooks Failed to Connect"
-                                                         :props {:category "Stack"
-                                                                 :label buyer-id}}}
-            nil))))
+   (let [buyer-id (util/db->current-org-id db)]
+     (merge {:db (assoc db :page :b/stack)}
+            (case param 
+              "qb-return" {:toast {:type "success"
+                                   :title "Connected to Quickbooks"
+                                   :message "We will notify you after your data has been processed and added to your stack."}
+                           :analytics/track {:event "Quickbooks Connected"
+                                             :props {:category "Stack"
+                                                     :label buyer-id}}}
+              "qb-return-access-denied" {:toast {:type "error"
+                                                 :title "Quickbooks Not Connected"
+                                                 :message "We were not able to connect to your Quickbooks account."}
+                                         :analytics/track {:event "Quickbooks Failed to Connect"
+                                                           :props {:category "Stack"
+                                                                   :label buyer-id}}}
+              nil)))))
 
 (rf/reg-event-fx
  :b/stack.add-items
@@ -183,8 +184,10 @@
       (let [products& (rf/subscribe
                        [:gql/q
                         {:queries
-                         [[:products {:_where {:_and [{:pname {:_ilike (str "%" @search-query& "%")}}
-                                                      {:deleted {:_is_null true}}]}
+                         [[:products {:_where
+                                      {:_and ;; while this trims search-query, the Dropdown's search filter doesn't...
+                                       [{:pname {:_ilike (str "%" (s/trim @search-query&) "%")}}
+                                        {:deleted {:_is_null true}}]}
                                       :_limit 100
                                       :_order_by {:pname :asc}}
                            [:id :pname]]]}])
