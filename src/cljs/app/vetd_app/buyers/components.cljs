@@ -371,7 +371,7 @@
              [:div.discount
               [:h4 gname]
               (util/parse-md group-discount-descr)])
-     truncate? (util/truncate-hiccup 175))))
+     truncate? (util/truncate-hiccup 130))))
 
 (defn c-discount-tag [discounts]
   [:> ui/Popup

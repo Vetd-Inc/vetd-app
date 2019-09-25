@@ -227,54 +227,29 @@
        (when (> (count string) length)
          "...")))
 
-
 (defn zip-walk [f z]
   (if (z/end? z)
     (z/root z)
     (recur f (z/next (f z)))))
 
-
 (defn truncate-hiccup
   "Truncates based on total number of text characters in some hiccup form(s)."
   [hiccup length]
+  {:pre [(pos? length)]}
   (let [length-seen (atom 0)]
-
-    ;; (take-while (< @length-seen length) (iterate z/next (z/vector-zip hiccup)))
-    
-    (println 
-
-     (zip-walk
-      (fn [loc] 
-        (if (z/branch? loc) 
-          loc
-          (do (println (z/node loc))
-              loc
-              #_(if (string? (z/node loc))
-                  (z/remove loc)
-                  loc))))
-      (z/vector-zip hiccup))
-     
-     )
-    
-    
-    
-    ;; (println  hiccup)
-    ;; (println (tree-seq seq? identity hiccup))
-    
-    ;; (w/postwalk (fn [h]
-    ;;               ;; (println @length-seen length)
-    ;;               (if (< @length-seen length)
-    ;;                 (if (string? h)
-    ;;                   (do (swap! length-seen + (count h))
-    ;;                       ;; (truncate-text h 5)
-    ;;                       h
-    
-    ;;                       )
-    ;;                   h)
-    ;;                 [])
-    ;;               )
-    ;;             hiccup)
-    ))
+    (zip-walk
+     (fn [loc]
+       (if (< @length-seen length)
+         (if (z/branch? loc)
+           loc
+           (let [node (z/node loc)
+                 this-length-seen @length-seen]
+             (if (string? node)
+               (do (swap! length-seen + (count node))
+                   (z/edit loc truncate-text (- length this-length-seen)))
+               loc)))
+         (z/remove loc)))
+     (z/vector-zip (vec hiccup)))))
 
 (defn valid-email-address?
   [string] ;; source: https://emailregex.com/ "JavaScript" version
