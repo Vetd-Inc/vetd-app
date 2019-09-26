@@ -6,6 +6,7 @@
             [vetd-app.common.fx :as cfx]
             [reagent.core :as r]
             [re-frame.core :as rf]
+            [goog.labs.format.csv :as csv]
             [clojure.string :as s]))
 
 (rf/reg-event-fx
@@ -29,7 +30,12 @@
    (cfx/validated-dispatch-fx db
                               [:g/add-orgs-to-group group-id org-ids new-orgs]
                               #(cond
-                                 (some (complement util/valid-email-address?) (map :email new-orgs))
+                                 (some (complement util/valid-email-address?)
+                                       (flatten
+                                        (map (comp (partial map s/trim)
+                                                   (fn [x] (s/split x ","))
+                                                   :email)
+                                             new-orgs)))
                                  [:invite-email-address "Please enter a valid email address."]
                                  
                                  :else nil))))
@@ -175,7 +181,10 @@
                            :value id}))
         ;; e.g., [{:oname "Hartford Electronics", :email& (atom "jerry@hec.org")}
         ;;        {:oname "Fourier Method Co", :email& (atom nil)}]
-        new-orgs& (r/atom [])]
+        new-orgs& (r/atom [])
+        modal-showing?& (r/atom false)
+        file-contents& (r/atom nil)
+        csv-added-count& (r/atom 0)]
     (fn [group]
       (let [orgs& (rf/subscribe
                    [:gql/q
@@ -226,7 +235,7 @@
                                                       ui/as-dropdown-options
                                                       (swap! options& concat))
                                                  (swap! new-orgs& conj {:oname new-entry
-                                                                        :email& (atom nil)}))
+                                                                        :email& (r/atom nil)}))
                                              (rf/dispatch [:toast {:type "error"
                                                                    :title "Already in Community"
                                                                    :message (str new-entry " is already part of your community.")}]))))
@@ -242,20 +251,36 @@
                :disabled (empty? @value&)
                :on-click #(rf/dispatch [:g/add-orgs-to-group.submit (:id group) (js->clj @value&)])}
               "Add"])]]
+         (when (zero? (+ (count @value&) @csv-added-count&))
+           [:<>
+            [:h4 "OR"]
+            [:> ui/Popup
+             {:position "bottom center"
+              :content "Upload a CSV of Organization names, and email addresses."
+              :trigger (r/as-element 
+                        [:> ui/Label {:on-click #(reset! modal-showing?& true)
+                                      :as "a"
+                                      :color "teal"}
+                         [:> ui/Icon {:name "upload"}]
+                         "Upload a CSV File"])}]])
          ;; this is in a second Form to fix formatting issues (TODO could be better)
          (when (seq @new-orgs&)
            [:> ui/Form {:as "div"}
-            (for [{:keys [oname email&]} @new-orgs&]
-              ^{:key oname}
-              [:> ui/FormField {:style {:padding-top 7
-                                        :margin-bottom 0}}
-               [:label
-                (str "Email address of someone at " oname)
-                [:> ui/Input
-                 {:placeholder "Enter email address..."
-                  :fluid true
-                  :auto-focus true
-                  :on-change #(reset! email& (-> % .-target .-value))}]]])
+            (doall
+             (for [{:keys [oname email&]} @new-orgs&]
+               ^{:key oname}
+               [:> ui/FormField {:style {:padding-top 7
+                                         :margin-bottom 0}}
+                [:label
+                 (str "Email address of someone at " oname)
+                 [ui/input
+                  {:placeholder "Enter email address..."
+                   :fluid true
+                   :autoFocus true
+                   :spellCheck false
+                   :value @email&
+                   :on-change (fn [e]
+                                (reset! email& (-> e .-target .-value)))}]]]))
             [:> ui/Button
              {:color "teal"
               :style {:margin-top 10}
@@ -269,7 +294,77 @@
                                                   (assoc :email @(:email& %))
                                                   (dissoc :email&))
                                              @new-orgs&)]))}
-             (str "Invite (" (count @value&) ")")]])]))))
+             (str "Send Community Invite (" (+ (count @value&) @csv-added-count&) ")")]])
+         [:> ui/Modal {:open @modal-showing?&
+                       :on-close #(reset! modal-showing?& false)
+                       :size "tiny"
+                       :dimmer "inverted"
+                       :closeOnDimmerClick false
+                       :closeOnEscape true
+                       :closeIcon true}
+          [:> ui/ModalHeader "Upload a CSV of Organizations to Invite"]
+          [:> ui/ModalContent
+           [:p "Upload a .csv file to invite multiple organizations to your community, and to add additional users to those organizations."]
+           [:p [:em "For any organizations that are already on Vetd, no email will be sent, but they will be added to your community."]]
+           [:h4 "Required format:"]
+           [:> ui/Table
+            [:> ui/TableHeader
+             [:> ui/TableRow
+              [:> ui/TableHeaderCell "Organization"]
+              [:> ui/TableHeaderCell "Email"]]]
+            [:> ui/TableBody
+             [:> ui/TableRow
+              [:> ui/TableCell "Stark Industries"]
+              [:> ui/TableCell "tony@starkindustries.co"]]
+             [:> ui/TableRow
+              [:> ui/TableCell "Stark Industries"]
+              [:> ui/TableCell "mark@starkindustries"]]
+             [:> ui/TableRow
+              [:> ui/TableCell "XYZ Corp"]
+              [:> ui/TableCell "jerry@xyz.org"]]]]]
+          [:> ui/ModalActions
+           [:> ui/Form {:method "post"
+                        :enc-type "multipart/form-data"
+                        :style {:margin "5px auto 15px auto"}}
+            [:input {:type "file"
+                     :accept "text/csv" ;; not sure how much this does...
+                     :on-change (fn [e]
+                                  (let [file (aget e "target" "files" 0)]
+                                    (if (or (= (aget file "type") "text/csv")
+                                            (= "csv" (s/lower-case (last (s/split (aget file "name") #"\.")))))
+                                      (let [onloadend #(reset! file-contents& (aget % "target" "result"))
+                                            reader (doto (js/FileReader.)
+                                                     (aset "onloadend" onloadend))]
+                                        (.readAsBinaryString reader file))
+                                      (do (rf/dispatch [:toast {:type "error"
+                                                                :title "Only CSV files are accepted."}])
+                                          (aset (aget e "target") "value" "")))))}]]
+           [:div {:style {:clear "both"}}]
+           [:> ui/Button {:onClick #(do (reset! file-contents& nil)
+                                        (reset! modal-showing?& false))}
+            "Cancel"]
+           [:> ui/Button
+            {:disabled (nil? @file-contents&)
+             :color "blue"
+             :on-click #(do (doall
+                             (->> @file-contents&
+                                  csv/parse
+                                  js->clj
+                                  ((fn [x]
+                                     (if (or (s/starts-with? (s/lower-case (ffirst x)) "org")
+                                             (s/starts-with? (s/lower-case (ffirst x)) "name"))
+                                       (drop 1 x)
+                                       x)))
+                                  (group-by first)
+                                  (map (fn [[k v]]
+                                         (swap! new-orgs&
+                                                conj
+                                                {:oname k
+                                                 :email& (r/atom (s/join ", " (map second v)))})
+                                         (swap! csv-added-count& inc)))))
+                            (reset! file-contents& nil)
+                            (reset! modal-showing?& false))}
+            "Upload"]]]]))))
 
 (defn c-org
   [org group]

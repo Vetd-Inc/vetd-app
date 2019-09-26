@@ -360,13 +360,18 @@
       (g/create-or-find-group-org-memb org-id group-id))
     (doseq [{:keys [oname email]} new-orgs]
       (let [[created? {:keys [id]}] (create-or-find-org oname "" true false)]
-        (when created? ;; if false, the ui was probably out-of-date (same org was recently created)
+        (if created? ;; if false, the ui was probably out-of-date (same org was recently created)
           (do (g/create-or-find-group-org-memb id group-id)
-              (invite-user-to-org email
-                                  id
-                                  from-user-id
-                                  ;; optional from-org-name override
-                                  (str "the " gname " community")))))))
+              (doseq [single-email (->> (st/split email #",")
+                                        (map st/trim))]
+                (invite-user-to-org single-email
+                                    id
+                                    from-user-id
+                                    ;; optional from-org-name override
+                                    (str "the " gname " community"))))
+          ;; shouldn't have gotten here unless a CSV contained existing orgs
+          ;; just add them, no invite
+          (g/create-or-find-group-org-memb id group-id)))))
   {})
 
 (defmethod com/handle-ws-inbound :g/create-invite-link
