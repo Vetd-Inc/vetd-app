@@ -18,8 +18,7 @@
  (fn [{:keys [db]} [_ link-key]]
    {:db (assoc db
                :page :join-org-signup
-               :page-params {:link-key link-key})
-    :analytics/page {:name "Signup By Invite"}}))
+               :page-params {:link-key link-key})}))
 
 (rf/reg-event-fx
  :join-org-signup.submit
@@ -52,14 +51,17 @@
  (fn [{:keys [db]} [_ {:keys [cmd output-data] :as results}]]
    (if (= cmd :invite-user-to-org)
      {:toast {:type "success"
-              :title "Organization Joined"
+              ;; this is a vague "Joined!" because it could
+              ;; be an org or a community
+              :title "Joined!"
               :message (str "You accepted an invitation to join " (:org-name output-data))}
       :local-store {:session-token (:session-token output-data)}
-      :analytics/track {:event "Signup Complete"
-                        :props {:category "Accounts"
-                                :label "By Invite"}}
       :dispatch-later [{:ms 100 :dispatch [:ws-get-session-user]}
-                       {:ms 200 :dispatch [:nav-home]}]}
+                       {:ms 200 :dispatch [:nav-home true]}
+                       {:ms 500 :dispatch [:do-fx {:analytics/track
+                                                   {:event "Signup Complete"
+                                                    :props {:category "Accounts"
+                                                            :label "By Explicit Invite"}}}]}]}
      {:toast {:type "error"
               :title "Sorry, that invitation is invalid or has expired."}
       :dispatch [:nav-home]})))
@@ -91,7 +93,15 @@
         [:img.logo {:src "https://s3.amazonaws.com/vetd-logos/vetd.svg"}]]
        [:> ui/Header {:as "h2"
                       :class "blue"}
-        "Join " @org-name& " on Vetd"]
+        ;; BUG @org-name& will be blank if the page is refreshed, because the link read is invalid
+        
+        ;; TODO
+        ;; show this if simply joining an org
+        "Join " @org-name& " on Vetd"
+        ;; show this if invite originated from inviting a non-existent org
+        ;; to a community
+        ;; "Join COMMUNITY on Vetd"
+        ]
        [:> ui/Form {:style {:margin-top 25}}
         [:> ui/FormField {:error (= @bad-input& :uname)}
          [:label "Full Name"

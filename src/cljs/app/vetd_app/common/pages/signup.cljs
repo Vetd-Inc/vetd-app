@@ -1,5 +1,6 @@
 (ns vetd-app.common.pages.signup
   (:require [vetd-app.ui :as ui]
+            [vetd-app.util :as util]
             [reagent.core :as r]
             [re-frame.core :as rf]
             [clojure.string :as s]))
@@ -15,10 +16,12 @@
 
 (rf/reg-event-fx
  :route-signup
- (fn [{:keys [db]} [_ org-type]]
+ [(rf/inject-cofx :local-store [:join-group-name])]
+ (fn [{:keys [db local-store]} [_ org-type]]
    {:db (assoc db
                :page :signup
-               :page-params {:org-type (keyword org-type)})
+               :page-params {:org-type (keyword org-type)
+                             :join-group-name (:join-group-name local-store)})
     :analytics/page {:name (str (s/capitalize (name org-type)) " Signup")}}))
 
 (rf/reg-event-fx
@@ -27,7 +30,7 @@
    (let [[bad-input message]
          (cond
            (not (re-matches #".+\s.+" uname)) [:uname "Please enter your full name (first & last)."]
-           (not (re-matches #"^\S+@\S+\.\S+$" email)) [:email "Please enter a valid email address."]
+           (not (util/valid-email-address? email)) [:email "Please enter a valid email address."]
            (< (count pwd) 8) [:pwd "Password must be at least 8 characters."]
            (not= pwd cpwd) [:cpwd "Password and Confirm Password must match."]
            (not terms-agree) [:terms-agree "You must agree to the Terms of Use in order to sign up."]
@@ -56,10 +59,7 @@
      {:dispatch [:nav-login]
       :toast {:type "success"
               :title "Please check your email"
-              :message (str "We've sent an email to " email " with a link to activate your account.")}
-      :analytics/track {:event "Signup Complete"
-                        :props {:category "Accounts"
-                                :label org-type}}}
+              :message (str "We've sent an email to " email " with a link to activate your account.")}}
      {:db (assoc-in db [:page-params :bad-input] :email)
       :toast {:type "error" 
               :title "Error"
@@ -71,9 +71,15 @@
  :<- [:page-params] 
  (fn [{:keys [org-type]}] org-type))
 
+(rf/reg-sub
+ :join-group-name
+ :<- [:page-params] 
+ (fn [{:keys [join-group-name]}] join-group-name))
+
 ;; Components
 (defn c-page []
   (let [signup-org-type& (rf/subscribe [:signup-org-type])
+        join-group-name& (rf/subscribe [:join-group-name])
         uname (r/atom "")
         email (r/atom "")
         org-name (r/atom "")
@@ -89,7 +95,9 @@
         [:img.logo {:src "https://s3.amazonaws.com/vetd-logos/vetd.svg"}]]
        [:> ui/Header {:as "h2"
                       :class (case @signup-org-type& :buyer "teal" :vendor "blue")}
-        "Sign Up as a " (case @signup-org-type& :buyer "Buyer" :vendor "Vendor")]
+        (if @join-group-name&
+          (str "Join the " @join-group-name& " community on Vetd")
+          (str "Sign Up as a " (case @signup-org-type& :buyer "Buyer" :vendor "Vendor")))]
        [:> ui/Form {:style {:margin-top 25}}
         [:> ui/FormField {:error (= @bad-input& :uname)}
          [:label "Full Name"

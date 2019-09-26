@@ -20,18 +20,17 @@
 
 (defn invite-product-to-round
   [product-id round-id]
-      ;; TODO call sync-round-vendor-req-forms too, once we're ready  
   (insert-round-product round-id product-id))
 
-(defn sync-round-vendor-req-forms-to-add
-  [prod-id->exists {:keys [product-id] forms :vendor-response-form-docs}]
+(defn sync-round-vendor-req-forms-to-add?
+  [{:keys [deleted] forms :vendor-response-form-docs}]
   (and (empty? forms)
-       (prod-id->exists product-id)))
+       (nil? deleted)))
 
-(defn sync-round-vendor-req-forms-to-remove
-  [prod-id->exists {:keys [product-id] forms :vendor-response-form-docs}]
+(defn sync-round-vendor-req-forms-to-remove?
+  [{:keys [deleted] forms :vendor-response-form-docs}]
   (not (or (empty? forms)
-           (prod-id->exists product-id))))
+           (nil? deleted))))
 
 (defn sync-round-vendor-req-forms
   [round-id]
@@ -55,24 +54,39 @@
                              (group-by :product-id)
                              (ut/fmap (partial some
                                                (comp nil? :deleted))))
-        to-add (filter (partial sync-round-vendor-req-forms-to-add
-                                prod-id->exists)
+        to-add (filter sync-round-vendor-req-forms-to-add?
                        rps)
-        to-remove (filter (partial sync-round-vendor-req-forms-to-remove
-                                   prod-id->exists)
-                          rps)]
-    (doseq [{:keys [id vendor-id product]} to-add]
-      (docs/create-form-from-template {:form-template-id form-template-id
-                                       :from-org-id buyer-id
-                                       :to-org-id (:vendor-id product)
-                                       :subject id
-                                       :title (format "Round Req Form -- round %d / prod %d "
-                                                      round-id
-                                                      vendor-id)}))
+        to-remove (filter sync-round-vendor-req-forms-to-remove?
+                          rps)
+        added (-> (for [{:keys [id vendor-id product]} to-add]
+                    (docs/create-form-from-template {:form-template-id form-template-id
+                                                     :from-org-id buyer-id
+                                                     :to-org-id (:vendor-id product)
+                                                     :subject id
+                                                     :title (format "Round Req Form -- round %d / prod %d "
+                                                                    round-id
+                                                                    vendor-id)}))
+                  doall)]
     (doseq [{:keys [id] forms :vendor-response-form-docs :as r} to-remove]
       (docs/update-deleted :round_product id)
       (doseq [{form-id :id doc-id :doc-id} forms]
         (when doc-id
           (docs/update-deleted :docs doc-id))
         (docs/update-deleted :forms form-id)))
-    [to-add to-remove]))
+    {:added (map vector added to-add)
+     :to-remove to-remove}))
+
+(defn sync-round-vendor-req-forms&docs [round-id]
+  (let [{:keys [added]} (sync-round-vendor-req-forms round-id)]
+    (doseq [[{:keys [id subject from-org-id to-org-id]}
+             {:keys [product-id]}]
+            added]
+      (let [doc (docs/create-doc {:form-id id
+                                  :subject subject
+                                  :data {}
+                                  :to-org-id from-org-id
+                                  :from-org-id to-org-id})]
+        (-> doc
+            :item
+            :id
+            docs/auto-pop-missing-responses-by-doc-id)))))

@@ -42,7 +42,8 @@
                         :query q
                         :subscription? true
                         :sub-id sub-id
-                        :session-token (:session-token local-store)}}}))
+                        :session-token (:session-token local-store)}
+              :subscription :start}}))
 
 (rf/reg-event-fx
  :gql/data
@@ -68,7 +69,8 @@
                         :return {:handler :gql-resp
                                  :sub-id sub-id}
                         :stop true
-                        :sub-id sub-id}}}))
+                        :sub-id sub-id}
+              :subscription :stop}}))
 
 (util/reg-sub-special
  :gql/q

@@ -5,6 +5,7 @@
             [com.vetd.app.hasura :as ha]
             [com.vetd.app.email-client :as ec]
             [com.vetd.app.links :as l]
+            [com.vetd.app.groups :as g]
             [clojure.string :as st]
             [buddy.hashers :as bhsh]
             [taoensso.timbre :as log]
@@ -106,7 +107,8 @@
   [user-id]
   (-> [[:memberships {:user-id user-id}
         [:id :user-id :org-id
-         [:org [:id :oname :id :created :buyer? :vendor?]]]]]
+         [:org [:id :oname :id :created :buyer? :vendor?
+                [:groups [:id :idstr :gname :admin_org_id]]]]]]]
       ha/sync-query
       :memberships))
 
@@ -136,10 +138,23 @@
                :where [:= :id memb-id]}))
 
 (defn create-or-find-memb
-  [user-id org-id]
-  (if (select-memb-by-ids user-id org-id)
-    [false nil]
-    [true (insert-memb user-id org-id)]))
+  [user-id org-id & [{:keys [suppress-notification?]}]]
+  (if-let [memb (select-memb-by-ids user-id org-id)]
+    [false memb]
+    (when-let [inserted (insert-memb user-id org-id)]
+      (let [{:keys [uname]} (some-> [[:users {:id user-id}
+                                      [:uname]]]
+                                    ha/sync-query
+                                    vals
+                                    ffirst)
+            {:keys [oname]} (some-> [[:orgs {:id org-id}
+                                      [:oname]]]
+                                    ha/sync-query
+                                    vals
+                                    ffirst)]
+        (when-not suppress-notification?
+          (com/sns-publish :ui-misc "User Added to Org" (str uname " (user) was added to " oname " (org)")))
+        [true inserted]))))
 
 (defn prepare-account-map
   "Normalizes and otherwise prepares an account map for insertion in DB."
@@ -198,16 +213,23 @@
     {:no-account? true}))
 
 (defn send-invite-user-to-org-email
-  [{:keys [email org-id from-user-id] :as invite}]
+  "override-from-org-name is useful for invites that originated from a community 
+  adding an new org (it makes more sense to saw the invite is from the community
+  rather than the inviter's org)."
+  [{:keys [email org-id from-user-id override-from-org-name] :as invite}]
   (let [link-key (l/create {:cmd :invite-user-to-org
                             :input-data (select-keys invite
                                                      [:email
                                                       :org-id
-                                                      :from-user-id])
+                                                      :from-user-id
+                                                      :override-from-org-name])
                             ;; 30 days from now
-                            :expires-action (+ (ut/now) (* 1000 60 60 24 30))})
+                            :expires-action (+ (ut/now) (* 1000 60 60 24 30))
+                            :max-uses-action 10
+                            :max-uses-read 10})
         from-user-name (:uname (select-user-by-id from-user-id :uname))
-        from-org-name (:oname (select-org-by-id org-id))]
+        from-org-name (or override-from-org-name
+                          (:oname (select-org-by-id org-id)))]
     (ec/send-template-email
      email
      {:invite-link (str l/base-url link-key)
@@ -276,7 +298,8 @@
              :session-token (-> id insert-session :token)
              :user (dissoc user :pwd)
              :admin? admin?
-             :memberships memberships})))
+             :memberships memberships
+             :admin-of-groups (g/select-groups-by-admins (map :org-id memberships))})))
       {:logged-in? false
        :login-failed? true}))
 
@@ -292,25 +315,71 @@
 (defmethod com/handle-ws-inbound :auth-by-session
   [{:keys [session-token] :as req} ws-id sub-fn]
   (if-let [{:keys [user-id]} (select-active-session-by-token session-token)]
-    {:logged-in? true
-     :session-token session-token
-     :user (select-user-by-id user-id)
-     :admin? (is-admin? user-id)     
-     :memberships (select-memb-org-by-user-id user-id)}
+    (let [memberships (select-memb-org-by-user-id user-id)]
+      {:logged-in? true
+       :session-token session-token
+       :user (select-user-by-id user-id)
+       :admin? (is-admin? user-id)
+       :memberships memberships
+       :admin-of-groups (g/select-groups-by-admins (map :org-id memberships))})
     {:logged-in? false}))
 
 (defmethod com/handle-ws-inbound :forgot-password.request-reset
   [{:keys [email pwd] :as req} ws-id sub-fn]
   (password-reset-request req))
 
-(defmethod com/handle-ws-inbound :invite-user-to-org
-  [{:keys [email org-id from-user-id] :as req} ws-id sub-fn]
+(defn invite-user-to-org
+  [email org-id from-user-id & [override-from-org-name]]
   (let [user (select-user-by-email email)]
     (if (and user
              (select-memb-by-ids (:id user) org-id))
       {:already-member? true}
-      (do (future (send-invite-user-to-org-email req))
+      (do (future (send-invite-user-to-org-email
+                   {:email email
+                    :org-id org-id
+                    :from-user-id from-user-id
+                    :override-from-org-name override-from-org-name}))
           {}))))
+
+(defmethod com/handle-ws-inbound :invite-user-to-org
+  [{:keys [email org-id from-user-id] :as req} ws-id sub-fn]
+  (invite-user-to-org email org-id from-user-id))
+
+;; org-ids are ids of orgs that presumably exist in our database
+;; new-orgs is a coll of maps, e.g.:
+;; [{:oname "Hartford Electronics", :email "jerry@hec.org"}
+;;  {:oname "Fourier Method Co", :email "thomas@sorkin.edu"}]
+(defmethod com/handle-ws-inbound :g/add-orgs-to-group
+  [{:keys [org-ids new-orgs group-id from-user-id]} ws-id sub-fn]
+  (when-let [{:keys [gname]} (some-> [[:groups {:id group-id}
+                                       [:gname]]]
+                                     ha/sync-query
+                                     vals
+                                     ffirst)]
+    (doseq [org-id org-ids]
+      (g/create-or-find-group-org-memb org-id group-id))
+    (doseq [{:keys [oname email]} new-orgs]
+      (let [[created? {:keys [id]}] (create-or-find-org oname "" true false)]
+        (when created? ;; if false, the ui was probably out-of-date (same org was recently created)
+          (do (g/create-or-find-group-org-memb id group-id)
+              (invite-user-to-org email
+                                  id
+                                  from-user-id
+                                  ;; optional from-org-name override
+                                  (str "the " gname " community")))))))
+  {})
+
+(defmethod com/handle-ws-inbound :g/create-invite-link
+  [{:keys [group-id] :as req} ws-id sub-fn]
+  (let [link-key (l/create {:cmd :g/join
+                            :input-data {:group-id group-id}
+                            ;; 45 days from now
+                            :expires-action (+ (ut/now) (* 1000 60 60 24 45))
+                            :max-uses-action 9999999
+                            :max-uses-read 9999999
+                            :expires-read (+ (ut/now) (* 1000 60 60 24 45))
+                            :short-key? true})]
+    {:url (str l/base-url link-key)}))
 
 (defmethod com/handle-ws-inbound :create-membership
   [{:keys [user-id org-id]} ws-id sub-fn]
@@ -322,11 +391,12 @@
   (delete-memb id)
   {})
 
-(defmethod com/handle-ws-inbound :switch-membership
+;; only used by admin
+(defmethod com/handle-ws-inbound :a/switch-membership
   [{:keys [user-id org-id]} ws-id sub-fn]
   (doseq [{:keys [id]} (select-memb-org-by-user-id user-id)]
     (delete-memb id))
-  (create-or-find-memb user-id org-id))
+  (create-or-find-memb user-id org-id {:suppress-notification? true}))
 
 (defmethod com/handle-ws-inbound :update-user
   [{:keys [user-id uname]} ws-id sub-fn]
@@ -364,9 +434,10 @@
           {:session-token (:token (insert-session id))}))))
 
 (defmethod l/action :invite-user-to-org
-  [{:keys [input-data] :as link} account]
-  (let [{:keys [email org-id]} input-data
-        org-name (:oname (select-org-by-id org-id))
+  [{:keys [input-data uses-action] :as link} account]
+  (let [{:keys [email org-id override-from-org-name]} input-data
+        org-name (or override-from-org-name
+                     (:oname (select-org-by-id org-id)))
         signup-flow? (every? (partial contains? account) [:uname :pwd])]
     ;; this link action is 'overloaded'
     (if-not signup-flow?
@@ -374,13 +445,15 @@
       (if-let [{:keys [id]} (select-user-by-email email)]
         ;; the account already exists, just add them to org, and give a session token
         (do (create-or-find-memb id org-id)
+            ;; this link is now maxed out for actions
+            ;; the (inc) is because the uses-actions will be incremented after this method evals
+            (l/update-max-uses link "action" (inc uses-action))
             (l/update-expires link "read" (+ (ut/now) (* 1000 60 5))) ; allow read for next 5 mins
             {:user-exists? true
              :org-name org-name
              :session-token (-> id insert-session :token)})
         ;; they will need to "signup by invite"
-        (do (l/update-max-uses link "action" 2) ; allow another use (will be via ws :do-link-action)
-            (l/update-expires link "read" (+ (ut/now) (* 1000 60 5))) ; allow read for next 5 mins
+        (do (l/update-expires link "read" (+ (ut/now) (* 1000 60 5))) ; allow read for next 5 mins
             {:user-exists? false
              :org-name org-name}))
       ;; reusing link action to create account + add to org
@@ -389,7 +462,31 @@
             {:keys [id]} (insert-user uname email (bhsh/derive pwd))]
         (when id ; user was successfully created
           (create-or-find-memb id org-id)
+          ;; this link is now maxed out for actions
+          ;; the (inc) is because the uses-actions will be incremented after this method evals
+          (l/update-max-uses link "action" (inc uses-action))
           ;; this 'output' will be read immediately from the ws results
           ;; i.e., it won't be read from a link read
           {:org-name org-name
            :session-token (-> id insert-session :token)})))))
+
+(defmethod l/action :g/join
+  [{:keys [input-data] :as link} args]
+  (let [{:keys [group-id]} input-data
+        {:keys [gname]} (some-> [[:groups {:id group-id}
+                                  [:gname]]]
+                                ha/sync-query
+                                vals
+                                ffirst)
+        {:keys [org-id]} args]
+    ;; this link action is 'overloaded' to allow a 2 step process
+    (if-not org-id
+      ;; Step 1 (immediately upon the link being visited)
+      ;; If the client is logged in, they will see a modal with the option to join the community.
+      ;; If not logged in, they will see a page inviting them to join the community, and that they
+      ;; need to either log in, or create an account.
+      {:group-id group-id
+       :group-name gname}
+      ;; Step 2 (final step) 
+      (do (g/create-or-find-group-org-memb org-id group-id)
+          {}))))

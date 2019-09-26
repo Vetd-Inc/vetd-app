@@ -1,5 +1,6 @@
 (ns vetd-app.buyers.components
-  (:require [vetd-app.ui :as ui]
+  (:require [vetd-app.common.components :as cc]
+            [vetd-app.ui :as ui]
             [vetd-app.util :as util]
             [vetd-app.docs :as docs]
             [reagent.core :as r]
@@ -91,12 +92,15 @@
                popup-props)]
        [:> ui/Popup
         (merge
-         {:content (case etype
-                     :product (str "Find and compare similar products to \""
-                                   ename "\" that meet your needs.")
-                     :category (str "Find and compare " (util/capitalize-words ename)
-                                    " products that meet your needs.")
-                     :none "Find and compare similar products that meet your needs.")
+         {:content (r/as-element
+                    [:div.content
+                     (case etype
+                       :product [:<>
+                                 "Find and compare similar products to " [:strong ename]
+                                 " that meet your needs."]
+                       :category (str "Find and compare " (util/capitalize-words ename)
+                                      " products that meet your needs.")
+                       :none "Find and compare similar products that meet your needs.")])
           :header "What is a VetdRound?"
           :position "bottom left"
           :context @context-ref&
@@ -124,7 +128,7 @@
                                    (.stopPropagation e)
                                    (rf/dispatch [:b/nav-round-detail round-idstr]))}
                       props)
-   "Product In VetdRound"])
+   "In VetdRound"])
 
 (defn c-rounds
   "Given a product map, display the Round data."
@@ -144,7 +148,7 @@
                     :style {:user-select "none"}}
    [:> ui/Step {:style {:cursor "inherit"}
                 :disabled (not= status "initiation")}
-    [:> ui/Icon {:name "clipboard outline"}]
+    [:> ui/Icon {:name "wpforms"}]
     [:> ui/StepContent
      [:> ui/StepTitle "Initiation"]
      [:> ui/StepDescription "Define your requirements"]]]
@@ -236,7 +240,7 @@
                                       :icon true
                                       :labelPosition "left"
                                       :ref (fn [this] (reset! context-ref& (r/dom-node this)))}
-                        "Reject"
+                        "Reject Preposal"
                         [:> ui/Icon {:name "close"}]]))}]]
         [:> ui/Popup
          {:content "Undo PrePosal Rejection"
@@ -260,13 +264,35 @@
                        "Undo Reject"
                        [:> ui/Icon {:name "undo"}]]))}]))))
 
+(defn c-buy-button
+  [{:keys [id pname] :as product}
+   {:keys [oname] :as vendor}
+   props]
+  [:> ui/Popup
+   {:content (r/as-element
+              [:div.contentp
+               "Start the buying process for " [:strong pname] " and we will activate any eligible discounts."])
+    :header (str "Buy " pname)
+    :position "bottom left"
+    :trigger (r/as-element
+              [:> ui/Button (merge {:onClick #(rf/dispatch [:b/buy id pname])
+                                    :color "lightblue"
+                                    :fluid true
+                                    :icon true
+                                    :labelPosition "left"}
+                                   props)
+               "Buy"
+               [:> ui/Icon {:name "shopping cart"}]])}])
+
+;; unused
 (defn c-setup-call-button
   [{:keys [id pname] :as product}
    {:keys [oname] :as vendor}
    props]
   [:> ui/Popup
-   {:content (str "Let us set up a call for you with " oname
-                  " to discuss \"" pname "\".")
+   {:content (r/as-element
+              [:div.content
+               "Let us set up a call for you with " oname " to discuss " [:strong pname] "."])
     :header "Set Up a Call"
     :position "bottom left"
     :trigger (r/as-element
@@ -326,20 +352,50 @@
      ^{:key c}
      [:> ui/Label {:class "category-tag"
                    :as "a"
-                   :onClick (fn [e]
-                              (.stopPropagation e)
-                              (rf/dispatch [:b/nav-search c]))}
+                   :on-click (fn [e]
+                               (.stopPropagation e)
+                               (rf/dispatch [:b/nav-search c]))}
       c])])
 
 (defn c-free-trial-tag []
-  [:> ui/Label {:class "free-trial-tag"
-                :color "gray"
+  [:> ui/Label {:color "teal"
                 :size "small"
                 :tag true}
    "Free Trial"])
 
+(defn c-discount-details
+  "Get hiccup for displaying all the details about a discount(s)."
+  [discounts & [{:keys [truncate?]}]]
+  (util/augment-with-keys
+   (cond-> (for [{:keys [gname group-discount-descr]} discounts]
+             [:div.discount
+              [:h4 gname]
+              (util/parse-md group-discount-descr)])
+     truncate? (util/truncate-hiccup 130))))
+
+(defn c-discount-tag [discounts]
+  [:> ui/Popup
+   {:content (r/as-element (c-discount-details discounts {:truncate? true}))
+    :position "bottom center"
+    :trigger (r/as-element
+              [:> ui/Label {:color "blue"
+                            :size "small"
+                            :tag true}
+               "Discount"])}])
+
+(defn c-tags
+  [product v-fn & [discounts]]
+  [:div.product-tags
+   [c-categories product]
+   (when (some-> (v-fn :product/free-trial?)
+                 s/lower-case
+                 (= "yes"))
+     [c-free-trial-tag])
+   (when (seq discounts)
+     [c-discount-tag discounts])])
+
 (defn c-product-logo
-  [filename] ; TODO make config var 's3-base-url'
+  [filename]                      ; TODO make config var 's3-base-url'
   [:div.product-logo {:style {:background-image (str "url('https://s3.amazonaws.com/vetd-logos/" filename "')")}}])
 
 (defn c-pricing-estimate
@@ -356,15 +412,6 @@
   (-> (v-fn :product/description)
       (or "No description available.")
       (util/truncate-text 175)))
-
-(defn c-tags
-  [product v-fn]
-  [:<>
-   [c-categories product]
-   (when (some-> (v-fn :product/free-trial?)
-                 s/lower-case
-                 (= "yes"))
-     [c-free-trial-tag])])
 
 (defn has-data?
   [value]
@@ -415,47 +462,222 @@
            (.addEventListener node "mouseleave" mouseleave))))}))
 
 (defn c-profile-segment
-  [{:keys [title]} & children]
-  [:> ui/Segment {:class "detail-container profile"}
-   [:h1.title title]
+  [{:keys [title scroll-to-ref-key style icon icon-style]} & children]
+  [:> ui/Segment {:class "detail-container profile"
+                  :style style}
+   [:span.scroll-anchor {:ref (fn [this] (rf/dispatch [:reg-scroll-to-ref scroll-to-ref-key this]))}]
+   [:h1.title
+    (when icon
+      [:> ui/Icon {:name icon
+                   :style icon-style}])
+    title]
    [:> ui/Grid {:columns "equal"
                 :style {:margin-top 0}}
     (util/augment-with-keys children)]])
+
+(defn c-preposal
+  "Component to display preposal information of a product profile.
+  c-display-field - component to display a field (key/value)
+  v-fn - function to get value per some prompt term from the preposal doc"
+  [c-display-field v-fn]
+  (let [pricing-estimate-value (v-fn :preposal/pricing-estimate "value" :nval)
+        pricing-estimate-unit (v-fn :preposal/pricing-estimate "unit")
+        pricing-estimate-details (v-fn :preposal/pricing-estimate "details")
+        pitch (v-fn :preposal/pitch)]
+    [c-profile-segment {:title "PrePosal"
+                        :scroll-to-ref-key :product/preposal
+                        :icon "clipboard outline"}
+     [:> ui/GridRow
+      [c-display-field 16
+       "Pitch"
+       (util/parse-md pitch)]]
+     [:> ui/GridRow
+      [c-display-field 16
+       "Pricing Estimate"
+       (if pricing-estimate-value
+         (str
+          "$" (util/decimal-format pricing-estimate-value) " / " pricing-estimate-unit
+          (when (not-empty pricing-estimate-details)
+            (str " - " pricing-estimate-details)))
+         pricing-estimate-details)]]]))
+
+(defn c-average-rating
+  [agg-group-prod-rating]
+  (let [{:keys [count mean]} (util/rating-avg-map agg-group-prod-rating)]
+    (if mean
+      [:<>
+       [:> ui/Rating {:rating mean
+                      :maxRating 5
+                      :size "huge"
+                      :disabled true
+                      :style {:margin "0 0 5px -3px"}}]
+       [:br]
+       (str (/ (Math/round (* mean 10)) 10)
+            " out of 5 stars - " count
+            " Rating" (when (> count 1) "s"))]
+      "No community ratings available.")))
+
+(defn c-community-usage-modal
+  [showing?& orgs community-str]
+  (let [org-id& (rf/subscribe [:org-id])]
+    (fn [showing?& orgs community-str]
+      [:> ui/Modal {:open @showing?&
+                    :on-close #(reset! showing?& false)
+                    :size "tiny"
+                    :dimmer "inverted"
+                    :closeOnDimmerClick true
+                    :closeOnEscape true
+                    :closeIcon true} 
+       [:> ui/ModalHeader (str "Usage in Your " (s/capitalize community-str))]
+       [:> ui/ModalContent {:scrolling true}
+        [:p "This product has been used by " (count orgs) " organizations in your " community-str "."]
+        [:> ui/List
+         (util/augment-with-keys
+          (for [{:keys [id idstr oname]} orgs]
+            [:> ui/ListItem {:as "a"
+                             :on-click (fn []
+                                         (if (= id @org-id&)
+                                           (rf/dispatch [:b/nav-stack])
+                                           (rf/dispatch [:b/nav-stack-detail idstr])))}
+             [:> ui/ListContent
+              [:div {:style {:display "inline-block"
+                             :float "left"
+                             :margin-right 7}}
+               [cc/c-avatar-initials oname]]
+              [:> ui/ListHeader {:style {:line-height "40px"}}
+               oname]]]))]]])))
+
+(defn c-community
+  "Component to display community information of a product profile.
+  c-display-field - component to display a field (key/value)
+  v-fn - function to get value per some prompt term"
+  [c-display-field product-id agg-group-prod-rating agg-group-prod-price]
+  (let [group-ids& (rf/subscribe [:group-ids])
+        org-id& (rf/subscribe [:org-id])
+        showing?& (r/atom false)
+        stack-items& (rf/subscribe [:gql/sub
+                                    {:queries
+                                     [[:group-org-memberships {:group-id @group-ids&
+                                                               :deleted nil}
+                                       [:id
+                                        [:orgs
+                                         [:id :idstr :oname
+                                          [:stack-items {:product-id product-id
+                                                         :deleted nil}
+                                           [:id :price-amount :price-period]]]]]]]}])]
+    (fn [c-display-field product-id agg-group-prod-rating agg-group-prod-price]
+      (let [community-str (str "communit" (if (> (count @group-ids&) 1) "ies" "y"))]
+        [:div {:style {:min-height 138}} ;; to minimize rendering flash
+         (when-not (= :loading @stack-items&)
+           (let [orgs (->> @stack-items&
+                           :group-org-memberships
+                           (map :orgs)
+                           (filter (comp seq :stack-items))
+                           distinct)]
+             [c-profile-segment {:title (str "Your " (s/capitalize community-str))
+                                 :scroll-to-ref-key :product/community
+                                 :icon "group"
+                                 :icon-style {:margin-right 10}}
+              (when (seq orgs)
+                [:> ui/GridRow
+                 [:> ui/GridColumn
+                  [:> ui/Segment {:class "display-field"
+                                  :vertical true}
+                   [:h3.display-field-key "Median Annual Price"]
+                   [:div.display-field-value
+                    (let [median-prices (map :median-price agg-group-prod-price)]
+                      (if (seq median-prices)
+                        (str "$" ;; get the mean from all the member'd groups' medians
+                             (util/decimal-format (/ (apply + median-prices) (count median-prices)))
+                             " / year")
+                        "No community pricing data."))]]]
+                 [:> ui/GridColumn
+                  [:> ui/Segment {:class "display-field"
+                                  :vertical true}
+                   [:h3.display-field-key "Average Rating"]
+                   [:div.display-field-value
+                    [c-average-rating agg-group-prod-rating]]]]])
+              [:> ui/GridRow
+               [:> ui/GridColumn
+                [:> ui/Segment {:class "display-field"
+                                :vertical true}
+                 [:h3.display-field-key "Usage"]
+                 [:div.display-field-value
+                  (let [max-orgs-showing 10]
+                    (if (seq orgs)
+                      [:<>
+                       (str "Used by " (count orgs) " organizations in your " community-str ".")
+                       [:div.used-by-orgs
+                        (util/augment-with-keys
+                         (for [{:keys [id idstr oname]} (take max-orgs-showing orgs)]
+                           [:> ui/Popup
+                            {:position "bottom center"
+                             :content oname
+                             :trigger (r/as-element
+                                       [:a {:on-click (fn []
+                                                        (if (= id @org-id&)
+                                                          (rf/dispatch [:b/nav-stack])
+                                                          (rf/dispatch [:b/nav-stack-detail idstr])))}
+                                        [cc/c-avatar-initials oname]])}]))
+                        (when (> (count orgs) max-orgs-showing)
+                          [:<>
+                           [:a {:on-click #(reset! showing?& true)}
+                            (str " see all " (count orgs) "...")]
+                           [c-community-usage-modal showing?& orgs community-str]])]]
+                      (str "No one in your " community-str " has used this product.")))]]]]]))]))))
 
 (defn c-pricing
   "Component to display pricing information of a product profile.
   c-display-field - component to display a field (key/value)
   v-fn - function to get value per some prompt term"
-  [c-display-field v-fn]
-  [c-profile-segment {:title "Pricing"}
+  [c-display-field v-fn discounts preposal-requested?]
+  [c-profile-segment {:title "Pricing"
+                      :scroll-to-ref-key :product/pricing
+                      :icon "dollar"
+                      :icon-style {:margin-right 5
+                                   :margin-left -5}}
    [:> ui/GridRow
-    [c-display-field 5 "Range"
+    [c-display-field 16 "Range"
      (when (has-data? (v-fn :product/price-range))
        [:<>
         (v-fn :product/price-range)
-        [:br]
-        "Request a PrePosal to get a personalized estimate."])]
-    [c-display-field 6 "Model" (v-fn :product/pricing-model) :has-markdown? true]
-    [c-display-field 5 "Free Trial"
-     (when (has-data? (v-fn :product/free-trial?))
-       (if (some-> (v-fn :product/free-trial?)
-                   s/lower-case
-                   (= "yes"))
-         (if (has-data? (v-fn :product/free-trial-terms))
-           (v-fn :product/free-trial-terms)
-           "Yes")
-         "No"))]]
+        (when-not preposal-requested?
+          [:<>
+           [:br]
+           "Request a PrePosal to get a personalized estimate."])])]]
+   (when (or (not-empty discounts)
+             (has-data? (v-fn :product/free-trial?)))
+     [:> ui/GridRow
+      (when (not-empty discounts)
+        [c-display-field 8 "Community Discount"
+         (c-discount-details discounts)])
+      [c-display-field 8 "Free Trial"
+       (when (has-data? (v-fn :product/free-trial?))
+         (if (some-> (v-fn :product/free-trial?)
+                     s/lower-case
+                     (= "yes"))
+           (if (has-data? (v-fn :product/free-trial-terms))
+             (v-fn :product/free-trial-terms)
+             "Yes")
+           "No"))]])
    [:> ui/GridRow
-    [c-display-field 5 "Payment Options" (v-fn :product/payment-options)]
-    [c-display-field 6 "Minimum Contract Length" (v-fn :product/minimum-contract)]
-    [c-display-field 5 "Cancellation Process" (v-fn :product/cancellation-process)]]])
+    [c-display-field 8 "Model" (v-fn :product/pricing-model) :has-markdown? true]
+    [c-display-field 8 "Payment Options" (v-fn :product/payment-options)]]
+   [:> ui/GridRow
+    [c-display-field 8 "Minimum Contract Length" (v-fn :product/minimum-contract)]
+    [c-display-field 8 "Cancellation Process" (v-fn :product/cancellation-process)]]])
 
 (defn c-onboarding
   "Component to display onboarding information of a product profile.
   c-display-field - component to display a field (key/value)
   v-fn - function to get value per some prompt term"
   [c-display-field v-fn]
-  [c-profile-segment {:title "Onboarding"}
+  [c-profile-segment {:title "Onboarding"
+                      :scroll-to-ref-key :product/onboarding
+                      :icon "handshake outline"
+                      :icon-style {:position "relative"
+                                   :top 1
+                                   :margin-right 10}}
    [:> ui/GridRow
     [c-display-field 16
      "Estimated Time to Onboard" (v-fn :product/onboarding-estimated-time)]]
@@ -468,11 +690,13 @@
      :has-markdown? true]]])
 
 (defn c-client-service
-  "Component to display onboarding information of a product profile.
+  "Component to display client service information of a product profile.
   c-display-field - component to display a field (key/value)
   v-fn - function to get value per some prompt term"
   [c-display-field v-fn]
-  [c-profile-segment {:title "Client Service"}
+  [c-profile-segment {:title "Client Service"
+                      :scroll-to-ref-key :product/client-service
+                      :icon "comment alternate outline"}
    [:> ui/GridRow
     [c-display-field 16 "Point of Contact" (v-fn :product/point-of-contact)]]
    [:> ui/GridRow
@@ -480,56 +704,60 @@
      :has-markdown? true]]])
 
 (defn c-reporting
-  "Component to display onboarding information of a product profile.
+  "Component to display reporting information of a product profile.
   c-display-field - component to display a field (key/value)
   v-fn - function to get value per some prompt term"
   [c-display-field v-fn]
-  [c-profile-segment {:title "Reporting & Measurement"}
-   [:> ui/Grid {:columns "equal" :style {:margin-top 0}}
-    [:> ui/GridRow
-     [c-display-field 16 "Reporting" (v-fn :product/reporting)
-      :has-markdown? true]]
-    [:> ui/GridRow
-     [c-display-field 16 "KPIs" (v-fn :product/kpis)
-      :has-markdown? true
-      :info "Key Performance Indicators"]]
-    [:> ui/GridRow
-     [c-display-field 16 "Integrations" (v-fn :product/integrations)
-      :has-markdown? true]]
-    [:> ui/GridRow
-     [c-display-field 16 "Data Security" (v-fn :product/data-security)
-      :has-markdown? true]]]])
+  [c-profile-segment {:title "Reporting & Measurement"
+                      :scroll-to-ref-key :product/reporting
+                      :icon "chart line"
+                      :icon-style {:position "relative"
+                                   :top 1}}
+   [:> ui/GridRow
+    [c-display-field 16 "Reporting" (v-fn :product/reporting)
+     :has-markdown? true]]
+   [:> ui/GridRow
+    [c-display-field 16 "KPIs" (v-fn :product/kpis)
+     :has-markdown? true
+     :info "Key Performance Indicators"]]
+   [:> ui/GridRow
+    [c-display-field 16 "Integrations" (v-fn :product/integrations)
+     :has-markdown? true]]
+   [:> ui/GridRow
+    [c-display-field 16 "Data Security" (v-fn :product/data-security)
+     :has-markdown? true]]])
 
 (defn c-market-niche
-  "Component to display onboarding information of a product profile.
+  "Component to display market niche information of a product profile.
   c-display-field - component to display a field (key/value)
   v-fn - function to get value per some prompt term"
   [c-display-field v-fn]
-  [c-profile-segment {:title "Industry Niche"}
-   [:> ui/Grid {:columns "equal" :style {:margin-top 0}}
-    [:> ui/GridRow
-     [c-display-field 16 "Ideal Client Profile" (v-fn :product/ideal-client)
-      :has-markdown? true
-      :info "A typical user of this product, in terms of company size, revenue, verticals, etc."]]
-    [:> ui/GridRow
-     [c-display-field 16 "Case Studies"
-      (when (has-data? (v-fn :product/case-studies "Links to Case Studies"))
-        [c-external-link (v-fn :product/case-studies "Links to Case Studies")])]]
-    [:> ui/GridRow
-     [c-display-field 6 "Number of Current Clients"
-      (when (has-data? (v-fn :product/num-clients nil :nval))
-        (util/decimal-format (v-fn :product/num-clients nil :nval)))]
-     [c-display-field 10 "Example Current Clients" (v-fn :product/clients)
-      :has-markdown? true]]
-    [:> ui/GridRow
-     [c-display-field 16 "Competitors" (v-fn :product/competitors)
-      :has-markdown? true]]
-    [:> ui/GridRow
-     [c-display-field 16 "Competitive Differentiator" (v-fn :product/competitive-differentiator)
-      :has-markdown? true]]
-    [:> ui/GridRow
-     [c-display-field 16 "Product Roadmap" (v-fn :product/roadmap)
-      :has-markdown? true]]]])
+  [c-profile-segment {:title "Industry Niche"
+                      :scroll-to-ref-key :product/market-niche
+                      :icon "cubes"}
+   [:> ui/GridRow
+    [c-display-field 16 "Ideal Client Profile" (v-fn :product/ideal-client)
+     :has-markdown? true
+     :info "A typical user of this product, in terms of company size, revenue, verticals, etc."]]
+   [:> ui/GridRow
+    [c-display-field 16 "Case Studies"
+     (when (has-data? (v-fn :product/case-studies "Links to Case Studies"))
+       [c-external-link (v-fn :product/case-studies "Links to Case Studies")])]]
+   [:> ui/GridRow
+    [c-display-field 6 "Number of Current Clients"
+     (when (has-data? (v-fn :product/num-clients nil :nval))
+       (util/decimal-format (v-fn :product/num-clients nil :nval)))]
+    [c-display-field 10 "Example Current Clients" (v-fn :product/clients)
+     :has-markdown? true]]
+   [:> ui/GridRow
+    [c-display-field 16 "Competitors" (v-fn :product/competitors)
+     :has-markdown? true]]
+   [:> ui/GridRow
+    [c-display-field 16 "Competitive Differentiator" (v-fn :product/competitive-differentiator)
+     :has-markdown? true]]
+   [:> ui/GridRow
+    [c-display-field 16 "Product Roadmap" (v-fn :product/roadmap)
+     :has-markdown? true]]])
 
 (defn c-vendor-profile
   [{:keys [response-prompts] :as vendor-profile-doc} vendor-id vendor-name]
@@ -537,11 +765,13 @@
                                                                 :id vendor-id
                                                                 :name vendor-name}))
         v-fn (partial docs/get-value-by-term response-prompts)]
-    [c-profile-segment {:title "Company Profile"}
+    [c-profile-segment {:title "Company Profile"
+                        :scroll-to-ref-key :product/vendor-profile
+                        :icon "building"}
      [:> ui/GridRow 
       [c-display-field 6 "Website"
        (when (has-data? (v-fn :vendor/website))
-         [c-external-link (v-fn :vendor/website)])]
+         [c-external-link (v-fn :vendor/website) "Company Website"])]
       [c-display-field 6 "Headquarters" (v-fn :vendor/headquarters)]]
      [:> ui/GridRow
       [c-display-field 6 "Funding Status" (v-fn :vendor/funding)]
@@ -564,7 +794,8 @@
                     :closeIcon true} 
        [:> ui/ModalHeader "Share VetdRound"]
        [:> ui/ModalContent
-        [:p "Share \"" round-title "\" with someone outside your organization via Email"]
+        [:p
+         "Share " [:strong round-title] " with someone outside your organization via email."]
         [:> ui/Form {:as "div"
                      :style {:padding-bottom "1rem"}}
          [:> ui/Dropdown {:style {:width "100%"}

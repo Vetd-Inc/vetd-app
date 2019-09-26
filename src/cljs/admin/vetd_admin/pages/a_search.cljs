@@ -19,6 +19,7 @@
  (fn [db [_ query-params]]
    (assoc db
           :page :a/search
+          :search-term ""
           :query-params query-params)))
 
 
@@ -72,7 +73,7 @@
    (let [qid (get-next-query-id)]
      {:db (assoc db
                  :buyer-qid qid)
-      :ws-send {:payload {:cmd :switch-membership
+      :ws-send {:payload {:cmd :a/switch-membership
                           :return nil
                           :user-id user-id
                           :org-id org-id}}})))

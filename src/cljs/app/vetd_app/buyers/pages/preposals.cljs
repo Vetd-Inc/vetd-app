@@ -6,8 +6,7 @@
             [vetd-app.docs :as docs]
             [clojure.string :as s]
             [reagent.core :as r]
-            [re-frame.core :as rf]
-            [re-com.core :as rc]))
+            [re-frame.core :as rf]))
 
 (def default-preposals-filter {:status #{"live"}
                                :features #{}
@@ -25,8 +24,7 @@
 (rf/reg-event-fx
  :b/route-preposals
  (fn [{:keys [db]}]
-   {:db (assoc db :page :b/preposals)
-    :analytics/page {:name "Buyers Preposals"}}))
+   {:db (assoc db :page :b/preposals)}))
 
 (rf/reg-event-fx
  :b/preposals-filter.add
@@ -73,6 +71,30 @@
                       :props {:category "Preposal"
                               :label id}}}))
 
+(rf/reg-event-fx
+ :b/create-preposal-req
+ (fn [{:keys [db]} [_ product vendor]]
+   {:ws-send {:payload {:cmd :b/create-preposal-req
+                        :return {:handler :b/create-preposal-req-return
+                                 :product product
+                                 :vendor vendor}
+                        :prep-req {:from-org-id (->> (:active-memb-id db)
+                                                     (get (group-by :id (:memberships db)))
+                                                     first
+                                                     :org-id)
+                                   :from-user-id (-> db :user :id)
+                                   :prod-id (:id product)}}}}))
+
+(rf/reg-event-fx
+ :b/create-preposal-req-return
+ (fn [_ [_ _ {{:keys [product vendor]} :return}]]
+   {:toast {:type "success"
+            :title "PrePosal Requested"
+            :message "We'll be in touch with next steps."}
+    :analytics/track {:event "Request"
+                      :props {:category "Preposals"
+                              :label (str (:pname product) " by " (:oname vendor))}}}))
+
 ;;;; Subscriptions
 (rf/reg-sub
  :preposals-filter
@@ -81,7 +103,7 @@
 ;;;; Components
 (defn c-preposal-list-item
   [{:keys [id idstr result response-prompts product from-org] :as preposal}]
-  (let [{:keys [pname logo rounds]} product
+  (let [{:keys [pname logo rounds discounts]} product
         {:keys [oname]} from-org
         rejected? (= 0 result)
         preposal-v-fn (partial docs/get-value-by-term response-prompts)
@@ -90,7 +112,7 @@
                           first
                           :response-prompts
                           (partial docs/get-value-by-term))]
-    [:> ui/Item {:on-click #(rf/dispatch [:b/nav-preposal-detail idstr])}
+    [:> ui/Item {:on-click #(rf/dispatch [:b/nav-product-detail (:idstr product)])}
      [bc/c-product-logo logo]
      [:> ui/ItemContent
       [:> ui/ItemHeader pname " " [:small " by " oname]
@@ -106,7 +128,7 @@
                                    :ename (:pname product)
                                    :props {:floated "right"}
                                    :popup-props {:position "bottom right"}}])
-       [bc/c-tags product product-v-fn]]]
+       [bc/c-tags product product-v-fn discounts]]]
      (when (not-empty (:rounds product))
        [bc/c-round-in-progress {:round-idstr (-> product :rounds first :idstr)
                                 :props {:ribbon "right"
@@ -114,60 +136,68 @@
                                                 :marginLeft -14}}}])]))
 
 (defn filter-preposals
-  "Filter map contains sets that define the included values for a certain group/trait.
-  An empty set makes all values included for a certain group."
-  [preposals filter-map]
-  (let [status (:status filter-map)
-        features (:features filter-map)
-        categories (:categories filter-map)]
-    (cond->> preposals
-      (not-empty status) (filter (fn [{:keys [result]}]
-                                   (or (and (status "live")
-                                            (= result nil))
-                                       (and (status "rejected")
-                                            (= result 0)))))
-      (not-empty features) (filter (fn [{:keys [product]}]
-                                     (if (features "free-trial")
-                                       (= "yes"
-                                          (some-> product :form-docs first :response-prompts
-                                                  (docs/get-value-by-term :product/free-trial?)
-                                                  s/lower-case))
-                                       true)))
-      (not-empty categories) (#(->> (for [{:keys [product] :as preposal} %
-                                          category (:categories product)]
-                                      (when (categories (:id category))
-                                        preposal))
-                                    (remove nil?)
-                                    distinct)))))
+  "filter-map contains sets that define the included values for a certain group/trait.
+  An empty set makes all values be included for a certain group."
+  [preposals {:as filter-map
+              :keys [status features categories]
+              :or {status #{}
+                   features #{}
+                   categories #{}}}]
+  (cond->> preposals ; roughly ordered by how much they slim the threading input
+    (features "discounts-available") (filter (comp seq :discounts :product))
+    (features "free-trial") (filter #(some-> %
+                                             :product
+                                             :form-docs
+                                             first
+                                             :response-prompts
+                                             (docs/get-value-by-term :product/free-trial?)
+                                             s/lower-case
+                                             (= "yes")))
+    (seq status) (filter (fn [{:keys [result]}]
+                           (or (and (status "live")
+                                    (= result nil))
+                               (and (status "rejected")
+                                    (= result 0)))))
+    (seq categories) (#(->> (for [{:keys [product] :as preposal} %
+                                  {:keys [id]} (:categories product)]
+                              (when (categories id) preposal))
+                            (remove nil?)
+                            distinct))))
 
 (defn c-page []
   (let [org-id& (rf/subscribe [:org-id])]
     (when @org-id&
       (let [filter& (rf/subscribe [:preposals-filter])
+            group-ids& (rf/subscribe [:group-ids])
             preps& (rf/subscribe [:gql/sub
                                   {:queries
                                    [[:docs {:dtype "preposal"
                                             :to-org-id @org-id&
                                             :_order_by {:created :desc}
+                                            :_limit 15 ;; TODO infinite scrolling
                                             :deleted nil}
                                      [:id :idstr :title :result :reason
-                                      [:product [:id :pname :logo
-                                                 [:form-docs {:doc-deleted nil
-                                                              :ftype "product-profile"
-                                                              :_order_by {:created :desc}
-                                                              :_limit 1}
-                                                  [:id
-                                                   [:response-prompts {:prompt-term ["product/description"
-                                                                                     "product/free-trial?"]
-                                                                       :ref_deleted nil}
-                                                    [:id :prompt-id :notes :prompt-prompt :prompt-term
-                                                     [:response-prompt-fields
-                                                      [:id :prompt-field-fname :idx :sval :nval :dval]]]]]]
-                                                 [:rounds {:buyer-id @org-id&
-                                                           :deleted nil}
-                                                  [:id :idstr :created :status]]
-                                                 [:categories {:ref-deleted nil}
-                                                  [:id :idstr :cname]]]]
+                                      [:product
+                                       [:id :idstr :pname :logo
+                                        [:form-docs {:doc-deleted nil
+                                                     :ftype "product-profile"
+                                                     :_order_by {:created :desc}
+                                                     :_limit 1}
+                                         [:id
+                                          [:response-prompts {:prompt-term ["product/description"
+                                                                            "product/free-trial?"]
+                                                              :ref_deleted nil}
+                                           [:id :prompt-id :notes :prompt-prompt :prompt-term
+                                            [:response-prompt-fields
+                                             [:id :prompt-field-fname :idx :sval :nval :dval]]]]]]
+                                        [:rounds {:buyer-id @org-id&
+                                                  :deleted nil}
+                                         [:id :idstr :created :status]]
+                                        [:categories {:ref-deleted nil}
+                                         [:id :idstr :cname]]
+                                        [:discounts {:id @group-ids&
+                                                     :ref-deleted nil}
+                                         [:group-discount-descr :gname]]]]
                                       [:from-org [:id :oname]]
                                       [:from-user [:id :uname]]
                                       [:to-org [:id :oname]]
@@ -189,6 +219,7 @@
                                        (group-by :id))]
                    [:div.sidebar
                     [:> ui/Segment
+                     [:h2 "Filter"]
                      [:h4 "Status"]
                      [:> ui/Checkbox {:label "Live"
                                       :checked (-> @filter& :status (contains? "live") boolean)
@@ -215,6 +246,17 @@
                                                                    :b/preposals-filter.remove)
                                                                  :features
                                                                  "free-trial"]))}]
+                     (when (not-empty @group-ids&)
+                       [:<>
+                        [:h4 "Discounts"]
+                        [:> ui/Checkbox {:label "Discounts Available"
+                                         :checked (-> @filter& :features (contains? "discounts-available") boolean)
+                                         :on-change (fn [_ this]
+                                                      (rf/dispatch [(if (.-checked this)
+                                                                      :b/preposals-filter.add
+                                                                      :b/preposals-filter.remove)
+                                                                    :features
+                                                                    "discounts-available"]))}]])
                      (when (not-empty categories)
                        [:<>
                         [:h4 "Category"]
@@ -239,7 +281,7 @@
                         [c-preposal-list-item preposal])
                       [:> ui/Segment {:placeholder true}
                        [:> ui/Header {:icon true}
-                        [:> ui/Icon {:name "wpforms"}]
+                        [:> ui/Icon {:name "clipboard outline"}]
                         "No PrePosals match your filter choices."]
                        [:div {:style {:text-align "center"
                                       :margin-top 10}}

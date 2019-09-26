@@ -33,6 +33,36 @@
   max-width: 100% !important;
 }
 
+
+// TODO optimize display for all sizes
+
+// temp hack
+.window-size-message {
+  position: absolute;
+  text-align: center;
+  width: 100%;
+  top: 0px;
+  left: 0px;
+  opacity: 0.6;
+  background: #c00;
+  color: white;
+  padding: 10px;
+  animation: fade-out-up 1s 8s ease-in;
+  animation-fill-mode: forwards;
+  z-index: 9999;
+}
+@keyframes fade-out-up {
+  from {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  
+  to {
+    opacity: 0;
+    transform: translateY(-50px);
+  }
+}
+
 /* Mobile */
 @media only screen and (max-width: 767px) {
   .ui.container {
@@ -49,10 +79,9 @@
   .ui.very.relaxed.grid.container {
     width: auto !important;
   }
-
 }
 
-/* Tablet */
+// Tablet
 @media only screen and (min-width: 768px) and (max-width: 991px) {
   .ui.container {
     width: 723px;
@@ -72,7 +101,7 @@
   
 }
 
-/* Small Monitor */
+// Small Monitor
 @media only screen and (min-width: 992px) and (max-width: 1199px) {
   .ui.container {
     width: 933px;
@@ -92,7 +121,7 @@
   
 }
 
-/* Large Monitor */
+// Large Monitor
 @media only screen and (min-width: 1200px) {
   .ui.container {
     width: 1127px;
@@ -109,8 +138,11 @@
     width: calc( 1127px  +  5rem ) !important;
   }
 
-  
+  .window-size-message {
+    display: none;
+  }
 }
+
 
 
 /*******************************

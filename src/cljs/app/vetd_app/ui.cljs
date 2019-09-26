@@ -110,6 +110,19 @@
        first
        :text))
 
+;; Table
+(def Table (component "Table"))
+(def TableHeader (component "Table" "Header"))
+(def TableRow (component "Table" "Row"))
+(def TableHeaderCell (component "Table" "HeaderCell"))
+(def TableBody (component "Table" "Body"))
+(def TableCell (component "Table" "Cell"))
+(def TableFooter (component "Table" "Footer"))
+
+;; Tab
+(def Tab (component "Tab"))
+(def TabPane (component "Tab" "Pane"))
+
 ;; Misc
 (def Image (component "Image"))
 (def Step (component "Step"))
@@ -120,6 +133,7 @@
 (def Transition (component "Transition"))
 (def TransitionGroup (component "Transition" "Group"))
 (def TransitionablePortal (component "TransitionablePortal"))
+(def Rating (component "Rating"))
 
 ;; Accordion
 (def Accordion (component "Accordion"))
@@ -179,9 +193,16 @@
 
 (rf/reg-fx
  :toast
- (fn [{:keys [type title message]}]
+ (fn [{:keys [type title message]
+       :or {type "success"}}]
    (case type
      "success" (js/toastr.success message title)
      "error" (js/toastr.error message title)
      "info" (js/toastr.info message title)
      "warning" (js/toastr.warning message title))))
+
+;; avoid using this, but if you must...
+(rf/reg-event-fx
+ :toast
+ (fn [_ [_ opts]]
+   {:toast opts}))

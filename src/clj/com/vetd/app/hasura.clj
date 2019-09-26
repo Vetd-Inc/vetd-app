@@ -38,7 +38,8 @@
             (future
               (log/info "Starting sub-count-monitor")
               (while (not @com/shutdown-signal)
-                (com/hc-send {:hasura-sub-count (count @sub-id->resp-fn&)})
+                (com/hc-send {:type :stats
+                              :hasura-sub-count (count @sub-id->resp-fn&)})
                 (Thread/sleep 5000))
               (log/info "Stopped sub-count-monitor")))))
 
@@ -189,7 +190,7 @@
   [kw]
   (or (.endsWith (name kw) "id")
       ;; HACK
-      (#{:subject :sort :idx :result} kw)))
+      (#{:subject :sort :idx :result :count_stack_items} kw)))
 
 (defn walk-gql-query->args
   [field args sub]
@@ -307,7 +308,6 @@
 (defmulti handle-from-graphql (fn [{gtype :type}] (gql-msg-types-str->kw gtype)))
 
 (defn ws-send [ws msg]
-  #_  (clojure.pprint/pprint msg)
   (try
     (ut/$- -> msg
            json/generate-string
@@ -337,8 +337,6 @@
 
 (defn ws-ib-handler
   [id data]
-  #_  (println id)
-  #_  (clojure.pprint/pprint data)
   (let [data' (json/parse-string data keyword)]
     (when-let [errors (-> data' :payload :errors)]
       (com/log-error errors))
@@ -351,7 +349,9 @@
 (defn mk-ws []
   (log/info "hasura mk-ws")  
   (let [ws @(ah/websocket-client env/hasura-ws-url
-                                 {:sub-protocols "graphql-ws"})]
+                                 {:sub-protocols "graphql-ws"
+                                  :max-frame-payload (* 8 65536)
+                                  :max-frame-size (* 8 65536)})]
     (ms/on-closed ws ws-on-closed)
     (ms/consume (partial ws-ib-handler (gensym "gql"))
                 ws)

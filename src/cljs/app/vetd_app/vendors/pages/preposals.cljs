@@ -15,8 +15,7 @@
 (rf/reg-event-fx
  :v/route-preposals
  (fn [{:keys [db]}]
-   {:db (assoc db :page :v/preposals)
-    :analytics/page {:name "Vendor Preposals"}}))
+   {:db (assoc db :page :v/preposals)}))
 
 (defn c-page []
   (let [org-id& (rf/subscribe [:org-id])

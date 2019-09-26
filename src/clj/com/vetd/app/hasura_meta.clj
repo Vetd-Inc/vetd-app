@@ -120,7 +120,7 @@
           {:tables [:vetd :products
                     :vetd :groups_by_product_discount]
            :fields [:discounts]
-           :cols [:id :group_id]
+           :cols [:id :product_id]
            :rel :one-many}
           
           {:tables [:vetd :products
@@ -332,9 +332,38 @@
                     :vetd :rounds_by_category]
            :fields [:dummy]
            :cols [:id :category_id]
+           :rel :one-many}
+
+          {:tables [:vetd :stack_items
+                    :vetd :products]
+           :fields [:product :stack-items]
+           :cols [:product_id :id]
+           :rel :many-one}
+
+          {:tables [:vetd :stack_items
+                    :vetd :orgs]
+           :fields [:buyer :stack-items]
+           :cols [:buyer_id :id]
+           :rel :many-one}
+
+          {:tables [:vetd :products
+                    :vetd :agg_group_prod_rating]
+           :fields [:agg_group_prod_rating]
+           :cols [:id :product_id]
+           :rel :many-many}
+
+          {:tables [:vetd :products
+                    :vetd :agg_group_prod_price]
+           :fields [:agg_group_prod_price]
+           :cols [:id :product_id]
+           :rel :many-many}
+
+          {:tables [:vetd :groups
+                    :vetd :top_products_by_group]
+           :fields [:top-products]
+           :cols [:id :group_id]
            :rel :one-many}]})
 
 
 #_
 (mig/proc-hasura-meta-cfg2 hasura-meta-cfg)
-

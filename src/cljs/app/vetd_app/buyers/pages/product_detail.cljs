@@ -63,6 +63,24 @@
            :message "We'll set up a call for you soon."}}))
 
 (rf/reg-event-fx
+ :b/buy
+ (fn [{:keys [db]} [_ product-id product-name]]
+   {:ws-send {:payload {:cmd :b/buy
+                        :return {:handler :b/buy.return}
+                        :product-id product-id
+                        :buyer-id (util/db->current-org-id db)}}
+    :analytics/track {:event "Buy"
+                      :props {:category "Product"
+                              :label product-name}}}))
+
+(rf/reg-event-fx
+ :b/buy.return
+ (constantly
+  {:toast {:type "success"
+           :title "Buying Process Started!"
+           :message "We'll be in touch with next steps shortly."}}))
+
+(rf/reg-event-fx
  :b/ask-a-question
  (fn [{:keys [db]} [_ product-id product-name message]]
    {:ws-send {:payload {:cmd :b/ask-a-question
@@ -90,35 +108,39 @@
 
 ;; Components
 (defn c-preposal-request-button
-  [{:keys [vendor forms] :as product}]
-  (if (not-empty forms) ; already requested preposal
-    [:> ui/Popup
-     {:content "We will be in touch with next steps."
-      :header "PrePosal Requested!"
-      :position "bottom left"
-      :trigger (r/as-element
-                [:> ui/Label {:color "teal"
-                              :size "large"
-                              :basic true
-                              :style {:display "block"
-                                      :text-align "center"}}
-                 "PrePosal Requested"])}]
-    [:> ui/Popup
-     {:content (str "Get a pricing estimate, personalized pitch, and more from "
-                    (:oname vendor) ".")
-      :header "What is a PrePosal?"
-      :position "bottom left"
-      :trigger (r/as-element
-                [:> ui/Button {:onClick #(rf/dispatch [:b/create-preposal-req product vendor])
-                               :color "teal"
-                               :fluid true
-                               :icon true
-                               :labelPosition "left"}
-                 "Request PrePosal"
-                 [:> ui/Icon {:name "wpforms"}]])}]))
+  [{:keys [vendor forms docs] :as product}]
+  (if (seq docs) ;; has completed preposal
+    (let [preposal-id (-> docs first :id)
+          preposal-rejected? (= 0 (-> docs first :result))]
+      [bc/c-reject-preposal-button preposal-id preposal-rejected?])
+    (if (not-empty forms) ;; has requested preposal
+      [:> ui/Popup
+       {:content "We will be in touch with next steps."
+        :header "PrePosal Requested!"
+        :position "bottom left"
+        :trigger (r/as-element
+                  [:> ui/Label {:color "teal"
+                                :size "large"
+                                :basic true
+                                :style {:display "block"
+                                        :text-align "center"}}
+                   "PrePosal Requested"])}]
+      [:> ui/Popup
+       {:content (str "Get a pricing estimate, personalized pitch, and more from "
+                      (:oname vendor) ".")
+        :header "What is a PrePosal?"
+        :position "bottom left"
+        :trigger (r/as-element
+                  [:> ui/Button {:onClick #(rf/dispatch [:b/create-preposal-req product vendor])
+                                 :color "teal"
+                                 :fluid true
+                                 :icon true
+                                 :labelPosition "left"}
+                   "Request PrePosal"
+                   [:> ui/Icon {:name "wpforms"}]])}])))
 
 (defn c-product-header-segment
-  [{:keys [vendor rounds pname logo] :as product} v-fn]
+  [{:keys [vendor rounds pname logo] :as product} v-fn discounts]
   [:> ui/Segment {:class "detail-container"}
    [:h1.product-title
     pname " " [:small " by " (:oname vendor)]]
@@ -127,50 +149,47 @@
    (when (not-empty (:rounds product))
      [bc/c-round-in-progress {:round-idstr (-> rounds first :idstr)
                               :props {:ribbon "left"}}])
-   [:div {:style {:display "inline-block"
-                  :height 26}}
-    [bc/c-categories product]]
-   (when (some-> (v-fn :product/free-trial?)
-                 s/lower-case
-                 (= "yes"))
-     [bc/c-free-trial-tag])
-   [:> ui/Grid {:columns "equal"
-                :style {:margin-top 4}}
-    [:> ui/GridRow
-     [:> ui/GridColumn {:width 12}
-      (or (util/parse-md (v-fn :product/description))
-          [:p "No description available."])
-      [:br]
-      [:h3.display-field-key "PrePosal Pitch"]
-      [:p "Request a PrePosal to get a personalized pitch."]
-      [:br]
-      [:h3.display-field-key "PrePosal Pricing Estimate"]
-      "Request a PrePosal to get a personalized estimate."]
-     [:> ui/GridColumn {:width 4}
-      (let [website-url (v-fn :product/website)]
-        (when (bc/has-data? website-url)
-          [:<>
-           [bc/c-external-link website-url "Product Website"]
-           [:br]
-           [:br]]))
-      (let [demo-url (v-fn :product/demo)]
-        (when (bc/has-data? demo-url)
-          [:<>
-           [bc/c-external-link demo-url "Watch Demo Video"]
-           [:br]
-           [:br]]))]]]])
+   [bc/c-tags product v-fn discounts]
+   [cc/c-grid {:style {:margin-top 4}}
+    [[(or (util/parse-md (v-fn :product/description))
+          [:p "No description available."]) 12]
+     [[:<>
+       (let [website-url (v-fn :product/website)]
+         (when (bc/has-data? website-url)
+           [:<>
+            [bc/c-external-link website-url "Product Website"]
+            [:br]
+            [:br]]))
+       (let [demo-url (v-fn :product/demo)]
+         (when (bc/has-data? demo-url)
+           [:<>
+            [bc/c-external-link demo-url "Watch Demo Video"]
+            [:br]
+            [:br]]))] 4]]]])
 
 (defn c-product
   "Component to display Product details."
-  [{:keys [id pname form-docs vendor] :as product}]
+  [{:keys [id pname vendor discounts
+           form-docs
+           forms ; requested preposals
+           docs ; completed preposals
+           agg-group-prod-rating agg-group-prod-price] :as product}]
   (let [v-fn (partial docs/get-value-by-term (-> form-docs first :response-prompts))
+        preposal-v-fn (partial docs/get-value-by-term (-> docs first :response-prompts))
         c-display-field (bc/requestable
                          (partial bc/c-display-field* {:type :product
                                                        :id id
-                                                       :name pname}))]
+                                                       :name pname}))
+        group-ids& (rf/subscribe [:group-ids])]
     [:<>
-     [c-product-header-segment product v-fn]
-     [bc/c-pricing c-display-field v-fn]
+     [c-product-header-segment product v-fn discounts]
+     (when (seq docs) ; has a completed preposal?
+       [bc/c-preposal c-display-field preposal-v-fn])
+     (when (seq @group-ids&)
+       [bc/c-community c-display-field id agg-group-prod-rating agg-group-prod-price])
+     [bc/c-pricing c-display-field v-fn discounts
+      (boolean (seq forms)) ;; has requested (and perhaps completed) a preposal
+      ]
      [bc/c-vendor-profile (-> vendor :docs-out first) (:id vendor) (:oname vendor)]
      [bc/c-onboarding c-display-field v-fn]
      [bc/c-client-service c-display-field v-fn]
@@ -180,6 +199,7 @@
 (defn c-page []
   (let [product-idstr& (rf/subscribe [:product-idstr])
         org-id& (rf/subscribe [:org-id])
+        group-ids& (rf/subscribe [:group-ids])
         products& (rf/subscribe [:gql/sub
                                  {:queries
                                   [[:products {:idstr @product-idstr&}
@@ -197,6 +217,9 @@
                                            :ref-deleted nil}
                                           [:id :prompt-field-fname :idx
                                            :sval :nval :dval]]]]]]
+                                     [:discounts {:id @group-ids&
+                                                  :ref-deleted nil}
+                                      [:group-discount-descr :gname]]
                                      [:vendor
                                       [:id :oname :url
                                        [:docs-out {:dtype "vendor-profile"
@@ -211,28 +234,65 @@
                                      [:forms {:ftype "preposal" ; preposal requests
                                               :from-org-id @org-id&}
                                       [:id]]
+                                     [:docs {:dtype "preposal" ; completed preposals
+                                             :to-org-id @org-id&
+                                             :_order_by {:created :desc}
+                                             :_limit 1
+                                             :deleted nil}
+                                      [:id :idstr :title :result :reason
+                                       [:from-org [:id :oname]]
+                                       [:from-user [:id :uname]]
+                                       [:to-org [:id :oname]]
+                                       [:to-user [:id :uname]]
+                                       [:response-prompts {:ref-deleted nil}
+                                        [:id :prompt-id :prompt-prompt :prompt-term
+                                         [:response-prompt-fields
+                                          [:id :prompt-field-fname :idx :sval :nval :dval]]]]]]
                                      [:rounds {:buyer-id @org-id&
                                                :deleted nil}
                                       [:id :idstr :created :status]]
                                      [:categories {:ref-deleted nil}
-                                      [:id :idstr :cname]]]]]}])]
+                                      [:id :idstr :cname]]
+                                     [:agg-group-prod-rating {:group-id @group-ids&}
+                                      [:group-id :product-id
+                                       :count-stack-items :rating]]
+                                     [:agg-group-prod-price {:group-id @group-ids&}
+                                      [:group-id :median-price]]]]]}])]
     (fn []
       [:div.container-with-sidebar
        [:div.sidebar
         [:div {:style {:padding "0 15px"}}
-         [bc/c-back-button {:on-click #(rf/dispatch [:b/nav-search])}
-          "Back to Search"]]
+         [bc/c-back-button "Back"]]
         (when-not (= :loading @products&)
           (let [{:keys [vendor rounds] :as product} (-> @products& :products first)]
-            (when (empty? (:rounds product))
-              [:> ui/Segment
-               [bc/c-start-round-button {:etype :product
-                                         :eid (:id product)
-                                         :ename (:pname product)
-                                         :props {:fluid true}}]
-               [c-preposal-request-button product]
-               [bc/c-setup-call-button product vendor]
-               [bc/c-ask-a-question-button product vendor]])))]
+            [:<>
+             (when (empty? (:rounds product))
+               [:> ui/Segment
+                [bc/c-start-round-button {:etype :product
+                                          :eid (:id product)
+                                          :ename (:pname product)
+                                          :props {:fluid true}}]
+                [c-preposal-request-button product]
+                [bc/c-buy-button product vendor]
+                [bc/c-ask-a-question-button product vendor]])
+             [:> ui/Segment {:class "top-categories"}
+              [:h4 "Jump To"]
+              (util/augment-with-keys
+               (for [[label k] (remove nil?
+                                       [["Description" :top]
+                                        (when (seq (:docs product)) ; has a completed preposal?
+                                          ["Preposal" :product/preposal])
+                                        (when (seq @group-ids&) ; is in a community?
+                                          ["Your Community" :product/community])
+                                        ["Pricing" :product/pricing]
+                                        ["Company Profile" :product/vendor-profile]
+                                        ["Onboarding" :product/onboarding]
+                                        ["Client Service" :product/client-service]
+                                        ["Reporting & Measurement" :product/reporting]
+                                        ["Industry Niche" :product/market-niche]])]
+                 [:div
+                  [:a.blue {:on-click #(rf/dispatch [:scroll-to k])}
+                   label]]))]]))]
        [:div.inner-container
         (if (= :loading @products&)
           [cc/c-loader]

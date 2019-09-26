@@ -6,6 +6,7 @@
             [com.vetd.app.hasura :as ha]
             [taoensso.timbre :as log]
             [honeysql.core :as hs]
+            [clojure.string :as s]
             clojure.data
             clojure.set))
 
@@ -349,9 +350,9 @@
     (insert-doc-response doc-id resp-id)
     (doseq [{:keys [id] :as f} fields]
       (insert-response-fields resp-id
-                             (assoc f
-                                    :prompt-field-id
-                                    id)))))
+                              (assoc f
+                                     :prompt-field-id
+                                     id)))))
 
 (defn select-form-template-prompts-by-parent-id
   [form-template-id]
@@ -700,20 +701,22 @@
                                   use-id?))
 
 (defn doc->appliable--find-form
-  [{:keys [dtype dsubtype update-doc-id] :as d}]
-  (when (or dtype dsubtype update-doc-id)
+  [{:keys [dtype dsubtype update-doc-id form-id] :as d}]
+  (when (or dtype dsubtype update-doc-id form-id)
     (let [form-fields [:id :ftype :fsubtype
                        [:prompts
                         [:id :term
                          [:fields
                           [:id :fname :ftype :fsubtype]]]]]
-          form-args (merge {:_order_by {:created :desc}
-                            :_limit 1
-                            :deleted nil}
-                           (when dtype
-                             {:ftype dtype})
-                           (when dsubtype
-                             {:fsubtype dsubtype}))]
+          form-args (if form-id
+                      {:id form-id}
+                      (merge {:_order_by {:created :desc}
+                              :_limit 1
+                              :deleted nil}
+                             (when dtype
+                               {:ftype dtype})
+                             (when dsubtype
+                               {:fsubtype dsubtype})))]
       (if update-doc-id
         (-> [[:docs {:id update-doc-id}
               [[:form form-fields]]]]
@@ -734,12 +737,12 @@
     (vec (for [[k value] resp-fields]
            (let [{:keys [fname ftype fsubtype id]} (-> k name fields-by-fname first)] 
              {:item (merge {:fname fname
-                             :ftype ftype
-                             :fsubtype fsubtype
-                             :prompt-field-id id}
-                            (convert-field-val value
-                                               ftype
-                                               fsubtype))})))))
+                            :ftype ftype
+                            :fsubtype fsubtype
+                            :prompt-field-id id}
+                           (convert-field-val value
+                                              ftype
+                                              fsubtype))})))))
 
 (defn response-prompts->proc-tree
   [{:keys [terms prompt-ids]} prompts]
@@ -747,20 +750,20 @@
         grouped-prompts (-> (merge (group-by (comp keyword :term) prompts)
                                    (group-by :id prompts))
                             (dissoc nil))]
-    (vec (for [[k r] responses]
-           (let [{prompt-id :id :keys [fields]} (-> k grouped-prompts first)]
-             (if prompt-id
-               {:item {}
-                :children [{:item {:prompt-id prompt-id}
-                             :children (fields->proc-tree r fields)}]}
-               (throw (Exception. (str "Could not find prompt with term or id: " k)))))))))
+    (vec (remove nil?
+                 (for [[k r] responses]
+                   (let [{prompt-id :id :keys [fields]} (-> k grouped-prompts first)]
+                     (when prompt-id
+                       {:item {}
+                        :children [{:item {:prompt-id prompt-id}
+                                    :children (fields->proc-tree r fields)}]})))))))
 
 ;; TODO set responses.subject
 (defn doc->proc-tree
   [{:keys [data dtype dsubtype update-doc-id] :as d}]
   (if-let [{:keys [id ftype fsubtype prompts]} (doc->appliable--find-form d)]
     {:handler-args d
-     :item (merge (select-keys d ;; TODO hard-coded fields sucks -- Bill
+     :item (merge (select-keys d ;; TODO hard-coded fields, sucks -- Bill
                                [:title :dtype :descr :notes :from-org-id
                                 :from-user-id :to-org-id :to-user-id
                                 :dtype :dsubtype :form-id :subject])
@@ -788,7 +791,7 @@
                             {:fields
                              [(tree-assoc-fn [parent item]
                                              [:item (insert-response-fields (:id parent)
-                                                                           item)])]}]}
+                                                                            item)])]}]}
                           (tree-assoc-fn [item children parent]
                                          [:item
                                           (->> children
@@ -914,6 +917,13 @@
       ha/sync-query
       :prompts))
 
+(defn get-prompts-by-term [term]
+  (-> [[:prompts
+        {:term term} 
+        [:id]]]
+      ha/sync-query
+      :prompts))
+
 ;; TODO the prompt-id for existing prompts should be present in field jval
 (defn group-by-prompt-exists
   [prompts]
@@ -922,7 +932,8 @@
                 {:item
                  (merge (-> item
                             :sval
-                            get-prompts-by-sval
+                            ;; actually the prompt's term
+                            get-prompts-by-term
                             first)
                         (dissoc item :id))}))
          (group-by (comp nil? :id :item))
@@ -954,6 +965,9 @@
           :prompt-new [(tree-assoc-fn [item]
                                       (let [{:keys [sval idx]} item]
                                         [:item (-> sval
+                                                   ;; In frontend, new topics are given a fake term
+                                                   ;; like so: "new-topic/Topic Text That User Entered"
+                                                   (s/replace #"new-topic/" "")
                                                    create-round-req-prompt&fields
                                                    (assoc :idx idx))]))]}
          (tree-assoc-fn [children]
@@ -972,7 +986,8 @@
                     set)]
     (doseq [{prompt-id :id sort' :sort} prompts]
       (when-not (id-set prompt-id)
-        (insert-form-prompt form-id prompt-id sort')))))
+        (insert-form-prompt form-id prompt-id sort')))
+    form-id))
 
 (defn merge-template-to-forms
   [req-form-template-id]
@@ -990,3 +1005,109 @@
          (map (partial upsert-prompts-to-form prompts))
          doall)))
 
+;; TODO check not deleted
+(defn select-missing-prompt-responses-by-doc-id
+  [doc-id]
+  (->> {:select [[:p.id :prompt-id]
+                 [:p.prompt :prompt-term]
+                 [:f.id :form-id]]
+        :from [[:docs :d]]
+        :join [[:forms :f]
+               [:= :d.form_id :f.id]
+               [:form_prompt :fp]
+               [:= :fp.form_id :f.id]
+               [:prompts :p]
+               [:= :p.id :fp.prompt_id]]
+        :left-join [[:doc_resp :dr]
+                    [:= :dr.doc_id :d.id]
+                    [:responses :r]
+                    [:and
+                     [:= :r.id :dr.resp_id]
+                     [:= :r.prompt_id :fp.prompt_id]]]
+        :where [:and
+                [:= :d.id doc-id]
+                [:= :r.id nil]]}
+       db/hs-query))
+
+(defn find-prompt-field-value
+  [{:keys [nval dval sval jval] :as m}]
+  (or jval dval nval sval))
+
+(defn select-reusable-response-fields
+  [subject from-org-id to-org-id prompt-rows]
+  (let [prompt-ids (->> prompt-rows (map :prompt-id) distinct)
+        prompt-terms (->> prompt-rows (map :prompt-term) distinct)
+        prompt-field-ids (->> prompt-rows (map :prompt-field-id) distinct)]
+    (->> {:select [[:prompt_id :prompt-id]
+                   [:prompt_term :prompt-term]
+                   [:response_id :response-id]
+                   [:resp_field_nval :nval]
+                   [:resp_field_dval :dval]
+                   [:resp_field_sval :sval]
+                   [:resp_field_jval :jval]
+                   [:resp_field_idx :idx]]
+          :from [:docs_to_fields]
+          :where [:and
+                  [:or
+                   [:and
+                    [:in :doc_subject subject]
+                    [:or
+                     [:= :doc_dtype "product-profile"]
+                     [:and
+                      [:= :doc_dtype "preposal"]
+                      [:= :doc_to_org_id from-org-id]]]]
+                   [:and
+                    [:= :doc_dtype "vendor-profile"]
+                    [:= :doc_from_org_id to-org-id]]]
+                  [:or
+                   [:in :prompt_id prompt-ids]
+                   [:in :prompt_term prompt-terms]]]}
+         db/hs-query
+         (group-by #(or (:prompt-term %)
+                        (:prompt-id %)))
+         vals
+         (map first)
+         (map #(assoc %
+                      :value (find-prompt-field-value %))))))
+
+;; add doc_resp references to doc that point to reusable responses
+(defn reuse-responses
+  [doc-id responses]
+  (doseq [{:keys [response-id]} responses]
+    (insert-doc-response doc-id response-id)))
+
+(defn select-round-product-ids-by-doc-id
+  [doc-id]
+  (->> {:select [[:rp.product_id :product-id]]
+        :modifiers [:distinct]
+        :from [[:docs :d]]
+        :join [[:round_product :rp]
+               [:and
+                [:= :d.subject :rp.id]
+                [:= :rp.deleted nil]]]
+        :where [:= :d.id doc-id]}
+       db/hs-query
+       (map :product-id)))
+
+(defn auto-pop-missing-responses-by-doc-id
+  [doc-id]
+  (let [product-ids (select-round-product-ids-by-doc-id doc-id)
+        {:keys [from-org-id to-org-id]} (->> [[:form-docs {:doc-id doc-id}
+                                               [:from-org-id :to-org-id]]]
+                                             ha/sync-query
+                                             :form-docs
+                                             first)]
+    (->> doc-id
+         select-missing-prompt-responses-by-doc-id
+         (select-reusable-response-fields product-ids from-org-id to-org-id)
+         (reuse-responses doc-id))))
+
+(defn set-form-template-prompts-order
+  [form-template-id prompt-ids]
+  (let [indexed (map-indexed vector prompt-ids)]
+    (doseq [[idx id] indexed]
+      (db/update-where :form_template_prompt
+                       {:sort idx}
+                       [:and
+                        [:= :prompt_id id]
+                        [:= :form_template_id form-template-id]]))))

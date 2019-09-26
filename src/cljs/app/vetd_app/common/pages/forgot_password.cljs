@@ -1,5 +1,6 @@
 (ns vetd-app.common.pages.forgot-password
   (:require [vetd-app.ui :as ui]
+            [vetd-app.util :as util]
             [reagent.core :as r]
             [re-frame.core :as rf]
             [clojure.string :as s]))
@@ -15,15 +16,14 @@
  (fn [{:keys [db]} [_ email-address]]
    {:db (assoc db
                :page :forgot-password
-               :page-params {:email-address email-address})
-    :analytics/page {:name "Forgot Password"}}))
+               :page-params {:email-address email-address})}))
 
 (rf/reg-event-fx
  :forgot-password.submit
  (fn [{:keys [db]} [_ email pwd cpwd]]
    (let [[bad-input message]
          (cond
-           (not (re-matches #"^\S+@\S+\.\S+$" email)) [:email "Please enter a valid email address."]
+           (not (util/valid-email-address? email)) [:email "Please enter a valid email address."]
            (< (count pwd) 8) [:pwd "Password must be at least 8 characters."]
            (not= pwd cpwd) [:cpwd "Password and Confirm Password must match."]
            :else nil)]
@@ -82,14 +82,15 @@
        [:> ui/Form {:style {:margin-top 25}}
         [:> ui/FormField {:error (= @bad-input& :email)}
          [:label "Work Email Address"
-          [:> ui/Input {:class "borderless"
-                        :defaultValue @email
-                        :type "email"
-                        :spellCheck false
-                        :autoFocus true
-                        :on-invalid #(.preventDefault %) ; no type=email error message (we'll show our own)
-                        :on-change (fn [_ this]
-                                     (reset! email (.-value this)))}]]]
+          [ui/input {:class "borderless"
+                     :value @email
+                     :attrs {:type "email"
+                             ;; no type=email error message (we'll show our own)
+                             :on-invalid #(.preventDefault %)}
+                     :spellCheck false
+                     :autoFocus true
+                     :on-change (fn [e]
+                                  (reset! email (-> e .-target .-value)))}]]]
         [:> ui/FormField {:error (= @bad-input& :pwd)}
          [:label "New Password"
           [:> ui/Input {:class "borderless"

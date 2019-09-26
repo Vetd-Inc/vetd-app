@@ -1630,7 +1630,268 @@
                                       :join [[:groups :g]
                                              [:= :g.id :gd.group_id]]}
                               :owner :vetd
-                              :grants {:hasura [:SELECT]}}]]])
+                              :grants {:hasura [:SELECT]}}]]
+
+   [[2019 7 31 0 0]
+    
+    [:create-table {:schema :vetd
+                    :name :stack_items
+                    :columns {:id [:bigint :NOT :NULL]
+                              :idstr [:text]
+                              :created [:timestamp :with :time :zone]
+                              :updated [:timestamp :with :time :zone]
+                              :deleted [:timestamp :with :time :zone]
+                              :product_id [:bigint]
+                              :buyer_id [:bigint]
+                              :status [:text]
+                              :price_amount [[:numeric 12 2]]
+                              :price_period [:text]
+                              :renewal_date [:timestamp :with :time :zone]
+                              :renewal_reminder [:bool]
+                              :rating [[:numeric 12 2]]}
+                    :owner :vetd
+                    :grants {:hasura [:SELECT]}}]]
+
+   [[2019 8 1 0 0]
+    
+    [:create-or-replace-view {:schema :vetd
+                              :name :agg_group_prod_rating
+                              :honey {:select [[:gom.group_id :group_id]
+                                               [:si.product_id :product_id]
+                                               [:%count.si.id :count_stack_items]
+                                               [:si.rating :rating]]
+                                      :from [[:group_org_memberships :gom]]
+                                      :join [[:stack_items :si]
+                                             [:= :si.buyer_id :gom.org_id]]
+                                      :group-by [:gom.group_id :si.product_id :si.rating]}
+                              :owner :vetd
+                              :grants {:hasura [:SELECT]}}]]
+   
+   [[2019 8 2 00 4]
+    
+    [:create-or-replace-view {:schema :vetd
+                              :name :docs_to_fields
+                              :honey {:select [[:d.id :doc_id]
+                                               [:d.dtype :doc_dtype]
+                                               [:d.dsubtype :doc_dsubtype]
+                                               [:d.title :doc_title]
+                                               [:d.from_user_id :doc_from_user_id]
+                                               [:d.to_org_id :doc_to_org_id]
+                                               [:d.from_org_id :doc_from_org_id]
+                                               [:d.to_user_id :doc_to_user_id]
+                                               [:d.subject :doc_subject]
+                                               [:d.result :doc_result]
+                                               [:d.reason :doc_reason]
+                                               [:r.subject :response_subject]
+                                               [:r.subject_type :response_subject_type]
+                                               [:rf.id :resp_field_id]
+                                               [:rf.nval :resp_field_nval]
+                                               [:rf.sval :resp_field_sval]
+                                               [:rf.dval :resp_field_dval]
+                                               [:rf.jval :resp_field_jval]
+                                               [:rf.idx :resp_field_idx]
+                                               [:p.id :prompt_id]
+                                               [:p.prompt :prompt_prompt]
+                                               [:p.term :prompt_term]
+                                               [:pf.id :prompt_field_id]
+                                               [:pf.fname :prompt_field_fname]
+                                               [:pf.list_qm :prompt_field_list_qm]
+                                               [:pf.ftype :prompt_field_ftype]
+                                               [:pf.fsubtype :prompt_field_fsubtype]            
+                                               [:pf.sort :prompt_field_sort]]
+                                      :from [[:docs :d]]
+                                      :join [[:doc_resp :dr] [:and [:= :d.id :dr.doc_id] [:= :dr.deleted nil]]
+                                             [:responses :r] [:and [:= :dr.resp_id :r.id] [:= :r.deleted nil]]
+                                             [:resp_fields :rf] [:and [:= :rf.resp_id :r.id] [:= :rf.deleted nil]]
+                                             [:prompts :p] [:and [:= :r.prompt_id :p.id] [:= :p.deleted nil]]
+                                             [:prompt_fields :pf] [:and [:= :pf.id :rf.pf_id] [:= :pf.deleted nil]]]
+                                      :where [:= :d.deleted nil]}
+                              :owner :vetd
+                              :grants {:hasura [:SELECT]}}]]
+
+   [[2019 8 12 00 00]
+    
+    [:alter-table {:schema :vetd
+                   :name :products
+                   :columns
+                   {:add {:profile_score [[:numeric 12 2]]
+                          :profile_score_updated [:timestamp :with :time :zone]}}}]
+
+    [:create-or-replace-view {:schema :vetd
+                              :name :docs_to_fields
+                              :honey {:select [[:d.id :doc_id]
+                                               [:d.dtype :doc_dtype]
+                                               [:d.dsubtype :doc_dsubtype]
+                                               [:d.title :doc_title]
+                                               [:d.from_user_id :doc_from_user_id]
+                                               [:d.to_org_id :doc_to_org_id]
+                                               [:d.from_org_id :doc_from_org_id]
+                                               [:d.to_user_id :doc_to_user_id]
+                                               [:d.subject :doc_subject]
+                                               [:d.result :doc_result]
+                                               [:d.reason :doc_reason]
+                                               [:d.created :doc_created]
+                                               [:d.updated :doc_updated]
+                                               [:r.subject :response_subject]
+                                               [:r.subject_type :response_subject_type]
+                                               [:r.created :response_created]
+                                               [:r.updated :response_updated]
+                                               [:rf.id :resp_field_id]
+                                               [:rf.nval :resp_field_nval]
+                                               [:rf.sval :resp_field_sval]
+                                               [:rf.dval :resp_field_dval]
+                                               [:rf.jval :resp_field_jval]
+                                               [:rf.idx :resp_field_idx]
+                                               [:rf.created :resp_field_created]
+                                               [:rf.updated :resp_field_updated]
+                                               [:p.id :prompt_id]
+                                               [:p.prompt :prompt_prompt]
+                                               [:p.term :prompt_term]
+                                               [:p.created :prompt_created]
+                                               [:p.updated :prompt_updated]
+                                               [:pf.id :prompt_field_id]
+                                               [:pf.fname :prompt_field_fname]
+                                               [:pf.list_qm :prompt_field_list_qm]
+                                               [:pf.ftype :prompt_field_ftype]
+                                               [:pf.fsubtype :prompt_field_fsubtype]            
+                                               [:pf.sort :prompt_field_sort]
+                                               [:pf.created :prompt_field_created]
+                                               [:pf.updated :prompt_field_updated]]
+                                      :from [[:docs :d]]
+                                      :join [[:doc_resp :dr] [:and [:= :d.id :dr.doc_id] [:= :dr.deleted nil]]
+                                             [:responses :r] [:and [:= :dr.resp_id :r.id] [:= :r.deleted nil]]
+                                             [:resp_fields :rf] [:and [:= :rf.resp_id :r.id] [:= :rf.deleted nil]]
+                                             [:prompts :p] [:and [:= :r.prompt_id :p.id] [:= :p.deleted nil]]
+                                             [:prompt_fields :pf] [:and [:= :pf.id :rf.pf_id] [:= :pf.deleted nil]]]
+                                      :where [:= :d.deleted nil]}
+                              :owner :vetd
+                              :grants {:hasura [:SELECT]}}]]
+   
+   [[2019 8 16 0 0]
+    
+    [:create-or-replace-view {:schema :vetd
+                              :name :agg_group_prod_rating
+                              :honey {:select [[:gom.group_id :group_id]
+                                               [:si.product_id :product_id]
+                                               [:%count.si.id :count_stack_items]
+                                               [:si.rating :rating]]
+                                      :from [[:group_org_memberships :gom]]
+                                      :join [[:stack_items :si]
+                                             [:and
+                                              [:= :si.buyer_id :gom.org_id]
+                                              [:= :si.deleted nil]]]
+                                      :group-by [:gom.group_id :si.product_id :si.rating]}
+                              :owner :vetd
+                              :grants {:hasura [:SELECT]}}]]
+
+   [[2019 8 19 0 0]
+    
+    [:create-or-replace-view {:schema :vetd
+                              :name :agg_group_prod_price
+                              :honey {:select [[:gom.group_id :group_id]
+                                               [:si.product_id :product_id]
+                                               [(honeysql.core/raw "percentile_disc (0.5) WITHIN GROUP (ORDER BY (CASE WHEN si.price_period = 'monthly' THEN (si.price_amount * 12) WHEN si.price_period = 'free' THEN 0 ELSE si.price_amount END))") :median_price]]
+                                      :from [[:group_org_memberships :gom]]
+                                      :join [[:stack_items :si]
+                                             [:and
+                                              [:= :si.buyer_id :gom.org_id]
+                                              [:= :si.deleted nil]
+                                              [:<> :si.price_period nil]]]
+                                      :group-by [:gom.group_id :si.product_id]}
+                              :owner :vetd
+                              :grants {:hasura [:SELECT]}}]]
+
+   [[2019 8 23 0 0]
+    
+    [:alter-table {:schema :vetd
+                   :name :stack_items
+                   :columns
+                   {:add {:renewal_day_of_month [:integer]}}}]]
+
+   [[2019 8 28 0 0]
+
+    [:create-or-replace-view {:schema :vetd
+                              :name :top_products_by_group
+                              :honey {:select [[:gom.group_id :group_id]
+                                               [:si.product_id :product_id]
+                                               [:%count.si.id :count_stack_items]]
+                                      :from [[:group_org_memberships :gom]]
+                                      :join [[:stack_items :si]
+                                             [:and
+                                              [:= :si.buyer_id :gom.org_id]
+                                              [:= :si.deleted nil]]]
+                                      :group-by [:gom.group_id :si.product_id]}
+                              :owner :vetd
+                              :grants {:hasura [:SELECT]}}]]
+
+   [[2019 9 3 0 0]
+    [:create-or-replace-view {:schema :vetd
+                              :name :docs_to_fields
+                              :honey {:select [[:d.id :doc_id]
+                                               [:d.dtype :doc_dtype]
+                                               [:d.dsubtype :doc_dsubtype]
+                                               [:d.title :doc_title]
+                                               [:d.from_user_id :doc_from_user_id]
+                                               [:d.to_org_id :doc_to_org_id]
+                                               [:d.from_org_id :doc_from_org_id]
+                                               [:d.to_user_id :doc_to_user_id]
+                                               [:d.subject :doc_subject]
+                                               [:d.result :doc_result]
+                                               [:d.reason :doc_reason]
+                                               [:d.created :doc_created]
+                                               [:d.updated :doc_updated]
+                                               [:r.id :response_id]
+                                               [:r.subject :response_subject]
+                                               [:r.subject_type :response_subject_type]
+                                               [:r.created :response_created]
+                                               [:r.updated :response_updated]
+                                               [:rf.id :resp_field_id]
+                                               [:rf.nval :resp_field_nval]
+                                               [:rf.sval :resp_field_sval]
+                                               [:rf.dval :resp_field_dval]
+                                               [:rf.jval :resp_field_jval]
+                                               [:rf.idx :resp_field_idx]
+                                               [:rf.created :resp_field_created]
+                                               [:rf.updated :resp_field_updated]
+                                               [:p.id :prompt_id]
+                                               [:p.prompt :prompt_prompt]
+                                               [:p.term :prompt_term]
+                                               [:p.created :prompt_created]
+                                               [:p.updated :prompt_updated]
+                                               [:pf.id :prompt_field_id]
+                                               [:pf.fname :prompt_field_fname]
+                                               [:pf.list_qm :prompt_field_list_qm]
+                                               [:pf.ftype :prompt_field_ftype]
+                                               [:pf.fsubtype :prompt_field_fsubtype]            
+                                               [:pf.sort :prompt_field_sort]
+                                               [:pf.created :prompt_field_created]
+                                               [:pf.updated :prompt_field_updated]]
+                                      :from [[:docs :d]]
+                                      :join [[:doc_resp :dr] [:and [:= :d.id :dr.doc_id] [:= :dr.deleted nil]]
+                                             [:responses :r] [:and [:= :dr.resp_id :r.id] [:= :r.deleted nil]]
+                                             [:resp_fields :rf] [:and [:= :rf.resp_id :r.id] [:= :rf.deleted nil]]
+                                             [:prompts :p] [:and [:= :r.prompt_id :p.id] [:= :p.deleted nil]]
+                                             [:prompt_fields :pf] [:and [:= :pf.id :rf.pf_id] [:= :pf.deleted nil]]]
+                                      :where [:= :d.deleted nil]}
+                              :owner :vetd
+                              :grants {:hasura [:SELECT]}}]]
+
+   [[2019 9 18 00 00]
+
+    [:alter-table {:schema :vetd
+                   :name :group_discounts
+                   :columns
+                   {:add {:origin_id [:bigint]
+                          ;; TODO this sould be removed as it's unused
+                          :long_descr [:text]}}}]]
+   
+   [[2019 9 19 00 00]
+
+    [:alter-table {:schema :vetd
+                   :name :group_discounts
+                   :columns
+                   {:add {:redemption_descr [:text]}}}]]])
+
 
 #_(mig/mk-migration-files migrations
                           "migrations")

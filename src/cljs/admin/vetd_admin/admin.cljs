@@ -5,6 +5,8 @@
             [vetd-admin.admin-fixtures :as a-fix]
             [vetd-admin.overlays.admin-v-preposals :as ovr-v-preposals]
             [vetd-admin.overlays.admin-b-round-detail :as ovr-b-round-detail]
+            [vetd-admin.overlays.admin-c-settings :as ovr-c-settings]
+            [vetd-admin.overlays.admin-settings :as ovr-settings]            
             [reagent.core :as r]
             [re-frame.core :as rf]
             [re-com.core :as rc]
@@ -56,7 +58,8 @@
 
 (hooks/reg-hook! hooks/c-admin :v/preposals ovr-v-preposals/c-overlay)
 (hooks/reg-hook! hooks/c-admin :b/round-detail ovr-b-round-detail/c-overlay)
-
+(hooks/reg-hook! hooks/c-admin :g/settings ovr-c-settings/c-overlay)
+(hooks/reg-hook! hooks/c-admin :settings ovr-settings/c-overlay)
 
 
 (println "END ADMIN")

@@ -7,6 +7,7 @@
             [com.vetd.app.util :as ut]
             [com.vetd.app.docs :as docs]
             [taoensso.timbre :as log]
+            [clj-time.coerce :as tc]
             [clojure.string :as s]))
 
 (defn product-id->name
@@ -19,31 +20,53 @@
       :pname))
 
 (defn search-prods-vendors->ids
-  [q cat-ids]
-  (if (not-empty q)
-    (let [ids (db/hs-query {:select [[:p.id :pid] [:o.id :vid]
-                                     [(honeysql.core/raw "coalesce(p.score, 1.0)") :nscore]]
-                            :from [[:products :p]]
-                            :join [[:orgs :o] [:= :o.id :p.vendor_id]]
-                            :left-join [[:product_categories :pc] [:= :p.id :pc.prod_id]]
-                            :where [:and
-                                    [:= :p.deleted nil]
-                                    [:= :o.deleted nil]
-                                    [:or
-                                     [(keyword "~*") :p.pname (str ".*?\\m" q ".*")]
-                                     [(keyword "~*") :o.oname (str ".*?\\m" q ".*")]
-                                     (when (not-empty cat-ids)
-                                       [:in :pc.cat_id cat-ids])]]
-                            :order-by [[:nscore :desc]]
-                            :limit 30})
-          pids (map :pid ids)
-          vids (->> ids
-                    (map :vid)
-                    distinct)]
-      {:product-ids pids
-       :vendor-ids vids})
-    {:product-ids []
-     :vendor-ids []}))
+  "Get product ID's based on search query and filter (and union with related categories)."
+  [q cat-ids {:keys [features groups discounts-available-to-groups] :as filter-map}]
+  (let [term (s/trim q)]
+    (if (or (not-empty term)
+            (some seq (vals filter-map)))
+      (let [ids (db/hs-query
+                 {:select [[:p.id :pid]
+                           [(honeysql.core/raw "coalesce(p.score, 1.0)") :nscore]
+                           [(honeysql.core/raw "coalesce(p.profile_score, 0.0)") :pscore]]
+                  :modifiers [:distinct]
+                  :from [[:products :p]]
+                  :join (concat [[:orgs :o] [:= :o.id :p.vendor_id]]
+                                (when (features "free-trial")
+                                  [[:docs_to_fields :d2f] [:and
+                                                           [:= :d2f.doc_subject :p.id]
+                                                           [:= :d2f.doc_dtype "product-profile"]
+                                                           [:= :d2f.prompt_term "product/free-trial?"]
+                                                           [:= :d2f.resp_field_sval "yes"]]])
+                                (when (not-empty groups)
+                                  [[:group_org_memberships :gom] [:in :gom.group_id groups]
+                                   [:stack_items :si] [:and
+                                                       [:= :si.deleted nil]
+                                                       [:= :si.buyer_id :gom.org_id]
+                                                       [:= :si.product_id :p.id]]])
+                                (when (not-empty discounts-available-to-groups)
+                                  [[:group_discounts :gd] [:and
+                                                           [:= :gd.deleted nil]
+                                                           [:in :gd.group_id discounts-available-to-groups]
+                                                           [:= :gd.product_id :p.id]]]))
+                  :left-join (when (not-empty cat-ids)
+                               [[:product_categories :pc] [:= :p.id :pc.prod_id]])
+                  :where [:and
+                          [:= :p.deleted nil]
+                          [:= :o.deleted nil]
+                          [:or
+                           [(keyword "~*") :p.pname (str ".*?\\m" term ".*")]
+                           [(keyword "~*") :o.oname (str ".*?\\m" term ".*")]
+                           (when (not-empty cat-ids)	
+                             [:in :pc.cat_id cat-ids])]
+                          (when (features "product-profile-completed")
+                            [:>= :p.profile_score 0.9])]
+                  :order-by [[:pscore :desc] [:nscore :desc]]
+                  ;; this will be paginated on the frontend
+                  :limit 500})
+            pids (map :pid ids)]
+        {:product-ids pids})
+      {:product-ids []})))
 
 (defn search-category-ids
   [q]
@@ -168,6 +191,27 @@ User '%s'
                           (name etype) ": " ename " (ID: " eid ")\n"
                           "field name: " field-key))))
 
+(defn send-buy-req [buyer-id product-id]
+  (let [{:keys [pname rounds]} (-> [[:products {:id product-id}
+                                     [:pname
+                                      [:rounds {:deleted nil}
+                                       [:idstr]]]]]
+                                   ha/sync-query
+                                   :products
+                                   first)]
+    (com/sns-publish :ui-misc
+                     "Buy Request"
+                     (format
+                      "Buy Request
+Buyer (Org): '%s'
+Product: '%s'
+Round URLs (if any):
+%s"
+                      (-> buyer-id auth/select-org-by-id :oname) ; buyer name
+                      pname
+                      (->> (for [{:keys [idstr]} rounds]
+                             (str "https://app.vetd.com/b/rounds/" idstr))
+                           (clojure.string/join "\n"))))))
 
 (defn send-setup-call-req [buyer-id product-id]
   (let [{:keys [pname rounds]} (-> [[:products {:id product-id}
@@ -276,7 +320,7 @@ Round URL: https://app.vetd.com/b/rounds/%s"
 
 (defn add-requirement-to-round
   "Add requirement to round by Round ID or by the form template ID of requirements form template."
-  [requirement-text & [{:keys [round-id form-template-id]}]]
+  [requirement-term & [{:keys [round-id form-template-id]}]]
   (let [req-form-template-id (or form-template-id
                                  (-> [[:rounds {:id round-id}
                                        [:req-form-template-id]]]
@@ -284,23 +328,36 @@ Round URL: https://app.vetd.com/b/rounds/%s"
                                      vals
                                      ffirst
                                      :req-form-template-id))
-        {:keys [id]} (-> requirement-text
-                         docs/get-prompts-by-sval
-                         first
-                         (or (docs/create-round-req-prompt&fields requirement-text)))
+        new-req? (s/starts-with? requirement-term "new-topic/")
+        {:keys [id]} (if new-req?
+                       ;; In frontend, new topics are given a fake term
+                       ;; like so: "new-topic/Topic Text That User Entered"
+                       (-> requirement-term 
+                           (s/replace #"new-topic/" "")
+                           docs/create-round-req-prompt&fields)
+                       (-> requirement-term
+                           docs/get-prompts-by-term
+                           first))
         existing-prompts (docs/select-form-template-prompts-by-parent-id req-form-template-id)]
     (when-not (some #(= id (:prompt-id %)) existing-prompts)
       (docs/insert-form-template-prompt req-form-template-id id)
-      (docs/merge-template-to-forms req-form-template-id))))
+      (let [form-ids (docs/merge-template-to-forms req-form-template-id)
+            doc-ids (->> [[:docs {:form-id form-ids}
+                           [:id]]]
+                         ha/sync-query
+                         :docs
+                         (map :id))]
+        (doseq [id doc-ids]
+          (docs/auto-pop-missing-responses-by-doc-id id))))))
 
 ;; TODO there could be multiple preposals/rounds per buyer-vendor pair
 
 ;; TODO use session-id to verify permissions!!!!!!!!!!!!!
 (defmethod com/handle-ws-inbound :b/search
-  [{:keys [buyer-id query]} ws-id sub-fn]
+  [{:keys [buyer-id query filter-map]} ws-id sub-fn]
   (let [cat-ids (search-category-ids query)]
     (ut/$- -> query
-           (search-prods-vendors->ids $ cat-ids)
+           (search-prods-vendors->ids $ cat-ids filter-map)
            (assoc :category-ids cat-ids))))
 
 ;; Start a round for either a Product or a Category
@@ -330,6 +387,10 @@ Round URL: https://app.vetd.com/b/rounds/%s"
 (defmethod com/handle-ws-inbound :b/request-complete-profile
   [{:keys [etype eid field-key buyer-id]} ws-id sub-fn]
   (send-complete-profile-req etype eid field-key buyer-id))
+
+(defmethod com/handle-ws-inbound :b/buy
+  [{:keys [buyer-id product-id]} ws-id sub-fn]
+  (send-buy-req buyer-id product-id))
 
 ;; Have Vetd set up a phone call for the buyer with the vendor
 (defmethod com/handle-ws-inbound :b/setup-call
@@ -361,6 +422,16 @@ Round URL: https://app.vetd.com/b/rounds/%s"
                       (:oname buyer)
                       (s/join ", " requirements)
                       idstr))
+    {}))
+
+(defmethod com/handle-ws-inbound :b/round.set-topic-order
+  [{:keys [round-id prompt-ids]} ws-id sub-fn]
+  (let [{:keys [req-form-template-id]} (-> [[:rounds {:id round-id}
+                                             [:req-form-template-id]]]
+                                           ha/sync-query
+                                           vals
+                                           ffirst)]
+    (docs/set-form-template-prompts-order req-form-template-id prompt-ids)
     {}))
 
 (defmethod com/handle-ws-inbound :save-doc
@@ -448,7 +519,6 @@ Round URL: https://app.vetd.com/b/rounds/%s"
                                     (catch Throwable t
                                       (com/log-error t)))]
     
-    ;; TODO invite pre-selected product, if there is one
     (try
       (db/update-any! {:id round-id
                        :doc_id id
@@ -457,6 +527,9 @@ Round URL: https://app.vetd.com/b/rounds/%s"
                       :rounds)
       (catch Throwable t
         (com/log-error t)))
+    (try
+      (rounds/sync-round-vendor-req-forms&docs round-id)
+      (catch Throwable t))    
     (try
       (notify-round-init-form-completed id)
       (catch Throwable t
@@ -483,7 +556,9 @@ Round URL: https://app.vetd.com/b/rounds/%s"
   (when-not (empty? product-ids)
     (doseq [product-id product-ids]
       (rounds/invite-product-to-round product-id round-id))
-    (rounds/sync-round-vendor-req-forms round-id))
+    (try
+      (rounds/sync-round-vendor-req-forms&docs round-id)
+      (catch Throwable t)))
   {})
 
 (defmethod com/handle-ws-inbound :b/set-round-products-order
@@ -502,3 +577,87 @@ Round URL: https://app.vetd.com/b/rounds/%s"
         "\nRound Title: " round-title
         "\nEmail Addresses: " (s/join ", " email-addresses)))
   {})
+
+
+(defn insert-stack-item
+  [{:keys [product-id buyer-id status price-amount price-period
+           renewal-date renewal-day-of-month renewal-reminder rating]}]
+  (let [[id idstr] (ut/mk-id&str)]
+    (db/insert! :stack_items
+                {:id id
+                 :idstr idstr
+                 :created (ut/now-ts)
+                 :updated (ut/now-ts)
+                 :product_id product-id
+                 :buyer_id buyer-id
+                 :status status
+                 :price_amount price-amount
+                 :price_period price-period
+                 :renewal_date renewal-date
+                 :renewal_day_of_month renewal-day-of-month
+                 :renewal_reminder renewal-reminder
+                 :rating rating})
+    id))
+
+(defmethod com/handle-ws-inbound :create-stack-item
+  [req ws-id sub-fn]
+  (insert-stack-item req))
+
+(defmethod com/handle-ws-inbound :b/stack.add-items
+  [{:keys [buyer-id product-ids]} ws-id sub-fn]
+  (if-not (empty? product-ids)
+    {:stack-item-ids (doall
+                      (map #(insert-stack-item {:buyer-id buyer-id
+                                                :product-id %
+                                                :status "current"})
+                           product-ids))}
+    {}))
+
+(defmethod com/handle-ws-inbound :b/stack.delete-item
+  [{:keys [stack-item-id]} ws-id sub-fn]
+  (db/update-deleted :stack_items stack-item-id))
+
+
+(defmethod com/handle-ws-inbound :b/stack.update-item
+  [{:keys [stack-item-id status
+           price-amount price-period
+           renewal-date renewal-day-of-month
+           renewal-reminder rating]
+    :as req}
+   ws-id sub-fn]
+  (db/update-any! (merge {:id stack-item-id}
+                         (when-not (nil? status)
+                           {:status status})
+                         (when-not (nil? price-amount)
+                           {:price_amount (-> price-amount
+                                              str
+                                              (.replaceAll "[^0-9.]" "")
+                                              ut/->double)})
+                         (when-not (nil? price-period)
+                           {:price_period price-period})
+                         (when-not (nil? renewal-date)
+                           {:renewal_date (if (s/blank? renewal-date) ; blank string is used to unset renewal-date
+                                            nil
+                                            (-> renewal-date
+                                                tc/to-long
+                                                java.sql.Timestamp.))})
+                         (when-not (nil? renewal-day-of-month)
+                           {:renewal_day_of_month
+                            (if (s/blank? renewal-day-of-month) ; blank string is used to unset renewal-day-of-month
+                              nil
+                              (-> renewal-day-of-month
+                                  ut/->int))})
+                         (when-not (nil? renewal-reminder)
+                           {:renewal_reminder renewal-reminder})
+                         (when-not (nil? rating)
+                           {:rating (if (= rating 0) ; rating 0 is used to unset the rating
+                                      nil
+                                      rating)}))
+                  :stack_items)
+  {})
+
+(defmethod com/handle-ws-inbound :b/stack.upload-csv
+  [{:keys [buyer-id file-contents]} ws-id sub-fn]
+  (com/s3-put "vetd-stack-csv-uploads"
+              (str (-> buyer-id auth/select-org-by-id :oname) " " (ut/now-ts) ".csv")
+              file-contents))

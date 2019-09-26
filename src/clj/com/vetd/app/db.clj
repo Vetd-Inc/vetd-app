@@ -9,9 +9,13 @@
             [taoensso.timbre :as log]
             [honeysql.core :as hs]
             [honeysql.format :as hsfmt]
+            ;; simply requiring these allows use of e.g. [:ilike] in honeysql forms
+            [honeysql-postgres.format :as hspgfmt]
+            [honeysql-postgres.helpers :as hspgh]
             [clojure.walk :as w]
             clojure.edn))
 
+(def ^:dynamic *suppress-error-logging* false)
 
 #_(mig/migrate
    {:store :database
@@ -43,9 +47,9 @@
 (defn exe! [cmd & [db]]
   (try
     (j/execute! (or db pg-db) cmd)
-    (catch Exception e
-      (clojure.pprint/pprint cmd)
-      (com/log-error e)
+    (catch Throwable e
+      (when-not *suppress-error-logging*
+            (com/log-error e))
       (throw e))))
 
 (defn hs-exe! [hsql & [db]]
@@ -59,14 +63,12 @@
   (j/insert! pg-db table row {:entities #(format "\"%s\"" %)}))
 
 (defn query [q & [return-ex?]]
-  #_ (clojure.pprint/pprint q)
   (when-not env/building?
     (try
       (j/query pg-db q)
-      (catch Exception e
-        (def e1 e)
-        (clojure.pprint/pprint q)
-        (com/log-error e)
+      (catch Throwable e
+        (when-not *suppress-error-logging*
+            (com/log-error e))
         (if return-ex?
           (.getMessage e)
           (throw e))))))
@@ -126,10 +128,12 @@ WHERE table_schema = 'vetd' AND table_catalog = 'vetd1';")
     (loop [[head & tail] (select-all-table-names-MZ "vetd")]
       (if head
         (let [r (try
-                  (hs-query {:select [:id]
-                             :from [(keyword head)]
-                             :where [:= :id id]
-                             :limit 1})
+                  ;; I don't love this, but it junks up the logs otherwise -- Bill
+                  (binding [*suppress-error-logging* true] 
+                    (hs-query {:select [:id]
+                               :from [(keyword head)]
+                               :where [:= :id id]
+                               :limit 1}))
                   (catch Throwable t
                     nil))]
           (if (not-empty r)
