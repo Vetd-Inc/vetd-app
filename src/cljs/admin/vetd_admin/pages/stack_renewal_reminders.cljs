@@ -27,11 +27,10 @@
          product-idstr :idstr
          :keys [pname short-desc logo vendor]} product
         {:keys [oname]} buyer]
-    [:> ui/Item {;; :on-click #(rf/dispatch [:b/nav-product-detail product-idstr])
-                 :class "selectable"}
+    [:> ui/Item {:class "selectable"}
      [bc/c-product-logo logo]
      [:> ui/ItemContent
-      [:> ui/ItemHeader
+      [:> ui/ItemHeader {:on-click #(rf/dispatch [:b/nav-product-detail product-idstr])}
        pname " " [:small " by " (:oname vendor)]]
       [:<>
        [:> ui/ItemExtra {:style {:color "rgba(0, 0, 0, 0.85)"
@@ -100,15 +99,12 @@
                 [:gql/sub
                  {:queries
                   [[:stack-items {:_where
-                                  {:_and ;; while this trims search-query, the Dropdown's local search doesn't...
-                                   [;; {:pname {:_ilike (str "%" (s/trim @search-query&) "%")}}
-                                    {:renewal-reminder {:_eq true}}
-                                    {:renewal-date {:_gte start-date}}
-                                    {:price-period {:_eq "annual"}}
-                                    {:deleted {:_is_null true}}
-                                    {:status {:_eq "current"}}]}
+                                  {:_and [{:renewal-reminder {:_eq true}}
+                                          {:renewal-date {:_gte start-date}}
+                                          {:price-period {:_eq "annual"}}
+                                          {:deleted {:_is_null true}}
+                                          {:status {:_eq "current"}}]}
                                   :_order_by {:renewal-date :asc}
-                                  ;; :renewal-reminder not nil
                                   :_limit limit}
                     [:id :idstr :status
                      :price-amount :price-period :rating
