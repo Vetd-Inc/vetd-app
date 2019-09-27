@@ -10,7 +10,10 @@
     :event [:a/nav-search]}
    {:text "Form Templates"
     :pages #{:a/form-templates}
-    :event [:a/nav-form-templates]}])
+    :event [:a/nav-form-templates]}
+   {:text "Renewal Reminders"
+    :pages #{:a/stack-renewal-reminders}
+    :event [:a/nav-stack-renewal-reminders]}])
 
 (defn c-top-nav-item [{:keys [text event active]}]
   ^{:key text}
