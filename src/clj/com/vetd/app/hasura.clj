@@ -467,9 +467,15 @@
 (defn select-orgs-by-session-id [token]
   (->> (db/hs-query {:select [:o.id]
                      :from [[:sessions :s]]
-                     :join [[:users :u] [:= :u.id :s.user_id ]
-                            [:memberships :m] [:= :m.user_id :u.id]
-                            [:orgs :o] [:= :o.id :m.org_id]]
+                     :join [[:users :u] [:and
+                                         [:= :u.deleted nil]
+                                         [:= :u.id :s.user_id ]]
+                            [:memberships :m] [:and
+                                               [:= :m.deleted nil]
+                                               [:= :m.user_id :u.id]]
+                            [:orgs :o] [:and
+                                        [:= :o.deleted nil]
+                                        [:= :o.id :m.org_id]]]
                      :where [:= :s.token token]})
        (mapv :id)))
 
@@ -478,16 +484,26 @@
 
 (defmethod secure-gql? :default [_ _]  true)
 
-(defmethod secure-gql? :rounds
+(defmethod secure-gql? :orgs
   [[_ maybe-map] session-token]
   (if (map? maybe-map)
-    (let [{:keys [idstr]} maybe-map]
+    (let [{:keys [idstr id]} maybe-map
+          restrict (if id
+                     [:= :o.id id]
+                     [:= :o.idstr idstr])]
       (->> (db/hs-query {:select [:%count.s.id]
                          :from [[:sessions :s]]
-                         :join [[:users :u] [:= :u.id :s.user_id]
-                                [:memberships :m] [:= :m.user_id :u.id]
-                                [:orgs :o] [:= :o.id :m.org_id]
+                         :join [[:users :u] [:and
+                                             [:= :u.deleted nil]
+                                             [:= :u.id :s.user_id ]]
+                                [:memberships :m] [:and
+                                                   [:= :m.deleted nil]
+                                                   [:= :m.user_id :u.id]]
+                                [:orgs :o] [:and
+                                            [:= :o.deleted nil]
+                                            [:= :o.id :m.org_id]]
                                 [:rounds :r] [:and
+                                              [:= :r.deleted nil]
                                               [:= :o.id :r.buyer_id]
                                               [:= :r.idstr idstr]]]
                          :where   [:= :s.token session-token]})
@@ -496,6 +512,34 @@
            (= 1)))
     true))
 
+(defmethod secure-gql? :rounds
+  [[_ maybe-map] session-token]
+  (if (map? maybe-map)
+    (let [{:keys [id idstr]} maybe-map
+          restrict (cond id [:= :r.id id]
+                         idstr [:= :r.idstr idstr])]
+      (if restrict
+        (->> (db/hs-query {:select [:%count.s.id]
+                           :from [[:sessions :s]]
+                           :join [[:users :u] [:and
+                                               [:= :u.deleted nil]
+                                               [:= :u.id :s.user_id ]]
+                                  [:memberships :m] [:and
+                                                     [:= :m.deleted nil]
+                                                     [:= :m.user_id :u.id]]
+                                  [:orgs :o] [:and
+                                              [:= :o.deleted nil]
+                                              [:= :o.id :m.org_id]]
+                                  [:rounds :r] [:and
+                                                [:= :r.deleted nil]
+                                                [:= :o.id :r.buyer_id]
+                                                [:= :r.idstr idstr]]]
+                           :where   [:= :s.token session-token]})
+             first
+             :count
+             (= 1))
+        true))
+    true))
 
 ;; ws from client
 (defmethod com/handle-ws-inbound :graphql
