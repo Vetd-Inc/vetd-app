@@ -2,6 +2,7 @@
   (:require [vetd-app.hooks :as hooks]
             [vetd-admin.pages.a-search :as p-a-search]
             [vetd-admin.pages.form-templates :as p-aform-templates]
+            [vetd-admin.pages.stack-renewal-reminders :as p-astack-renewal-reminders]
             [vetd-admin.admin-fixtures :as a-fix]
             [vetd-admin.overlays.admin-v-preposals :as ovr-v-preposals]
             [vetd-admin.overlays.admin-b-round-detail :as ovr-b-round-detail]
@@ -25,6 +26,9 @@
 (sec/defroute admin-form-templates-id-path "/a/form-templates/:idstr" [idstr]
   (rf/dispatch [:a/route-form-templates idstr]))
 
+(sec/defroute admin-stack-renewal-reminders-path "/a/stack-renewal-reminders" []
+  (rf/dispatch [:a/route-stack-renewal-reminders]))
+
 (defn c-admin-buyer []
   [:div "ADMIN BUYER"])
 
@@ -47,12 +51,14 @@
 
 (hooks/reg-hooks! hooks/c-page
                   {:a/search #'p-a-search/c-page
-                   :a/form-templates #'p-aform-templates/c-page})
+                   :a/form-templates #'p-aform-templates/c-page
+                   :a/stack-renewal-reminders #'p-astack-renewal-reminders/c-page})
 
 (hooks/reg-hooks! hooks/c-container
                   {:admin-overlay #'c-admin-overlay-container
                    :a/search #'a-fix/container
-                   :a/form-templates #'a-fix/container})
+                   :a/form-templates #'a-fix/container
+                   :a/stack-renewal-reminders #'a-fix/container})
 
 (hooks/reg-hook! hooks/init! :admin init!)
 
