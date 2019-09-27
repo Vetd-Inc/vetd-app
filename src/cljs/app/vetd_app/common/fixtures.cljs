@@ -14,12 +14,22 @@
 
 (defn c-account-actions
   [user-name]
-  (let [admin-of-groups& (rf/subscribe [:admin-of-groups])]
+  (let [admin-of-groups& (rf/subscribe [:admin-of-groups])
+        vendor?& (rf/subscribe [:vendor?])]
     (fn [user-name]
       (let [is-group-admin? (not-empty @admin-of-groups&)]
         [:div.account-actions (when is-group-admin?
                                 {:style {:width 195}})
          [:h5 user-name]
+         ;; stopgap: show vendors a buyer/vendor toggle
+         (when @vendor?&
+           [:> ui/Checkbox
+            {:toggle true
+             :label "Vendor Mode?"
+             :style {:margin-bottom 14}
+             :on-click (fn [_ this]
+                         (when (.-checked this)
+                           (rf/dispatch [:do-fx {:nav {:external-url "https://vetd.com/thank-you-vendor"}}])))}])
          [:> ui/Button {:on-click #(rf/dispatch [:nav-settings])
                         :color "lightteal"
                         :fluid true
