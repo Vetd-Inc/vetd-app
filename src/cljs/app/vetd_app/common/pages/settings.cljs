@@ -356,10 +356,11 @@
           [bc/c-profile-segment {:title "Organization Settings"}
            [cc/c-field {:label "Name"
                         :value oname}]
-           [cc/c-field {:label "Website"
-                        :value (-> url
-                                   (s/split #"\?ref=vetd")
-                                   (s/join))}]
+           (when-not (s/blank? url)
+             [cc/c-field {:label "Website"
+                          :value (-> url
+                                     (s/split #"\?ref=vetd")
+                                     (s/join))}])
            [c-org-members memberships id oname]])))))
 
 (defn c-page []
