@@ -137,6 +137,11 @@
  (fn [{:keys [oname]}] oname))
 
 (rf/reg-sub
+ :vendor?
+ :<- [:active-org] 
+ (fn [{:keys [vendor?]}] vendor?))
+
+(rf/reg-sub
  :group-ids
  :<- [:active-org] 
  (fn [{:keys [groups]}]
