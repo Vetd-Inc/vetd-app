@@ -1334,3 +1334,12 @@ div.spinner i:nth-child(2) {
   position: fixed;
   top: 0px;
 }
+
+.selectable {
+  -webkit-touch-callout: inherit !important;
+  -webkit-user-select: inherit !important;
+  -khtml-user-select: inherit !important;
+  -moz-user-select: inherit !important;
+  -ms-user-select: inherit !important;
+  user-select: inherit !important;
+}

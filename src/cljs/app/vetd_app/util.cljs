@@ -6,7 +6,6 @@
             [reagent.ratom :as rr]
             [reagent.format :as format]
             [re-frame.registrar :as rf-reg]
-            [clojure.walk :as w]
             [clojure.zip :as z]
             [markdown-to-hiccup.core :as md])
   (:import [goog.functions]))

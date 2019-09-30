@@ -137,6 +137,11 @@
  (fn [{:keys [oname]}] oname))
 
 (rf/reg-sub
+ :vendor?
+ :<- [:active-org] 
+ (fn [{:keys [vendor?]}] vendor?))
+
+(rf/reg-sub
  :group-ids
  :<- [:active-org] 
  (fn [{:keys [groups]}]
@@ -183,14 +188,9 @@
              {:path "/a/search"}
              ;; TODO support multiple orgs
              (if-let [active-memb (first memberships)]
-               (if (-> active-memb :org :buyer?)
-                 (if first-session?
-                   {:path "/b/stack"}
-                   {:path "/b/search"})
-                 {:external-url "https://vetd.com/thank-you-vendor"}
-                 ;; when vendor-side is ready
-                 ;; {:path "/v/preposals"}
-                 )
+               (if first-session?
+                 {:path "/b/stack"}
+                 {:path "/b/search"})
                {:path "/login"}))})))
 
 (defn c-page []
