@@ -113,7 +113,8 @@
   (-> {:select [[:gd1.id :origin-id]
                 [:g.id :group-id]
                 [:gd1.product_id :product-id]
-                :gd1.descr]
+                :gd1.descr
+                :gd1.redemption_descr]
        :from [[:group_discounts :gd1]]
        :join [[:groups :g]
               [:and
@@ -129,10 +130,11 @@
       db/hs-query))
 
 (defn broadcast-discounts []
-  (doseq [{:keys [origin-id product-id descr group-id]} (select-discounts-to-broadcast magic-universal-community-discount-id)]
+  (doseq [{:keys [origin-id product-id descr redemption-descr group-id]} (select-discounts-to-broadcast magic-universal-community-discount-id)]
     (gr/insert-group-discount group-id
                               product-id
                               descr
+                              redemption-descr
                               origin-id)))
 
 (defmethod com/handle-ws-inbound :a/broadcast-discounts

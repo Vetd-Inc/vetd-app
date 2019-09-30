@@ -23,8 +23,9 @@
 (rf/reg-fx
  :scroll-to
  (fn [ref]
-   (.scrollIntoView ref (clj->js {:behavior "smooth"
-                                  :block "start"}))))
+   (when ref
+     (.scrollIntoView ref (clj->js {:behavior "smooth"
+                                    :block "start"})))))
 
 (rf/reg-event-fx
  :scroll-to
