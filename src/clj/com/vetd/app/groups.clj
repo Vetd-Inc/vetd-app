@@ -89,7 +89,7 @@
                      group-discount-id))
 
 (defn insert-group-discount
-  [group-id product-id descr & [origin-id]]
+  [group-id product-id descr redemption-descr & [origin-id]]
   (let [[id idstr] (ut/mk-id&str)]
     (-> (db/insert! :group_discounts
                     {:id id
@@ -99,13 +99,14 @@
                      :group_id group-id
                      :product_id product-id
                      :descr descr
+                     :redemption_descr redemption-descr
                      :origin_id origin-id})
         first)))
 
 (defn set-group-discount
-  [group-id product-id descr]
+  [group-id product-id descr redemption-descr]
   (delete-group-discount-by-ids group-id product-id)
-  (insert-group-discount group-id product-id descr))
+  (insert-group-discount group-id product-id descr redemption-descr))
 
 (defmethod com/handle-ws-inbound :create-group
   [{:keys [group-name admin-org-id]} ws-id sub-fn]
@@ -129,8 +130,8 @@
   {})
 
 (defmethod com/handle-ws-inbound :g/add-discount
-  [{:keys [group-id product-id descr]} ws-id sub-fn]
-  (insert-group-discount group-id product-id descr)
+  [{:keys [group-id product-id descr redemption-descr]} ws-id sub-fn]
+  (insert-group-discount group-id product-id descr redemption-descr)
   {})
 
 (defmethod com/handle-ws-inbound :g/delete-discount

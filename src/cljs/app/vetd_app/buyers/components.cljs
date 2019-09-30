@@ -365,20 +365,42 @@
 
 (defn c-discount-details
   "Get hiccup for displaying all the details about a discount(s)."
-  [discounts & [{:keys [truncate?]}]]
-  (util/augment-with-keys
-   (cond-> (for [{:keys [gname group-discount-descr]} discounts]
-             [:div.discount
-              [:h4 gname]
-              (util/parse-md group-discount-descr)])
-     truncate? (util/truncate-hiccup 130))))
+  [discounts & [{:keys [truncate? hide-redemption-descr?]}]]
+  (let [append-more-details?& (atom false)
+        did-truncate?& (atom false)]
+    (util/augment-with-keys
+     (cond-> (for [{:keys [gname group-discount-descr group-discount-redemption-descr]} discounts]
+               [:div.discount
+                [:h4 gname]
+                (util/parse-md group-discount-descr)
+                (when-not (s/blank? group-discount-redemption-descr)
+                  (if hide-redemption-descr?
+                    (do (reset! append-more-details?& true)
+                        nil)
+                    [:<>
+                     [:br]
+                     [:em "Redemption Details"]
+                     (util/parse-md group-discount-redemption-descr)]))])
+       truncate? (util/truncate-hiccup 130 did-truncate?&)
+       (or @append-more-details?&
+           @did-truncate?&) (conj [:<>
+                                   [:br]
+                                   [:em "Click for more details."]])))))
 
 (defn c-discount-tag [discounts]
   [:> ui/Popup
-   {:content (r/as-element (c-discount-details discounts {:truncate? true}))
+   {:content (r/as-element (c-discount-details discounts
+                                               {:truncate? true
+                                                :hide-redemption-descr? true}))
     :position "bottom center"
     :trigger (r/as-element
-              [:> ui/Label {:color "blue"
+              [:> ui/Label {:on-click
+                            #(rf/dispatch
+                              [:do-fx
+                               {:dispatch-later
+                                [{:ms 350
+                                  :dispatch [:scroll-to :product/pricing]}]}])
+                            :color "blue"
                             :size "small"
                             :tag true}
                "Discount"])}])

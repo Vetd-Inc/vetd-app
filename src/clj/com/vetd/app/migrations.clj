@@ -1890,7 +1890,54 @@
     [:alter-table {:schema :vetd
                    :name :group_discounts
                    :columns
-                   {:add {:redemption_descr [:text]}}}]]])
+                   {:add {:redemption_descr [:text]}}}]]
+
+   [[2019 9 30 0 0]
+    
+    [:create-or-replace-view {:schema :vetd
+                              :name :products_by_group_discount
+                              :honey {:select [[:gd.id :ref_id]
+                                               [:gd.deleted :ref_deleted]
+                                               [:gd.descr :group_discount_descr]
+                                               [:gd.redemption_descr :group_discount_redemption_descr]
+                                               :gd.descr
+                                               :gd.redemption_descr
+                                               :gd.group_id
+                                               :p.id
+                                               :p.idstr                                    
+                                               :p.created
+                                               :p.deleted
+                                               :p.pname
+                                               :p.vendor_id
+                                               :p.short_desc
+                                               :p.long_desc
+                                               :p.logo
+                                               :p.url
+                                               :p.profile_doc_id]
+                                      :from [[:group_discounts :gd]]
+                                      :join [[:products :p]
+                                             [:= :p.id :gd.product_id]]}
+                              :owner :vetd
+                              :grants {:hasura [:SELECT]}}]
+
+    [:create-or-replace-view {:schema :vetd
+                              :name :groups_by_product_discount
+                              :honey {:select [[:gd.id :ref_id]
+                                               [:gd.deleted :ref_deleted]
+                                               [:gd.descr :group_discount_descr]
+                                               [:gd.redemption_descr :group_discount_redemption_descr]
+                                               :gd.product_id
+                                               :g.id
+                                               :g.idstr                                    
+                                               :g.created
+                                               :g.deleted
+                                               :g.gname
+                                               :g.admin_org_id]
+                                      :from [[:group_discounts :gd]]
+                                      :join [[:groups :g]
+                                             [:= :g.id :gd.group_id]]}
+                              :owner :vetd
+                              :grants {:hasura [:SELECT]}}]]])
 
 
 #_(mig/mk-migration-files migrations

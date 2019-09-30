@@ -219,7 +219,9 @@
                                            :sval :nval :dval]]]]]]
                                      [:discounts {:id @group-ids&
                                                   :ref-deleted nil}
-                                      [:group-discount-descr :gname]]
+                                      [:gname
+                                       :group-discount-descr
+                                       :group-discount-redemption-descr]]
                                      [:vendor
                                       [:id :oname :url
                                        [:docs-out {:dtype "vendor-profile"
