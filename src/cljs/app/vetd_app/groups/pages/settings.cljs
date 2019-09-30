@@ -121,9 +121,9 @@
 
 (rf/reg-event-fx
  :g/add-discount-to-group.submit
- (fn [{:keys [db]} [_ group-id product-id details]]
+ (fn [{:keys [db]} [_ group-id product-id details redemption-descr]]
    (cfx/validated-dispatch-fx db
-                              [:g/add-discount-to-group group-id product-id details]
+                              [:g/add-discount-to-group group-id product-id details redemption-descr]
                               #(cond
                                  (s/blank? product-id) [(keyword (str "add-discount-to-group" group-id ".product-id"))
                                                         "You must select a product."]
@@ -133,13 +133,14 @@
 
 (rf/reg-event-fx
  :g/add-discount-to-group
- (fn [{:keys [db]} [_ group-id product-id details]]
+ (fn [{:keys [db]} [_ group-id product-id details redemption-descr]]
    {:ws-send {:payload {:cmd :g/add-discount
                         :return {:handler :g/add-discount-to-group-return
                                  :group-id group-id}
                         :group-id group-id
                         :product-id product-id
-                        :descr details}}
+                        :descr details
+                        :redemption-descr redemption-descr}}
     :analytics/track {:event "Add Discount"
                       :props {:category "Community"
                               :label product-id}}}))
@@ -417,6 +418,7 @@
         bad-input& (rf/subscribe [:bad-input])
         product& (r/atom nil)
         details& (r/atom "")
+        redemption-descr& (r/atom "")
         options& (r/atom []) ; options from search results + current values
         search-query& (r/atom "")
         products->options (fn [products]
@@ -466,10 +468,18 @@
             :spellCheck true
             :on-change (fn [_ this]
                          (reset! details& (.-value this)))}]]
+         [:> ui/FormField {:error (= @bad-input& (keyword (str "add-discount-to-group" (:id group) ".redemption-descr")))}
+          [:> ui/TextArea
+           {:placeholder "Redemption details..."
+            :fluid "true"
+            :spellCheck true
+            :on-change (fn [_ this]
+                         (reset! redemption-descr& (.-value this)))}]]
          [:> ui/Button {:on-click #(rf/dispatch [:g/add-discount-to-group.submit
                                                  (:id group)
                                                  (js->clj @product&)
-                                                 @details&])
+                                                 @details&
+                                                 @redemption-descr&])
                         :disabled (nil? @product&)
                         :color "blue"}
           "Add"]]))))
