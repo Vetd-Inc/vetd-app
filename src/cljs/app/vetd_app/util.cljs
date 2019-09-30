@@ -231,9 +231,10 @@
     (z/root z)
     (recur f (z/next (f z)))))
 
+;; TODO did-truncate?& does not cover every case of truncation
 (defn truncate-hiccup
   "Truncates based on total number of text characters in some hiccup form(s)."
-  [hiccup length]
+  [hiccup length & [did-truncate?&]]
   {:pre [(pos? length)]}
   (let [length-seen (atom 0)]
     (zip-walk
@@ -247,7 +248,9 @@
                (do (swap! length-seen + (count node))
                    (z/edit loc truncate-text (- length this-length-seen)))
                loc)))
-         (z/remove loc)))
+         (do (when did-truncate?&
+               (reset! did-truncate?& true))
+             (z/remove loc))))
      (z/vector-zip (vec hiccup)))))
 
 (defn valid-email-address?

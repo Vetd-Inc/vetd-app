@@ -487,8 +487,8 @@
 (defn c-discount
   [discount]
   (let [popup-open? (r/atom false)]
-    (fn [{:keys [id idstr pname
-                 group-discount-descr ref-id ; the discount ID
+    (fn [{:keys [id idstr pname ref-id ; the discount ID
+                 group-discount-descr group-discount-redemption-descr
                  vendor] :as discount}]
       [cc/c-field {:label [:<>
                            [:> ui/Popup
@@ -517,7 +517,13 @@
                            [:a.name {:on-click #(rf/dispatch [:b/nav-product-detail idstr])}
                             pname]
                            [:small " by " (:oname vendor)]]
-                   :value (util/parse-md group-discount-descr)}])))
+                   :value [:<>
+                           (util/parse-md group-discount-descr)
+                           (when-not (s/blank? group-discount-redemption-descr)
+                             [:<>
+                              [:br]
+                              [:em "Redemption Details"]
+                              (util/parse-md group-discount-redemption-descr)])]}])))
 
 (defn c-orgs
   [group]
@@ -624,6 +630,7 @@
                                     ;; ref-id is the id of the discount
                                     [:ref-id :id :idstr :pname
                                      :group-discount-descr
+                                     :group-discount-redemption-descr
                                      [:vendor
                                       [:id :oname]]]]]]]}])]
     (fn []
