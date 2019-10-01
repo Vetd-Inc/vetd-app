@@ -90,7 +90,6 @@
  :b/stack.save-item.submit
  (fn [{:keys [db]} [_ {:keys [id price-amount price-period renewal-date renewal-day-of-month]
                        :as input}]]
-   (println renewal-date)
    (cfx/validated-dispatch-fx db
                               [:b/stack.save-item input]
                               #(cond
@@ -386,10 +385,10 @@
              [:<>
               [:> ui/Label {:on-click #(rf/dispatch [:b/stack.save-item.submit
                                                      {:id id
-                                                      :price-amount @price&
-                                                      :price-period @subscription-type&
-                                                      :renewal-date @renewal-date&
-                                                      :renewal-day-of-month @renewal-day-of-month&}])
+                                                      :price-amount (str @price&)
+                                                      :price-period (str @subscription-type&)
+                                                      :renewal-date (str @renewal-date&)
+                                                      :renewal-day-of-month (str @renewal-day-of-month&)}])
                             :color "blue"
                             :as "a"
                             :style {:float "right"}}
