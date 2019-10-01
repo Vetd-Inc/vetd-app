@@ -232,6 +232,8 @@
     (recur f (z/next (f z)))))
 
 ;; TODO did-truncate?& does not cover every case of truncation
+;; this seems to have issues with none vector forms, e.g., if you have
+;; a props map
 (defn truncate-hiccup
   "Truncates based on total number of text characters in some hiccup form(s)."
   [hiccup length & [did-truncate?&]]
