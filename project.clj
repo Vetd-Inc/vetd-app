@@ -57,7 +57,9 @@
                  [expound "0.7.2"]
 
                  [image-resizer "0.1.10"]
-                 [net.mikera/imagez "0.12.0"]]
+                 [net.mikera/imagez "0.12.0"]
+
+                 [com.plaid/plaid-java "5.1.2"]]
 
   :repl-options {:timeout 120000}
   
