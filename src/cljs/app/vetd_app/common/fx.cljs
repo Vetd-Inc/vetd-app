@@ -115,9 +115,13 @@
 
 (rf/reg-event-fx
  :modal
- (fn [{:keys [db]} [_ {:keys [header content size] :as props}]]
+ (fn [{:keys [db]} [_ {:keys [header content buttons size] :as props}]]
    (do (-> db :modal :showing?& (reset! true)) ;; nastiness
-       {:db (update db :modal merge props)})))
+       ;; not doing merge props because we want to nil out unused props
+       {:db (update db :modal merge {:header header
+                                     :content content
+                                     :buttons buttons
+                                     :size size})})))
 
 (rf/reg-sub
  :modal
