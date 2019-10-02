@@ -447,35 +447,6 @@
                :id qual-sub-id})
     (unregister-sub-id qual-sub-id)))
 
-;; ws from client
-(defmethod com/handle-ws-inbound :graphql
-  [{:keys [sub-id query subscription? stop] :as msg} ws-id resp-fn]
-  #_  (clojure.pprint/pprint query)
-  (let [qual-sub-id (keyword (name ws-id)
-                             (str sub-id))]
-    (if-not stop
-      (do
-        (register-sub-id qual-sub-id resp-fn)
-        (com/reg-ws-on-close-fn ws-id
-                                qual-sub-id
-                                (partial unsub qual-sub-id))
-        (try-send @cn&
-                  {:type :start
-                   :id qual-sub-id
-                   :payload {:query (format "%s %s"
-                                            (if subscription?
-                                              "subscription"
-                                              "query")
-                                            (->gql-str query))}}))
-      (do
-        (com/unreg-ws-on-close-fn ws-id qual-sub-id)
-        (unregister-sub-id qual-sub-id)
-        (try-send @cn&
-                  {:type (gql-msg-types-kw->str :stop)
-                   :id qual-sub-id})))
-    nil))
-
-
 (defn sync-query
   [queries]
   (try
@@ -492,6 +463,129 @@
       (com/log-error e (try (some-> e .getData :body slurp)
                             (catch Exception e2 "")))
       (throw e))))
+
+(defn select-orgs-by-session-id [token]
+  (->> (db/hs-query {:select [:o.id]
+                     :from [[:sessions :s]]
+                     :join [[:users :u] [:and
+                                         [:= :u.deleted nil]
+                                         [:= :u.id :s.user_id ]]
+                            [:memberships :m] [:and
+                                               [:= :m.deleted nil]
+                                               [:= :m.user_id :u.id]]
+                            [:orgs :o] [:and
+                                        [:= :o.deleted nil]
+                                        [:= :o.id :m.org_id]]]
+                     :where [:= :s.token token]})
+       (mapv :id)))
+
+(defn admin-session? [session-token]
+  (-> (db/hs-query {:select [:a.id]
+                    :from [[:sessions :s]]
+                    :join [[:admins :a] [:and
+                                         [:= :a.user_id :s.user_id]
+                                         [:= :a.deleted nil]]]
+                    :where [:and
+                            [:= :s.token session-token]
+                            [:= :s.deleted nil]]})
+      empty?
+      not))
+
+(defmulti secure-gql? (fn [[field maybe-map] session-token]
+                       field))
+
+(defmethod secure-gql? :default [_ _]  true)
+
+(defmethod secure-gql? :orgs
+  [[_ maybe-map] session-token]
+  (if (map? maybe-map)
+    (let [{:keys [idstr id]} maybe-map
+          restrict (if id
+                     [:= :o.id id]
+                     [:= :o.idstr idstr])]
+      (->> (db/hs-query {:select [:%count.s.id]
+                         :from [[:sessions :s]]
+                         :join [[:users :u] [:and
+                                             [:= :u.deleted nil]
+                                             [:= :u.id :s.user_id ]]
+                                [:memberships :m] [:and
+                                                   [:= :m.deleted nil]
+                                                   [:= :m.user_id :u.id]]
+                                [:orgs :o] [:and
+                                            [:= :o.deleted nil]
+                                            [:= :o.id :m.org_id]]
+                                [:rounds :r] [:and
+                                              [:= :r.deleted nil]
+                                              [:= :o.id :r.buyer_id]
+                                              [:= :r.idstr idstr]]]
+                         :where   [:= :s.token session-token]})
+           first
+           :count
+           (= 1)))
+    true))
+
+(defmethod secure-gql? :rounds
+  [[_ maybe-map] session-token]
+  (if (map? maybe-map)
+    (let [{:keys [id idstr]} maybe-map
+          restrict (cond id [:= :r.id id]
+                         idstr [:= :r.idstr idstr])]
+      (if restrict
+        (->> (db/hs-query {:select [:%count.s.id]
+                           :from [[:sessions :s]]
+                           :join [[:users :u] [:and
+                                               [:= :u.deleted nil]
+                                               [:= :u.id :s.user_id ]]
+                                  [:memberships :m] [:and
+                                                     [:= :m.deleted nil]
+                                                     [:= :m.user_id :u.id]]
+                                  [:orgs :o] [:and
+                                              [:= :o.deleted nil]
+                                              [:= :o.id :m.org_id]]
+                                  [:rounds :r] [:and
+                                                [:= :r.deleted nil]
+                                                [:= :o.id :r.buyer_id]
+                                                [:= :r.idstr idstr]]]
+                           :where   [:= :s.token session-token]})
+             first
+             :count
+             (= 1))
+        true))
+    true))
+
+;; ws from client
+(defmethod com/handle-ws-inbound :graphql
+  [{:keys [sub-id query admin? subscription? stop session-token] :as msg} ws-id resp-fn]
+  (def q1 query)
+  #_ (clojure.pprint/pprint q1)
+  (if (or
+                          (and admin? (admin-session? session-token))
+                          (some-> query :queries first (secure-gql? session-token)))
+    (let [qual-sub-id (keyword (name ws-id)
+                               (str sub-id))]
+      (if-not stop
+        (do
+          (register-sub-id qual-sub-id resp-fn)
+          (com/reg-ws-on-close-fn ws-id
+                                  qual-sub-id
+                                  (partial unsub qual-sub-id))
+          (try-send @cn&
+                    {:type :start
+                     :id qual-sub-id
+                     :payload {:query (format "%s %s"
+                                              (if subscription?
+                                                "subscription"
+                                                "query")
+                                              (->gql-str query))}}))
+        (do
+          (com/unreg-ws-on-close-fn ws-id qual-sub-id)
+          (unregister-sub-id qual-sub-id)
+          (try-send @cn&
+                    {:type (gql-msg-types-kw->str :stop)
+                     :id qual-sub-id})))
+      nil)
+    {:authorization-failed? true}))
+
 
 #_(send-terminate)
 

@@ -90,7 +90,8 @@
 (defn c-overlay []
   (let [round-idstr& (rf/subscribe [:round-idstr])
         rounds& (rf/subscribe [:gql/sub
-                               {:queries
+                               {:admin? true
+                                :queries
                                 [[:rounds {:idstr @round-idstr&}
                                   [:id
                                    [:products {:deleted nil

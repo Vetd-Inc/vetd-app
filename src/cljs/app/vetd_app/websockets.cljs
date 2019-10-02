@@ -143,6 +143,8 @@
           (.send ws (t/write json-writer
                              {:payloads buffer-map}))))))
 
+;; TODO always send session-token, but I'm not sure what the best way is because
+;; co-fx do not seem to be accessible to effects???? -- Bill
 (rf/reg-fx
  :ws-send
  (fn [rs]
