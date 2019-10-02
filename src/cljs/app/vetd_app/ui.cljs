@@ -48,6 +48,7 @@
 (def Popup (component "Popup"))
 (def Icon (component "Icon"))
 (def Message (component "Message"))
+(def MessageHeader (component "Message" "Header"))
 
 ;; Menu
 (def Menu (component "Menu"))

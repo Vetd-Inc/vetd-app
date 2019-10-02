@@ -264,26 +264,6 @@
                        "Undo Reject"
                        [:> ui/Icon {:name "undo"}]]))}]))))
 
-(defn c-buy-button
-  [{:keys [id pname] :as product}
-   {:keys [oname] :as vendor}
-   props]
-  [:> ui/Popup
-   {:content (r/as-element
-              [:div.contentp
-               "Start the buying process for " [:strong pname] " and we will activate any eligible discounts."])
-    :header (str "Buy " pname)
-    :position "bottom left"
-    :trigger (r/as-element
-              [:> ui/Button (merge {:onClick #(rf/dispatch [:b/buy id pname])
-                                    :color "lightblue"
-                                    :fluid true
-                                    :icon true
-                                    :labelPosition "left"}
-                                   props)
-               "Buy"
-               [:> ui/Icon {:name "shopping cart"}]])}])
-
 ;; unused
 (defn c-setup-call-button
   [{:keys [id pname] :as product}
@@ -373,14 +353,14 @@
                [:div.discount
                 [:h4 gname]
                 (util/parse-md group-discount-descr)
-                (when-not (s/blank? group-discount-redemption-descr)
-                  (if hide-redemption-descr?
-                    (do (reset! append-more-details?& true)
-                        nil)
-                    [:<>
-                     [:br]
-                     [:em "Redemption Details"]
-                     (util/parse-md group-discount-redemption-descr)]))])
+                (if hide-redemption-descr?
+                  (do (reset! append-more-details?& true) nil)
+                  [:<>
+                   [:> ui/Message
+                    [:h4 "How To Redeem This Discount"]
+                    (if (s/blank? group-discount-redemption-descr)
+                      [:div "We've been notified that you clicked the Buy button, and we will be in touch via email with next steps shortly."]
+                      (util/parse-md group-discount-redemption-descr))]])])
        truncate? (util/truncate-hiccup 130 did-truncate?&)
        (or @append-more-details?&
            @did-truncate?&) (conj [:<>
@@ -415,6 +395,43 @@
      [c-free-trial-tag])
    (when (seq discounts)
      [c-discount-tag discounts])])
+
+(defn c-buy-button
+  [{:keys [id pname discounts] :as product}
+   {:keys [oname] :as vendor}
+   props]
+  [:> ui/Popup
+   {:content (r/as-element
+              [:div.content
+               "Start the buying process for " [:strong pname]
+               " and we will activate any eligible discounts."])
+    :header (str "Buy " pname)
+    :position "bottom left"
+    :trigger
+    (r/as-element
+     [:> ui/Button
+      (merge {:onClick
+              #(do (when (seq discounts)
+                     (rf/dispatch
+                      [:modal
+                       {:header [:<> "Ready to Buy?"
+                                 [:p {:style {:font-size 14
+                                              :font-weight 300
+                                              :margin-top 10}}
+                                  "Learn how to activate discounts below."]]
+                        :content (c-discount-details discounts)
+                        :size "small"}]))
+                   (rf/dispatch [:b/buy
+                                 id
+                                 pname
+                                 (boolean (seq discounts))]))
+              :color "lightblue"
+              :fluid true
+              :icon true
+              :labelPosition "left"}
+             props)
+      "Buy"
+      [:> ui/Icon {:name "shopping cart"}]])}])
 
 (defn c-product-logo
   [filename]                      ; TODO make config var 's3-base-url'
@@ -672,7 +689,8 @@
      [:> ui/GridRow
       (when (not-empty discounts)
         [c-display-field 8 "Community Discount"
-         (c-discount-details discounts)])
+         (c-discount-details discounts {:hide-redemption-descr? true})
+         :info "Click \"Buy\" to Redeem Discounts"])
       [c-display-field 8 "Free Trial"
        (when (has-data? (v-fn :product/free-trial?))
          (if (some-> (v-fn :product/free-trial?)

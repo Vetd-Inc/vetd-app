@@ -64,9 +64,10 @@
 
 (rf/reg-event-fx
  :b/buy
- (fn [{:keys [db]} [_ product-id product-name]]
+ (fn [{:keys [db]} [_ product-id product-name no-toast?]]
    {:ws-send {:payload {:cmd :b/buy
-                        :return {:handler :b/buy.return}
+                        :return (when-not no-toast?
+                                  {:handler :b/buy.return})
                         :product-id product-id
                         :buyer-id (util/db->current-org-id db)}}
     :analytics/track {:event "Buy"
@@ -78,7 +79,7 @@
  (constantly
   {:toast {:type "success"
            :title "Buying Process Started!"
-           :message "We'll be in touch with next steps shortly."}}))
+           :message "We'll be in touch via email with next steps shortly."}}))
 
 (rf/reg-event-fx
  :b/ask-a-question
@@ -268,15 +269,17 @@
         (when-not (= :loading @products&)
           (let [{:keys [vendor rounds] :as product} (-> @products& :products first)]
             [:<>
-             (when (empty? (:rounds product))
-               [:> ui/Segment
-                [bc/c-start-round-button {:etype :product
-                                          :eid (:id product)
-                                          :ename (:pname product)
-                                          :props {:fluid true}}]
-                [c-preposal-request-button product]
-                [bc/c-buy-button product vendor]
-                [bc/c-ask-a-question-button product vendor]])
+             [:> ui/Segment
+              (when (empty? (:rounds product))
+                [:<>
+                 [bc/c-start-round-button {:etype :product
+                                           :eid (:id product)
+                                           :ename (:pname product)
+                                           :props {:fluid true}}]
+                 [c-preposal-request-button product]])
+              [bc/c-buy-button product vendor]
+              (when (empty? (:rounds product))
+                [bc/c-ask-a-question-button product vendor])]
              [:> ui/Segment {:class "top-categories"}
               [:h4 "Jump To"]
               (util/augment-with-keys
