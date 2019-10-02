@@ -479,6 +479,18 @@
                      :where [:= :s.token token]})
        (mapv :id)))
 
+(defn admin-session? [session-token]
+  (-> (db/hs-query {:select [:a.id]
+                    :from [[:sessions :s]]
+                    :join [[:admins :a] [:and
+                                         [:= :a.user_id :s.user_id]
+                                         [:= :a.deleted nil]]]
+                    :where [:and
+                            [:= :s.token session-token]
+                            [:= :s.deleted nil]]})
+      empty?
+      not))
+
 (defmulti secure-gql? (fn [[field maybe-map] session-token]
                        field))
 
@@ -545,10 +557,10 @@
 (defmethod com/handle-ws-inbound :graphql
   [{:keys [sub-id query admin? subscription? stop session-token] :as msg} ws-id resp-fn]
   (def q1 query)
-  #_  (clojure.pprint/pprint q1)
+  #_ (clojure.pprint/pprint q1)
   (if (or
-       (and admin? (admin-session? session-token)
-       (some-> query :queries first (secure-gql? session-token)))
+                          (and admin? (admin-session? session-token))
+                          (some-> query :queries first (secure-gql? session-token)))
     (let [qual-sub-id (keyword (name ws-id)
                                (str sub-id))]
       (if-not stop

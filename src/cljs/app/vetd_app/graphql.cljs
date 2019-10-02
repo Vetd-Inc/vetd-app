@@ -49,16 +49,28 @@
 (rf/reg-event-fx
  :gql/data
  (fn [{:keys [db]} [_ {:keys [mtype payload]} {:keys [return] :as resp}]]
-   (let [{:keys [sub-id]} return]
-     (case mtype
-       :data (if-let [ratom (@sub-id->ratom& sub-id)]
-               (when-not (= payload @ratom)
-                 (reset! ratom payload))
-               (do (println "NO GRAPHQL RATOM!")
-                   (println resp)))
-       :error (do (println "GRAPHQL ERROR!")
-                  (println resp))
-       :complete :NO-OP))
+   (or (let [{:keys [sub-id]} return]
+         (case mtype
+           :data (do (if-let [ratom (@sub-id->ratom& sub-id)]
+                       (when-not (= payload @ratom)
+                         (reset! ratom payload))
+                       (do (println "NO GRAPHQL RATOM!")
+                           (println resp)))
+                     nil)
+           :error (do (println "GRAPHQL ERROR!")
+                      (println resp)
+                      nil)
+           :complete (do :NO-OP nil)
+
+           (do (println "WHAT IS THIS???")
+               (println resp)
+               {:toast {:type "error"
+                        :title "Sorry, you do not have access to this page."}})))
+       {})))
+
+(rf/reg-event-fx
+ :gql-resp
+ (fn [{:keys [db]} [_ {:keys [mtype payload]} {:keys [return] :as resp}]]
    {}))
 
 (rf/reg-event-fx

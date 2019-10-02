@@ -117,7 +117,8 @@
         orgs (if (not-empty org-ids)
                (:orgs
                 @(rf/subscribe [:gql/sub
-                                {:queries
+                                {:admin? true
+                                 :queries
                                  [[:orgs {:id org-ids}
                                    [:id :oname :idstr
                                     [:memberships {:user-id user-id
