@@ -543,10 +543,12 @@
 
 ;; ws from client
 (defmethod com/handle-ws-inbound :graphql
-  [{:keys [sub-id query subscription? stop session-token] :as msg} ws-id resp-fn]
+  [{:keys [sub-id query admin? subscription? stop session-token] :as msg} ws-id resp-fn]
   (def q1 query)
   #_  (clojure.pprint/pprint q1)
-  (if (some-> query :queries first (secure-gql? session-token))
+  (if (or
+       (and admin? (admin-session? session-token)
+       (some-> query :queries first (secure-gql? session-token)))
     (let [qual-sub-id (keyword (name ws-id)
                                (str sub-id))]
       (if-not stop
