@@ -149,7 +149,7 @@
    (when (not-empty (:rounds product))
      [bc/c-round-in-progress {:round-idstr (-> rounds first :idstr)
                               :props {:ribbon "left"}}])
-   [bc/c-tags product v-fn discounts]
+   [bc/c-tags product v-fn discounts true]
    [cc/c-grid {:style {:margin-top 4}}
     [[(or (util/parse-md (v-fn :product/description))
           [:p "No description available."]) 12]
@@ -266,7 +266,8 @@
         [:div {:style {:padding "0 15px"}}
          [bc/c-back-button "Back"]]
         (when-not (= :loading @products&)
-          (let [{:keys [vendor rounds] :as product} (-> @products& :products first)]
+          (let [{:keys [vendor rounds] :as product} (-> @products& :products first)
+                _ (rf/dispatch [:dispatch-stash.pop-all :product-detail-loaded])]
             [:<>
              (when (empty? (:rounds product))
                [:> ui/Segment

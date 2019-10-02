@@ -368,7 +368,7 @@
   [discounts & [{:keys [truncate? hide-redemption-descr?]}]]
   (let [append-more-details?& (atom false)
         did-truncate?& (atom false)]
-    (util/augment-with-keys
+    (util/augment-with-keys ;; idk why this is necessary even though it doesn't work as intended
      (cond-> (for [{:keys [gname group-discount-descr group-discount-redemption-descr]} discounts]
                [:div.discount
                 [:h4 gname]
@@ -387,26 +387,31 @@
                                    [:br]
                                    [:em "Click for more details."]])))))
 
-(defn c-discount-tag [discounts]
+(defn c-discount-tag [discounts & [{:keys [on-product-detail-page?]}]]
   [:> ui/Popup
    {:content (r/as-element (c-discount-details discounts
                                                {:truncate? true
                                                 :hide-redemption-descr? true}))
     :position "bottom center"
-    :trigger (r/as-element
-              [:> ui/Label {:on-click
-                            #(rf/dispatch
-                              [:do-fx
-                               {:dispatch-later
-                                [{:ms 350
-                                  :dispatch [:scroll-to :product/pricing]}]}])
-                            :color "blue"
-                            :size "small"
-                            :tag true}
-               "Discount"])}])
+    :trigger
+    (r/as-element
+     [:> ui/Label
+      {:on-click
+       #(rf/dispatch
+         (if on-product-detail-page?
+           [:scroll-to :product/pricing]
+           [:dispatch-stash.push :product-detail-loaded
+            [:do-fx
+             {:dispatch-later
+              [{:ms 200
+                :dispatch [:scroll-to :product/pricing]}]}]]))
+       :color "blue"
+       :size "small"
+       :tag true}
+      "Discount"])}])
 
 (defn c-tags
-  [product v-fn & [discounts]]
+  [product v-fn & [discounts on-product-detail-page?]]
   [:div.product-tags
    [c-categories product]
    (when (some-> (v-fn :product/free-trial?)
@@ -414,7 +419,7 @@
                  (= "yes"))
      [c-free-trial-tag])
    (when (seq discounts)
-     [c-discount-tag discounts])])
+     [c-discount-tag discounts {:on-product-detail-page? on-product-detail-page?}])])
 
 (defn c-product-logo
   [filename]                      ; TODO make config var 's3-base-url'

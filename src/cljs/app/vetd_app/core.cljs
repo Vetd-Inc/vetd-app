@@ -97,6 +97,8 @@
    :round p-bround-detail/init-db
    ;; stores refs by keywords, that can be used with :scroll-to fx
    :scroll-to-refs {}
+   ;; any events put in here will be dispatched when [:dispatch-stash.pop]
+   :dispatch-stash {}
    ;; TODO refactor these to match the pattern of the above ":search"
    :preposals-filter p-bpreposals/default-preposals-filter
    :rounds-filter {:selected-statuses #{}}

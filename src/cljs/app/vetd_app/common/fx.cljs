@@ -129,3 +129,29 @@
    (if external-url
      (js/setTimeout #(.assign (aget js/window "location") external-url) 1000)
      (acct/navigate! path query))))
+
+;; think of every stash key->value as a separate stack of events that you can
+;; push (store) and pop (dispatch)
+(defn dispatch-stash-push
+  [{:keys [db]} [_ k event]]
+  {:pre [(keyword? k) (vector? event)]}
+  {:db (update-in db
+                  [:dispatch-stash k]
+                  (fn [stash]
+                    (if stash
+                      (conj stash event)
+                      [event])))})
+(rf/reg-event-fx :dispatch-stash.push dispatch-stash-push)
+
+(rf/reg-event-fx
+ :dispatch-stash.pop
+ (fn [{:keys [db]} [_ k]]
+   {:dispatch (-> db :dispatch-stash k peek)
+    :db (update-in db [:dispatch-stash k] pop)}))
+
+(rf/reg-event-fx
+ :dispatch-stash.pop-all
+ (fn [{:keys [db]} [_ k]]
+   (when-let [stash (-> db :dispatch-stash k)]
+     {:dispatch-n stash
+      :db (update db :dispatch-stash dissoc k)})))
