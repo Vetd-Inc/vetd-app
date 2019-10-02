@@ -74,13 +74,26 @@
    :date (.getDate tran-obj)
    :amount (.getAmount tran-obj)})
 
-(defn get-transactions [{:keys [params] :as req}]
+(defn public-token->transactions [public-token]
   (try
-    (let [public-token (:public_token params)]
-      (for [t (-> params
-                  :public_token
-                  exchange-token
-                  get-transactions-obj)]
-        (mk-transactions t)))
+    (for [t (-> public-token
+                exchange-token
+                get-transactions-obj)]
+      (mk-transactions t))
+    (catch Throwable e
+      (com/log-error e))))
+
+(defn get-s3-plaid-data-filename [])
+
+(defn put-transactions->s3 [transactions]
+  (com/s3-put "vetd-plaid-data"
+              ))
+
+(defn get&save-transactions [{:keys [params] :as req}]
+  (try
+    (-> params
+        :public_token
+        public-token->transactions
+        put-transactions->s3)
     (catch Throwable e
       (com/log-error e))))
