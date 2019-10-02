@@ -300,7 +300,7 @@
          (fn [{:keys [cookies]}]
            (l/do-action-by-key k)
            (app-html cookies)))
-       (c/POST "/integrations/plaid/" [] #'plaid/get&save-transactions)
+       (c/POST "/integrations/plaid/" [] #'plaid/handle-request)
        (c/GET "/ws" [] #'ws-handler)
        (cr/resources "/assets" {:root "public/assets"})
        (c/GET "/assets*" [] cr/not-found)

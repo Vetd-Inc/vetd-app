@@ -89,7 +89,7 @@
   (com/s3-put "vetd-plaid-data"
               ))
 
-(defn get&save-transactions [{:keys [params] :as req}]
+(defn handle-request [{:keys [params] :as req}]
   (try
     (-> params
         :public_token
