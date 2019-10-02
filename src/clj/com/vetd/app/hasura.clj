@@ -513,11 +513,8 @@
                                                    [:= :m.user_id :u.id]]
                                 [:orgs :o] [:and
                                             [:= :o.deleted nil]
-                                            [:= :o.id :m.org_id]]
-                                [:rounds :r] [:and
-                                              [:= :r.deleted nil]
-                                              [:= :o.id :r.buyer_id]
-                                              [:= :r.idstr idstr]]]
+                                            [:= :o.id :m.org_id]
+                                            restrict]]
                          :where   [:= :s.token session-token]})
            first
            :count
@@ -545,7 +542,7 @@
                                   [:rounds :r] [:and
                                                 [:= :r.deleted nil]
                                                 [:= :o.id :r.buyer_id]
-                                                [:= :r.idstr idstr]]]
+                                                restrict]]
                            :where   [:= :s.token session-token]})
              first
              :count
