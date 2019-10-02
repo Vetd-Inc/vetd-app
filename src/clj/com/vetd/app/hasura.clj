@@ -496,6 +496,7 @@
 
 (defmethod secure-gql? :default [_ _]  true)
 
+#_
 (defmethod secure-gql? :orgs
   [[_ maybe-map] session-token]
   (if (map? maybe-map)
