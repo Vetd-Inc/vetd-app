@@ -171,7 +171,7 @@
                   [:> ui/Segment
                    [bc/c-start-round-button {:etype :none
                                              :props {:fluid true}}]]
-                  [:> ui/Segment
+                  [:> ui/Segment {:class "collapsible"}
                    [:h2 "Filter"]
                    [:h4 "Status"]
                    [c-status-filter-checkboxes unfiltered-rounds @selected-statuses&]]]

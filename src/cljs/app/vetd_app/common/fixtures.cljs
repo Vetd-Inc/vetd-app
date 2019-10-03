@@ -80,6 +80,7 @@
           [:<>
            [:span.scroll-anchor {:ref (fn [this] (rf/dispatch [:reg-scroll-to-ref :top this]))}]
            [:> ui/Menu {:class "top-nav"
+                        :stackable true
                         :secondary true} ; 'secondary' is a misnomer (it's just for styling)
             [:> ui/MenuItem {:class "logo"
                              :on-click #(do (rf/dispatch [:b/search.reset])

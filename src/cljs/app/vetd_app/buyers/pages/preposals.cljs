@@ -218,7 +218,7 @@
                                        (map #(select-keys % [:id :cname]))
                                        (group-by :id))]
                    [:div.sidebar
-                    [:> ui/Segment
+                    [:> ui/Segment {:class "collapsible"}
                      [:h2 "Filter"]
                      [:h4 "Status"]
                      [:> ui/Checkbox {:label "Live"
