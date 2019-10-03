@@ -52,7 +52,7 @@
 
 (defn exchange-token 
 	[p-token]
-	( .. client
+	( .. (build-client)
 	     service
 	     (itemPublicTokenExchange (ItemPublicTokenExchangeRequest. p-token))
              execute
@@ -60,7 +60,7 @@
          getAccessToken))
 
 (defn access-token->transactions* [access-token]
-  (.. client
+  (.. (build-client)
       service
       (transactionsGet
        (TransactionsGetRequest. access-token
