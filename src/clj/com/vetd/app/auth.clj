@@ -237,11 +237,11 @@
       :from-org-name from-org-name}
      {:template-id invite-user-to-org-template-id})))
 
-(defn select-session-by-id
+(defn select-session-by-token
   [session-token]
   (-> [[:sessions
         {:token session-token}
-        [:user-id]]]
+        [:user-id :email]]]
       ha/sync-query
       :sessions
       first))
@@ -251,7 +251,7 @@
   (-> [[:sessions
         {:token session-token
          :deleted nil}
-        [:user-id]]]
+        [:user-id :email]]]
       ha/sync-query
       :sessions
       first))
