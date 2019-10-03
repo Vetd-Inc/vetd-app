@@ -338,24 +338,26 @@
            [:> ui/Button
             {:disabled (nil? @file-contents&)
              :color "blue"
-             :on-click #(do (doall
-                             (->> @file-contents&
-                                  csv/parse
-                                  js->clj
-                                  ((fn [x]
-                                     (if (or (s/starts-with? (s/lower-case (ffirst x)) "org")
-                                             (s/starts-with? (s/lower-case (ffirst x)) "name"))
-                                       (drop 1 x)
-                                       x)))
-                                  (group-by first)
-                                  (map (fn [[k v]]
-                                         (swap! new-orgs&
-                                                conj
-                                                {:oname k
-                                                 :email& (r/atom (s/join ", " (map second v)))})
-                                         (swap! csv-added-count& inc)))))
-                            (reset! file-contents& nil)
-                            (reset! csv-invite-modal-showing?& false))}
+             :on-click (fn []
+                         (let [data (-> @file-contents& csv/parse js->clj)
+                               [org-header email-header] (first data)]
+                           (if (and (s/starts-with? (s/lower-case org-header) "org")
+                                    (s/starts-with? (s/lower-case email-header) "email"))
+                             (do (doall
+                                  (->> data
+                                       (drop 1) ;; drop the header row
+                                       (group-by first)
+                                       (map (fn [[k v]]
+                                              (swap! new-orgs&
+                                                     conj
+                                                     {:oname k
+                                                      :email& (r/atom (s/join ", " (map second v)))})
+                                              (swap! csv-added-count& inc)))))
+                                 (reset! file-contents& nil)
+                                 (reset! csv-invite-modal-showing?& false))
+                             (rf/dispatch
+                              [:toast {:type "error"
+                                       :message "The first row of your CSV file must be a header for columns \"Organization\" and \"Email\"."}]))))}
             "Upload"]]]]))))
 
 (defn c-org
