@@ -456,6 +456,7 @@
                 (= :loading categories-data)
                 (and (zero? @page-offset&)
                      (= :loading products-data)))
+          ;; that's the first loader you see, but it's different from the loader for infinite scroll
           [cc/c-loader {:style {:margin-top 20}}]
           (do (when-not (= :loading products-data) ;; @loading?& ;; sketchy
                 (rf/dispatch-sync [:b/search.infinite-scroll.add-products (:products products-data)]))
@@ -463,7 +464,9 @@
                 [:div.search-results-container
                  (when @some-categories?&
                    [c-category-search-results (:categories categories-data)])
-                 [c-product-search-results (:product-ids @search-result-ids&) @products&]]
+                 [c-product-search-results (:product-ids @search-result-ids&) @products&]
+                 (when @loading?&
+                   [cc/c-loader {:style {:margin-top 20}}])]
                 (if (= (count @search-term&) 0)
                   [c-explainer]
                   [c-no-results]))))))))
