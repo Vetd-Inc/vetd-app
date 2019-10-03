@@ -169,7 +169,7 @@
             :title "Discount deleted from community."}}))
 
 ;;;; Components
-(defn c-add-orgs-form [group]
+(defn c-add-orgs-form [group csv-invite-modal-showing?& field-name]
   (let [fields-editing& (rf/subscribe [:fields-editing])
         bad-input& (rf/subscribe [:bad-input])
         value& (r/atom [])
@@ -183,10 +183,9 @@
         ;; e.g., [{:oname "Hartford Electronics", :email& (atom "jerry@hec.org")}
         ;;        {:oname "Fourier Method Co", :email& (atom nil)}]
         new-orgs& (r/atom [])
-        modal-showing?& (r/atom false)
         file-contents& (r/atom nil)
         csv-added-count& (r/atom 0)]
-    (fn [group]
+    (fn [group csv-invite-modal-showing?& field-name]
       (let [orgs& (rf/subscribe
                    [:gql/q
                     {:queries
@@ -252,18 +251,6 @@
                :disabled (empty? @value&)
                :on-click #(rf/dispatch [:g/add-orgs-to-group.submit (:id group) (js->clj @value&)])}
               "Add"])]]
-         (when (zero? (+ (count @value&) @csv-added-count&))
-           [:<>
-            [:h4 "OR"]
-            [:> ui/Popup
-             {:position "bottom center"
-              :content "Upload a CSV of Organization names, and email addresses."
-              :trigger (r/as-element 
-                        [:> ui/Label {:on-click #(reset! modal-showing?& true)
-                                      :as "a"
-                                      :color "teal"}
-                         [:> ui/Icon {:name "upload"}]
-                         "Upload a CSV File"])}]])
          ;; this is in a second Form to fix formatting issues (TODO could be better)
          (when (seq @new-orgs&)
            [:> ui/Form {:as "div"}
@@ -296,8 +283,11 @@
                                                   (dissoc :email&))
                                              @new-orgs&)]))}
              (str "Send Community Invite (" (+ (count @value&) @csv-added-count&) ")")]])
-         [:> ui/Modal {:open @modal-showing?&
-                       :on-close #(reset! modal-showing?& false)
+         [:> ui/Modal {:open @csv-invite-modal-showing?&
+                       :on-close (fn []
+                                   (do (reset! file-contents& nil)
+                                       (reset! csv-invite-modal-showing?& false)
+                                       (rf/dispatch [:stop-edit-field field-name])))
                        :size "tiny"
                        :dimmer "inverted"
                        :closeOnDimmerClick false
@@ -306,7 +296,7 @@
           [:> ui/ModalHeader "Upload a CSV of Organizations to Invite"]
           [:> ui/ModalContent
            [:p "Upload a .csv file to invite multiple organizations to your community, and to add additional users to those organizations."]
-           [:p [:em "For any organizations that are already on Vetd, no email will be sent, but they will be added to your community."]]
+           [:p [:em "For any organizations that are already on Vetd, no invitation email will be sent, but they will be added to your community."]]
            [:h4 "Required format:"]
            [:> ui/Table
             [:> ui/TableHeader
@@ -342,29 +332,32 @@
                                           (aset (aget e "target") "value" "")))))}]]
            [:div {:style {:clear "both"}}]
            [:> ui/Button {:onClick #(do (reset! file-contents& nil)
-                                        (reset! modal-showing?& false))}
+                                        (reset! csv-invite-modal-showing?& false)
+                                        (rf/dispatch [:stop-edit-field field-name]))}
             "Cancel"]
            [:> ui/Button
             {:disabled (nil? @file-contents&)
              :color "blue"
-             :on-click #(do (doall
-                             (->> @file-contents&
-                                  csv/parse
-                                  js->clj
-                                  ((fn [x]
-                                     (if (or (s/starts-with? (s/lower-case (ffirst x)) "org")
-                                             (s/starts-with? (s/lower-case (ffirst x)) "name"))
-                                       (drop 1 x)
-                                       x)))
-                                  (group-by first)
-                                  (map (fn [[k v]]
-                                         (swap! new-orgs&
-                                                conj
-                                                {:oname k
-                                                 :email& (r/atom (s/join ", " (map second v)))})
-                                         (swap! csv-added-count& inc)))))
-                            (reset! file-contents& nil)
-                            (reset! modal-showing?& false))}
+             :on-click (fn []
+                         (let [data (-> @file-contents& csv/parse js->clj)
+                               [org-header email-header] (first data)]
+                           (if (and (s/starts-with? (s/lower-case org-header) "org")
+                                    (s/starts-with? (s/lower-case email-header) "email"))
+                             (do (doall
+                                  (->> data
+                                       (drop 1) ;; drop the header row
+                                       (group-by first)
+                                       (map (fn [[k v]]
+                                              (swap! new-orgs&
+                                                     conj
+                                                     {:oname k
+                                                      :email& (r/atom (s/join ", " (map second v)))})
+                                              (swap! csv-added-count& inc)))))
+                                 (reset! file-contents& nil)
+                                 (reset! csv-invite-modal-showing?& false))
+                             (rf/dispatch
+                              [:toast {:type "error"
+                                       :message "The first row of your CSV file must be a header for columns \"Organization\" and \"Email\"."}]))))}
             "Upload"]]]]))))
 
 (defn c-org
@@ -527,7 +520,8 @@
 
 (defn c-orgs
   [group]
-  (let [fields-editing& (rf/subscribe [:fields-editing])]
+  (let [fields-editing& (rf/subscribe [:fields-editing])
+        csv-invite-modal-showing?& (r/atom false)]
     (fn [{:keys [id orgs] :as group}]
       (let [field-name (str "add-orgs-to-group-" id)]
         [bc/c-profile-segment
@@ -547,7 +541,20 @@
                                                :color "blue"
                                                :style {:float "right"}}
                                   [:> ui/Icon {:name "add group"}]
-                                  "Add by Name"])}]
+                                  "Add By Name"])}]
+                     [:> ui/Popup
+                      {:position "bottom center"
+                       :content "Upload a CSV of Organization names with email addresses."
+                       :trigger (r/as-element 
+                                 [:> ui/Label {:on-click (fn []
+                                                           (rf/dispatch [:edit-field field-name])
+                                                           (reset! csv-invite-modal-showing?& true))
+                                               :as "a"
+                                               :color "blue"
+                                               :style {:float "right"
+                                                       :margin-right 10}}
+                                  [:> ui/Icon {:name "upload"}]
+                                  "Upload"])}]
                      [:> ui/Popup
                       {:position "bottom center"
                        :content "Create a shareable invite link that lasts for 45 days."
@@ -561,7 +568,7 @@
                                   "Invite Link"])}]])
                   "Organizations"
                   (when (@fields-editing& field-name)
-                    [c-add-orgs-form group])]}
+                    [c-add-orgs-form group csv-invite-modal-showing?& field-name])]}
          (for [org orgs]
            ^{:key (:id org)}
            [c-org org group])]))))
