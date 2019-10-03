@@ -13,10 +13,12 @@
             [aleph.http :as ah]
             [manifold.stream :as ms]
             [ring.middleware.cookies :as rm-cookies]
+            [ring.middleware.params :as rm-params]            
             [taoensso.timbre :as log]
             [cognitect.transit :as t]
             [clojure.java.io :as io]
             [com.vetd.app.auth :as auth]
+            [com.vetd.app.integrations.plaid :as plaid]
             com.vetd.app.buyers
             com.vetd.app.vendors
             com.vetd.app.admin
@@ -295,9 +297,10 @@
 (def app
   (-> (c/routes
        (c/GET "/l/:k" [k]
-              (fn [{:keys [cookies]}]
-                (l/do-action-by-key k)
-                (app-html cookies)))
+         (fn [{:keys [cookies]}]
+           (l/do-action-by-key k)
+           (app-html cookies)))
+       (c/POST "/integrations/plaid/" [] #'plaid/handle-request)
        (c/GET "/ws" [] #'ws-handler)
        (cr/resources "/assets" {:root "public/assets"})
        (c/GET "/assets*" [] cr/not-found)
@@ -318,7 +321,8 @@
        ;; when updating "*" route, also update "/l/:k" route
        (c/GET "*" [] (fn [{:keys [cookies]}]
                        (app-html cookies))))
-      rm-cookies/wrap-cookies))
+      rm-cookies/wrap-cookies
+      rm-params/wrap-params))
 
 (defn start-server []
   (log/info "starting http server...")
