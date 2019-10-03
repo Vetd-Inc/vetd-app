@@ -125,6 +125,6 @@
           (put-creds->s3 email
                          access-token)
           (put-transactions->s3 email
-                                (public-token->transactions )))))
+                                (access-token->transactions access-token)))))
     (catch Throwable e
       (com/log-error e))))
