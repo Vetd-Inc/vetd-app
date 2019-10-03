@@ -1937,7 +1937,29 @@
                                       :join [[:groups :g]
                                              [:= :g.id :gd.group_id]]}
                               :owner :vetd
-                              :grants {:hasura [:SELECT]}}]]])
+                              :grants {:hasura [:SELECT]}}]]
+
+   [[2019 10 3 0 0 ]
+    
+    [:create-index {:idx-name :idx_products_vendor_id
+                    :schema :vetd
+                    :table :products
+                    :columns [:vendor_id]}]
+    
+    [:create-index {:idx-name :idx_group_discounts_group_id
+                    :schema :vetd
+                    :table :group_discounts
+                    :columns [:group_id]}]
+    
+    [:create-index {:idx-name :idx_group_discounts_product_id
+                    :schema :vetd
+                    :table :group_discounts
+                    :columns [:product_id]}]
+    
+    [:create-index {:idx-name :idx_product_categories_prod_id
+                    :schema :vetd
+                    :table :product_categories
+                    :columns [:prodd_id]}]]])
 
 
 #_(mig/mk-migration-files migrations

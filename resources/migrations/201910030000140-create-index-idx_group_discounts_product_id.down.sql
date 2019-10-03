@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS idx_group_discounts_product_id

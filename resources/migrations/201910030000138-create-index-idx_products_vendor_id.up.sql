@@ -1,0 +1,1 @@
+CREATE INDEX idx_products_vendor_id ON vetd.products (vendor_id)

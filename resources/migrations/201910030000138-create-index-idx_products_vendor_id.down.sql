@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS idx_products_vendor_id

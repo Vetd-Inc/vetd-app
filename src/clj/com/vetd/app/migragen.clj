@@ -184,6 +184,22 @@
                                (format "DROP COLUMN %s"
                                        (name k)))))]}))
 
+(defmethod mk-sql :create-index
+  [[_ {:keys [idx-name schema columns table]}]]
+  (let [idx-name' (name idx-name)
+        schema' (name schema)
+        table' (name table)]
+    {:name-part (format "create-index-%s" idx-name')
+     :ext "sql"     
+     :up [(format "CREATE INDEX %s ON %s.%s (%s)"
+                  idx-name'
+                  schema'
+                  table'
+                  (st/join ","
+                           (map name columns)))]
+     :down [(format "DROP INDEX IF EXISTS %s"
+                    idx-name')]}))
+
 (defn mk-migration-file-name
   [path ext idx [yr mo da hr mi] name-part up-down]
   (format "%s/%04d%02d%02d%02d%02d%02d-%s%s.%s"

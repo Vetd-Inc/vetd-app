@@ -1,0 +1,1 @@
+CREATE INDEX idx_product_categories_prod_id ON vetd.product_categories (prod_id)
