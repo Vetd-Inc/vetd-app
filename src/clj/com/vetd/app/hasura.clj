@@ -29,7 +29,17 @@
 #_ (def sub-id->resp-fn& (atom {}))
 (defonce sub-id->resp-fn& (atom {}))
 
+(defonce sub-id->created-ts& (atom {}))
+
 (defonce sub-count-monitor (atom nil))
+
+(defn get-oldest-sub-age []
+  (or (some->> @sub-id->created-ts&
+               vals
+               not-empty
+               (apply min)
+               (- (ut/now)))
+      0))
 
 (defn start-sub-count-monitor-thread []
   (when (and env/prod?
@@ -40,6 +50,8 @@
               (while (not @com/shutdown-signal)
                 (com/hc-send {:type :stats
                               :hasura-sub-count (count @sub-id->resp-fn&)})
+                (com/hc-send {:type :stats
+                              :hasura-sub-max-age (get-oldest-sub-age)})
                 (Thread/sleep 5000))
               (log/info "Stopped sub-count-monitor")))))
 
@@ -400,11 +412,15 @@
 
 (defn register-sub-id
   [sub-id resp-fn]
+  (swap! sub-id->created-ts&
+         assoc sub-id (ut/now))
   (swap! sub-id->resp-fn&
          assoc sub-id resp-fn))
 
 (defn unregister-sub-id
   [sub-id]
+  (swap! sub-id->created-ts&
+         dissoc sub-id)
   (swap! sub-id->resp-fn&
          dissoc sub-id))
 
