@@ -339,6 +339,7 @@
                   :class "how-vetd-works"}
    [:h2 "How Vetd Works . . ."]
    [cc/c-grid {:columns "equal"
+               :stackable true
                :style {:margin-top 4}}
     [[[:<>
        [:h3 "Products & Categories"]
@@ -507,7 +508,8 @@
     (fn []
       [:div.container-with-sidebar
        [:div.sidebar
-        [:> ui/Segment {:id "search-filter"}
+        [:> ui/Segment {:class "collapsible"
+                        :id "search-filter"}
          [:h2 "Filter"]
          [:> ui/Popup
           {:position "bottom left"
@@ -564,7 +566,7 @@
                                                              :b/search.filter.remove)
                                                            :groups
                                                            group-id]))}]))])]
-        [:> ui/Segment {:class "top-categories"}
+        [:> ui/Segment {:class "top-categories collapsible"}
          [:h4 "Top Categories"]
          (let [top-categories ["CRM"
                                "Applicant Tracking"

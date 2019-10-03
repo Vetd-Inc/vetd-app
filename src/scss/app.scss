@@ -1,6 +1,9 @@
 @import 'semantic-ui/globals/_variables';
 
 $bg-color: #fafafa;
+// usage - @media #{$mobile} {  }
+$mobile: "only screen and (max-width: 767px)";
+$not-mobile: "only screen and (min-width: 768px)";
 
 body {
   background: $bg-color;  
@@ -78,6 +81,10 @@ ul {
 /* Top Navigation Menu */
 .top-nav {
   margin-bottom: 30px !important;
+  
+  @media #{$mobile} {
+    margin-bottom: 0px !important;
+  }
 
   > .item {
     font-weight: 600 !important;
@@ -94,14 +101,33 @@ ul {
     /* no hover bg change */
     background: inherit !important;
 
+    @media #{$mobile} {
+      margin-top: -35px !important;
+      margin-bottom: 15px !important;
+      padding: 0 0 0 5px !important;
+    }
+
     img {
       height: 60px !important;
       width: 140px !important;
+
+      @media #{$mobile} {
+        height: 42px !important;
+        width: 98px !important;
+      }
 
       &:hover {
         animation-timing-function: linear;
         animation: 1s infinite party;
       }
+    }
+  }
+
+  .right.menu {
+    @media #{$mobile} {
+      position: absolute;
+      right: 5px;
+      top: 8px;
     }
   }
 }
@@ -1349,3 +1375,30 @@ div.spinner i:nth-child(2) {
   -ms-user-select: inherit !important;
   user-select: inherit !important;
 }
+
+@media #{$mobile} {
+  .collapsible:not(:active):not(:hover):not(:focus) {
+    * {
+      &:first-child {
+        margin-bottom: 0;
+        font-size: 15px;
+      }
+      &:not(:first-child) {
+        min-height: 0 !important;
+        height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+      }
+    }
+
+    &:after {
+      content: '(show)';
+      color: $blue;
+      position: absolute;
+      top: 14px;
+      right: 14px;
+    }
+  }
+}
+
