@@ -120,7 +120,7 @@
     (let [{:keys [session-token]
            public-key :public_token} params
           access-token (exchange-token public-key)]
-      (when-let [{:keys [email]} (auth/select-active-session-by-token session-token)]
+      (when-let [{:keys [email]} (auth/select-user-by-active-session-token session-token)]
         (do
           (put-creds->s3 email
                          access-token)

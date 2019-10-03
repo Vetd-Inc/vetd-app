@@ -67,6 +67,8 @@
       vals
       ffirst))
 
+
+
 (defn insert-user
   [uname email pwd-hash]
   (let [[id idstr] (ut/mk-id&str)]  
@@ -241,7 +243,7 @@
   [session-token]
   (-> [[:sessions
         {:token session-token}
-        [:user-id :email]]]
+        [:user-id]]]
       ha/sync-query
       :sessions
       first))
@@ -251,10 +253,20 @@
   (-> [[:sessions
         {:token session-token
          :deleted nil}
-        [:user-id :email]]]
+        [:user-id]]]
       ha/sync-query
       :sessions
       first))
+
+(defn select-user-by-active-session-token
+  [session-token & fields]
+  (let [user-id (select-active-session-by-token session-token)]
+    (-> [[:users {:id user-id}
+          (or (not-empty fields)
+              [:id :uname :email])]]
+        ha/sync-query
+        vals
+        ffirst)))
 
 (defn is-admin? [user-id]
   (-> (db/hs-query {:select [:id]
