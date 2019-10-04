@@ -305,11 +305,9 @@
 
 (rf/reg-event-fx
  :ws-get-session-user
- [(rf/inject-cofx :local-store [:session-token])] 
  (fn [{:keys [local-store]}]
    {:ws-send {:payload {:cmd :auth-by-session
-                        :return :ws/req-session
-                        :session-token (:session-token local-store)}}}))
+                        :return :ws/req-session}}}))
 
 (rf/reg-event-fx
  :ws/req-session

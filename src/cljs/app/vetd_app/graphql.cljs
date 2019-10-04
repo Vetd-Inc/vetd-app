@@ -22,19 +22,16 @@
 
 (rf/reg-event-fx
  :gql/q
-  [(rf/inject-cofx :local-store [:session-token])]  
  (fn [{:keys [db ws local-store]} [_ q sub-id]]
    {:ws-send {:payload {:cmd :graphql
                         :return {:handler :gql/data
                                  :sub-id sub-id}
                         :query q
                         :subscription? false                        
-                        :sub-id sub-id
-                        :session-token (:session-token local-store)}}}))
+                        :sub-id sub-id}}}))
 
 (rf/reg-event-fx
  :gql/sub
- [(rf/inject-cofx :local-store [:session-token])]
  (fn [{:keys [db ws local-store]} [_ {:keys [admin?] :as q} sub-id]]
    {:ws-send {:payload {:cmd :graphql
                         :return {:handler :gql/data
@@ -42,8 +39,7 @@
                         :query q
                         :admin? admin?
                         :subscription? true
-                        :sub-id sub-id
-                        :session-token (:session-token local-store)}
+                        :sub-id sub-id}
               :subscription :start}}))
 
 (rf/reg-event-fx
