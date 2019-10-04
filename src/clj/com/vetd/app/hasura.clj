@@ -31,6 +31,8 @@
 
 (defonce sub-id->created-ts& (atom {}))
 
+(defonce sub-id->info& (atom {}))
+
 (defonce sub-count-monitor (atom nil))
 
 (defn get-oldest-sub-age []
@@ -40,6 +42,27 @@
                (apply min)
                (- (ut/now)))
       0))
+
+(defn get-sub-distinct-session-count []
+  (or (some->> @sub-id->info&
+               vals
+               not-empty
+               (map :session-token)
+               distinct
+               count)
+      0))
+
+#_
+(get-sub-distinct-session-count)
+
+#_
+(count @sub-id->info&)
+
+#_
+(clojure.pprint/pprint @sub-id->info&)
+
+#_
+(get-oldest-sub-age)
 
 (defn start-sub-count-monitor-thread []
   (when (and env/prod?
@@ -52,6 +75,8 @@
                               :hasura-sub-count (count @sub-id->resp-fn&)})
                 (com/hc-send {:type :stats
                               :hasura-sub-max-age (get-oldest-sub-age)})
+                (com/hc-send {:type :stats
+                              :hasura-sub-distinct-session-count (get-sub-distinct-session-count)})
                 (Thread/sleep 5000))
               (log/info "Stopped sub-count-monitor")))))
 
@@ -411,9 +436,11 @@
     (add-to-queue msg)))
 
 (defn register-sub-id
-  [sub-id resp-fn]
+  [sub-id resp-fn info]
   (swap! sub-id->created-ts&
          assoc sub-id (ut/now))
+  (swap! sub-id->info&
+         assoc sub-id info)
   (swap! sub-id->resp-fn&
          assoc sub-id resp-fn))
 
@@ -421,13 +448,18 @@
   [sub-id]
   (swap! sub-id->created-ts&
          dissoc sub-id)
+  (swap! sub-id->info&
+         dissoc sub-id)  
   (swap! sub-id->resp-fn&
          dissoc sub-id))
 
 (defn respond-to-client
   [id msg]
-  ((@sub-id->resp-fn& (keyword id))
-   msg))
+  (try
+    (when-let [f (@sub-id->resp-fn& (keyword id))]
+      (f msg))
+    (catch Throwable e
+      (com/log-error e))))
 
 (defmethod handle-from-graphql :connection-keep-alive [_]
   (reset! last-ka& (java.util.Date.))
@@ -572,17 +604,25 @@
   [{:keys [sub-id query admin? subscription? stop session-token] :as msg} ws-id resp-fn]
   (def q1 query)
   #_ (clojure.pprint/pprint q1)
-  (if (or
-                          (and admin? (admin-session? session-token))
-                          (some-> query :queries first (secure-gql? session-token)))
+  #_ (clojure.pprint/pprint msg)
+  (if (or stop
+          (and admin? (admin-session? session-token))
+          (some-> query :queries first (secure-gql? session-token)))
     (let [qual-sub-id (keyword (name ws-id)
                                (str sub-id))]
       (if-not stop
         (do
-          (register-sub-id qual-sub-id resp-fn)
-          (com/reg-ws-on-close-fn ws-id
-                                  qual-sub-id
-                                  (partial unsub qual-sub-id))
+          (when subscription?
+            (register-sub-id qual-sub-id resp-fn
+                             {:created (ut/now)
+                              :query query
+                              :admin admin?
+                              :sub-id sub-id
+                              :qual-sub-id qual-sub-id
+                              :session-token session-token})
+            (com/reg-ws-on-close-fn ws-id
+                                    qual-sub-id
+                                    (partial unsub qual-sub-id)))
           (try-send @cn&
                     {:type :start
                      :id qual-sub-id
@@ -598,7 +638,9 @@
                     {:type (gql-msg-types-kw->str :stop)
                      :id qual-sub-id})))
       nil)
-    {:authorization-failed? true}))
+    (do
+      (clojure.pprint/pprint [:DENIED msg])
+      {:authorization-failed? true})))
 
 
 #_(send-terminate)
@@ -608,3 +650,4 @@
  (json/parse-string
   (slurp (clojure.java.io/resource "hasura-metadata.json"))
   keyword))
+
