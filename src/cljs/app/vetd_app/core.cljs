@@ -280,21 +280,29 @@
 
 ;; Vendors
 (sec/defroute vendors-preposals "/v/preposals" [query-params]
-  (rf/dispatch [:v/route-preposals query-params]))
+  (when @(rf/subscribe [:admin?])
+    (rf/dispatch [:v/route-preposals query-params])))
 
 (sec/defroute vendors-products "/v/products" [query-params]
-  (rf/dispatch [:v/route-products query-params]))
+  (when @(rf/subscribe [:admin?])
+    (rf/dispatch [:v/route-products query-params])))
+
 (sec/defroute vendors-product-detail "/v/products/:idstr" [idstr]
-  (rf/dispatch [:v/route-product-detail idstr]))
+  (when @(rf/subscribe [:admin?])
+    (rf/dispatch [:v/route-product-detail idstr])))
 
 (sec/defroute vendors-profile "/v/profile" [query-params]
-  (rf/dispatch [:v/route-profile query-params]))
+  (when @(rf/subscribe [:admin?])
+    (rf/dispatch [:v/route-profile query-params])))
 
 (sec/defroute vendors-rounds-path "/v/rounds" [query-params]
-  (rf/dispatch [:v/route-rounds query-params]))
+  (when @(rf/subscribe [:admin?])
+    (rf/dispatch [:v/route-rounds query-params])))
+
 (sec/defroute vendors-round-product-detail "/v/rounds/:round-idstr/products/:product-idstr"
   [round-idstr product-idstr]
-  (rf/dispatch [:v/route-round-product-detail round-idstr product-idstr]))
+  (when @(rf/subscribe [:admin?])
+    (rf/dispatch [:v/route-round-product-detail round-idstr product-idstr])))
 
 ;; catch-all
 (sec/defroute catch-all-path "*" [*]
