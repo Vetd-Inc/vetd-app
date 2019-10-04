@@ -604,7 +604,7 @@
   [{:keys [sub-id query admin? subscription? stop session-token] :as msg} ws-id resp-fn]
   (def q1 query)
   #_ (clojure.pprint/pprint q1)
-  #_ (clojure.pprint/pprint msg)
+  #_(clojure.pprint/pprint msg)
   (if (or stop
           (and admin? (admin-session? session-token))
           (some-> query :queries first (secure-gql? session-token)))
@@ -612,14 +612,18 @@
                                (str sub-id))]
       (if-not stop
         (do
-          (when subscription?
-            (register-sub-id qual-sub-id resp-fn
+          (let [f (if subscription?
+                    resp-fn
+                    #(do (unsub qual-sub-id)
+                         (resp-fn %)))]
+            (register-sub-id qual-sub-id f
                              {:created (ut/now)
                               :query query
                               :admin admin?
                               :sub-id sub-id
                               :qual-sub-id qual-sub-id
-                              :session-token session-token})
+                              :session-token session-token}))
+          (when subscription?
             (com/reg-ws-on-close-fn ws-id
                                     qual-sub-id
                                     (partial unsub qual-sub-id)))
