@@ -638,9 +638,7 @@
                     {:type (gql-msg-types-kw->str :stop)
                      :id qual-sub-id})))
       nil)
-    (do
-      (clojure.pprint/pprint [:DENIED msg])
-      {:authorization-failed? true})))
+    {:authorization-failed? true}))
 
 
 #_(send-terminate)
