@@ -1959,7 +1959,7 @@
     [:create-index {:idx-name :idx_product_categories_prod_id
                     :schema :vetd
                     :table :product_categories
-                    :columns [:prodd_id]}]]])
+                    :columns [:prod_id]}]]])
 
 
 #_(mig/mk-migration-files migrations
