@@ -1,5 +1,6 @@
 (ns vetd-app.websockets
   (:require [vetd-app.util :as util]
+            [vetd-app.local-store :as local-store]
             [re-frame.core :as rf]
             [cognitect.transit :as t]))
 
@@ -143,16 +144,15 @@
           (.send ws (t/write json-writer
                              {:payloads buffer-map}))))))
 
-;; TODO always send session-token, but I'm not sure what the best way is because
-;; co-fx do not seem to be accessible to effects???? -- Bill
 (rf/reg-fx
  :ws-send
  (fn [rs]
    (doseq [r (util/->vec rs)]
      (let [msg-id (get-next-msg-id)
            p (assoc (:payload r)
-                     :ws/msg-id msg-id
-                     :ws/ts (util/now))]
+                    :session-token (local-store/get-item :session-token)
+                    :ws/msg-id msg-id
+                    :ws/ts (util/now))]
        (swap! ws-buffer& assoc msg-id p)
        (case (:subscription r)
          :start (swap! ws-subsciption-buffer& assoc (:sub-id p) p)
