@@ -1400,5 +1400,10 @@ div.spinner i:nth-child(2) {
       right: 14px;
     }
   }
+
+  // hide userpilot overlays on mobile
+  #userpilotContent {
+    display: none !important;
+  }
 }
 
