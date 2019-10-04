@@ -63,7 +63,7 @@
                             [:>= :p.profile_score 0.9])]
                   :order-by [[:pscore :desc] [:nscore :desc]]
                   ;; this will be paginated on the frontend
-                  :limit 500})
+                  :limit 200})
             pids (map :pid ids)]
         {:product-ids pids})
       {:product-ids []})))
