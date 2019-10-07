@@ -656,16 +656,25 @@ Round URL: https://app.vetd.com/b/rounds/%s"
 (defmethod com/handle-ws-inbound :b/stack.add-items
   [{:keys [buyer-id product-ids]} ws-id sub-fn]
   (if-not (empty? product-ids)
-    (do (doseq [pid product-ids]
-          (journal/push-entry {:jtype :stack-add-items
-                               :buyer-id buyer-id
-                               :product-id pid
-                               :status "current"}))
-        {:stack-item-ids (doall
-                          (map #(insert-stack-item {:buyer-id buyer-id
-                                                    :product-id %
-                                                    :status "current"})
-                               product-ids))})
+    (do (let [buyer-name (-> [:orgs {:id buyer-id}
+                              [:oname]]
+                             ha/ez-sync-query
+                             :oname)]
+          (doseq [pid product-ids]
+            (let [product-name (-> [:products {:id product-ids}
+                                    [:pname]]
+                                   ha/ez-sync-query
+                                   :pname)]
+              (journal/push-entry {:jtype :stack-add-items
+                                   :buyer-org-id buyer-id
+                                   :buyer-org-name buyer-name
+                                   :product-name product-name
+                                   :product-id pid
+                                   :status "current"}))))
+        {:stack-item-ids (mapv #(insert-stack-item {:buyer-id buyer-id
+                                                   :product-id %
+                                                   :status "current"})
+                              product-ids)})
     {}))
 
 (defmethod com/handle-ws-inbound :b/stack.delete-item
@@ -675,16 +684,19 @@ Round URL: https://app.vetd.com/b/rounds/%s"
 
 (defn journal-stack-update-rating [stack-item-id rating]
   (when (some-> rating pos?)
-    (let [{:keys [product-id buyer-id]} (-> [[:stack-items {:id stack-item-id}
-                                              [:product-id :buyer-id]]]
+    (let [{:keys [product buyer]} (-> [[:stack-items {:id stack-item-id}
+                                              [[:product [:id :pname]]
+                                               [:buyer [:id :oname]]]]]
                                             ha/sync-query
                                             vals
                                             ffirst)]
       (journal/push-entry {:jtype :stack-update-rating
                            :rating rating
                            :stack-item-id stack-item-id
-                           :product-id product-id
-                           :buyer-id buyer-id}))))
+                           :product-id (:id product)
+                           :product-name (:pname product)
+                           :buyer-id (:id buyer)
+                           :buyer-name (:oname buyer)}))))
 
 (defmethod com/handle-ws-inbound :b/stack.update-item
   [{:keys [stack-item-id status
