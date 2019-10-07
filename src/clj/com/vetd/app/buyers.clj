@@ -159,11 +159,10 @@
                    [:categories [:cname]]]]]
                 ha/sync-query
                 vals
-                ffirst
-                clojure.pprint/pprint)
+                ffirst)
             msg (with-out-str
                   (clojure.pprint/with-pprint-dispatch clojure.pprint/code-dispatch
-                    round))]
+                    (clojure.pprint/pprint round)))]
         ;; TODO make msg human friendly
         (journal/push-entry&sns-publish :ui-start-round "Vetd Round Started" msg
                                         {:jtype :round-started
