@@ -2,6 +2,7 @@
   (:require [com.vetd.app.db :as db]
             [com.vetd.app.common :as com]
             [com.vetd.app.util :as ut]
+            [com.vetd.app.journal :as journal]            
             [com.vetd.app.hasura :as ha]
             [com.vetd.app.email-client :as ec]
             [com.vetd.app.links :as l]
@@ -56,7 +57,12 @@
                                     ha/sync-query
                                     vals
                                     ffirst)
-            _ (com/sns-publish :ui-misc "Org Added to Community" (str oname " (org) was added to " gname " (community)"))]
+            _ (journal/push-entry&sns-publish :ui-misc
+                                              "Org Added to Community"
+                                              (str oname " (org) was added to " gname " (community)")
+                                              {:jtype :org-added-to-community
+                                               :group-name gname
+                                               :org-name oname})]
         [true inserted]))))
 
 (defn delete-group-org-memb

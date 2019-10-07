@@ -2,6 +2,7 @@
   (:require [com.vetd.app.db :as db]
             [com.vetd.app.common :as com]
             [com.vetd.app.util :as ut]
+            [com.vetd.app.journal :as journal]
             [com.vetd.app.hasura :as ha]
             [com.vetd.app.email-client :as ec]
             [com.vetd.app.links :as l]
@@ -155,7 +156,12 @@
                                     vals
                                     ffirst)]
         (when-not suppress-notification?
-          (com/sns-publish :ui-misc "User Added to Org" (str uname " (user) was added to " oname " (org)")))
+          (journal/push-entry&sns-publish :ui-misc
+                                          "User Added to Org"
+                                          (str uname " (user) was added to " oname " (org)")
+                                          {:jtype :user-added-to-org
+                                           :user-name uname
+                                           :org-name oname}))
         [true inserted]))))
 
 (defn prepare-account-map
