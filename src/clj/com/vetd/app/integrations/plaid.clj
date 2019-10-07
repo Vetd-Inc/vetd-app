@@ -6,11 +6,11 @@
             [com.vetd.app.db :as db]
             [clojure.string :as string])
   (:import com.plaid.client.PlaidClient
-	   com.plaid.client.PlaidClient$Builder
-	   com.plaid.client.request.ItemPublicTokenExchangeRequest
-	   com.plaid.client.response.ItemPublicTokenExchangeResponse
-	   com.plaid.client.request.AccountsGetRequest
-	   com.plaid.client.response.AccountsGetResponse
+	         com.plaid.client.PlaidClient$Builder
+	         com.plaid.client.request.ItemPublicTokenExchangeRequest
+	         com.plaid.client.response.ItemPublicTokenExchangeResponse
+	         com.plaid.client.request.AccountsGetRequest
+	         com.plaid.client.response.AccountsGetResponse
            com.plaid.client.response.Account
            com.plaid.client.response.Account$Balances
            com.plaid.client.request.ItemGetRequest
@@ -29,17 +29,16 @@
 (def plaid-public-key "90987208d894ddc82268098f566e9b")
 (def plaid-secret "c997b042798933339ec830000bf3a7")
 
-
 (defn build-client*
   [id secret public-key]
-  ( .. (PlaidClient/newBuilder)
-   (clientIdAndSecret id secret)
-   (publicKey public-key)
-   sandboxBaseUrl ;; TODO production url!!!!!!!!!
-   build))
+  (.. (PlaidClient/newBuilder)
+      (clientIdAndSecret id secret)
+      (publicKey public-key)
+      sandboxBaseUrl ;; TODO production url!!!!!!!!!
+      build))
 
 (defn build-client
-  [id, secret, key]
+  [id secret key]
   (try
     (if-let [client @client&]
       client
@@ -52,12 +51,12 @@
 
 (defn exchange-token 
 	[p-token]
-	( .. (build-client)
-	     service
-	     (itemPublicTokenExchange (ItemPublicTokenExchangeRequest. p-token))
-             execute
-	     body
-         getAccessToken))
+	(.. (build-client)
+	    service
+	    (itemPublicTokenExchange (ItemPublicTokenExchangeRequest. p-token))
+      execute
+	    body
+      getAccessToken))
 
 (defn access-token->transactions* [access-token]
   (.. (build-client)
