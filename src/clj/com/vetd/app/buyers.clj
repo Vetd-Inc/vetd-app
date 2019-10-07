@@ -649,22 +649,42 @@ Round URL: https://app.vetd.com/b/rounds/%s"
 
 (defmethod com/handle-ws-inbound :create-stack-item
   [req ws-id sub-fn]
+  (journal/push-entry (assoc req
+                             :jtype :create-stack-item))
   (insert-stack-item req))
 
 (defmethod com/handle-ws-inbound :b/stack.add-items
   [{:keys [buyer-id product-ids]} ws-id sub-fn]
   (if-not (empty? product-ids)
-    {:stack-item-ids (doall
-                      (map #(insert-stack-item {:buyer-id buyer-id
-                                                :product-id %
-                                                :status "current"})
-                           product-ids))}
+    (do (doseq [pid product-ids]
+          (journal/push-entry {:jtype :stack-add-items
+                               :buyer-id buyer-id
+                               :product-id pid
+                               :status "current"}))
+        {:stack-item-ids (doall
+                          (map #(insert-stack-item {:buyer-id buyer-id
+                                                    :product-id %
+                                                    :status "current"})
+                               product-ids))})
     {}))
 
 (defmethod com/handle-ws-inbound :b/stack.delete-item
   [{:keys [stack-item-id]} ws-id sub-fn]
   (db/update-deleted :stack_items stack-item-id))
 
+
+(defn journal-stack-update-rating [stack-item-id rating]
+  (when (some-> rating pos?)
+    (let [{:keys [product-id buyer-id]} (-> [[:stack-items {:id stack-item-id}
+                                              [:product-id :buyer-id]]]
+                                            ha/sync-query
+                                            vals
+                                            ffirst)]
+      (journal/push-entry {:jtype :stack-update-rating
+                           :rating rating
+                           :stack-item-id stack-item-id
+                           :product-id product-id
+                           :buyer-id buyer-id}))))
 
 (defmethod com/handle-ws-inbound :b/stack.update-item
   [{:keys [stack-item-id status
@@ -673,6 +693,7 @@ Round URL: https://app.vetd.com/b/rounds/%s"
            renewal-reminder rating]
     :as req}
    ws-id sub-fn]
+  (journal-stack-update-rating stack-item-id rating)
   (db/update-any! (merge {:id stack-item-id}
                          (when-not (nil? status)
                            {:status status})
@@ -709,3 +730,4 @@ Round URL: https://app.vetd.com/b/rounds/%s"
   (com/s3-put "vetd-stack-csv-uploads"
               (str (-> buyer-id auth/select-org-by-id :oname) " " (ut/now-ts) ".csv")
               file-contents))
+

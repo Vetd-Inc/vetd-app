@@ -18,16 +18,16 @@
 
 (defn push-entry
   [entry]
-  (insert-entry com/*session-id*
-                entry))
+  (try
+    (insert-entry com/*session-id*
+                  entry)
+    (catch Throwable e
+      (com/log-error e))))
 
 (defn push-entry&sns-publish
   [topic subject message & [entry]]
-  (try
-    (push-entry (merge {:topic topic
-                        :subject subject
-                        :message message}
-                       entry))
-    (catch Throwable e
-      (com/log-error e)))
+  (push-entry (merge {:topic topic
+                      :subject subject
+                      :message message}
+                     entry))
   (com/sns-publish topic subject message))
