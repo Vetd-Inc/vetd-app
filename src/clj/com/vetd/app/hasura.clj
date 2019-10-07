@@ -512,6 +512,12 @@
                             (catch Exception e2 "")))
       (throw e))))
 
+(defn ez-sync-query [query]
+  (-> [query]
+      sync-query
+      vals
+      ffirst))
+
 (defn select-orgs-by-session-id [token]
   (->> (db/hs-query {:select [:o.id]
                      :from [[:sessions :s]]

@@ -1959,8 +1959,24 @@
     [:create-index {:idx-name :idx_product_categories_prod_id
                     :schema :vetd
                     :table :product_categories
-                    :columns [:prod_id]}]]])
+                    :columns [:prod_id]}]]
+
+   [[2019 10 7 0 0 ]
+
+    [:create-table {:schema :vetd
+                    :name :journal_entries
+                    :columns {:id [:bigint :NOT :NULL]
+                              :idstr [:text]
+                              :created [:timestamp :with :time :zone]
+                              :updated [:timestamp :with :time :zone]
+                              :deleted [:timestamp :with :time :zone]
+                              :session_id [:bigint]
+                              :jtype [:text]
+                              :entry [:jsonb]}
+                    :owner :vetd
+                    :grants {:hasura [:SELECT]}}]]])
 
 
 #_(mig/mk-migration-files migrations
                           "migrations")
+
