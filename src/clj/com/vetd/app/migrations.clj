@@ -1964,7 +1964,7 @@
    [[2019 10 7 0 0 ]
 
     [:create-table {:schema :vetd
-                    :name :journal
+                    :name :journal_entries
                     :columns {:id [:bigint :NOT :NULL]
                               :idstr [:text]
                               :created [:timestamp :with :time :zone]

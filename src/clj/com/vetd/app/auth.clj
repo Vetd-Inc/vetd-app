@@ -249,7 +249,7 @@
   [session-token]
   (-> [[:sessions
         {:token session-token}
-        [:user-id]]]
+        [:id :user-id]]]
       ha/sync-query
       :sessions
       first))
@@ -259,7 +259,7 @@
   (-> [[:sessions
         {:token session-token
          :deleted nil}
-        [:user-id]]]
+        [:id :user-id]]]
       ha/sync-query
       :sessions
       first))

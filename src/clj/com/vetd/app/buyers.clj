@@ -515,9 +515,9 @@ Round URL: https://app.vetd.com/b/rounds/%s"
   (let [round (-> [[:docs {:id doc-id}
                     [[:rounds
                       [:id :created
-                       [:buyer [:oname]]
-                       [:products [:pname]]
-                       [:categories [:cname]]
+                       [:buyer [:id :oname]]
+                       [:products [:id :pname]]
+                       [:categories [:id :cname]]
                        [:init-doc
                         [:id
                          [:response-prompts {:ref-deleted nil}
@@ -529,18 +529,22 @@ Round URL: https://app.vetd.com/b/rounds/%s"
                   vals
                   ffirst
                   :rounds)]
-    (com/sns-publish
-     :ui-misc
-     "Vendor Round Initiation Form Completed"
-     (str "Vendor Round Initiation Form Completed\n\n"
-          (str "Buyer (Org): " (-> round :buyer :oname)
-               "\nProducts: " (->> round :products (map :pname) (interpose ", ") (apply str))
-               "\nCategories: " (->> round :categories (map :cname) (interpose ", ") (apply str))
-               "\n-- Form Data --"
-               (apply str
-                      (for [rp (-> round :init-doc :response-prompts)]
-                        (str "\n" (:prompt-prompt rp) ": "
-                             (->> rp :response-prompt-fields (map :sval) (interpose ", ") (apply str))))))))))
+    (journal/push-entry&sns-publish :ui-misc
+                                    "Vendor Round Initiation Form Completed"
+                                    (str "Vendor Round Initiation Form Completed\n\n"
+                                         (str "Buyer (Org): " (-> round :buyer :oname)
+                                              "\nProducts: " (->> round :products (map :pname) (interpose ", ") (apply str))
+                                              "\nCategories: " (->> round :categories (map :cname) (interpose ", ") (apply str))
+                                              "\n-- Form Data --"
+                                              (apply str
+                                                     (for [rp (-> round :init-doc :response-prompts)]
+                                                       (str "\n" (:prompt-prompt rp) ": "
+                                                            (->> rp :response-prompt-fields (map :sval) (interpose ", ") (apply str)))))))
+                                    {:jtype :round-init-form-completed
+                                     :buyer-org-name (-> round :buyer :oname)
+                                     :buyer-org-id (-> round :buyer :id)
+                                     :products (:products round)
+                                     :categories (:categories round)})))
 
 (defn set-round-products-order [round-id product-ids]
   (doall
@@ -608,17 +612,21 @@ Round URL: https://app.vetd.com/b/rounds/%s"
 
 (defmethod com/handle-ws-inbound :b/round.share
   [{:keys [round-id round-title email-addresses buyer-id]} ws-id sub-fn]
-  (com/sns-publish
-   :ui-misc
-   "Share VetdRound"
-   (str "Share VetdRound"
-        "\n\nBuyer Name: " (-> buyer-id auth/select-org-by-id :oname)
-        "\nRound ID: " round-id
-        "\nRound Link: https://app.vetd.com/b/rounds/" (ut/base31->str round-id)
-        "\nRound Title: " round-title
-        "\nEmail Addresses: " (s/join ", " email-addresses)))
+  (let [buyer-org-name (-> buyer-id auth/select-org-by-id :oname)]
+    (journal/push-entry&sns-publish :ui-misc
+                                    "Share VetdRound"
+                                    (str "Share VetdRound"
+                                         "\n\nBuyer Name: " buyer-org-name
+                                         "\nRound ID: " round-id
+                                         "\nRound Link: https://app.vetd.com/b/rounds/" (ut/base31->str round-id)
+                                         "\nRound Title: " round-title
+                                         "\nEmail Addresses: " (s/join ", " email-addresses))
+                                    {:jtype :share-round
+                                     :round-id round-id
+                                     :email-addresses email-addresses
+                                     :buyer-id buyer-id
+                                     :buyer-org-name buyer-org-name}))
   {})
-
 
 (defn insert-stack-item
   [{:keys [product-id buyer-id status price-amount price-period

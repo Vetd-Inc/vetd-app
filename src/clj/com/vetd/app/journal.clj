@@ -4,28 +4,30 @@
             [com.vetd.app.env :as env]
             [com.vetd.app.db :as db]))
 
-
-(defn insert-entry [session-id {:keys [jtype entry]}]
+(defn insert-entry [session-id {:keys [jtype] :as entry}]
   (let [[id idstr] (ut/mk-id&str)]
-    (-> (db/insert! :orgs
+    (-> (db/insert! :journal_entries
                     {:id id
                      :idstr idstr
                      :created (ut/now-ts)
                      :updated (ut/now-ts)
                      :session_id session-id
-                     :jtype jtype
+                     :jtype (name jtype)
                      :entry entry})
         first)))
 
 (defn push-entry
   [entry]
-  (db/insert! com/*session-id*
-              entry))
+  (insert-entry com/*session-id*
+                entry))
 
 (defn push-entry&sns-publish
   [topic subject message & [entry]]
-  (push-entry (merge {:topic topic
-                      :subject subject
-                      :message message}
-                     entry))
+  (try
+    (push-entry (merge {:topic topic
+                        :subject subject
+                        :message message}
+                       entry))
+    (catch Throwable e
+      (com/log-error e)))
   (com/sns-publish topic subject message))

@@ -157,20 +157,23 @@
                    ws))
 
 (defn ws-inbound-handler*
-  [ws ws-id {:keys [cmd return] :as data}]
+  [ws ws-id {:keys [cmd return session-token] :as data}]
   (try
     (com/hc-send {:type "ws-inbound-handler:receive"
                   :ws-id ws-id
                   :cmd cmd
                   :return return
                   :request data})
-    (let [resp-fn (partial #'ws-outbound-handler
+    (let [{session-id :id} (when session-token
+                             (auth/select-session-by-token session-token))
+          resp-fn (partial #'ws-outbound-handler
                            ws
                            ws-id
                            data
                            (atom 0)
                            (ut/now))
-          resp (com/handle-ws-inbound data ws-id resp-fn)]
+          resp (binding [com/*session-id* session-id]
+                 (com/handle-ws-inbound data ws-id resp-fn))]
       (when (and return resp)
         (resp-fn resp)))
     (catch Exception e
