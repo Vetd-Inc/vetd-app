@@ -29,7 +29,13 @@
 
  ;; Hasura
  (def hasura-ws-url (env/env :hasura-ws-url))
- (def hasura-http-url (env/env :hasura-http-url)))
+ (def hasura-http-url (env/env :hasura-http-url))
+
+ ;; Plaid
+ (def plaid-client-id (env/env :plaid-client-id))
+ (def plaid-public-key (env/env :plaid-public-key))
+ (def plaid-secret (env/env :plaid-secret))
+ )
 
 (com/setup-env prod?)
 

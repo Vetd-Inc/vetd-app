@@ -26,16 +26,13 @@
 
 (defonce client& (atom nil))
 
-(def plaid-client-id "5d7a6fce2dd19f001492b4fd")
-(def plaid-public-key "90987208d894ddc82268098f566e9b")
-(def plaid-secret "c997b042798933339ec830000bf3a7")
-
 (defn build-client*
   [id secret public-key]
   (.. (PlaidClient/newBuilder)
       (clientIdAndSecret id secret)
       (publicKey public-key)
-      sandboxBaseUrl ;; TODO production url!!!!!!!!!
+      ;; TODO development
+      developmentBaseUrl
       build))
 
 (defn build-client
@@ -44,9 +41,9 @@
     (if-let [client @client&]
       client
       (reset! client&
-              (build-client* plaid-client-id
-                             plaid-secret
-                             plaid-public-key)))
+              (build-client* env/plaid-client-id
+                             env/plaid-secret
+                             env/plaid-public-key)))
     (catch Throwable e
       (com/log-error e))))
 

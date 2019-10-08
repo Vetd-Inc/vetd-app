@@ -286,13 +286,13 @@
                 "QuickBooks"
                 [:> ui/Icon {:name "quickbooks"}]])}]])
 
-(def plaid-link
+(defonce plaid-link
   (.create js/Plaid
            (clj->js {"clientName" "Vetd"
                      "countryCodes" ["US"]
-                     ;; TODO SANDBOX
-                     "env" "sandbox"
-                     "key" "90987208d894ddc82268098f566e9b"
+                     ;; TODO use production envirionment when available
+                     "env" "development"
+                     "key" "9c83e7b98a9c97e81d417e4ee7f6ce"
                      "product" ["transactions"]
                      "language" "en"
                      "onSuccess" (fn [public-token metadata]
