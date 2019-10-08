@@ -9,7 +9,8 @@
             [taoensso.timbre :as log]
             [migratus.core :as mig]
             com.vetd.app.migrations
-            com.vetd.app.db)
+            com.vetd.app.db
+            com.vetd.app.feeds)
   (:gen-class))
 
 (defonce nrepl-server& (atom nil))
