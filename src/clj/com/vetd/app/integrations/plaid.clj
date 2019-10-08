@@ -4,7 +4,7 @@
             [com.vetd.app.auth :as auth]
             [com.vetd.app.env :as env]
             [com.vetd.app.db :as db]
-            [clojure.string :as string])
+            [clojure.string :as s])
   (:import com.plaid.client.PlaidClient
 	         com.plaid.client.PlaidClient$Builder
 	         com.plaid.client.request.ItemPublicTokenExchangeRequest
@@ -85,8 +85,8 @@
 (defn mk-filename-base
   [email suffix]
   (-> email
-      (string/trim)
-      (string/replace #"[^a-zA-Z0-9]" "_")
+      (s/trim)
+      (s/replace #"[^a-zA-Z0-9]" "_")
       (str "__" suffix)))
 
 (defn file-timestamp []
@@ -120,10 +120,7 @@
            public-key :public_token} params
           access-token (exchange-token public-key)]
       (when-let [{:keys [email]} (auth/select-user-by-active-session-token session-token)]
-        (do
-          (put-creds->s3 email
-                         access-token)
-          (put-transactions->s3 email
-                                (access-token->transactions access-token)))))
+        (do (put-creds->s3 email access-token)
+            (put-transactions->s3 email (access-token->transactions access-token)))))
     (catch Throwable e
       (com/log-error e))))

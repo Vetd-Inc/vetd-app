@@ -41,15 +41,15 @@
      (merge {:db (assoc db :page :b/stack)}
             (case param 
               "qb-return" {:toast {:type "success"
-                                   :title "Connected to Quickbooks"
+                                   :title "Connected to QuickBooks"
                                    :message "We will notify you after your data has been processed and added to your stack."}
-                           :analytics/track {:event "Quickbooks Connected"
+                           :analytics/track {:event "QuickBooks Connected"
                                              :props {:category "Stack"
                                                      :label buyer-id}}}
               "qb-return-access-denied" {:toast {:type "error"
-                                                 :title "Quickbooks Not Connected"
-                                                 :message "We were not able to connect to your Quickbooks account."}
-                                         :analytics/track {:event "Quickbooks Failed to Connect"
+                                                 :title "QuickBooks Not Connected"
+                                                 :message "We were not able to connect to your QuickBooks account."}
+                                         :analytics/track {:event "QuickBooks Failed to Connect"
                                                            :props {:category "Stack"
                                                                    :label buyer-id}}}
               nil)))))
@@ -257,15 +257,49 @@
                :style {:margin-top 14}}
    [:> ui/Popup
     {:position "right center"
-     :header "Import Quickbooks"
-     :content "Connect to your Quickbooks account and Vetd will add your vendor stack for you."
+     :header "Import From QuickBooks"
+     :content "Connect to your QuickBooks account and Vetd will add your vendor stack for you."
      :trigger (r/as-element
                [:> ui/Button {:color "lightteal"
                               :icon true
                               :labelPosition "left"
                               :fluid true}
-                "Import Quickbooks"
+                "QuickBooks"
                 [:> ui/Icon {:name "quickbooks"}]])}]])
+
+
+;; TODO this errors before plaid js lib is loaded
+(def plaid-link
+  (.create js/Plaid
+           (clj->js {"clientName" "Vetd"
+                     "countryCodes" ["US"]
+                     ;; SANDBOX
+                     "env" "sandbox"
+                     "key" "90987208d894ddc82268098f566e9b"
+                     "product" ["transactions"]
+                     "language" "en"
+                     ;; needed??
+                     ;; userLegalName: 'Maud Gibbons',
+                     ;; userEmailAddress: 'maud.dgibbons@gmail.com',
+
+                     "onSuccess" (fn [public-token metadata]
+                                   (println public-token metadata))
+                     })))
+
+(defn c-bank-import-button
+  []
+  [:> ui/Popup
+   {:position "right center"
+    :header "Import From Bank Account"
+    :content "Connect to your bank account and Vetd will add your vendor stack for you, using historical transactions data."
+    :trigger (r/as-element
+              [:> ui/Button {:color "lightteal"
+                             :icon true
+                             :labelPosition "left"
+                             :fluid true
+                             :on-click #(.open plaid-link)}
+               "Bank Account"
+               [:> ui/Icon {:name "dollar"}]])}])
 
 (defn c-csv-upload-button
   []
@@ -275,7 +309,7 @@
       [:<>
        [:> ui/Popup
         {:position "right center"
-         :header "Upload Transactions CSV"
+         :header "Upload A CSV File of Transaction Data"
          :content "Upload a .csv file, and Vetd will add your vendor stack for you."
          :trigger (r/as-element
                    [:> ui/Button {:on-click #(reset! modal-showing?& true)
@@ -283,8 +317,8 @@
                                   :icon true
                                   :labelPosition "left"
                                   :fluid true}
-                    "Upload CSV"
-                    [:> ui/Icon {:name "upload"}]])}]
+                    "CSV File"
+                    [:> ui/Icon {:name "file alternate"}]])}]
        [:> ui/Modal {:open @modal-showing?&
                      :on-close #(reset! modal-showing?& false)
                      :size "tiny"
@@ -594,7 +628,9 @@
                [:div.sidebar
                 [:> ui/Segment
                  [c-add-product-button unfiltered-stack]
+                 [:h4 "Import Transactions"]
                  [c-qb-import-button]
+                 [c-bank-import-button]
                  [c-csv-upload-button]]
                 [:> ui/Segment {:class "top-categories"}
                  [:h4 "Jump To"]

@@ -271,35 +271,34 @@
     ;; load Segment's "Analytics.js"
     [:script {:type "text/javascript"}
      "!function(){var analytics=window.analytics=window.analytics||[];if(!analytics.initialize)if(analytics.invoked)window.console&&console.error&&console.error(\"Segment snippet included twice.\");else{analytics.invoked=!0;analytics.methods=[\"trackSubmit\",\"trackClick\",\"trackLink\",\"trackForm\",\"pageview\",\"identify\",\"reset\",\"group\",\"track\",\"ready\",\"alias\",\"debug\",\"page\",\"once\",\"off\",\"on\"];analytics.factory=function(t){return function(){var e=Array.prototype.slice.call(arguments);e.unshift(t);analytics.push(e);return analytics}};for(var t=0;t<analytics.methods.length;t++){var e=analytics.methods[t];analytics[e]=analytics.factory(e)}analytics.load=function(t,e){var n=document.createElement(\"script\");n.type=\"text/javascript\";n.async=!0;n.src=\"https://cdn.segment.com/analytics.js/v1/\"+t+\"/analytics.min.js\";var a=document.getElementsByTagName(\"script\")[0];a.parentNode.insertBefore(n,a);analytics._loadOptions=e};analytics.SNIPPET_VERSION=\"4.1.0\";}}();"]
-
-    ;; load Chatra
-    (when-not (admin-session? cookies)
-      [:script {:type "text/javascript"}
-       " (function(d, w, c) {
-       w.ChatraID = 'YwgMHTcCTsLojxazy';
-       var s = d.createElement('script');
-       w[c] = w[c] || function() {
-           (w[c].q = w[c].q || []).push(arguments);
-       };
-       s.async = true;
-       s.src = 'https://call.chatra.io/chatra.js';
-       if (d.head) d.head.appendChild(s);
-   })(document, window, 'Chatra');"])
-    
+    (page/include-js "/assets/js/plaid/link-initialize.js")
     (page/include-js
      (control-cache
       (if (admin-session? cookies)
         "/js/full.js"
         "/js/app.js")))
-    (page/include-js
-     "/assets/js/confetti.js")]))
+    (page/include-js "/assets/js/confetti.js")
+    ;; load Chatra
+    (when-not (admin-session? cookies)
+      [:script {:type "text/javascript"}
+       "(function(d, w, c) {
+         w.ChatraID = 'YwgMHTcCTsLojxazy';
+         var s = d.createElement('script');
+         w[c] = w[c] || function() {
+           (w[c].q = w[c].q || []).push(arguments);
+         };
+         s.async = true;
+         s.src = 'https://call.chatra.io/chatra.js';
+         if (d.head) d.head.appendChild(s);
+       })(document, window, 'Chatra');"])
+    ]))
 
 (def app
   (-> (c/routes
        (c/GET "/l/:k" [k]
-         (fn [{:keys [cookies]}]
-           (l/do-action-by-key k)
-           (app-html cookies)))
+              (fn [{:keys [cookies]}]
+                (l/do-action-by-key k)
+                (app-html cookies)))
        (c/POST "/integrations/plaid/" [] #'plaid/handle-request)
        (c/GET "/ws" [] #'ws-handler)
        (cr/resources "/assets" {:root "public/assets"})
