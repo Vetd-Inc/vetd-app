@@ -138,7 +138,9 @@
   {})
 
 (defmethod com/handle-ws-inbound :g/add-discount
-  [{:keys [group-id product-id descr redemption-descr]} ws-id sub-fn]
+  [{:keys [group-id product-id descr redemption-descr] :as req} ws-id sub-fn]
+  (journal/push-entry (assoc req
+                             :jtype :add-discount))
   (insert-group-discount group-id product-id descr redemption-descr)
   {})
 

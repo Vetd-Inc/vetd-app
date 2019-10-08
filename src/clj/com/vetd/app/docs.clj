@@ -1,5 +1,6 @@
 (ns com.vetd.app.docs
   (:require [com.vetd.app.common :as com]
+            [com.vetd.app.journal :as journal]
             [com.vetd.app.db :as db]
             [com.vetd.app.proc-tree :as ptree :refer [tree-assoc-fn]]
             [com.vetd.app.util :as ut]
@@ -31,6 +32,14 @@
          du# @du&#]
      (future
        (doseq [d# dc#]
+         (try
+           (journal/push-entry (assoc d#
+                                      :jtype (->> d#
+                                                 :dtype
+                                                 name
+                                                 (str "doc-created-")
+                                                 keyword)))
+           (catch Throwable e#))
          (handle-doc-creation d# ~handler-args))
        (doseq [d# du#]
          (handle-doc-update d# ~handler-args)))
