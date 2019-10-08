@@ -160,6 +160,8 @@
                                           "User Added to Org"
                                           (str uname " (user) was added to " oname " (org)")
                                           {:jtype :user-added-to-org
+                                           :user-id user-id
+                                           :org-id org-id
                                            :user-name uname
                                            :org-name oname}))
         [true inserted]))))

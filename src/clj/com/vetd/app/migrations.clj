@@ -1974,9 +1974,25 @@
                               :jtype [:text]
                               :entry [:jsonb]}
                     :owner :vetd
+                    :grants {:hasura [:SELECT]}}]]
+
+   [[2019 10 8 9 15]
+
+    [:create-table {:schema :vetd
+                    :name :feed_events
+                    :columns {:id [:bigint :NOT :NULL]
+                              :idstr [:text]
+                              :created [:timestamp :with :time :zone]
+                              :updated [:timestamp :with :time :zone]
+                              :deleted [:timestamp :with :time :zone]
+                              :journal_entry_id [:bigint]
+                              :journal_entry_created [:timestamp :with :time :zone]
+                              :org_id [:bigint]
+                              :ftype [:text]
+                              :data [:jsonb]}
+                    :owner :vetd
                     :grants {:hasura [:SELECT]}}]]])
 
 
 #_(mig/mk-migration-files migrations
                           "migrations")
-

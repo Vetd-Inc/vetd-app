@@ -61,6 +61,8 @@
                                               "Org Added to Community"
                                               (str oname " (org) was added to " gname " (community)")
                                               {:jtype :org-added-to-community
+                                               :org-id org-id
+                                               :group-id group-id
                                                :group-name gname
                                                :org-name oname})]
         [true inserted]))))

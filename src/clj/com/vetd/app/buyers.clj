@@ -282,7 +282,10 @@ Product: '%s'"
                                      (-> from-user-id auth/select-user-by-id :uname) ; buyer user name
                                      (product-id->name prod-id))
                                     {:jtype :preposal-request
-                                     :org-name buyer-org-name
+                                     :buyer-org-id from-org-id
+                                     :buyer-org-name buyer-org-name
+                                     :vendor-org-id to-org-id
+                                     :user-id from-user-id
                                      :user-name buyer-user-name
                                      :product-id product-id
                                      :product-name product-name})))
@@ -299,13 +302,14 @@ Product: '%s'"
   (do (when (= 1 result)
         (try (let [{:keys [idstr buyer products]} (-> [[:rounds {:id round-id}
                                                         [:idstr
-                                                         [:buyer [:oname]]
+                                                         [:buyer [:id :oname]]
                                                          [:products {:id product-id}
                                                           [:pname]]]]]
                                                       ha/sync-query
                                                       vals
                                                       ffirst)
                    buyer-org-name (:oname buyer)
+                   buyer-org-id (:id buyer)
                    product-name (-> products first :pname)]
                (journal/push-entry&sns-publish :ui-misc
                                                "Round Winner Declared"
@@ -319,6 +323,7 @@ Round URL: https://app.vetd.com/b/rounds/%s"
                                                 idstr)
                                                {:jtype :round-winner-declared
                                                 :buyer-org-name buyer-org-name
+                                                :buyer-org-id buyer-org-id
                                                 :product-id product-id
                                                 :product-name product-name}))
              (catch Exception e
@@ -623,7 +628,7 @@ Round URL: https://app.vetd.com/b/rounds/%s"
                                     {:jtype :share-round
                                      :round-id round-id
                                      :email-addresses email-addresses
-                                     :buyer-id buyer-id
+                                     :buyer-org-id buyer-id
                                      :buyer-org-name buyer-org-name}))
   {})
 
@@ -648,9 +653,10 @@ Round URL: https://app.vetd.com/b/rounds/%s"
     id))
 
 (defmethod com/handle-ws-inbound :create-stack-item
-  [req ws-id sub-fn]
+  [{:keys [buyer-id] :as req} ws-id sub-fn]
   (journal/push-entry (assoc req
-                             :jtype :create-stack-item))
+                             :jtype :create-stack-item
+                             :buyer-org-id buyer-id))
   (insert-stack-item req))
 
 (defmethod com/handle-ws-inbound :b/stack.add-items
@@ -695,7 +701,7 @@ Round URL: https://app.vetd.com/b/rounds/%s"
                            :stack-item-id stack-item-id
                            :product-id (:id product)
                            :product-name (:pname product)
-                           :buyer-id (:id buyer)
+                           :buyer-org-id (:id buyer)
                            :buyer-name (:oname buyer)}))))
 
 (defmethod com/handle-ws-inbound :b/stack.update-item

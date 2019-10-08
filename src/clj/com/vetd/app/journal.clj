@@ -2,7 +2,9 @@
   (:require [com.vetd.app.util :as ut]
             [com.vetd.app.common :as com]
             [com.vetd.app.env :as env]
-            [com.vetd.app.db :as db]))
+            [com.vetd.app.db :as db]
+            [com.vetd.app.feeds :as feeds]
+            [clojure.core.async :as a]))
 
 (defn insert-entry [session-id {:keys [jtype] :as entry}]
   (let [[id idstr] (ut/mk-id&str)]
@@ -21,6 +23,7 @@
   (try
     (insert-entry com/*session-id*
                   entry)
+    (a/>!! feeds/trigger-pull-feed-events true)
     (catch Throwable e
       (com/log-error e))))
 
