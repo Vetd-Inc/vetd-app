@@ -103,44 +103,5 @@
               (log/info "Stopped feed-event-puller")))))
 
 
-
+#_
 (start-feed-event-puller-thread) ;; TODO calling this here is gross -- Bill
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
