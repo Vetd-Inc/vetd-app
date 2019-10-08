@@ -63,6 +63,18 @@
         {
           "name": "HASURA_HTTP_URL",
           "value": "http://hasura.internal:8080/v1alpha1/graphql"
+        },
+        {
+          "name": "PLAID_CLIENT_ID",
+          "value": "5d9b7e001489d00013f6321d"
+        },
+        {
+          "name": "PLAID_PUBLIC_KEY",
+          "value": "9c83e7b98a9c97e81d417e4ee7f6ce"
+        },
+        {
+          "name": "PLAID_SECRET",
+          "value": "0e1a33c5191d1b8a0426f563885db4"
         }
       ],
       "ulimits": null,
@@ -182,6 +194,6 @@
   ],
   "networkMode": "awsvpc",
   "cpu": "1024",
-  "revision": 223,
+  "revision": 340,
   "volumes": []
 }

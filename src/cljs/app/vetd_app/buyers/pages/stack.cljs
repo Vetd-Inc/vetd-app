@@ -41,15 +41,15 @@
      (merge {:db (assoc db :page :b/stack)}
             (case param 
               "qb-return" {:toast {:type "success"
-                                   :title "Connected to Quickbooks"
+                                   :title "Connected to QuickBooks"
                                    :message "We will notify you after your data has been processed and added to your stack."}
-                           :analytics/track {:event "Quickbooks Connected"
+                           :analytics/track {:event "QuickBooks Connected"
                                              :props {:category "Stack"
                                                      :label buyer-id}}}
               "qb-return-access-denied" {:toast {:type "error"
-                                                 :title "Quickbooks Not Connected"
-                                                 :message "We were not able to connect to your Quickbooks account."}
-                                         :analytics/track {:event "Quickbooks Failed to Connect"
+                                                 :title "QuickBooks Not Connected"
+                                                 :message "We were not able to connect to your QuickBooks account."}
+                                         :analytics/track {:event "QuickBooks Failed to Connect"
                                                            :props {:category "Stack"
                                                                    :label buyer-id}}}
               nil)))))
@@ -148,6 +148,25 @@
    {:ws-send {:payload {:cmd :b/stack.update-item
                         :stack-item-id id
                         :renewal-reminder renewal-reminder}}}))
+
+(rf/reg-event-fx
+ :b/stack.store-plaid-token
+ (fn [{:keys [db]} [_ public-token]]
+   (let [buyer-id (util/db->current-org-id db)]
+     {:ws-send {:payload {:cmd :b/stack.store-plaid-token
+                          :return {:handler :b/stack.store-plaid-token.return}
+                          :buyer-id buyer-id
+                          :public-token public-token}}
+      :analytics/track {:event "Bank Account Connected"
+                        :props {:category "Stack"
+                                :label buyer-id}}})))
+
+(rf/reg-event-fx
+ :b/stack.store-plaid-token.return
+ (fn []
+   {:toast {:type "success"
+            :title "Bank Account Connected"
+            :message "We will notify you after your transaction data has been processed, and products have been added to your stack."}}))
 
 (rf/reg-event-fx
  :b/stack.upload-csv
@@ -257,15 +276,42 @@
                :style {:margin-top 14}}
    [:> ui/Popup
     {:position "right center"
-     :header "Import Quickbooks"
-     :content "Connect to your Quickbooks account and Vetd will add your vendor stack for you."
+     :header "Import From QuickBooks"
+     :content "Connect to your QuickBooks account and Vetd will add your vendor stack for you."
      :trigger (r/as-element
                [:> ui/Button {:color "lightteal"
                               :icon true
                               :labelPosition "left"
                               :fluid true}
-                "Import Quickbooks"
+                "QuickBooks"
                 [:> ui/Icon {:name "quickbooks"}]])}]])
+
+(defonce plaid-link
+  (.create js/Plaid
+           (clj->js {"clientName" "Vetd"
+                     "countryCodes" ["US"]
+                     ;; TODO use production envirionment when available
+                     "env" "development"
+                     "key" "9c83e7b98a9c97e81d417e4ee7f6ce"
+                     "product" ["transactions"]
+                     "language" "en"
+                     "onSuccess" (fn [public-token metadata]
+                                   (rf/dispatch [:b/stack.store-plaid-token public-token]))})))
+
+(defn c-bank-import-button
+  []
+  [:> ui/Popup
+   {:position "right center"
+    :header "Import From Bank Account"
+    :content "Connect to your bank account and Vetd will add your vendor stack for you, using historical transactions data."
+    :trigger (r/as-element
+              [:> ui/Button {:color "lightteal"
+                             :icon true
+                             :labelPosition "left"
+                             :fluid true
+                             :on-click #(.open plaid-link)}
+               "Bank Account"
+               [:> ui/Icon {:name "dollar"}]])}])
 
 (defn c-csv-upload-button
   []
@@ -275,7 +321,7 @@
       [:<>
        [:> ui/Popup
         {:position "right center"
-         :header "Upload Transactions CSV"
+         :header "Upload A CSV File of Transaction Data"
          :content "Upload a .csv file, and Vetd will add your vendor stack for you."
          :trigger (r/as-element
                    [:> ui/Button {:on-click #(reset! modal-showing?& true)
@@ -283,8 +329,8 @@
                                   :icon true
                                   :labelPosition "left"
                                   :fluid true}
-                    "Upload CSV"
-                    [:> ui/Icon {:name "upload"}]])}]
+                    "CSV File"
+                    [:> ui/Icon {:name "file alternate"}]])}]
        [:> ui/Modal {:open @modal-showing?&
                      :on-close #(reset! modal-showing?& false)
                      :size "tiny"
@@ -594,7 +640,9 @@
                [:div.sidebar
                 [:> ui/Segment
                  [c-add-product-button unfiltered-stack]
+                 [:h4 "Import Transactions"]
                  [c-qb-import-button]
+                 [c-bank-import-button]
                  [c-csv-upload-button]]
                 [:> ui/Segment {:class "top-categories"}
                  [:h4 "Jump To"]

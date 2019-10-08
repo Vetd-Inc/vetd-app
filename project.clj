@@ -6,6 +6,7 @@
   :dependencies [[org.clojure/clojure "1.10.1-beta2"]
                  [org.clojure/clojurescript "1.10.516" :scope "provided"]
                  [org.clojure/core.async "0.4.474"]
+                 [org.clojure/data.csv "0.1.4"]
 
                  [org.clojure/java.jdbc "0.7.5"]
                  [org.postgresql/postgresql "42.2.2"]
@@ -143,6 +144,9 @@
                         :db-password "vetd"
                         :hasura-ws-url "ws://localhost:8080/v1alpha1/graphql"
                         :hasura-http-url "http://localhost:8080/v1alpha1/graphql"
+                        :plaid-client-id "5d9b7e001489d00013f6321d"
+                        :plaid-public-key "9c83e7b98a9c97e81d417e4ee7f6ce"
+                        :plaid-secret "0e1a33c5191d1b8a0426f563885db4"
                         :segment-frontend-write-key "Ieh9p65FemSOa2s1OngMCWTuVkjjt0Kz"}
                   :jvm-opts ["-Dconf=dev-config.edn"]
                   :dependencies [[binaryage/devtools "0.9.10"]
