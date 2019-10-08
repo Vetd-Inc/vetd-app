@@ -56,14 +56,14 @@
 	    body
       getAccessToken))
 
-(defn access-token->transactions* [access-token]
+(defn access-token->transactions*
+  [access-token start-datetime end-datetime results-count results-offset]
   (.. (build-client)
       service
       (transactionsGet
-       (TransactionsGetRequest. access-token
-                                (Date. (- (System/currentTimeMillis)
-                                          (* 1000 60 60 24 100)))
-                                (Date.)))
+       (doto (TransactionsGetRequest. access-token start-datetime end-datetime)
+         (.withCount results-count)
+         (.withOffset results-offset)))
       execute
       body
       getTransactions))
@@ -74,11 +74,20 @@
    :amount (.getAmount tran-obj)})
 
 (defn access-token->transactions [access-token]
-  (try
-    (for [t (access-token->transactions* access-token)]
-      (mk-transactions t))
-    (catch Throwable e
-      (com/log-error e))))
+  (let [total-limit 10000
+        start-datetime (Date. (- (System/currentTimeMillis)
+                                 (* 1000 60 60 24 365 2)))
+        end-datetime (Date.)]
+    (try
+      (for [offset (range 0 total-limit 500)
+            t (access-token->transactions* access-token
+                                           start-datetime
+                                           end-datetime
+                                           500
+                                           offset)]
+        (mk-transactions t))
+      (catch Throwable e
+        (com/log-error e)))))
 
 (defn mk-filename-base
   [oname suffix]
@@ -114,9 +123,10 @@
 
 (defmethod com/handle-ws-inbound :b/stack.store-plaid-token
   [{:keys [buyer-id public-token]} ws-id sub-fn]
-  (try (let [access-token (exchange-token public-token)
-             oname (-> buyer-id auth/select-org-by-id :oname)]
-         (do (put-creds->s3 oname access-token)
-             (put-transactions->s3 oname (access-token->transactions access-token))))
-       (catch Throwable e
-         (com/log-error e))))
+  (do (try (let [access-token (exchange-token public-token)
+                 oname (-> buyer-id auth/select-org-by-id :oname)]
+             (do (put-creds->s3 oname access-token)
+                 (future (put-transactions->s3 oname (access-token->transactions access-token)))))
+           (catch Throwable e
+             (com/log-error e)))
+      {}))
