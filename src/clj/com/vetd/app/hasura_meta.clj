@@ -346,6 +346,12 @@
            :cols [:buyer_id :id]
            :rel :many-one}
 
+          {:tables [:vetd :feed_events
+                    :vetd :orgs]
+           :fields [:org :feed-events]
+           :cols [:org_id :id]
+           :rel :many-one}
+
           {:tables [:vetd :products
                     :vetd :agg_group_prod_rating]
            :fields [:agg_group_prod_rating]
