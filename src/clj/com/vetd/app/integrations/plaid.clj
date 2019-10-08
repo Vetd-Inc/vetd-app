@@ -4,6 +4,7 @@
             [com.vetd.app.auth :as auth]
             [com.vetd.app.env :as env]
             [com.vetd.app.db :as db]
+            [clojure.data.csv :as csv]
             [clojure.string :as s])
   (:import com.plaid.client.PlaidClient
 	         com.plaid.client.PlaidClient$Builder
@@ -38,7 +39,7 @@
       build))
 
 (defn build-client
-  [id secret key]
+  []
   (try
     (if-let [client @client&]
       client
@@ -83,9 +84,9 @@
       (com/log-error e))))
 
 (defn mk-filename-base
-  [email suffix]
-  (-> email
-      (s/trim)
+  [oname suffix]
+  (-> oname
+      s/trim
       (s/replace #"[^a-zA-Z0-9]" "_")
       (str "__" suffix)))
 
@@ -94,33 +95,31 @@
       (quot 1000)
       (mod (* 60 60 24 365 10))))
 
-(defn get-s3-plaid-filename [email suffix]
-  (str (mk-filename-base email suffix)
-       (str "__" (file-timestamp) ".csv")))
+(defn get-s3-plaid-filename [oname suffix extension]
+  (str (mk-filename-base oname suffix) "__" (file-timestamp) "." extension))
 
-(defn put-transactions->s3 [email transactions]
-  (try
-    (com/s3-put "vetd-plaid-data"
-                (get-s3-plaid-filename email
-                                       "data"))
-    (catch Throwable e
-      (com/log-error e))))
+(defn put-creds->s3 [oname creds]
+  (try (com/s3-put "vetd-bank-creds"
+                   (get-s3-plaid-filename oname "creds" "txt")
+                   creds)
+       (catch Throwable e
+         (com/log-error e))))
 
-(defn put-creds->s3 [email transactions]
-  (try
-    (com/s3-put "vetd-plaid-creds"
-                (get-s3-plaid-filename email
-                                       "creds"))
-    (catch Throwable e
-      (com/log-error e))))
+(defn put-transactions->s3 [oname transactions]
+  (try (com/s3-put "vetd-plaid-transaction-data"
+                   (get-s3-plaid-filename oname "data" "csv")
+                   (with-out-str
+                     (csv/write-csv *out*
+                                    (map (juxt :name :date :amount)
+                                         transactions))))
+       (catch Throwable e
+         (com/log-error e))))
 
-(defn handle-request [{:keys [params] :as req}]
-  (try
-    (let [{:keys [session-token]
-           public-key :public_token} params
-          access-token (exchange-token public-key)]
-      (when-let [{:keys [email]} (auth/select-user-by-active-session-token session-token)]
-        (do (put-creds->s3 email access-token)
-            (put-transactions->s3 email (access-token->transactions access-token)))))
-    (catch Throwable e
-      (com/log-error e))))
+(defmethod com/handle-ws-inbound :b/stack.store-plaid-token
+  [{:keys [buyer-id public-token]} ws-id sub-fn]
+  (try (let [access-token (exchange-token public-token)
+             oname (-> buyer-id auth/select-org-by-id :oname)]
+         (do (put-creds->s3 oname access-token)
+             (put-transactions->s3 oname (access-token->transactions access-token))))
+       (catch Throwable e
+         (com/log-error e))))

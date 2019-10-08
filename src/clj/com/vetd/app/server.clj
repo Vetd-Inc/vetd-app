@@ -18,11 +18,11 @@
             [cognitect.transit :as t]
             [clojure.java.io :as io]
             [com.vetd.app.auth :as auth]
-            [com.vetd.app.integrations.plaid :as plaid]
             com.vetd.app.buyers
             com.vetd.app.vendors
             com.vetd.app.admin
-            com.vetd.app.groups)
+            com.vetd.app.groups
+            com.vetd.app.integrations.plaid)
   (:import [java.io ByteArrayInputStream ByteArrayOutputStream])
   (:gen-class))
 
@@ -299,7 +299,6 @@
               (fn [{:keys [cookies]}]
                 (l/do-action-by-key k)
                 (app-html cookies)))
-       (c/POST "/integrations/plaid/" [] #'plaid/handle-request)
        (c/GET "/ws" [] #'ws-handler)
        (cr/resources "/assets" {:root "public/assets"})
        (c/GET "/assets*" [] cr/not-found)

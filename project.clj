@@ -6,6 +6,7 @@
   :dependencies [[org.clojure/clojure "1.10.1-beta2"]
                  [org.clojure/clojurescript "1.10.516" :scope "provided"]
                  [org.clojure/core.async "0.4.474"]
+                 [org.clojure/data.csv "0.1.4"]
 
                  [org.clojure/java.jdbc "0.7.5"]
                  [org.postgresql/postgresql "42.2.2"]

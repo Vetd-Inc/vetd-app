@@ -150,6 +150,25 @@
                         :renewal-reminder renewal-reminder}}}))
 
 (rf/reg-event-fx
+ :b/stack.store-plaid-token
+ (fn [{:keys [db]} [_ public-token]]
+   (let [buyer-id (util/db->current-org-id db)]
+     {:ws-send {:payload {:cmd :b/stack.store-plaid-token
+                          :return {:handler :b/stack.store-plaid-token.return}
+                          :buyer-id buyer-id
+                          :public-token public-token}}
+      :analytics/track {:event "Bank Account Connected"
+                        :props {:category "Stack"
+                                :label buyer-id}}})))
+
+(rf/reg-event-fx
+ :b/stack.store-plaid-token.return
+ (fn []
+   {:toast {:type "success"
+            :title "Bank Account Connected"
+            :message "We will notify you after your transaction data has been processed, and products have been added to your stack."}}))
+
+(rf/reg-event-fx
  :b/stack.upload-csv
  (fn [{:keys [db]} [_ file-contents]]
    (let [buyer-id (util/db->current-org-id db)]
@@ -267,24 +286,17 @@
                 "QuickBooks"
                 [:> ui/Icon {:name "quickbooks"}]])}]])
 
-
-;; TODO this errors before plaid js lib is loaded
 (def plaid-link
   (.create js/Plaid
            (clj->js {"clientName" "Vetd"
                      "countryCodes" ["US"]
-                     ;; SANDBOX
+                     ;; TODO SANDBOX
                      "env" "sandbox"
                      "key" "90987208d894ddc82268098f566e9b"
                      "product" ["transactions"]
                      "language" "en"
-                     ;; needed??
-                     ;; userLegalName: 'Maud Gibbons',
-                     ;; userEmailAddress: 'maud.dgibbons@gmail.com',
-
                      "onSuccess" (fn [public-token metadata]
-                                   (println public-token metadata))
-                     })))
+                                   (rf/dispatch [:b/stack.store-plaid-token public-token]))})))
 
 (defn c-bank-import-button
   []
