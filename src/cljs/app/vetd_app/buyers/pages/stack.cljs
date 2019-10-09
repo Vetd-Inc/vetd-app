@@ -313,6 +313,21 @@
                "Bank Account"
                [:> ui/Icon {:name "dollar"}]])}])
 
+(defn c-credit-card-import-button
+  []
+  [:> ui/Popup
+   {:position "right center"
+    :header "Import From Credit Card"
+    :content "Connect to your credit card and Vetd will add your vendor stack for you, using historical transactions data."
+    :trigger (r/as-element
+              [:> ui/Button {:color "lightteal"
+                             :icon true
+                             :labelPosition "left"
+                             :fluid true
+                             :on-click #(.open plaid-link)}
+               "Credit Card"
+               [:> ui/Icon {:name "credit card outline"}]])}])
+
 (defn c-csv-upload-button
   []
   (let [modal-showing?& (r/atom false)
@@ -643,6 +658,7 @@
                  [:h4 "Import Transactions"]
                  [c-qb-import-button]
                  [c-bank-import-button]
+                 [c-credit-card-import-button]
                  [c-csv-upload-button]]
                 [:> ui/Segment {:class "top-categories"}
                  [:h4 "Jump To"]
@@ -658,13 +674,18 @@
                    "Previous Stack"]]]]
                [:div.inner-container
                 [:> ui/Segment {:class "detail-container"}
-                 [:h1 {:style {:padding-bottom 7}}
+                 [:h1 {:style {:padding-bottom 0}}
                   @org-name& "'" (when (not= (last @org-name&) "s") "s") " Stack"]
-                 "Add products to your stack to keep track of renewals, get recommendations, and share with "
-                 (if (not-empty @group-ids&)
-                   "your community"
-                   "others")
-                 "."]
+                 [:p
+                  "Add products to your stack to keep track of renewals, get recommendations, and share with "
+                  (if (not-empty @group-ids&)
+                    "your community"
+                    "others")
+                  "."]
+                 [:p
+                  "You can add products by name, or use one of the "
+                  [:strong "Import Transactions"]
+                  " options, and Vetd will build out your stack for you."]]
                 [:div.stack
                  [:h2 "Current"]
                  [:span.scroll-anchor {:ref (fn [this] (rf/dispatch [:reg-scroll-to-ref :current-stack this]))}]
