@@ -164,15 +164,17 @@
                   :cmd cmd
                   :return return
                   :request data})
-    (let [{session-id :id} (when session-token
-                             (auth/select-session-by-token session-token))
+    (let [{session-id :id user-id :user-id}
+          (when session-token
+            (auth/select-session-by-token session-token))
           resp-fn (partial #'ws-outbound-handler
                            ws
                            ws-id
                            data
                            (atom 0)
                            (ut/now))
-          resp (binding [com/*session-id* session-id]
+          resp (binding [com/*session-id* session-id
+                         com/*user-id* user-id]
                  (com/handle-ws-inbound data ws-id resp-fn))]
       (when (and return resp)
         (resp-fn resp)))

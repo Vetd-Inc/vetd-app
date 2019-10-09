@@ -4,7 +4,18 @@
             [com.vetd.app.env :as env]
             [com.vetd.app.db :as db]
             [com.vetd.app.feeds :as feeds]
-            [clojure.core.async :as a]))
+            [clojure.core.async :as a]
+            [circleci.analytics-clj.core :as anlytx]))
+
+(def analytics (anlytx/initialize (env/segment-frontend-write-key)))
+
+(defn segment-track [event]
+  (try
+    (anlytx/track analytics
+                  com/*user-id*
+                  event)
+    (catch Throwable e
+      (com/log-error e))))
 
 (defn insert-entry [session-id {:keys [jtype] :as entry}]
   (let [[id idstr] (ut/mk-id&str)]
@@ -20,6 +31,7 @@
 
 (defn push-entry
   [entry]
+  (segment-track entry)
   (try
     (insert-entry com/*session-id*
                   entry)

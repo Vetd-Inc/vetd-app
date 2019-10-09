@@ -60,7 +60,9 @@
                  [image-resizer "0.1.10"]
                  [net.mikera/imagez "0.12.0"]
 
-                 [com.plaid/plaid-java "5.1.2"]]
+                 [com.plaid/plaid-java "5.1.2"]
+
+                 [circleci/analytics-clj "0.8.0"]]
 
   :repl-options {:timeout 120000}
   

@@ -14,6 +14,7 @@
             clojure.pprint))
 
 (def ^:dynamic *session-id* nil)
+(def ^:dynamic *user-id* nil)
 
 ;; TODO this should be a channel (so timeout is available), but I don't feel like it right now -- Bill
 (defonce shutdown-signal (atom false))
