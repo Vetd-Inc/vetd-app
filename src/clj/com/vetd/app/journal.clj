@@ -7,7 +7,8 @@
             [clojure.core.async :as a]
             [circleci.analytics-clj.core :as anlytx]))
 
-(def analytics (anlytx/initialize (env/segment-frontend-write-key)))
+(def analytics (env/build-ignore
+                (anlytx/initialize (env/segment-frontend-write-key))))
 
 (defn segment-track [event]
   (try
