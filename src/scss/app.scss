@@ -1414,6 +1414,7 @@ div.spinner i:nth-child(2) {
   }
   .logo {
     filter: invert(100%) hue-rotate(180deg);
+    animation: none !important;
   }
   .segment, input, .results > .item {
     background: #444 !important;
@@ -1424,6 +1425,9 @@ div.spinner i:nth-child(2) {
   }
   a {
     // color: $blue !important;
+  }
+  .ui.button, .ui.label {
+    background: #777;
   }
   .label, .rating {
     filter: grayscale(30%);
@@ -1450,8 +1454,12 @@ div.spinner i:nth-child(2) {
       display: none !important;
     }
   }
-  .popular-products, .ui.steps .disabled.step {
+  .popular-products, .ui.steps .disabled.step, .stack {
     background: #777 !important;
+
+    h1, h2 {
+      background: #777 !important;
+    }
   }
   .round-grid {
     filter: brightness(80%);
@@ -1459,14 +1467,39 @@ div.spinner i:nth-child(2) {
   .round-grid * {
     color: #444 !important;
   }
-  .modal .header {
+  .ui.inverted.dimmer {
+    background-color: rgba(0, 0, 0, 0.85);
+  }
+  .modal .header, .modal .actions {
     background-color: #333 !important;
+
+    textarea {
+      background-color: #444 !important;
+    }
   }
   .modal .content {
     background-color: #444 !important;
 
-    .message {
+    textarea {
+      background-color: #444 !important;
+    }
+    
+    .message, .dropdown {
+      background-color: #333 !important;
+
+      .label {
+        background-color: #444 !important;
+      }
+    }
+  }
+  .ui.table  {
+    background-color: #3a3a3a !important;
+    
+    thead th {
       background-color: #333 !important;
     }
+  }
+  .active.item.page-link {
+    background-color: #444 !important;
   }
 }
