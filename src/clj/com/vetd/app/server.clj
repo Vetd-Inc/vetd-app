@@ -156,6 +156,10 @@
                     :response data}
                    ws))
 
+(defmethod com/handle-ws-inbound :get-cache-key
+  [data ws-id resp-fn]
+  {:cache-key cache-key})
+
 (defn ws-inbound-handler*
   [ws ws-id {:keys [cmd return session-token] :as data}]
   (try
@@ -343,6 +347,7 @@
   (log/info "stopping http server...")
   (try
     (stop-keep-alive-thread)
+    (com/force-all-ws-on-close-fns)    
     (if-let [svr @server]
       (do
         (.close svr)
@@ -356,3 +361,4 @@
 #_ (stop-server)
 
 #_(start-server)
+

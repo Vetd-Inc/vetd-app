@@ -31,9 +31,11 @@
                      :entry entry})
         first)))
 
+
 (defn push-entry
   [entry]
-  (segment-track entry)
+  ;; TODO make this work -- Bill
+  #_(segment-track entry)
   (try
     (insert-entry com/*session-id*
                   entry)

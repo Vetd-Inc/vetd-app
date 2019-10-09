@@ -10,6 +10,7 @@
             vetd-app.orgs.fx
             vetd-app.groups.fx
             [vetd-app.util :as util]
+            [vetd-app.websockets :as ws]
             [vetd-app.analytics :as analytics]
             [vetd-app.hooks :as hooks]
             [vetd-app.buyers.fixtures :as b-fix]
@@ -199,6 +200,10 @@
   (let [page& (rf/subscribe [:page])
         modal& (rf/subscribe [:modal])]
     (fn []
+      (when @util/force-refresh?&
+        (reset! util/force-refresh?& false)
+        (reset! ws/current-cache-key& nil)
+        (.reload js/location))
       [:div#page
        [(hooks/c-container :admin-overlay)
         [(hooks/c-admin @page&)]]
