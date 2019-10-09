@@ -10,11 +10,12 @@
 (def analytics (env/build-ignore
                 (anlytx/initialize (env/segment-frontend-write-key))))
 
-(defn segment-track [event]
+(defn segment-track [{:keys [jtype] :as event-props}]
   (try
     (anlytx/track analytics
                   com/*user-id*
-                  event)
+                  jtype
+                  event-props)
     (catch Throwable e
       (com/log-error e))))
 
