@@ -631,7 +631,6 @@
 
 (defn c-page []
   (let [org-id& (rf/subscribe [:org-id])
-        org-name& (rf/subscribe [:org-name])
         group-ids& (rf/subscribe [:group-ids])]
     (when @org-id&
       (let [stack& (rf/subscribe [:gql/sub
@@ -674,8 +673,8 @@
                    "Previous Stack"]]]]
                [:div.inner-container
                 [:> ui/Segment {:class "detail-container"}
-                 [:h1 {:style {:padding-bottom 0}}
-                  @org-name& "'" (when (not= (last @org-name&) "s") "s") " Stack"]
+                 [:h2 {:style {:padding-bottom 0}}
+                  "Your Organization's Stack"]
                  [:p
                   "Add products to your stack to keep track of renewals, get recommendations, and share with "
                   (if (not-empty @group-ids&)
@@ -685,7 +684,7 @@
                  [:p
                   "You can add products by name, or use one of the "
                   [:strong "Import Transactions"]
-                  " options, and Vetd will build out your stack for you."]]
+                  " options, and Vetd will fill out your stack for you."]]
                 [:div.stack
                  [:h2 "Current"]
                  [:span.scroll-anchor {:ref (fn [this] (rf/dispatch [:reg-scroll-to-ref :current-stack this]))}]
