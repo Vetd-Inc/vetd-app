@@ -4,6 +4,7 @@ $bg-color: #fafafa;
 // usage - @media #{$mobile} {  }
 $mobile: "only screen and (max-width: 767px)";
 $not-mobile: "only screen and (min-width: 768px)";
+// even though the OS might be in Dark Mode, we also have our own class .dark-mode that is added to body
 $dark-mode: "(prefers-color-scheme: dark)";
 
 body {
@@ -1408,98 +1409,137 @@ div.spinner i:nth-child(2) {
   }
 }
 
+.dark-mode-toggle {
+  display: none !important;
+}
+
 @media #{$dark-mode} {
+  .dark-mode-toggle {
+    display: block !important;
+  }
+  
+  // If the user has toggled Dark Mode on,
+  // this class gets added to body.
   body {
-    background: #000;
-  }
-  .logo {
-    filter: invert(100%) hue-rotate(180deg);
-    animation: none !important;
-  }
-  .segment, input, .results > .item {
-    background: #444 !important;
-    color: #e4e4e4 !important;
-  }
-  * {
-    color: #e4e4e4 !important;
-  }
-  a {
-    // color: $blue !important;
-  }
-  .ui.button, .ui.label {
-    background: #777;
-  }
-  .label, .rating {
-    filter: grayscale(30%);
-  }
-  .results > .item > .product-logo {
-    filter: grayscale(30%);
-    // mix-blend-mode: multiply;
-  }
-  .category-tag {
-    background: #777 !important;
-    color: #e4e4e4 !important;
-  }
-  .popup, .popup * {
-    color: #444 !important;
-  }
-  .ui.button.basic.back-button {
-    background: #444 !important;
-    color: #e4e4e4 !important;
-  }
-  .ui.steps .step {
-    background: #aaa !important;
-    
-    &:after {
-      display: none !important;
-    }
-  }
-  .popular-products, .ui.steps .disabled.step, .stack {
-    background: #777 !important;
+    &.dark-mode {
+      background: #000;
+      
+      .logo {
+        filter: invert(100%) hue-rotate(180deg);
+        animation: none !important;
+      }
+      .segment, input, .results > .item {
+        background: #444 !important;
+        color: #e4e4e4 !important;
+      }
+      * {
+        color: #e4e4e4 !important;
+      }
+      a {
+        // color: $blue !important;
+      }
+      .label, .rating {
+        filter: grayscale(30%);
+      }
+      .results > .item > .product-logo {
+        filter: grayscale(40%);
+        background-color: white; 
+        filter: brightness(0.9);
+        // mix-blend-mode: multiply;
+      }
+      .category-tag {
+        background: #777 !important;
+        color: #e4e4e4 !important;
+      }
+      .popup {
+        // background-color: #555 !important;
+        filter: brightness(0.85);
+        * {
+          color: #444 !important;
+        }
+      }
+      .ui.button.basic.back-button {
+        background: #444 !important;
+        color: #e4e4e4 !important;
+      }
+      .ui.steps .step {
+        background: #aaa !important;
+        
+        &:after {
+          display: none !important;
+        }
+      }
+      .popular-products, .ui.steps .disabled.step, .stack {
+        background: #666 !important;
 
-    h1, h2 {
-      background: #777 !important;
-    }
-  }
-  .round-grid {
-    filter: brightness(80%);
-  }
-  .round-grid * {
-    color: #444 !important;
-  }
-  .ui.inverted.dimmer {
-    background-color: rgba(0, 0, 0, 0.85);
-  }
-  .modal .header, .modal .actions {
-    background-color: #333 !important;
+        h1, h2 {
+          background: #666 !important;
+        }
+      }
+      .stack, .profile {
+        .ui.label {
+          background: #777;
+        }
+      }
+      .round-grid {
+        filter: brightness(80%);
+      }
+      .round-grid * {
+        color: #444 !important;
+      }
+      .ui.inverted.dimmer {
+        background-color: rgba(0, 0, 0, 0.85);
+      }
+      .modal .header, .modal .actions {
+        background-color: #333 !important;
 
-    textarea {
-      background-color: #444 !important;
-    }
-  }
-  .modal .content {
-    background-color: #444 !important;
+        textarea {
+          background-color: #444 !important;
+        }
 
-    textarea {
-      background-color: #444 !important;
-    }
-    
-    .message, .dropdown {
-      background-color: #333 !important;
-
-      .label {
+        .ui.button:not(.blue):not(.teal) {
+          background-color: #777;
+        }
+      }
+      textarea, .message, .dropdown, .input, input {
+        background-color: #333 !important;
+        
+        .label {
+          background-color: #333 !important;
+        }
+      }
+      .dropdown {
+        .label {
+          background-color: #444 !important;
+        }
+      }
+      .popup {
+        textarea, .message, .dropdown, .input, input {
+          background-color: #777 !important;
+          
+          .label {
+            background-color: #888 !important;
+          }
+        }
+        .dropdown {
+          .label {
+            background-color: #888 !important;
+          }
+        }
+      }
+      .modal .content {
+        background-color: #444 !important; 
+      }
+      .ui.table  {
+        background-color: #3a3a3a !important;
+        
+        thead th {
+          background-color: #333 !important;
+        }
+      }
+      .active.item.page-link {
         background-color: #444 !important;
       }
     }
-  }
-  .ui.table  {
-    background-color: #3a3a3a !important;
-    
-    thead th {
-      background-color: #333 !important;
-    }
-  }
-  .active.item.page-link {
-    background-color: #444 !important;
   }
 }

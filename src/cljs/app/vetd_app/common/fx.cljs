@@ -1,5 +1,6 @@
 (ns vetd-app.common.fx
   (:require [accountant.core :as acct]
+            [vetd-app.util :as util]
             [re-frame.core :as rf]))
 
 (defn validated-dispatch-fx
@@ -159,3 +160,41 @@
    (when-let [stash (-> db :dispatch-stash k)]
      {:dispatch-n stash
       :db (update db :dispatch-stash dissoc k)})))
+
+;; Dark Mode
+(rf/reg-sub
+ :dark-mode?
+ (fn [{:keys [dark-mode?]}] dark-mode?))
+
+(rf/reg-event-fx
+ :dark-mode.on
+ (fn [{:keys [db]}]
+   {:db (assoc db :dark-mode? true)
+    :local-store {:dark-mode? "true"}
+    :add-class {:node (util/first-node-by-tag "body")
+                :class "dark-mode"}}))
+
+(rf/reg-event-fx
+ :dark-mode.off
+ (fn [{:keys [db]}]
+   {:db (assoc db :dark-mode? false)
+    :local-store {:dark-mode? "false"}
+    :remove-class {:node (util/first-node-by-tag "body")
+                   :class "dark-mode"}}))
+
+(rf/reg-event-fx
+ :reify-modes
+ (fn [{:keys [db]}]
+   {:dispatch-n (cond-> []
+                  (:dark-mode? db) (conj [:dark-mode.on]))}))
+
+;; use sparingly (prefer reactive components)
+(rf/reg-fx
+ :add-class
+ (fn [{:keys [node class]}]
+   (util/add-class node class)))
+
+(rf/reg-fx
+ :remove-class
+ (fn [{:keys [node class]}]
+   (util/remove-class node class)))
