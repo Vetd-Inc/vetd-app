@@ -5,6 +5,7 @@
             [com.vetd.app.env :as env]
             [com.vetd.app.db :as db]
             [com.vetd.app.links :as l]
+            [com.vetd.app.hasura :as ha]            
             [clojure.core.async :as a]
             [compojure.core :as c]
             [compojure.handler :as ch]
@@ -31,7 +32,7 @@
 (defonce kill-keep-alive-thread (atom false))
 (defonce keep-alive-thread (atom nil))
 ;; cache key set on startup, unique every 5 minutes, appended to some resources
-(defonce cache-key
+(def cache-key
   (let [now (ut/now)]
     (- now (mod now (* 1000 60 5)))))
 
@@ -347,7 +348,9 @@
   (log/info "stopping http server...")
   (try
     (stop-keep-alive-thread)
-    (com/force-all-ws-on-close-fns)    
+    (com/force-all-ws-on-close-fns)
+    (reset! msg-ids-by-ws-id& {})
+    (ha/send-terminate) ;; Not sure why this is necessary. Hasura connection dies and don't recover without this. -- Bill
     (if-let [svr @server]
       (do
         (.close svr)

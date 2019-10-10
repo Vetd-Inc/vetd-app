@@ -153,10 +153,11 @@
     (let [ws-on-close-fns @ws-on-close-fns&]
       (log/info (format "Forcing close on %d ws-on-close-fns"
                         (count @ws-on-close-fns&)))
-      (->> ws-on-close-fns
-           vals
-           (pmap #(%))
-           doall)
+      (some->> ws-on-close-fns
+               vals
+               (mapcat vals)
+               (pmap #(%))
+               doall)
       (log/info "DONE Forcing close on ws-on-close-fns"))
     (catch Throwable e
       (log-error e))))

@@ -14,7 +14,7 @@
   (try
     (anlytx/track analytics
                   com/*user-id*
-                  jtype
+                  (name jtype)
                   event-props)
     (catch Throwable e
       (com/log-error e))))
@@ -34,8 +34,7 @@
 
 (defn push-entry
   [entry]
-  ;; TODO make this work -- Bill
-  #_(segment-track entry)
+  (segment-track entry)
   (try
     (insert-entry com/*session-id*
                   entry)

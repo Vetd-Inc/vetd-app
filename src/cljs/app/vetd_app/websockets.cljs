@@ -72,9 +72,9 @@
      (when-not (empty? buffer)
        (ws-send-buffer buffer)))
    {:db db
-    #_:dispatch-later
-#_              [{:ms 200
-                :dispatch [:ws/send-check-cache-key]}]}))
+    :dispatch-later
+    [{:ms 200
+      :dispatch [:ws/send-check-cache-key]}]}))
 
 (rf/reg-event-fx
  :ws/check-cache-key
