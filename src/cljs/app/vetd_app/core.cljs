@@ -1,7 +1,7 @@
 (ns vetd-app.core
   (:require vetd-app.websockets
             vetd-app.graphql
-            vetd-app.local-store
+            [vetd-app.local-store :as local-store]
             vetd-app.cookies
             vetd-app.url
             vetd-app.debounce
@@ -103,7 +103,9 @@
    :loading? {:products #{}}
    ;; a multi-purpose modal that can be used via event dispatch
    ;; see event :modal
-   :modal {:showing?& (r/atom false)}}))
+   :modal {:showing?& (r/atom false)}
+   ;; only takes effect if the OS also is set to "Dark Mode"
+   :dark-mode? (= (local-store/get-item :dark-mode?) "true")}))
 
 (def public-pages #{:login :signup :join-org-signup :forgot-password})
 
@@ -360,6 +362,7 @@
       (println "init! START")
       (vreset! init-done? true)
       (rf/dispatch-sync [:init-db])
+      (rf/dispatch-sync [:reify-modes])
       (rf/dispatch-sync [:reg-sub-trackers])
       (rf/dispatch-sync [:ws-init])
       (rf/dispatch-sync [:ws-get-session-user])
