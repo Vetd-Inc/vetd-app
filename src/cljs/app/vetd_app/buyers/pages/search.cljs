@@ -342,15 +342,14 @@
                :stackable true
                :style {:margin-top 4}}
     [[[:<>
-       [:h3 "Products & Categories"]
+       [:h3 "Browse Products"]
        "Search for products or product categories to find products that meet your needs."]]
      [[:<>
-       [:h3 "PrePosals"]
-       "Review PrePosals (personalized pricing estimate and product pitch) you have received from vendors. Don't have any PrePosals yet? Request one by searching above or simply forward vendor emails to forward@vetd.com."
-       ]]
-     [[:<>
        [:h3 "VetdRounds"]
-       "Compare similar products side-by-side based on your unique requirements, and make an informed buying decision in a fraction of the time."]]]]])
+       "Compare similar products side-by-side based on your unique requirements, and make an informed buying decision in a fraction of the time."]]
+     [[:<>
+       [:h3 "Stack"]
+       "Add products to your stack to keep track of renewals, get recommendations, and share with your community."]]]]])
 
 (defn potentially-emphasize-filters []
   (let [filter& (rf/subscribe [:b/search.filter])
@@ -552,14 +551,21 @@
                                                        :b/search.filter.remove)
                                                      :features
                                                      "free-trial"]))}]
-         [:> ui/Checkbox {:label "Estimate Available"
-                          :checked (-> @filter& :features (contains? "preposal") boolean)
-                          :on-change (fn [_ this]
-                                       (rf/dispatch [(if (.-checked this)
-                                                       :b/search.filter.add
-                                                       :b/search.filter.remove)
-                                                     :features
-                                                     "preposal"]))}]
+         [:> ui/Popup
+          {:position "bottom left"
+           :content (r/as-element
+                     [:<> "You can request an estimate for any product by clicking "
+                      [:strong "Request Estimate"]
+                      " on a product page."])
+           :trigger (r/as-element
+                     [:> ui/Checkbox {:label "Estimate Available"
+                                      :checked (-> @filter& :features (contains? "preposal") boolean)
+                                      :on-change (fn [_ this]
+                                                   (rf/dispatch [(if (.-checked this)
+                                                                   :b/search.filter.add
+                                                                   :b/search.filter.remove)
+                                                                 :features
+                                                                 "preposal"]))}])}]
          (when (not-empty @group-ids&)
            [:<>
             [:h4 "Community Usage"]
@@ -574,7 +580,33 @@
                                                              :b/search.filter.add
                                                              :b/search.filter.remove)
                                                            :groups
-                                                           group-id]))}]))])]
+                                                           group-id]))}]))])
+         ;; this is carried over from old preposals page
+         ;; might be useful, maybe show if there are results, so they can narrow by category
+         ;; (when (not-empty categories)
+         ;;   [:<>
+         ;;    [:h4 "Category"]
+         ;;    (doall
+         ;;     (for [[id v] categories]
+         ;;       (let [category (first v)]
+         ;;         ^{:key id} 
+         ;;         [:> ui/Checkbox {:label (str (:cname category) " (" (count v) ")")
+         ;;                          :checked (-> @filter& :categories (contains? id) boolean)
+         ;;                          :on-change (fn [_ this]
+         ;;                                       (rf/dispatch [(if (.-checked this)
+         ;;                                                       :b/preposals-filter.add
+         ;;                                                       :b/preposals-filter.remove)
+         ;;                                                     :categories
+         ;;                                                     id
+         ;;                                                     {:event-label (str "Added Category: " (:cname category))}]))}])))])
+         ;;
+         ;; the filter looked like this, but it may need to be moved to backend:
+         ;; (seq categories) (#(->> (for [{:keys [product] :as preposal} %
+         ;;                               {:keys [id]} (:categories product)]
+         ;;                           (when (categories id) preposal))
+         ;;                         (remove nil?)
+         ;;                         distinct))
+         ]
         [:> ui/Segment {:class "top-categories collapsible"}
          [:h4 "Top Categories"]
          (let [top-categories ["CRM"
