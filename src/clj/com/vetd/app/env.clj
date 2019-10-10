@@ -6,6 +6,8 @@
 
 (def vetd-env (env/env :vetd-env))
 
+(def all-env env/env)
+
 (def prod?
   (= vetd-env "PROD"))
 

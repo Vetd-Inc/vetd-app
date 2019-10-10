@@ -9,7 +9,7 @@
 
 (def analytics (env/build-ignore
                 (anlytx/initialize
-                 (env/env :segment-backend-write-key))))
+                 (env/all-env :segment-backend-write-key))))
 
 (defn segment-track [{:keys [jtype] :as event-props}]
   (try

@@ -197,10 +197,6 @@
   (let [page& (rf/subscribe [:page])
         modal& (rf/subscribe [:modal])]
     (fn []
-      (when @util/force-refresh?&
-        (reset! util/force-refresh?& false)
-        (reset! ws/current-cache-key& nil)
-        (.reload js/location))
       [:div#page
        [(hooks/c-container :admin-overlay)
         [(hooks/c-admin @page&)]]
