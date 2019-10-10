@@ -11,7 +11,6 @@
    :settings "Settings"
    :forgot-password "Forgot Password"
    :b/search "Buyers Products & Categories"
-   :b/preposals "Buyers Preposals"
    :b/rounds "Buyers Rounds"
    :b/stack "Buyers Stack"
    :v/products "Vendors Products"

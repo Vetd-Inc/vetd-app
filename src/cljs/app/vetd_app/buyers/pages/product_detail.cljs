@@ -63,6 +63,30 @@
            :message "We'll set up a call for you soon."}}))
 
 (rf/reg-event-fx
+ :b/create-preposal-req
+ (fn [{:keys [db]} [_ product vendor]]
+   {:ws-send {:payload {:cmd :b/create-preposal-req
+                        :return {:handler :b/create-preposal-req-return
+                                 :product product
+                                 :vendor vendor}
+                        :prep-req {:from-org-id (->> (:active-memb-id db)
+                                                     (get (group-by :id (:memberships db)))
+                                                     first
+                                                     :org-id)
+                                   :from-user-id (-> db :user :id)
+                                   :prod-id (:id product)}}}}))
+
+(rf/reg-event-fx
+ :b/create-preposal-req-return
+ (fn [_ [_ _ {{:keys [product vendor]} :return}]]
+   {:toast {:type "success"
+            :title "Pricing Estimate Requested"
+            :message "We will be in touch with next steps."}
+    :analytics/track {:event "Request"
+                      :props {:category "Preposals"
+                              :label (str (:pname product) " by " (:oname vendor))}}}))
+
+(rf/reg-event-fx
  :b/buy
  (fn [{:keys [db]} [_ product-id product-name no-toast?]]
    {:ws-send {:payload {:cmd :b/buy
@@ -110,14 +134,10 @@
 ;; Components
 (defn c-preposal-request-button
   [{:keys [vendor forms docs] :as product}]
-  (if (seq docs) ;; has completed preposal
-    (let [preposal-id (-> docs first :id)
-          preposal-rejected? (= 0 (-> docs first :result))]
-      [bc/c-reject-preposal-button preposal-id preposal-rejected?])
+  (when-not (seq docs) ;; does not have a completed preposal
     (if (not-empty forms) ;; has requested preposal
       [:> ui/Popup
        {:content "We will be in touch with next steps."
-        :header "PrePosal Requested!"
         :position "bottom left"
         :trigger (r/as-element
                   [:> ui/Label {:color "teal"
@@ -125,11 +145,11 @@
                                 :basic true
                                 :style {:display "block"
                                         :text-align "center"}}
-                   "PrePosal Requested"])}]
+                   "Estimate Requested"])}]
       [:> ui/Popup
-       {:content (str "Get a pricing estimate, personalized pitch, and more from "
+       {:content (str "Get a personalized pricing estimate and pitch from "
                       (:oname vendor) ".")
-        :header "What is a PrePosal?"
+        :header "Request Pricing Estimate"
         :position "bottom left"
         :trigger (r/as-element
                   [:> ui/Button {:onClick #(rf/dispatch [:b/create-preposal-req product vendor])
@@ -137,7 +157,7 @@
                                  :fluid true
                                  :icon true
                                  :labelPosition "left"}
-                   "Request PrePosal"
+                   "Request Estimate"
                    [:> ui/Icon {:name "wpforms"}]])}])))
 
 (defn c-product-header-segment
@@ -184,13 +204,12 @@
         group-ids& (rf/subscribe [:group-ids])]
     [:<>
      [c-product-header-segment product v-fn discounts]
-     (when (seq docs) ; has a completed preposal?
-       [bc/c-preposal c-display-field preposal-v-fn])
      (when (seq @group-ids&)
        [bc/c-community c-display-field id agg-group-prod-rating agg-group-prod-price])
      [bc/c-pricing c-display-field v-fn discounts
       (boolean (seq forms)) ;; has requested (and perhaps completed) a preposal
-      ]
+      (boolean (seq docs)) ;; has a completed preposal?
+      preposal-v-fn]
      [bc/c-vendor-profile (-> vendor :docs-out first) (:id vendor) (:oname vendor)]
      [bc/c-onboarding c-display-field v-fn]
      [bc/c-client-service c-display-field v-fn]
@@ -285,9 +304,8 @@
               [:h4 "Jump To"]
               (util/augment-with-keys
                (for [[label k] (remove nil?
-                                       [["Description" :top]
-                                        (when (seq (:docs product)) ; has a completed preposal?
-                                          ["Preposal" :product/preposal])
+                                       [["Top" :top]
+                                        ["Description" :top]
                                         (when (seq @group-ids&) ; is in a community?
                                           ["Your Community" :product/community])
                                         ["Pricing" :product/pricing]

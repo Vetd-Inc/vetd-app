@@ -1,7 +1,7 @@
 (ns vetd-app.core
   (:require vetd-app.websockets
             vetd-app.graphql
-            vetd-app.local-store
+            [vetd-app.local-store :as local-store]
             vetd-app.cookies
             vetd-app.url
             vetd-app.debounce
@@ -15,7 +15,6 @@
             [vetd-app.hooks :as hooks]
             [vetd-app.buyers.fixtures :as b-fix]
             [vetd-app.buyers.pages.search :as p-bsearch]
-            [vetd-app.buyers.pages.preposals :as p-bpreposals]
             [vetd-app.buyers.pages.product-detail :as p-bproduct-detail]
             [vetd-app.buyers.pages.rounds :as p-brounds]
             [vetd-app.buyers.pages.round-detail.index :as p-bround-detail]
@@ -53,7 +52,6 @@
                    :forgot-password #'p-forgot-password/c-page
                    :settings #'p-settings/c-page
                    :b/search #'p-bsearch/c-page
-                   :b/preposals #'p-bpreposals/c-page
                    :b/product-detail #'p-bproduct-detail/c-page
                    :b/rounds #'p-brounds/c-page
                    :b/round-detail #'p-bround-detail/c-page
@@ -75,7 +73,6 @@
                    :forgot-password #'pub-fix/container
                    :settings #'b-fix/container ; TODO fragile, misuse of buyer fixtures
                    :b/search #'b-fix/container
-                   :b/preposals #'b-fix/container
                    :b/product-detail #'b-fix/container
                    :b/rounds #'b-fix/container
                    :b/round-detail #'b-fix/appendable-container
@@ -100,8 +97,6 @@
    :scroll-to-refs {}
    ;; any events put in here will be dispatched when [:dispatch-stash.pop]
    :dispatch-stash {}
-   ;; TODO refactor these to match the pattern of the above ":search"
-   :preposals-filter p-bpreposals/default-preposals-filter
    :rounds-filter {:selected-statuses #{}}
    ;; it think this for within the round grid, not sure if it's currently being used
    ;; in fact, I'm almost certain it's not being used
@@ -109,7 +104,9 @@
    :loading? {:products #{}}
    ;; a multi-purpose modal that can be used via event dispatch
    ;; see event :modal
-   :modal {:showing?& (r/atom false)}}))
+   :modal {:showing?& (r/atom false)}
+   ;; only takes effect if the OS also is set to "Dark Mode"
+   :dark-mode? (= (local-store/get-item :dark-mode?) "true")}))
 
 (def public-pages #{:login :signup :join-org-signup :forgot-password})
 
@@ -263,9 +260,6 @@
 (sec/defroute buyers-search "/b/search/:search-term" [search-term]
   (rf/dispatch [:b/route-search search-term]))
 
-(sec/defroute buyers-preposals "/b/preposals" [query-params]
-  (rf/dispatch [:b/route-preposals query-params]))
-
 (sec/defroute buyers-product-detail "/b/products/:idstr" [idstr]
   (rf/dispatch [:b/route-product-detail idstr]))
 
@@ -373,6 +367,7 @@
       (println "init! START")
       (vreset! init-done? true)
       (rf/dispatch-sync [:init-db])
+      (rf/dispatch-sync [:reify-modes])
       (rf/dispatch-sync [:reg-sub-trackers])
       (rf/dispatch-sync [:ws-init])
       (rf/dispatch-sync [:ws-get-session-user])
