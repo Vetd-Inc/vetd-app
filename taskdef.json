@@ -75,6 +75,10 @@
         {
           "name": "PLAID_SECRET",
           "value": "0e1a33c5191d1b8a0426f563885db4"
+        },
+        {
+          "name": "SEGMENT_BACKEND_WRITE_KEY",
+          "value": "4JhxIKAxisnr33mzsgMaw24Mc9SozHq7"
         }
       ],
       "ulimits": null,
@@ -194,6 +198,6 @@
   ],
   "networkMode": "awsvpc",
   "cpu": "1024",
-  "revision": 340,
+  "revision": 346,
   "volumes": []
 }
