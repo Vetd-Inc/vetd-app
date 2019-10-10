@@ -165,105 +165,6 @@
      [:> ui/StepTitle "Complete"]
      [:> ui/StepDescription "Final decision"]]]])
 
-(defn c-reject-preposal-button
-  [id rejected? & [{:keys [icon?]}]]
-  (let [popup-open?& (r/atom false)
-        popup-position (if icon? "bottom right" "bottom left")
-        context-ref& (r/atom nil)
-        reason& (atom "")
-        options& (r/atom (ui/as-dropdown-options ["Outside our budget"
-                                                  "Not relevant to our business"
-                                                  "We already use a similar tool"]))
-        submit #(do (reset! popup-open?& false)
-                    (rf/dispatch [:b/preposals.reject id @reason&]))]
-    (fn [id rejected?]
-      (if-not rejected?
-        [:<>
-         [:> ui/Popup
-          {:position popup-position
-           :on "click"
-           :open @popup-open?&
-           :on-close #(reset! popup-open?& false)
-           :on-click #(.stopPropagation %)
-           :context @context-ref&
-           :header "Reject PrePosal"
-           :content (r/as-element
-                     [:div
-                      [:p {:style {:margin-top 7}}
-                       "Vendor will be notified, but will not be permitted to reach out."]
-                      [:> ui/Form {:as "div"
-                                   :class "popup-dropdown-form"
-                                   :style {:width 450}}
-                       [:> ui/Dropdown {:options @options&
-                                        :placeholder "Enter reason..."
-                                        :search true
-                                        :selection true
-                                        :multiple false
-                                        :selectOnBlur false
-                                        :selectOnNavigation true
-                                        :closeOnChange true
-                                        :header "Enter a custom reason..."
-                                        :allowAdditions true
-                                        :additionLabel "Hit 'Enter' to Reject as "
-                                        :onAddItem (fn [_ this]
-                                                     (->> this
-                                                          .-value
-                                                          vector
-                                                          ui/as-dropdown-options
-                                                          (swap! options& concat))
-                                                     (submit))
-                                        :onChange (fn [_ this] (reset! reason& (.-value this)))}]
-                       [:> ui/Button
-                        {:color "red"
-                         :on-click submit}
-                        "Reject"]]])}]
-         [:> ui/Popup
-          {:header "Reject PrePosal"
-           :content "Reject if you aren't interested"
-           :position popup-position
-           :context @context-ref&
-           :trigger (r/as-element
-                     (if icon?
-                       [:> ui/Icon {:on-click (fn [e]
-                                                (.stopPropagation e)
-                                                (swap! popup-open?& not))
-                                    :color "black"
-                                    :link true
-                                    :name "close"
-                                    :size "large"
-                                    :style {:position "absolute"
-                                            :right 7}
-                                    :ref (fn [this] (reset! context-ref& (r/dom-node this)))}]
-                       [:> ui/Button {:on-click #(swap! popup-open?& not)
-                                      :color "white"
-                                      :fluid true
-                                      :icon true
-                                      :labelPosition "left"
-                                      :ref (fn [this] (reset! context-ref& (r/dom-node this)))}
-                        "Reject Preposal"
-                        [:> ui/Icon {:name "close"}]]))}]]
-        [:> ui/Popup
-         {:content "Undo PrePosal Rejection"
-          :position popup-position
-          :trigger (r/as-element
-                    (if icon?
-                      [:> ui/Icon {:on-click (fn [e]
-                                               (.stopPropagation e)
-                                               (rf/dispatch [:b/preposals.undo-reject id]))
-                                   :link true
-                                   :color "red"
-                                   :name "undo"
-                                   :size "large"
-                                   :style {:position "absolute"
-                                           :right 7}}]
-                      [:> ui/Button {:on-click #(rf/dispatch [:b/preposals.undo-reject id])
-                                     :color "white"
-                                     :fluid true
-                                     :icon true
-                                     :labelPosition "left"}
-                       "Undo Reject"
-                       [:> ui/Icon {:name "undo"}]]))}]))))
-
 ;; unused
 (defn c-setup-call-button
   [{:keys [id pname] :as product}
@@ -394,6 +295,7 @@
   [product v-fn & [discounts on-product-detail-page?]]
   [:div.product-tags
    [c-categories product]
+   ;; TODO have a tag for existence of completed preposal
    (when (some-> (v-fn :product/free-trial?)
                  s/lower-case
                  (= "yes"))
@@ -443,12 +345,14 @@
   [:div.product-logo {:style {:background-image (str "url('https://s3.amazonaws.com/vetd-logos/" filename "')")}}])
 
 (defn c-pricing-estimate
-  [v-fn]
+  [v-fn & [{:keys [label-as-estimate?]}]]
   (let [value (v-fn :preposal/pricing-estimate "value" :nval)
         unit (v-fn :preposal/pricing-estimate "unit")
         details (v-fn :preposal/pricing-estimate "details")]
     (if value
-      [:span (util/currency-format value) " / " unit " " [:small "(estimate) " details]]
+      [:span "$" (util/decimal-format value) " / " unit
+       (when label-as-estimate?
+         [:<> " " [:small "(estimate) " details]])]
       details)))
 
 (defn product-description
@@ -518,32 +422,6 @@
    [:> ui/Grid {:columns "equal"
                 :style {:margin-top 0}}
     (util/augment-with-keys children)]])
-
-(defn c-preposal
-  "Component to display preposal information of a product profile.
-  c-display-field - component to display a field (key/value)
-  v-fn - function to get value per some prompt term from the preposal doc"
-  [c-display-field v-fn]
-  (let [pricing-estimate-value (v-fn :preposal/pricing-estimate "value" :nval)
-        pricing-estimate-unit (v-fn :preposal/pricing-estimate "unit")
-        pricing-estimate-details (v-fn :preposal/pricing-estimate "details")
-        pitch (v-fn :preposal/pitch)]
-    [c-profile-segment {:title "PrePosal"
-                        :scroll-to-ref-key :product/preposal
-                        :icon "clipboard outline"}
-     [:> ui/GridRow
-      [c-display-field 16
-       "Pitch"
-       (util/parse-md pitch)]]
-     [:> ui/GridRow
-      [c-display-field 16
-       "Pricing Estimate"
-       (if pricing-estimate-value
-         (str
-          "$" (util/decimal-format pricing-estimate-value) " / " pricing-estimate-unit
-          (when (not-empty pricing-estimate-details)
-            (str " - " pricing-estimate-details)))
-         pricing-estimate-details)]]]))
 
 (defn c-average-rating
   [agg-group-prod-rating]
@@ -674,21 +552,28 @@
   "Component to display pricing information of a product profile.
   c-display-field - component to display a field (key/value)
   v-fn - function to get value per some prompt term"
-  [c-display-field v-fn discounts preposal-requested?]
+  [c-display-field v-fn discounts preposal-requested? preposal-completed? preposal-v-fn]
   [c-profile-segment {:title "Pricing"
                       :scroll-to-ref-key :product/pricing
                       :icon "dollar"
                       :icon-style {:margin-right 5
                                    :margin-left -5}}
    [:> ui/GridRow
-    [c-display-field 16 "Range"
-     (when (has-data? (v-fn :product/price-range))
+    (if preposal-completed?
+      [c-display-field 16 "Pricing Estimate"
        [:<>
-        (v-fn :product/price-range)
-        (when-not preposal-requested?
-          [:<>
-           [:br]
-           "Request a PrePosal to get a personalized estimate."])])]]
+        (c-pricing-estimate preposal-v-fn)
+        [:br]
+        [:br]
+        (util/parse-md (preposal-v-fn :preposal/pitch))]]
+      [c-display-field 16 "Range"
+       (when (has-data? (v-fn :product/price-range))
+         [:<>
+          (v-fn :product/price-range)
+          (when-not preposal-requested?
+            [:<>
+             [:br]
+             "Click " [:strong.teal "Request Estimate"] " to get a personalized estimate."])])])]
    (when (or (not-empty discounts)
              (has-data? (v-fn :product/free-trial?)))
      [:> ui/GridRow

@@ -22,7 +22,7 @@
 
 (defn search-prods-vendors->ids
   "Get product ID's based on search query and filter (and union with related categories)."
-  [q cat-ids {:keys [features groups discounts-available-to-groups] :as filter-map}]
+  [q cat-ids {:keys [features groups discounts-available-to-groups] :as filter-map} buyer-id]
   (let [term (s/trim q)]
     (if (or (not-empty term)
             (some seq (vals filter-map)))
@@ -39,6 +39,12 @@
                                                            [:= :d2f.doc_dtype "product-profile"]
                                                            [:= :d2f.prompt_term "product/free-trial?"]
                                                            [:= :d2f.resp_field_sval "yes"]]])
+                                (when (features "preposal")
+                                  [[:docs :d] [:and
+                                               [:= :d.subject :p.id]
+                                               [:= :d.dtype "preposal"]
+                                               [:= :d.to_org_id buyer-id]
+                                               [:= :d.deleted nil]]])
                                 (when (not-empty groups)
                                   [[:group_org_memberships :gom] [:in :gom.group_id groups]
                                    [:stack_items :si] [:and
@@ -397,7 +403,7 @@ Round URL: https://app.vetd.com/b/rounds/%s"
   [{:keys [buyer-id query filter-map]} ws-id sub-fn]
   (let [cat-ids (search-category-ids query)]
     (ut/$- -> query
-           (search-prods-vendors->ids $ cat-ids filter-map)
+           (search-prods-vendors->ids $ cat-ids filter-map buyer-id)
            (assoc :category-ids cat-ids))))
 
 ;; Start a round for either a Product or a Category
@@ -678,9 +684,9 @@ Round URL: https://app.vetd.com/b/rounds/%s"
                                    :product-id pid
                                    :status "current"}))))
         {:stack-item-ids (mapv #(insert-stack-item {:buyer-id buyer-id
-                                                   :product-id %
-                                                   :status "current"})
-                              product-ids)})
+                                                    :product-id %
+                                                    :status "current"})
+                               product-ids)})
     {}))
 
 (defmethod com/handle-ws-inbound :b/stack.delete-item
@@ -691,11 +697,11 @@ Round URL: https://app.vetd.com/b/rounds/%s"
 (defn journal-stack-update-rating [stack-item-id rating]
   (when (some-> rating pos?)
     (let [{:keys [product buyer]} (-> [[:stack-items {:id stack-item-id}
-                                              [[:product [:id :pname]]
-                                               [:buyer [:id :oname]]]]]
-                                            ha/sync-query
-                                            vals
-                                            ffirst)]
+                                        [[:product [:id :pname]]
+                                         [:buyer [:id :oname]]]]]
+                                      ha/sync-query
+                                      vals
+                                      ffirst)]
       (journal/push-entry {:jtype :stack-update-rating
                            :rating rating
                            :stack-item-id stack-item-id
