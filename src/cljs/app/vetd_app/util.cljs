@@ -200,6 +200,16 @@
   [class]
   (first (nodes-by-class class)))
 
+(defn nodes-by-tag
+  [tag]
+  (-> js/document
+      (.getElementsByTagName tag)
+      array-seq))
+
+(defn first-node-by-tag
+  [tag]
+  (first (nodes-by-tag tag)))
+
 (defn add-class
   [node class]
   (.add (.-classList node) class))
