@@ -82,11 +82,11 @@
         org-name& (rf/subscribe [:org-name])
         group-ids& (rf/subscribe [:group-ids])]
     (fn [top-nav-pages]
-      (let [;; append "Community" menu item if accessible
-            pages (cond-> top-nav-pages
-                    (seq @group-ids&) (conj {:text "Community"
-                                             :pages #{:g/home}
-                                             :event [:g/nav-home]}))]
+      (let [;; prepend "Community" menu item if accessible
+            pages (cond->> top-nav-pages
+                    (seq @group-ids&) (into [{:text "Community Home"
+                                              :pages #{:g/home}
+                                              :event [:g/nav-home]}]))]
         (when (and @page& @user-name&)
           [:<>
            [:span.scroll-anchor {:ref (fn [this] (rf/dispatch [:reg-scroll-to-ref :top this]))}]

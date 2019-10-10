@@ -166,6 +166,23 @@
      ^{:key (:id group)}
      [c-group group])])
 
+(defn c-explainer []
+  [:> ui/Segment {:placeholder true
+                  :class "how-vetd-works"}
+   [:h2 "How Vetd Works . . ."]
+   [cc/c-grid {:columns "equal"
+               :stackable true
+               :style {:margin-top 4}}
+    [[[:<>
+       [:h3 "Your Stack"]
+       "Add products to your stack to keep track of renewals, get recommendations, and share with your community."]]
+     [[:<>
+       [:h3 "Browse Products"]
+       "Search for products or product categories to find products that meet your needs."]]
+     [[:<>
+       [:h3 "VetdRounds"]
+       "Compare similar products side-by-side based on your unique requirements, and make an informed buying decision in a fraction of the time."]]]]])
+
 (defn c-page []
   (let [org-id& (rf/subscribe [:org-id])
         group-ids& (rf/subscribe [:group-ids])
@@ -188,5 +205,7 @@
     (fn []
       (if (= :loading @groups&)
         [cc/c-loader]
-        [c-groups (:groups @groups&)]))))
+        [:<>
+         [c-explainer]
+         [c-groups (:groups @groups&)]]))))
 
