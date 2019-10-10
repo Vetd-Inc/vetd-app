@@ -8,14 +8,16 @@
             [circleci.analytics-clj.core :as anlytx]))
 
 (def analytics (env/build-ignore
-                (anlytx/initialize (env/segment-frontend-write-key))))
+                (anlytx/initialize
+                 (env/all-env :segment-backend-write-key))))
 
 (defn segment-track [{:keys [jtype] :as event-props}]
   (try
-    (anlytx/track analytics
-                  com/*user-id*
-                  jtype
-                  event-props)
+    (when env/prod?
+      (anlytx/track analytics
+                    com/*user-id*
+                    (name jtype)
+                    event-props))
     (catch Throwable e
       (com/log-error e))))
 
@@ -30,6 +32,7 @@
                      :jtype (name jtype)
                      :entry entry})
         first)))
+
 
 (defn push-entry
   [entry]

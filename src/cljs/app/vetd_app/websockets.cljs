@@ -28,6 +28,8 @@
 (def last-send-ts& (atom 0))
 (def last-ack-ts& (atom 0))
 
+(def current-cache-key& (atom nil))
+
 (defn log-ws? []
   (and (exists? js/log_ws)
        (true? js/log_ws)))
@@ -52,9 +54,16 @@
        (group-by :msg-id)
        (util/fmap first)))
 
-(rf/reg-event-db
+
+(rf/reg-event-fx
+ :ws/send-check-cache-key
+ (fn [{:keys [db]} [_ {:keys [cache-key]} data]]
+   {:ws-send {:payload {:cmd :get-cache-key
+                        :return :ws/check-cache-key}}}))
+
+(rf/reg-event-fx
  :ws-connected
- (fn [db [_ url]]
+ (fn [{:keys [db]} [_ url]]
    (println "Websocket connected to: " url)
    (let [ws-buffer @ws-buffer&
          ws-subsciption-buffer @ws-subsciption-buffer&
@@ -62,7 +71,22 @@
                        (get-buffer-by-msg-id ws-subsciption-buffer))]
      (when-not (empty? buffer)
        (ws-send-buffer buffer)))
-   db))
+   {:db db
+    :dispatch-later
+    [{:ms 200
+      :dispatch [:ws/send-check-cache-key]}]}))
+
+(rf/reg-event-fx
+ :ws/check-cache-key
+ (fn [{:keys [db]} [_ {:keys [cache-key]} data]]
+   (let [current-cache-key @current-cache-key&
+         force-refresh? (and current-cache-key
+                             (not= current-cache-key
+                                   cache-key) )]
+     (reset! current-cache-key& cache-key)
+     (when force-refresh?
+       (reset! util/force-refresh?& true))
+     {})))
 
 (rf/reg-event-fx
  :ws-inbound

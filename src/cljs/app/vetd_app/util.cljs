@@ -10,6 +10,8 @@
             [markdown-to-hiccup.core :as md])
   (:import [goog.functions]))
 
+(def force-refresh?& (atom false))
+
 (defn now [] (.getTime (js/Date.)))
 
 (def currency-format format/currency-format)

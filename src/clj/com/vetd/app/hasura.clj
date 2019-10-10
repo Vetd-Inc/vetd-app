@@ -629,10 +629,9 @@
                               :sub-id sub-id
                               :qual-sub-id qual-sub-id
                               :session-token session-token}))
-          (when subscription?
-            (com/reg-ws-on-close-fn ws-id
-                                    qual-sub-id
-                                    (partial unsub qual-sub-id)))
+          (com/reg-ws-on-close-fn ws-id
+                                  qual-sub-id
+                                  (partial unsub qual-sub-id))
           (try-send @cn&
                     {:type :start
                      :id qual-sub-id

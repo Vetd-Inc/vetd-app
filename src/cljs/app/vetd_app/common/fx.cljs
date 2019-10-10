@@ -130,10 +130,15 @@
 
 (rf/reg-fx
  :nav
- (fn nav-fx [{:keys [path query external-url]}]
-   (if external-url
-     (js/setTimeout #(.assign (aget js/window "location") external-url) 1000)
-     (acct/navigate! path query))))
+ (fn nav-fx [{:keys [path external-url]}]
+   (cond external-url
+         (js/setTimeout #(.assign (aget js/window "location") external-url) 1000)
+
+         @util/force-refresh?&
+         (.assign (aget js/window "location") path)
+
+         :else
+         (acct/navigate! path))))
 
 ;; think of every stash key->value as a separate stack of events that you can
 ;; push (store) and pop (dispatch)
