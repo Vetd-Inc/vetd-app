@@ -534,7 +534,16 @@
                                                                   :b/search.filter.remove)
                                                                 :features
                                                                 "product-profile-completed"]))}])}]
-         [:h4 "Trial"]
+         [:h4 "Price"]
+         (when (not-empty @group-ids&)
+           [:> ui/Checkbox {:label "Discounts Available"
+                            :checked (-> @filter& :features (contains? "discounts-available") boolean)
+                            :on-change (fn [_ this]
+                                         (rf/dispatch [(if (.-checked this)
+                                                         :b/search.filter.add
+                                                         :b/search.filter.remove)
+                                                       :features
+                                                       "discounts-available"]))}])
          [:> ui/Checkbox {:label "Free Trial"
                           :checked (-> @filter& :features (contains? "free-trial") boolean)
                           :on-change (fn [_ this]
@@ -543,17 +552,14 @@
                                                        :b/search.filter.remove)
                                                      :features
                                                      "free-trial"]))}]
-         (when (not-empty @group-ids&)
-           [:<>
-            [:h4 "Discounts"]
-            [:> ui/Checkbox {:label "Discounts Available"
-                             :checked (-> @filter& :features (contains? "discounts-available") boolean)
-                             :on-change (fn [_ this]
-                                          (rf/dispatch [(if (.-checked this)
-                                                          :b/search.filter.add
-                                                          :b/search.filter.remove)
-                                                        :features
-                                                        "discounts-available"]))}]])
+         [:> ui/Checkbox {:label "Estimate Available"
+                          :checked (-> @filter& :features (contains? "preposal") boolean)
+                          :on-change (fn [_ this]
+                                       (rf/dispatch [(if (.-checked this)
+                                                       :b/search.filter.add
+                                                       :b/search.filter.remove)
+                                                     :features
+                                                     "preposal"]))}]
          (when (not-empty @group-ids&)
            [:<>
             [:h4 "Community Usage"]

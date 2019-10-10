@@ -394,6 +394,7 @@
   [product v-fn & [discounts on-product-detail-page?]]
   [:div.product-tags
    [c-categories product]
+   ;; TODO have a tag for existence of completed preposal
    (when (some-> (v-fn :product/free-trial?)
                  s/lower-case
                  (= "yes"))
@@ -443,12 +444,14 @@
   [:div.product-logo {:style {:background-image (str "url('https://s3.amazonaws.com/vetd-logos/" filename "')")}}])
 
 (defn c-pricing-estimate
-  [v-fn]
+  [v-fn & [{:keys [label-as-estimate?]}]]
   (let [value (v-fn :preposal/pricing-estimate "value" :nval)
         unit (v-fn :preposal/pricing-estimate "unit")
         details (v-fn :preposal/pricing-estimate "details")]
     (if value
-      [:span (util/currency-format value) " / " unit " " [:small "(estimate) " details]]
+      [:span "$" (util/decimal-format value) " / " unit
+       (when label-as-estimate?
+         [:<> " " [:small "(estimate) " details]])]
       details)))
 
 (defn product-description
@@ -518,32 +521,6 @@
    [:> ui/Grid {:columns "equal"
                 :style {:margin-top 0}}
     (util/augment-with-keys children)]])
-
-(defn c-preposal
-  "Component to display preposal information of a product profile.
-  c-display-field - component to display a field (key/value)
-  v-fn - function to get value per some prompt term from the preposal doc"
-  [c-display-field v-fn]
-  (let [pricing-estimate-value (v-fn :preposal/pricing-estimate "value" :nval)
-        pricing-estimate-unit (v-fn :preposal/pricing-estimate "unit")
-        pricing-estimate-details (v-fn :preposal/pricing-estimate "details")
-        pitch (v-fn :preposal/pitch)]
-    [c-profile-segment {:title "PrePosal"
-                        :scroll-to-ref-key :product/preposal
-                        :icon "clipboard outline"}
-     [:> ui/GridRow
-      [c-display-field 16
-       "Pitch"
-       (util/parse-md pitch)]]
-     [:> ui/GridRow
-      [c-display-field 16
-       "Pricing Estimate"
-       (if pricing-estimate-value
-         (str
-          "$" (util/decimal-format pricing-estimate-value) " / " pricing-estimate-unit
-          (when (not-empty pricing-estimate-details)
-            (str " - " pricing-estimate-details)))
-         pricing-estimate-details)]]]))
 
 (defn c-average-rating
   [agg-group-prod-rating]
@@ -674,21 +651,28 @@
   "Component to display pricing information of a product profile.
   c-display-field - component to display a field (key/value)
   v-fn - function to get value per some prompt term"
-  [c-display-field v-fn discounts preposal-requested?]
+  [c-display-field v-fn discounts preposal-requested? preposal-completed? preposal-v-fn]
   [c-profile-segment {:title "Pricing"
                       :scroll-to-ref-key :product/pricing
                       :icon "dollar"
                       :icon-style {:margin-right 5
                                    :margin-left -5}}
    [:> ui/GridRow
-    [c-display-field 16 "Range"
-     (when (has-data? (v-fn :product/price-range))
+    (if preposal-completed?
+      [c-display-field 16 "Pricing Estimate"
        [:<>
-        (v-fn :product/price-range)
-        (when-not preposal-requested?
-          [:<>
-           [:br]
-           "Request a PrePosal to get a personalized estimate."])])]]
+        (c-pricing-estimate preposal-v-fn)
+        [:br]
+        [:br]
+        (util/parse-md (preposal-v-fn :preposal/pitch))]]
+      [c-display-field 16 "Range"
+       (when (has-data? (v-fn :product/price-range))
+         [:<>
+          (v-fn :product/price-range)
+          (when-not preposal-requested?
+            [:<>
+             [:br]
+             "Click " [:strong.teal "Request Estimate"] " to get a personalized estimate."])])])]
    (when (or (not-empty discounts)
              (has-data? (v-fn :product/free-trial?)))
      [:> ui/GridRow
