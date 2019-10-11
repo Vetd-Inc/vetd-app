@@ -74,20 +74,22 @@
    :amount (.getAmount tran-obj)})
 
 (defn access-token->transactions [access-token]
-  (let [total-limit 10000
-        start-datetime (Date. (- (System/currentTimeMillis)
-                                 (* 1000 60 60 24 365 2)))
-        end-datetime (Date.)]
-    (try
-      (for [offset (range 0 total-limit 500)
-            t (access-token->transactions* access-token
-                                           start-datetime
-                                           end-datetime
-                                           500
-                                           offset)]
-        (mk-transactions t))
-      (catch Throwable e
-        (com/log-error e)))))
+  (try
+    (let [total-limit 10000
+          ;; 2 years ago
+          start-datetime (Date. (- (System/currentTimeMillis)
+                                   (* 1000 60 60 24 365 2)))
+          end-datetime (Date.)]
+      (doall
+       (for [offset (range 0 total-limit 500)
+             t (access-token->transactions* access-token
+                                            start-datetime
+                                            end-datetime
+                                            500
+                                            offset)]
+         (mk-transactions t))))
+    (catch Throwable e
+      (com/log-error e))))
 
 (defn mk-filename-base
   [oname suffix]
