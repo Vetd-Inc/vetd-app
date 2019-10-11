@@ -449,8 +449,7 @@
                  [c-product-search-results (:product-ids @search-result-ids&) @products&]
                  (when @loading?&
                    [cc/c-loader {:style {:margin-top 20}}])]
-                (if (= (count @search-term&) 0)
-                  nil
+                (when-not (= (count @search-term&) 0)
                   [c-no-results]))))))))
 
 (def c-search-results

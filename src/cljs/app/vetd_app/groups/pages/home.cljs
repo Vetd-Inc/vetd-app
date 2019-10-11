@@ -167,6 +167,7 @@
      ^{:key (:id group)}
      [c-group group])])
 
+;; currently unused
 (defn c-explainer []
   [:> ui/Segment {:placeholder true
                   :class "how-vetd-works"}
@@ -206,7 +207,5 @@
     (fn []
       (if (= :loading @groups&)
         [cc/c-loader]
-        [:<>
-         ;; [c-explainer]
-         [c-groups (:groups @groups&)]]))))
+        [c-groups (:groups @groups&)]))))
 
