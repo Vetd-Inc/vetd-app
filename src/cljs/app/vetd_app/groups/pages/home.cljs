@@ -61,12 +61,13 @@
 
 (defn c-orgs
   [{:keys [id orgs] :as group}]
-  [bc/c-profile-segment {:title [:<>
-                                 [:> ui/Icon {:name "group"}]
-                                 " Organizations"]}
-   (for [org orgs]
-     ^{:key (:id org)}
-     [c-org org group])])
+  (let [orgs-sorted (sort-by (comp count :stack-items) > orgs)]
+    [bc/c-profile-segment {:title [:<>
+                                   [:> ui/Icon {:name "group"}]
+                                   " Organizations"]}
+     (for [org orgs-sorted]
+       ^{:key (:id org)}
+       [c-org org group])]))
 
 (defn c-stack-item
   [product top-products]
@@ -206,6 +207,6 @@
       (if (= :loading @groups&)
         [cc/c-loader]
         [:<>
-         [c-explainer]
+         ;; [c-explainer]
          [c-groups (:groups @groups&)]]))))
 
