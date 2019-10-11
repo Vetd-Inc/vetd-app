@@ -1,5 +1,9 @@
 (ns com.vetd.app.email-client
   (:require [com.vetd.app.common :as com]
+            [com.vetd.app.util :as ut]
+            [com.vetd.app.env :as env]
+            [com.vetd.app.db :as db]
+            [taoensso.timbre :as log]
             [clj-http.client :as client]))
 
 (def sendgrid-api-key "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")
@@ -14,6 +18,68 @@
    :coerce :always
    :throw-exceptions false
    :headers {"Authorization" (str "Bearer " sendgrid-api-key)}})
+
+(defonce scheduled-email-thread& (atom nil))
+(def last-email-sent-ts& (atom 0))
+
+
+;; TODO This will get trickier when we have two app server instances running again
+(defn select-next-email&recipient [max-ts]
+  (-> {:select [[:%max.esl.created :max-created]
+                [:m.id :membership-id]
+                [:m.user_id :user-id]
+                [:m.org_id :org-id]]
+       :from [[:orgs :o]]
+       :join [[:memberships :m]
+              [:and
+               [:= :m.deleted nil]
+               [:= :m.org_id :o.id]]]
+       :left-join [[:email_sent_log :esl]
+                   [:= :esl.user_id :m.user_id]]
+       :where [:and
+               [:= :o.deleted nil]
+               [:= :o.buyer_qm true]]
+       :group-by [:m.id :m.user_id :m.org_id]
+       :having [:or
+                [:= :%max.esl.created nil]
+                [:< :%max.esl.created nil (java.sql.Timestamp. max-ts)]]}
+      db/hs-query
+      first))
+
+(defn do-scheduled-email-puller []
+#_  (try
+    (let [[_ ch] (a/alts!! [trigger-pull-scheduled-emails
+                            (a/timeout 3000)])]
+      (when (= ch trigger-pull-scheduled-emails)
+        (while
+            (when-let [{:keys [id] :as entry} (select-one-new-journal-entry)]
+              (def e1 entry)
+              (swap! last-journal-entry-id& (partial max id))
+              (some-> entry
+                      journal-entry->scheduled-email
+                      insert-scheduled-email)
+              true))))
+    (catch Throwable e
+      (def ex1 e)
+      (com/log-error e)
+      (Thread/sleep 5000))))
+
+
+
+(defn start-scheduled-emailer-thread []
+  (when (and (not env/building?)
+             (nil? @scheduled-email-thread&))
+    (reset! scheduled-email-thread&
+            (future
+              (log/info "Starting scheduled-emailer")
+              (while (not @com/shutdown-signal)
+                (#'do-scheduled-email-puller))
+              (log/info "Stopped scheduled-emailer")))))
+
+#_
+
+(start-scheduled-email-puller-thread) ;; TODO calling this here is gross -- Bill
+
 
 ;; NOTE when :success is true, :resp is nil.
 (defn- request
@@ -46,3 +112,15 @@
    {:subject "Vetd Buying Platform"
     :preheader "You're going to want to see what's in this email"
     :main-content "Here is some example content."})
+
+
+
+
+
+
+
+
+
+
+
+
