@@ -550,30 +550,46 @@
 
 (defmethod secure-gql? :default [_ _]  true)
 
-#_
 (defmethod secure-gql? :orgs
-  [[_ maybe-map] session-token]
-  (if (map? maybe-map)
-    (let [{:keys [idstr id]} maybe-map
-          restrict (if id
-                     [:= :o.id id]
-                     [:= :o.idstr idstr])]
-      (->> (db/hs-query {:select [:%count.s.id]
-                         :from [[:sessions :s]]
-                         :join [[:users :u] [:and
-                                             [:= :u.deleted nil]
-                                             [:= :u.id :s.user_id ]]
-                                [:memberships :m] [:and
-                                                   [:= :m.deleted nil]
-                                                   [:= :m.user_id :u.id]]
-                                [:orgs :o] [:and
-                                            [:= :o.deleted nil]
-                                            [:= :o.id :m.org_id]
-                                            restrict]]
-                         :where   [:= :s.token session-token]})
-           first
-           :count
-           (= 1)))
+  [[_ maybe-map :as q] session-token]
+  (def q1 q)
+  (def st1 session-token)
+  (if (and (some #{:stack-items} 
+                 (tree-seq vector? seq q))
+           (map? maybe-map))
+    (let [{:keys [id idstr]} maybe-map
+          restrict-org (cond id [:= :o.id id]
+                             idstr [:= :o.idstr idstr])]
+      (when restrict-org
+        (->> (db/hs-query {:select [:%count.s.id]
+                           :from [[:sessions :s]]
+                           :join [[:users :u] [:and
+                                               [:= :u.deleted nil]
+                                               [:= :u.id :s.user_id ]]
+
+                                  [:memberships :m] [:and
+                                                     [:= :m.deleted nil]
+                                                     [:= :m.user_id :u.id]]
+
+                                  [:group_org_memberships :gom]
+                                  [:and
+                                   [:= :gom.deleted nil]
+                                   [:= :gom.org_id :m.org_id]]
+                                  
+                                  [:group_org_memberships :gom2]
+                                  [:and
+                                   [:= :gom2.deleted nil]
+                                   [:= :gom2.group_id :gom.group_id]]
+
+                                  [:orgs :o]
+                                  [:and
+                                   [:= :o.deleted nil]
+                                   [:= :gom2.org_id :o.id]
+                                   restrict-org]]
+                           :where [:= :s.token session-token]})
+             first
+             :count
+             (= 1))))
     true))
 
 (defmethod secure-gql? :rounds
