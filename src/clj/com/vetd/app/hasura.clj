@@ -552,8 +552,6 @@
 
 (defmethod secure-gql? :orgs
   [[_ maybe-map :as q] session-token]
-  (def q1 q)
-  (def st1 session-token)
   (if (and (some #{:stack-items} 
                  (tree-seq vector? seq q))
            (map? maybe-map))
