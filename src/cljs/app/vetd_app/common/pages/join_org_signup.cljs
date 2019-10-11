@@ -107,6 +107,7 @@
          [:label "Full Name"
           [:> ui/Input {:class "borderless"
                         :spellCheck false
+                        :auto-focus true
                         :onChange (fn [_ this] (reset! uname (.-value this)))}]]]
         [:> ui/FormField {:error (= @bad-input& :pwd)}
          [:label "Password"

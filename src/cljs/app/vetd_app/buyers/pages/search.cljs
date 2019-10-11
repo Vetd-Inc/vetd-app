@@ -334,23 +334,6 @@
      ^{:key (:id c)}
      [c-category-search-result c])])
 
-(defn c-explainer []
-  [:> ui/Segment {:placeholder true
-                  :class "how-vetd-works"}
-   [:h2 "How Vetd Works . . ."]
-   [cc/c-grid {:columns "equal"
-               :stackable true
-               :style {:margin-top 4}}
-    [[[:<>
-       [:h3 "Browse Products"]
-       "Search for products or product categories to find products that meet your needs."]]
-     [[:<>
-       [:h3 "VetdRounds"]
-       "Compare similar products side-by-side based on your unique requirements, and make an informed buying decision in a fraction of the time."]]
-     [[:<>
-       [:h3 "Stack"]
-       "Add products to your stack to keep track of renewals, get recommendations, and share with your community."]]]]])
-
 (defn potentially-emphasize-filters []
   (let [filter& (rf/subscribe [:b/search.filter])
         has-filter? (some seq (vals @filter&))
@@ -466,8 +449,7 @@
                  [c-product-search-results (:product-ids @search-result-ids&) @products&]
                  (when @loading?&
                    [cc/c-loader {:style {:margin-top 20}}])]
-                (if (= (count @search-term&) 0)
-                  [c-explainer]
+                (when-not (= (count @search-term&) 0)
                   [c-no-results]))))))))
 
 (def c-search-results

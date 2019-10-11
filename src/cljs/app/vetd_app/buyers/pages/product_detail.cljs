@@ -304,7 +304,7 @@
               [:h4 "Jump To"]
               (util/augment-with-keys
                (for [[label k] (remove nil?
-                                       [["Top" :top]
+                                       [["Top Of Page" :top]
                                         ["Description" :top]
                                         (when (seq @group-ids&) ; is in a community?
                                           ["Your Community" :product/community])

@@ -39,7 +39,7 @@
                                               :size "small"
                                               :color "lightblue"
                                               :style {:float "right"
-                                                      :width 165
+                                                      :width 170
                                                       :text-align "left"
                                                       :margin-top 7}}
                                 [:> ui/Icon {:name "grid layout"}]
@@ -61,12 +61,13 @@
 
 (defn c-orgs
   [{:keys [id orgs] :as group}]
-  [bc/c-profile-segment {:title [:<>
-                                 [:> ui/Icon {:name "group"}]
-                                 " Organizations"]}
-   (for [org orgs]
-     ^{:key (:id org)}
-     [c-org org group])])
+  (let [orgs-sorted (sort-by (comp count :stack-items) > orgs)]
+    [bc/c-profile-segment {:title [:<>
+                                   [:> ui/Icon {:name "group"}]
+                                   " Organizations"]}
+     (for [org orgs-sorted]
+       ^{:key (:id org)}
+       [c-org org group])]))
 
 (defn c-stack-item
   [product top-products]
@@ -165,6 +166,24 @@
    (for [group groups]
      ^{:key (:id group)}
      [c-group group])])
+
+;; currently unused
+(defn c-explainer []
+  [:> ui/Segment {:placeholder true
+                  :class "how-vetd-works"}
+   [:h2 "How Vetd Works . . ."]
+   [cc/c-grid {:columns "equal"
+               :stackable true
+               :style {:margin-top 4}}
+    [[[:<>
+       [:h3 "Your Stack"]
+       "Add products to your stack to keep track of renewals, get recommendations, and share with your community."]]
+     [[:<>
+       [:h3 "Browse Products"]
+       "Search for products or product categories to find products that meet your needs."]]
+     [[:<>
+       [:h3 "VetdRounds"]
+       "Compare similar products side-by-side based on your unique requirements, and make an informed buying decision in a fraction of the time."]]]]])
 
 (defn c-page []
   (let [org-id& (rf/subscribe [:org-id])
