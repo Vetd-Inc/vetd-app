@@ -182,14 +182,19 @@
 (rf/reg-event-fx
  :nav-home
  (fn [{:keys [db]} [_ first-session?]]
-   (let [{:keys [memberships admin?]} db]
+   (let [{:keys [memberships active-memb-id admin?]} db]
      {:nav (if admin?
              {:path "/a/search"}
              ;; TODO support multiple orgs
-             (if-let [active-memb (first memberships)]
+             (if-let [active-org (some->> memberships
+                                          (filter #(-> % :id (= active-memb-id)))
+                                          first
+                                          :org)]
                (if first-session?
                  {:path "/b/stack"}
-                 {:path "/b/search"})
+                 (if (seq (:groups active-org)) ;; in a community?
+                   {:path "/c/home"}
+                   {:path "/b/stack"}))
                {:path "/login"}))})))
 
 (defn c-page []

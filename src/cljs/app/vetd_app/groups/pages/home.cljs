@@ -39,7 +39,7 @@
                                               :size "small"
                                               :color "lightblue"
                                               :style {:float "right"
-                                                      :width 165
+                                                      :width 170
                                                       :text-align "left"
                                                       :margin-top 7}}
                                 [:> ui/Icon {:name "grid layout"}]
