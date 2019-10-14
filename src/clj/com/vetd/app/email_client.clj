@@ -7,7 +7,8 @@
             [taoensso.timbre :as log]
             [clj-http.client :as client]
             [clj-time.periodic :as t-per]
-            [tick.core :as tick]))
+            [tick.core :as tick]
+            [tick.alpha.api :as tcka]))
 
 
 (def sendgrid-api-key "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")
@@ -26,10 +27,10 @@
 
 #_ (def scheduled-email-thread& (atom nil))
 
-#_ (def next-scheduled-event& (atom (tick/epoch)))
+#_ (def next-scheduled-event& (atom 0))
 
 (defonce scheduled-email-thread& (atom nil))
-(defonce next-scheduled-event& (atom (tick/epoch)))
+(defonce next-scheduled-event& (atom nil))
 
 
 
@@ -53,6 +54,9 @@
 
 (defn tick->ts [t]
   (tick/millis (tick/between (tick/epoch) t)))
+
+(defn ts->tick [msecs]
+  (tcka/+ (tick/epoch) (tick/new-duration msecs :millis)))
 
 (defn insert-email-sent-log-entry
   [{:keys [etype org-id user-id data]}]
@@ -128,6 +132,17 @@
        :limit 1}
       db/hs-query
       first))
+
+(defn select-max-email-log-created-by-etype [etype]
+  (-> {:select [[:%max.esl.created :max-created]]
+       :from [[:email_sent_log :esl]]
+       :where [:and
+               [:= :esl.deleted nil]
+               [:= :esl.etype etype]]
+       :limit 1}
+      db/hs-query
+      first
+      :max-created))
 
 (defn get-weekly-auto-email-data--product-renewals-soon [org-id days-forward limit]
   (-> [[:stack-items {:_where
@@ -268,7 +283,12 @@
     (reset! scheduled-email-thread&
             (future
               (log/info "Starting scheduled-emailer")
-              ;; TODO set next-scheduled-event& based on last email sent????              
+              ;; TODO set next-scheduled-event& based on last email sent????
+              (reset! next-scheduled-event& (or (some-> "weekly-buyer-email"
+                                                        select-max-email-log-created-by-etype
+                                                        tick/date-time
+                                                        calc-next-due-ts)
+                                                (calc-next-due-ts (now-))))
               (while (not @com/shutdown-signal)
                 (let [event-time @next-scheduled-event&]
                   (if (tick/> (now-) event-time)
@@ -276,6 +296,7 @@
                         (#'do-scheduled-emailer event-time))
                     (Thread/sleep (* 1000 10)))))
               (log/info "Stopped scheduled-emailer")))))
+
 
 #_
 
