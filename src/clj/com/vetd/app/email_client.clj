@@ -54,6 +54,19 @@
 (defn tick->ts [t]
   (tick/millis (tick/between (tick/epoch) t)))
 
+(defn insert-email-sent-log-entry
+  [{:keys [etype org-id user-id data]}]
+  (let [[id idstr] (ut/mk-id&str)]
+    (-> (db/insert! :orgs
+                    {:id id
+                     :idstr idstr
+                     :created (ut/now-ts)
+                     :updated (ut/now-ts)
+                     :etype etype
+                     :org_id org-id
+                     :user_id user-id
+                     :data data})
+        first)))
 
 ;; NOTE when :success is true, :resp is nil.
 (defn- request
@@ -227,22 +240,27 @@
                            (tick/- (tick/new-period 6 :days))
                            tick->ts)]
       (while
-          (when-let [{:keys [email oname org-id max-created]} (select-next-email&recipient threshold-ts)]
-            (send-template-email
-             "bill@vetd.com" ;; TODO use `email`
-             {:subject "TEST -- Weekly Email"
-              :preheader "You're going to want to see what's in this email"
-              :main-content
-              (with-out-str
-                (clojure.pprint/pprint
-                 (get-weekly-auto-email-data org-id oname)))})
-            false
+          (when-let [{:keys [email oname user-id org-id max-created]} (select-next-email&recipient threshold-ts)]
+            (let [data {:subject "TEST -- Weekly Email"
+                        :preheader "You're going to want to see what's in this email"
+                        :main-content
+                        (with-out-str
+                          (clojure.pprint/pprint
+                           (get-weekly-auto-email-data org-id oname)))}]
+              (send-template-email
+               "bill@vetd.com" ;; TODO use `email`
+               data)
+              (insert-email-sent-log-entry
+               {:etype :weekly-buyer-email
+                :user-id user-id
+                :org-id org-id
+                :data data}))
+            (Thread/sleep 1000)
+            false ;; TODO => true
             #_true)))
     (catch Throwable e
-      (def ex1 e)
       (com/log-error e)
       (Thread/sleep (* 1000 60 60)))))
-
 
 (defn start-scheduled-emailer-thread []
   (when (and (not env/building?)
