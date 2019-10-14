@@ -71,7 +71,11 @@
 (defn mk-transactions [tran-obj]
   {:name (.getName tran-obj)
    :date (.getDate tran-obj)
-   :amount (.getAmount tran-obj)})
+   :amount (.getAmount tran-obj)
+   :category (.getCategory tran-obj)
+   :category_id (.getCategoryId tran-obj)
+   :payee (some-> tran-obj .getPaymentMeta .getPayee)
+   :ppd_id (some-> tran-obj .getPaymentMeta .getPpdId)})
 
 (defn access-token->transactions [access-token]
   (try
