@@ -1992,7 +1992,7 @@
                     :owner :vetd
                     :grants {:hasura [:SELECT]}}]]
 
-   [[2019 10 15 0 0]
+   [[2019 10 15 1 0]
 
     [:create-table {:schema :vetd
                     :name :unsubscribes
