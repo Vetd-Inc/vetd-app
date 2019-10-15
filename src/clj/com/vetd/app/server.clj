@@ -88,7 +88,6 @@
 
 (defn ->transit
   [v]
-  (def v1 v)
   (let [baos (ByteArrayOutputStream.)
         tw (t/writer baos :json
                      {:handlers {}})]

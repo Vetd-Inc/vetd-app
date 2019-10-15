@@ -43,7 +43,6 @@
                                         [:fields 
                                          [:id :pf-id :idx :sval :nval :dval :jval]]]]]]]}])]
     (fn []
-      (def preq1 @prep-reqs&)
       [:div
        (for [preq (:form-docs @prep-reqs&)]
          ^{:key (str "form" (:id preq))}
