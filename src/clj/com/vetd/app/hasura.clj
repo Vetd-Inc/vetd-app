@@ -620,8 +620,7 @@
     true))
 
 ;; ws from client
-(defmethod
-  com/handle-ws-inbound :graphql
+(defmethod com/handle-ws-inbound :graphql
   [{:keys [sub-id query admin? subscription? stop session-token] :as msg} ws-id resp-fn]
   (def q1 query)
   #_ (clojure.pprint/pprint q1)
