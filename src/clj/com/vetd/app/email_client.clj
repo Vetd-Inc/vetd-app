@@ -1,6 +1,7 @@
 (ns com.vetd.app.email-client
   (:require [com.vetd.app.util :as ut]
             [com.vetd.app.common :as com]
+            [com.vetd.app.links :as l]
             [com.vetd.app.db :as db]
             [clj-http.client :as client]))
 
@@ -63,3 +64,16 @@
                  :org_id org-id
                  :etype etype})
     id))
+
+(defn create-unsubscribe-link
+  "Create a new unsubscribe link. Return the link key."
+  [{:keys [user-id org-id etype] :as input}]
+  (l/create {:cmd :email-unsubscribe
+             :input-data (select-keys input [:user-id :org-id :etype])
+             ;; a year from now
+             :expires-action (+ (ut/now) (* 1000 60 60 24 365))}))
+
+(defmethod l/action :email-unsubscribe
+  [{:keys [input-data] :as link} _]
+  (do (l/update-expires link "read" (+ (ut/now) (* 1000 60 5))) ; allow read for next 5 mins)
+      {:unsubscribed? (boolean (unsubscribe input-data))}))
