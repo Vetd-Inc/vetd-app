@@ -1,5 +1,6 @@
 (ns vetd-admin.pages.a-search
   (:require [vetd-app.ui :as ui]
+            [vetd-app.util :as util]
             [reagent.core :as r]
             [re-frame.core :as rf]))
 
@@ -63,6 +64,7 @@
  :a/login-as-support
  (fn [{:keys [db]} [_ org-id]]
    (let [qid (get-next-query-id)]
+     (reset! util/force-refresh?& true)
      {:db (assoc db
                  :org-id org-id)
       :dispatch [:v/nav-preposals]})))
