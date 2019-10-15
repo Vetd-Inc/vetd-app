@@ -145,8 +145,8 @@
   (if (add-org-to-group-pemitted? group-id com/*session-id*)
     (do
       (create-or-find-group-org-memb org-id group-id)
-      {}))
-  {:authorization-failed? true})
+      {})
+    {:authorization-failed? true}))
 
 (defmethod com/handle-ws-inbound :g/remove-org
   [{:keys [org-id group-id]} ws-id sub-fn]

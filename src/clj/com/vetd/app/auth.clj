@@ -348,6 +348,23 @@
   [{:keys [email pwd] :as req} ws-id sub-fn]
   (password-reset-request req))
 
+(defn invite-user-to-org-pemitted? [org-id session-id]
+  (->> (db/hs-query {:select [[:%count.s.id :count]]
+                     :from [[:sessions :s]]
+                     :join [[:users :u] [:and
+                                         [:= :u.deleted nil]
+                                         [:= :u.id :s.user_id ]]
+                            [:memberships :m] [:and
+                                               [:= :m.deleted nil]
+                                               [:= :m.user_id :u.id]
+                                               [:= :m.org_id org-id]]]
+                     :where [:and
+                             [:= :s.deleted nil]
+                             [:= :s.id session-id]]})
+       first
+       :count
+       (= 1)))
+
 (defn invite-user-to-org
   [email org-id from-user-id & [override-from-org-name]]
   (let [user (select-user-by-email email)]
@@ -363,7 +380,11 @@
 
 (defmethod com/handle-ws-inbound :invite-user-to-org
   [{:keys [email org-id from-user-id] :as req} ws-id sub-fn]
-  (invite-user-to-org email org-id from-user-id))
+  (if (invite-user-to-org-pemitted? org-id com/*session-id*)
+    (do
+      (invite-user-to-org email org-id from-user-id)
+      {})
+    {:authorization-failed? true}))
 
 ;; org-ids are ids of orgs that presumably exist in our database
 ;; new-orgs is a coll of maps, e.g.:
