@@ -50,8 +50,7 @@
     :preheader "You're going to want to see what's in this email"
     :main-content "Here is some example content."})
 
-(defn unsubscribe
-  "Unsubscribe a user from an email type."
+(defn- insert-unsubscribe
   [{:keys [user-id org-id etype]}]
   (let [[id idstr] (ut/mk-id&str)]
     (db/insert! :unsubscribes
@@ -64,6 +63,11 @@
                  :org_id org-id
                  :etype etype})
     id))
+
+(defn unsubscribe
+  "Unsubscribe a user from an email type."
+  [{:keys [user-id org-id etype] :as args}]
+  (insert-unsubscribe args))
 
 (defn create-unsubscribe-link
   "Create a new unsubscribe link. Return the link key."
