@@ -121,10 +121,32 @@
   (insert-group group-name admin-org-id)
   {})
 
+(defn add-org-to-group-pemitted? [group-id session-id]
+  (->> (db/hs-query {:select [[:%count.s.id :count]]
+                     :from [[:sessions :s]]
+                     :join [[:users :u] [:and
+                                         [:= :u.deleted nil]
+                                         [:= :u.id :s.user_id ]]
+                            [:memberships :m] [:and
+                                               [:= :m.deleted nil]
+                                               [:= :m.user_id :u.id]]
+                            [:groups :g] [:and
+                                        [:= :g.deleted nil]
+                                        [:= :g.admin_org_id :m.org_id]]]
+                     :where [:and
+                             [:= :s.deleted nil]
+                             [:= :s.id session-id]]})
+       first
+       :count
+       (= 1)))
+
 (defmethod com/handle-ws-inbound :add-org-to-group
   [{:keys [org-id group-id]} ws-id sub-fn]
-  (create-or-find-group-org-memb org-id group-id)
-  {})
+  (if (add-org-to-group-pemitted? group-id com/*session-id*)
+    (do
+      (create-or-find-group-org-memb org-id group-id)
+      {}))
+  {:authorization-failed? true})
 
 (defmethod com/handle-ws-inbound :g/remove-org
   [{:keys [org-id group-id]} ws-id sub-fn]
