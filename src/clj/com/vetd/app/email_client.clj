@@ -1,5 +1,8 @@
 (ns com.vetd.app.email-client
-  (:require [com.vetd.app.common :as com]
+  (:require [com.vetd.app.util :as ut]
+            [com.vetd.app.common :as com]
+            [com.vetd.app.links :as l]
+            [com.vetd.app.db :as db]
             [clj-http.client :as client]))
 
 (def sendgrid-api-key "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")
@@ -46,3 +49,35 @@
    {:subject "Vetd Buying Platform"
     :preheader "You're going to want to see what's in this email"
     :main-content "Here is some example content."})
+
+(defn- insert-unsubscribe
+  [{:keys [user-id org-id etype]}]
+  (let [[id idstr] (ut/mk-id&str)]
+    (db/insert! :unsubscribes
+                {:id id
+                 :idstr idstr
+                 :created (ut/now-ts)
+                 :updated (ut/now-ts)
+                 :deleted nil
+                 :user_id user-id
+                 :org_id org-id
+                 :etype etype})
+    id))
+
+(defn unsubscribe
+  "Unsubscribe a user from an email type."
+  [{:keys [user-id org-id etype] :as args}]
+  (insert-unsubscribe args))
+
+(defn create-unsubscribe-link
+  "Create a new unsubscribe link. Return the link key."
+  [{:keys [user-id org-id etype] :as input}]
+  (l/create {:cmd :email-unsubscribe
+             :input-data (select-keys input [:user-id :org-id :etype])
+             ;; a year from now
+             :expires-action (+ (ut/now) (* 1000 60 60 24 365))}))
+
+(defmethod l/action :email-unsubscribe
+  [{:keys [input-data] :as link} _]
+  (do (l/update-expires link "read" (+ (ut/now) (* 1000 60 5))) ; allow read for next 5 mins)
+      {:unsubscribed? (boolean (unsubscribe input-data))}))
