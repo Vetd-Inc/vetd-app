@@ -1272,6 +1272,23 @@ $cell-height: 201px;
 
 
 
+.orgs-grid {
+  .row {
+    padding-top: 0 !important;
+    
+    .column {
+      padding-left: 0.5rem !important;
+      padding-right: 0.5rem !important;
+      
+      &:first-child {
+        padding-left: 1rem !important;
+      }
+      &:last-child {
+        padding-right: 1rem !important;
+      }
+    }
+  }
+}
 
 
 

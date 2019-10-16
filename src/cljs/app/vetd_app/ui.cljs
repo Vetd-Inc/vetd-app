@@ -42,6 +42,9 @@
 (def ListHeader (component "List" "Header"))
 (def ListDescription (component "List" "Description"))
 
+;; Card
+(def Card (component "Card"))
+
 ;; Label
 (def Label (component "Label"))
 (def LabelDetail (component "Label" "Detail"))

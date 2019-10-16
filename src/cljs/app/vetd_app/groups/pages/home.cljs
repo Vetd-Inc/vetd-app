@@ -29,45 +29,55 @@
          {:keys [gname] :as group}]
       (let [num-members (count memberships)
             num-stack-items (count stack-items)]
-        [cc/c-field {:label [:<>
-                             (when (pos? num-stack-items)
-                               [:> ui/Button {:on-click (fn []
-                                                          (if (= id @org-id&)
-                                                            (rf/dispatch [:b/nav-stack])
-                                                            (rf/dispatch [:b/nav-stack-detail idstr])))
-                                              :as "a"
-                                              :size "small"
-                                              :color "lightblue"
-                                              :style {:float "right"
-                                                      :width 170
-                                                      :text-align "left"
-                                                      :margin-top 7}}
-                                [:> ui/Icon {:name "grid layout"}]
-                                (str " " num-stack-items " Stack Item" (when-not (= num-stack-items 1) "s"))])
-                             oname]
-                     :value [:<> (str num-members " member" (when-not (= num-members 1) "s") " ")
-                             [:> ui/Popup
-                              {:position "bottom left"
-                               :wide "very"
-                               :offset -10
-                               :content (let [max-members-show 15]
-                                          (str (s/join ", " (->> memberships
-                                                                 (map (comp :uname :user))
-                                                                 (take max-members-show)))
-                                               (when (> num-members max-members-show)
-                                                 (str " and " (- num-members max-members-show) " more."))))
-                               :trigger (r/as-element
-                                         [:> ui/Icon {:name "question circle"}])}]]}]))))
+        [:> ui/GridColumn
+         [:> ui/Button {:on-click (fn []
+                                    (if (= id @org-id&)
+                                      (rf/dispatch [:b/nav-stack])
+                                      (rf/dispatch [:b/nav-stack-detail idstr])))
+                        :as "a"
+                        :size "small"
+                        :color "white"
+                        :fluid true
+                        :style {:padding "7px"
+                                :text-align "left"}}
+          [:h4 {:style {:margin "0 0 5px 0"
+                        :padding "0 0 0 0"}}
+           oname]
+          [:div {:style {:font-weight 300}}
+           (str num-members " member" (when-not (= num-members 1) "s") " ")
+           (when (pos? num-members)
+             [:> ui/Popup
+              {:position "bottom left"
+               :wide "very"
+               :offset -10
+               :content (let [max-members-show 15]
+                          (str (s/join ", " (->> memberships
+                                                 (map (comp :uname :user))
+                                                 (take max-members-show)))
+                               (when (> num-members max-members-show)
+                                 (str " and " (- num-members max-members-show) " more."))))
+               :trigger (r/as-element
+                         [:> ui/Icon {:name "question circle"}])}])]
+          (when (pos? num-stack-items)
+            [:div {:style {:margin "7px 0 0 0"}}
+             [:> ui/Icon {:name "grid layout"}]
+             (str " " num-stack-items " Stack Item" (when-not (= num-stack-items 1) "s"))])]]))))
 
 (defn c-orgs
-  [{:keys [id orgs] :as group}]
+  [{:keys [id gname orgs] :as group}]
   (let [orgs-sorted (sort-by (comp count :stack-items) > orgs)]
-    [bc/c-profile-segment {:title [:<>
-                                   [:> ui/Icon {:name "group"}]
-                                   " Organizations"]}
-     (for [org orgs-sorted]
-       ^{:key (:id org)}
-       [c-org org group])]))
+    [:> ui/Segment {:class "detail-container profile"}
+     [:h1.title [:> ui/Icon {:name "group"}] " " gname " Community"]
+     [:> ui/Grid {:class "orgs-grid"
+                  :stackable true
+                  :columns "equal"
+                  :style {:margin-top 0}}
+      (let [org-cmps (for [org orgs-sorted]
+                       ^{:key (:id org)}
+                       [c-org org group])]
+        (for [cmp-row (partition 3 org-cmps)]
+          ^{:key (gensym "row-")}
+          [:> ui/GridRow cmp-row]))]]))
 
 (defn c-stack-item
   [product top-products]
@@ -146,18 +156,23 @@
                    [c-stack-item product top-products]))
                 "No organizations have added products to their stack yet.")))]]))))
 
+(defn c-feed
+  [{:keys [id gname orgs] :as group}]
+  (let [orgs-sorted (sort-by (comp count :stack-items) > orgs)]
+    [bc/c-profile-segment {:title [:<>
+                                   [:> ui/Icon {:name "feed"}]
+                                   "Recent Activity"]}
+     [:p "feed here"]]))
+
 (defn c-group
   [{:keys [gname] :as group}]
   [:> ui/Grid {:stackable true
                :style {:padding-bottom 35}} ; in case they are admin of multiple communities
    [:> ui/GridRow
-    [:> ui/GridColumn {:computer 16 :mobile 16}
-     [:h1 {:style {:text-align "center"}}
-      gname " Community"]]]
-   [:> ui/GridRow
     [:> ui/GridColumn {:computer 8 :mobile 16}
-     [c-orgs group]]
+     [c-feed group]]
     [:> ui/GridColumn {:computer 8 :mobile 16}
+     [c-orgs group]
      [c-popular-stack group]]]])
 
 (defn c-groups
