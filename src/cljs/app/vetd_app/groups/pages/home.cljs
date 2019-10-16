@@ -157,13 +157,31 @@
                    [c-stack-item product top-products]))
                 "No organizations have added products to their stack yet.")))]]))))
 
+(defn c-feed-event
+  [{:keys [id ftype text]}]
+  [:> ui/FeedEvent
+   {:icon "wpforms"
+    :date "Now"
+    :summary text}])
+
 (defn c-feed
   [{:keys [id gname orgs] :as group}]
   (let [orgs-sorted (sort-by (comp count :stack-items) > orgs)]
     [bc/c-profile-segment {:title [:<>
                                    [:> ui/Icon {:name "feed"}]
                                    "Recent Activity"]}
-     [:p "feed here"]]))
+     [:> ui/Feed
+      (for [event [{:id 3
+                    :ftype "round-add"
+                    :text "Blah Blah started a VetdRound called \"Wowza Products\""}
+                   {:id 4
+                    :ftype "round-add"
+                    :text "Blah Blah started a VetdRound called \"Wowza Products\""}
+                   {:id 5
+                    :ftype "round-add"
+                    :text "Blah Blah started a VetdRound called \"Wowza Products\""}]]
+        ^{:key (:id event)}
+        [c-feed-event event])]]))
 
 (defn c-group
   [{:keys [gname] :as group}]

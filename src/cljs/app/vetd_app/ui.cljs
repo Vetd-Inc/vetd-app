@@ -45,6 +45,10 @@
 ;; Card
 (def Card (component "Card"))
 
+;; Feed
+(def Feed (component "Feed"))
+(def FeedEvent (component "Feed" "Event"))
+
 ;; Label
 (def Label (component "Label"))
 (def LabelDetail (component "Label" "Detail"))
