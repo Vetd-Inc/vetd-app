@@ -40,28 +40,29 @@
                         :fluid true
                         :style {:padding "7px"
                                 :text-align "left"}}
-          [:h4 {:style {:margin "0 0 5px 0"
-                        :padding "0 0 0 0"}}
+          [:h4.blue {:style {:margin "0 0 5px 0"
+                             :padding "0 0 0 0"}}
            oname]
           [:div {:style {:font-weight 300}}
            (str num-members " member" (when-not (= num-members 1) "s") " ")
-           (when (pos? num-members)
-             [:> ui/Popup
-              {:position "bottom left"
-               :wide "very"
-               :offset -10
-               :content (let [max-members-show 15]
-                          (str (s/join ", " (->> memberships
-                                                 (map (comp :uname :user))
-                                                 (take max-members-show)))
-                               (when (> num-members max-members-show)
-                                 (str " and " (- num-members max-members-show) " more."))))
-               :trigger (r/as-element
-                         [:> ui/Icon {:name "question circle"}])}])]
+           ]
           (when (pos? num-stack-items)
             [:div {:style {:margin "7px 0 0 0"}}
              [:> ui/Icon {:name "grid layout"}]
-             (str " " num-stack-items " Stack Item" (when-not (= num-stack-items 1) "s"))])]]))))
+             (str " " num-stack-items " Stack Item" (when-not (= num-stack-items 1) "s"))])]
+         ;; (when (pos? num-members)
+         ;;   [:> ui/Popup
+         ;;    {:position "bottom center"
+         ;;     :wide "very"
+         ;;     :content (let [max-members-show 15]
+         ;;                (str (s/join ", " (->> memberships
+         ;;                                       (map (comp :uname :user))
+         ;;                                       (take max-members-show)))
+         ;;                     (when (> num-members max-members-show)
+         ;;                       (str " and " (- num-members max-members-show) " more."))))
+         ;;     :trigger (r/as-element
+         ;;               )}])
+         ]))))
 
 (defn c-orgs
   [{:keys [id gname orgs] :as group}]
