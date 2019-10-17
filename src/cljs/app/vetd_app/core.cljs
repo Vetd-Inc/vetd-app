@@ -91,6 +91,7 @@
  :init-db
  (constantly
   {:search p-bsearch/init-db
+   :groups p-ghome/init-db
    :stack p-bstack/init-db
    :round p-bround-detail/init-db
    ;; stores refs by keywords, that can be used with :scroll-to fx

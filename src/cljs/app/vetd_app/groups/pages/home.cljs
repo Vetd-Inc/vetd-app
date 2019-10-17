@@ -8,6 +8,9 @@
             [re-frame.core :as rf]
             [clojure.string :as s]))
 
+(def init-db
+  {:filter {:groups #{}}})
+
 (rf/reg-event-fx
  :g/nav-home
  (constantly
@@ -19,66 +22,72 @@
 (rf/reg-event-fx
  :g/route-home
  (fn [{:keys [db]}]
-   {:db (assoc db :page :g/home)}))
+   {:db (assoc db :page :g/home)
+    :dispatch [:groups.filter.reset]}))
+
+(rf/reg-event-fx
+ :groups.filter.add ;; group arg is "filter group" not community
+ (fn [{:keys [db]} [_ group value]]
+   {:db (update-in db [:groups :filter group] conj value)}))
+
+(rf/reg-event-fx
+ :groups.filter.remove
+ (fn [{:keys [db]} [_ group value]]
+   {:db (update-in db [:groups :filter group] disj value)}))
+
+(rf/reg-event-fx
+ :groups.filter.reset
+ (fn [{:keys [db]}]
+   (let [{:keys [memberships active-memb-id]} db]
+     {:db (assoc-in db
+                    [:groups :filter :groups]
+                    (some->> memberships
+                             (filter #(-> % :id (= active-memb-id)))
+                             first
+                             :org
+                             :groups
+                             (map :id)
+                             set))})))
+
+;;;; Subscriptions
+(rf/reg-sub
+ :groups
+ (fn [{:keys [groups]}] groups))
+
+(rf/reg-sub
+ :groups.filter
+ :<- [:groups]
+ (fn [{:keys [filter]}]
+   filter))
 
 ;;;; Components
-(defn c-org
-  [org group]
-  (let [org-id& (rf/subscribe [:org-id])]
-    (fn [{:keys [id idstr oname memberships stack-items] :as org}
-         {:keys [gname] :as group}]
-      (let [num-members (count memberships)
-            num-stack-items (count stack-items)]
-        [:> ui/GridColumn
-         [:> ui/Button {:on-click (fn []
-                                    (if (= id @org-id&)
-                                      (rf/dispatch [:b/nav-stack])
-                                      (rf/dispatch [:b/nav-stack-detail idstr])))
-                        :as "a"
-                        :size "small"
-                        :color "white"
-                        :fluid true
-                        :style {:padding "7px"
-                                :text-align "left"}}
-          [:h4.blue {:style {:margin "0 0 5px 0"
-                             :padding "0 0 0 0"}}
-           oname]
-          [:div {:style {:font-weight 300}}
-           (str num-members " member" (when-not (= num-members 1) "s") " ")
-           ]
-          (when (pos? num-stack-items)
-            [:div {:style {:margin "7px 0 0 0"}}
-             [:> ui/Icon {:name "grid layout"}]
-             (str " " num-stack-items " Stack Item" (when-not (= num-stack-items 1) "s"))])]
-         ;; (when (pos? num-members)
-         ;;   [:> ui/Popup
-         ;;    {:position "bottom center"
-         ;;     :wide "very"
-         ;;     :content (let [max-members-show 15]
-         ;;                (str (s/join ", " (->> memberships
-         ;;                                       (map (comp :uname :user))
-         ;;                                       (take max-members-show)))
-         ;;                     (when (> num-members max-members-show)
-         ;;                       (str " and " (- num-members max-members-show) " more."))))
-         ;;     :trigger (r/as-element
-         ;;               )}])
-         ]))))
+(defn c-group-filter
+  [group]
+  (let [filter& (rf/subscribe [:groups.filter])]
+    (fn [{:keys [id gname orgs] :as group}]
+      (let [num-orgs (count orgs)]
+        [:> ui/Checkbox
+         {:checked (-> @filter& :groups (contains? id) boolean)
+          :on-click (fn [_ this]
+                      (rf/dispatch [(if (.-checked this)
+                                      :groups.filter.add
+                                      :groups.filter.remove)
+                                    :groups
+                                    id]))
+          :label {:children
+                  (r/as-element
+                   [:div {:style {:position "relative"
+                                  :top -1
+                                  :left 4}}
+                    [:h4 {:style {:margin "0 0 5px 0"
+                                  :padding "0 0 0 0"}}
+                     gname]
+                    [:a {:on-click (fn [e]
+                                     (do (.stopPropagation e)
+                                         (rf/dispatch [:c/nav-detail id])))}
+                     [:> ui/Icon {:name "group"}]
+                     (str " " num-orgs " organization" (when-not (= num-orgs 1) "s") " ")]])}}]))))
 
-(defn c-orgs
-  [{:keys [id gname orgs] :as group}]
-  (let [orgs-sorted (sort-by (comp count :stack-items) > orgs)]
-    [:> ui/Segment {:class "detail-container profile"}
-     [:h1.title [:> ui/Icon {:name "group"}] " " gname " Community"]
-     [:> ui/Grid {:class "orgs-grid"
-                  :stackable true
-                  :columns "equal"
-                  :style {:margin-top 0}}
-      (let [org-cmps (for [org orgs-sorted]
-                       ^{:key (:id org)}
-                       [c-org org group])]
-        (for [cmp-row (partition 3 org-cmps)]
-          ^{:key (gensym "row-")}
-          [:> ui/GridRow cmp-row]))]]))
 
 (defn c-stack-item
   [product top-products]
@@ -101,13 +110,20 @@
        pname ;; " " [:small " by " (:oname vendor)]
        ]
       [:> ui/ItemExtra {:class "product-tags"}
-       [bc/c-categories product]
-       (when (seq discounts)
-         [bc/c-discount-tag discounts])]]
-     [:div.community
-      [:div.metric
+       [bc/c-categories product]]]
+     [:div.community {:on-click #(rf/dispatch
+                                  [:dispatch-stash.push :product-detail-loaded
+                                   [:do-fx
+                                    {:dispatch-later
+                                     [{:ms 200
+                                       :dispatch [:scroll-to :product/community]}]}]])}
+      [:div.metric 
        "Used by " orgs-using-count " "
-       [:> ui/Icon {:name "group"}]]
+       [:> ui/Popup
+        {:position "bottom right"
+         :offset 10
+         :content "Click to see organizations that are using this product."
+         :trigger (r/as-element [:> ui/Icon {:name "group"}])}]]
       [:div.metric
        (let [median-prices (map :median-price agg-group-prod-price)]
          (if (seq median-prices)
@@ -157,12 +173,27 @@
                    [c-stack-item product top-products]))
                 "No organizations have added products to their stack yet.")))]]))))
 
+(def ftype->icon
+  {:round-started "wpforms"
+   :round-winner-declared "trophy"
+   ;; blah blah rated product 4 stars
+   :stack-update-rating "star"
+   ;; this is a disaster, v1 just show everything piecemeal
+   :create-stack-item "grid layout"
+   :preposal-request "wpforms"
+   :buy-request "wpforms"
+   ;; these are the same event when user-facing
+   :complete-vendor-profile-request "wpforms"
+   :complete-product-profile-request "wpforms"})
+
 (defn c-feed-event
   [{:keys [id ftype text]}]
   [:> ui/FeedEvent
-   {:icon "wpforms"
-    :date "Now"
-    :summary text}])
+   [:> ui/FeedLabel
+    [:> ui/Icon {:name (ftype->icon ftype)}]]
+   [:> ui/FeedContent
+    [:> ui/FeedSummary text]
+    [:> ui/FeedDate "2 days ago - Super VC"]]])
 
 (defn c-feed
   [{:keys [id gname orgs] :as group}]
@@ -172,14 +203,14 @@
                                    "Recent Activity"]}
      [:> ui/Feed
       (for [event [{:id 3
-                    :ftype "round-add"
+                    :ftype :round-started
                     :text "Blah Blah started a VetdRound called \"Wowza Products\""}
                    {:id 4
-                    :ftype "round-add"
-                    :text "Blah Blah started a VetdRound called \"Wowza Products\""}
+                    :ftype :round-winner-declared
+                    :text "Blah Blah declared a winner in a  VetdRound called \"Wowza Products\""}
                    {:id 5
-                    :ftype "round-add"
-                    :text "Blah Blah started a VetdRound called \"Wowza Products\""}]]
+                    :ftype :create-stack-item
+                    :text "Super Cool added a stack item Hey Product"}]]
         ^{:key (:id event)}
         [c-feed-event event])]]))
 
@@ -188,10 +219,11 @@
   [:> ui/Grid {:stackable true
                :style {:padding-bottom 35}} ; in case they are admin of multiple communities
    [:> ui/GridRow
-    [:> ui/GridColumn {:computer 8 :mobile 16}
+    [:> ui/GridColumn {:computer 9 :mobile 16
+                       :style {:padding-right 7}}
      [c-feed group]]
-    [:> ui/GridColumn {:computer 8 :mobile 16}
-     [c-orgs group]
+    [:> ui/GridColumn {:computer 7 :mobile 16}
+     #_[c-orgs group]
      [c-popular-stack group]]]])
 
 (defn c-groups
@@ -200,6 +232,27 @@
    (for [group groups]
      ^{:key (:id group)}
      [c-group group])])
+
+(defn c-join-group-button
+  []
+  (let [popup-open? (r/atom false)]
+    (fn []
+      [:> ui/Popup
+       {:position "right center"
+        :on "click"
+        :open @popup-open?
+        :onOpen #(reset! popup-open? true)
+        :onClose #(reset! popup-open? false)
+        :hideOnScroll false
+        :flowing true
+        :content "Choose a Community"
+        :trigger (r/as-element
+                  [:> ui/Button {:color "lightblue"
+                                 :icon true
+                                 :labelPosition "left"
+                                 :fluid true}
+                   "Join a Community"
+                   [:> ui/Icon {:name "user plus"}]])}])))
 
 ;; currently unused
 (defn c-explainer []
@@ -230,16 +283,22 @@
                                    [:orgs
                                     [:id :idstr :oname
                                      [:memberships
-                                      [:id
-                                       [:user
-                                        [:id :uname]]]]
-                                     [:stack-items
-                                      [:id :idstr :status]]]]
+                                      [:id]]]]
+                                   ;; TODO all groups mixed together
                                    [:top-products {:_order_by {:count-stack-items :desc}
                                                    :_limit 10}
                                     [:group-id :product-id :count-stack-items]]]]]}])]
     (fn []
       (if (= :loading @groups&)
         [cc/c-loader]
-        [c-groups (:groups @groups&)]))))
-
+        [:div.container-with-sidebar
+         [:div.sidebar
+          [:> ui/Segment {:class "detail-container profile group-filter"}
+           [:h1.title  "Communities"]
+           (for [group (:groups @groups&)]
+             ^{:key (:id group)}
+             [c-group-filter group])]
+          [:> ui/Segment {:class "detail-container profile"}
+           [c-join-group-button]]]
+         [:div.inner-container
+          [c-groups (:groups @groups&)]]]))))

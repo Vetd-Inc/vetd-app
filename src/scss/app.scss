@@ -1239,11 +1239,11 @@ $cell-height: 201px;
       padding: 10px !important;
 
       .header {
-        font-size: 17px;
+        font-size: 15px !important;
         white-space: nowrap;
         text-overflow: ellipsis;
         overflow: hidden;
-        max-width: 275px;
+        max-width: 133px;
       }
       
       .product-logo {
@@ -1255,41 +1255,63 @@ $cell-height: 201px;
       }
 
       .extra {
-        margin-top: 13px;
+        margin-top: 11px;
+
+        .category-tag {
+          white-space: nowrap;
+          text-overflow: ellipsis;
+          overflow: hidden;
+          max-width: 133px;
+        }
       }
 
       .community {
         width: 115px;
         min-width: 115px;
+        font-size: 13px;
         
         .metric {
-          margin-bottom: 4px;
+          margin-bottom: 2px;
         }
       }
     }
   }
 }
 
+.group-filter {
+  .checkbox {
+    margin-bottom: 14px;
 
-
-.orgs-grid {
-  .row {
-    padding-top: 0 !important;
-    
-    .column {
-      padding-left: 0.5rem !important;
-      padding-right: 0.5rem !important;
-      
-      &:first-child {
-        padding-left: 1rem !important;
-      }
-      &:last-child {
-        padding-right: 1rem !important;
-      }
+    &:last-child {
+      margin-bottom: 0;
     }
   }
 }
 
+.ui.feed {
+  margin-bottom: 14px !important;
+
+  > .event {
+    padding-top: 10px;
+
+    > .label {
+      width: 21px;
+      
+      .icon {
+        margin-top: 12px;
+        padding: 0;
+      }
+
+      + .content {
+        margin-left: 14px;
+
+        .date {
+          margin-top: 0px;
+        }
+      }
+    }
+  }
+}
 
 
 
