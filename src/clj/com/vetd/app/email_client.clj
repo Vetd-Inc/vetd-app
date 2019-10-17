@@ -28,7 +28,7 @@
 
 #_ (def scheduled-email-thread& (atom nil))
 
-#_ (def next-scheduled-event& (atom 0))
+#_ (def next-scheduled-event& (atom nil))
 
 (defonce scheduled-email-thread& (atom nil))
 (defonce next-scheduled-event& (atom nil))
@@ -62,12 +62,12 @@
 (defn insert-email-sent-log-entry
   [{:keys [etype org-id user-id data]}]
   (let [[id idstr] (ut/mk-id&str)]
-    (-> (db/insert! :orgs
+    (-> (db/insert! :email_sent_log
                     {:id id
                      :idstr idstr
                      :created (ut/now-ts)
                      :updated (ut/now-ts)
-                     :etype etype
+                     :etype (name etype)
                      :org_id org-id
                      :user_id user-id
                      :data data})
@@ -144,32 +144,24 @@
       first
       :max-created))
 
-(defn get-weekly-auto-email-data--product-renewals-soon [org-id days-forward limit]
+(defn get-weekly-auto-email-data--product-renewals-soon [org-id price-period days-forward limit]
   (-> [[:stack-items {:_where
-                                 {:_and [{:renewal-reminder {:_eq true}}
-                                         {:renewal-date {:_gte (str (ut/now-ts))}}
-                                         {:renewal-date {:_lte (->> (tick/new-period days-forward :days)
-                                                                    (tick/+ (now-))
-                                                                    tick->ts
-                                                                    java.sql.Timestamp.
-                                                                    str)}}
-                                         {:price-period {:_eq "annual"}}
-                                         {:deleted {:_is_null true}}
-                                         {:status {:_eq "current"}}
-                                         {:buyer_id {:_eq (str org-id)}}]}
-                                 :_order_by {:renewal-date :asc}
-                                 :_limit limit}
-                   [:id :idstr :status
-                    :price-amount :price-period :rating
-                    :renewal-date :renewal-reminder
-                    [:buyer 
-                     [:id :oname]]
-                    [:product
-                     [:id :pname :idstr :logo
-                      [:vendor
-                       [:id :oname :idstr :short-desc]]
-                      [:categories {:ref-deleted nil}
-                       [:id :idstr :cname]]]]]]]
+                      {:_and [{:renewal-reminder {:_eq true}}
+                              {:renewal-date {:_gte (str (ut/now-ts))}}
+                              {:renewal-date {:_lte (->> (tick/new-period days-forward :days)
+                                                         (tick/+ (now-))
+                                                         tick->ts
+                                                         java.sql.Timestamp.
+                                                         str)}}
+                              {:price-period {:_eq price-period}}
+                              {:deleted {:_is_null true}}
+                              {:status {:_eq "current"}}
+                              {:buyer_id {:_eq (str org-id)}}]}
+                      :_order_by {:renewal-date :asc}
+                      :_limit limit}
+        [:price-amount :renewal-date
+         [:product
+          [:pname]]]]]
       ha/sync-query
       :stack-items))
 
@@ -181,12 +173,17 @@
       :rounds))
 
 (defn get-weekly-auto-email-data--communities-num-new-discounts [org-id days-back]
-  (->> {:select [:%count.gd.id]
+  (->> {:select [[:g.id :id]
+                 [:g.gname :gname]
+                 [:%count.gd.id :count]]
         :from [[:group_discounts :gd]]
         :join [[:group_org_memberships :gom]
                [:and
                 [:= :gom.org_id org-id]
-                [:= :gom.deleted nil]]]
+                [:= :gom.deleted nil]]
+               [:groups :g]
+               [:= :gom.org_id :g.id]]
+        
         :where [:and
                 [:= :gd.deleted nil]
                 [:> :gd.created
@@ -199,13 +196,17 @@
        :count))
 
 (defn get-weekly-auto-email-data--communities-num-new-orgs [org-id days-back]
-  (->> {:select [:%count.gom2.org_id]
+  (->> {:select [[:g.id :id]
+                 [:g.gname :gname]
+                 [:%count.gom2.org_id]]
         :modifiers [:distinct]
         :from [[:group_org_memberships :gom1]]
         :join [[:group_org_memberships :gom2]
                [:and
                 [:= :gom1.group_id :gom2.group_id]
-                [:= :gom2.deleted nil]]]
+                [:= :gom2.deleted nil]]
+               [:groups :g]
+               [:= :gom.org_id :g.id]]
         :where [:and [:= :gom1.org_id org-id]
                 [:> :gom2.created
                  (->> (tick/new-period days-back :days)
@@ -239,6 +240,7 @@
       first
       :count-ids))
 
+#_
 (defn get-weekly-auto-email-data [org-id oname]
   (let [product-renewals-soon (get-weekly-auto-email-data--product-renewals-soon org-id 30 15)]
     {:product-renewals-soon product-renewals-soon
@@ -248,31 +250,55 @@
      :communities-num-new-orgs (get-weekly-auto-email-data--communities-num-new-orgs org-id 7)
      :communities-num-new-stacks (get-weekly-auto-email-data--communities-num-new-stacks org-id 7)}))
 
+(defn get-weekly-auto-email-data [user-id org-id oname]
+  {:base-url l/base-url 
+   :unsubscribe-link (create-unsubscribe-link {:user-id user-id
+                                               :org-id org-id
+                                               :etype etype})
+   :org-name oname
+   :product-annual-renewals-soon (get-weekly-auto-email-data--product-renewals-soon org-id "annual" 30 15)
+   :product-monthly-renewals-soon (get-weekly-auto-email-data--product-renewals-soon org-id "monthly" 7 15) 
+   :active-rounds 0
+   :communities [{:group-name ""
+                  :num-new-discounts 0
+                  :num-new-orgs 0
+                  :num-new-stacks 0}]})
+
+#_
+(do-scheduled-emailer (now-))
+
+
+
 (defn do-scheduled-emailer [dt]
   (try
     (log/info (str "CALL do-scheduled-emailer " dt))
     (let [threshold-ts (-> dt
                            (tick/- (tick/new-period 6 :days))
                            tick->ts)]
-      (while
-          (when-let [{:keys [email oname user-id org-id max-created]} (select-next-email&recipient threshold-ts)]
-            (let [data {:subject "TEST -- Weekly Email"
-                        :preheader "You're going to want to see what's in this email"
-                        :main-content
-                        (with-out-str
-                          (clojure.pprint/pprint
-                           (get-weekly-auto-email-data org-id oname)))}]
-              (send-template-email
-               "bill@vetd.com" ;; TODO use `email`
-               data)
-              (insert-email-sent-log-entry
-               {:etype :weekly-buyer-email
-                :user-id user-id
-                :org-id org-id
-                :data data}))
-            (Thread/sleep 1000)
-            false ;; TODO => true
-            #_true)))
+      (while (try
+               (when-let [{:keys [email oname user-id org-id max-created]} (select-next-email&recipient threshold-ts)]
+                 (let [data {:subject "TEST -- Weekly Email"
+                             :preheader "You're going to want to see what's in this email"
+                             :main-content
+                             (with-out-str
+                               (clojure.pprint/pprint
+                                (get-weekly-auto-email-data user-id org-id oname)))}]
+                   (def d1 data)
+                   (clojure.pprint/pprint (get-weekly-auto-email-data org-id oname))
+                   #_(send-template-email
+                      "bill@vetd.com" ;; TODO use `email`
+                      data)
+                   (insert-email-sent-log-entry
+                    {:etype :weekly-buyer-email
+                     :user-id user-id
+                     :org-id org-id
+                     :data data}))
+                 (Thread/sleep 1000)
+                 false ;; TODO => true
+                 #_true)
+               (catch Throwable e
+                 (com/log-error e)
+                 false))))
     (catch Throwable e
       (com/log-error e)
       (Thread/sleep (* 1000 60 60)))))
@@ -307,9 +333,13 @@
 @override-now&
 ;; TODO calling this here is gross -- Bill
 
+#_
+(reset! override-now& (tick/date-time (java.util.Date. 120 1 1)))
+
+#_ (reset! override-now& nil)
 
 #_
-(reset! com/shutdown-signal false)
+(reset! com/shutdown-signal true)
 
 #_
 (clojure.pprint/pprint @scheduled-email-thread&)
