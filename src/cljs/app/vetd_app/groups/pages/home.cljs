@@ -49,6 +49,23 @@
                              (map :id)
                              set))})))
 
+(rf/reg-event-fx
+ :g/join-request
+ (fn [{:keys [db]} [_ group-ids]]
+   {:ws-send {:payload {:cmd :g/join-request
+                        :return {:handler :g/join-request.return}
+                        :group-ids group-ids
+                        :buyer-id (util/db->current-org-id db)}}
+    :analytics/track {:event "Request to Join"
+                      :props {:category "Community"}}}))
+
+(rf/reg-event-fx
+ :g/join-request.return
+ (constantly
+  {:toast {:type "success"
+           :title "Request Sent"
+           :message "We'll be in touch via email with next steps shortly."}}))
+
 ;;;; Subscriptions
 (rf/reg-sub
  :groups
@@ -233,19 +250,78 @@
      ^{:key (:id group)}
      [c-group group])])
 
+(defn c-join-group-form
+  [current-group-ids popup-open?&]
+  (let [value& (r/atom [])
+        options& (r/atom []) ; options from search results + current values
+        search-query& (r/atom "")
+        groups->options (fn [groups]
+                          (for [{:keys [id gname]} groups]
+                            {:key id
+                             :text gname
+                             :value id}))]
+    (fn [current-group-ids popup-open?&]
+      (let [groups& (rf/subscribe
+                     [:gql/q
+                      {:queries
+                       [[:groups {:_where
+                                  {:_and ;; while this trims search-query, the Dropdown's search filter doesn't...
+                                   [{:gname {:_ilike (str "%" (s/trim @search-query&) "%")}}
+                                    {:deleted {:_is_null true}}]}
+                                  :_limit 100
+                                  :_order_by {:gname :asc}}
+                         [:id :gname]]]}])
+            _ (when-not (= :loading @groups&)
+                (let [options (->> @groups&
+                                   :groups
+                                   groups->options ; now we have options from gql sub
+                                   ;; (this dumbly actually keeps everything, but that seems fine)
+                                   (concat @options&) ; keep options for the current values
+                                   distinct
+                                   (remove (comp (partial contains? current-group-ids) :value)))]
+                  (when-not (= @options& options)
+                    (reset! options& options))))]
+        [:> ui/Form {:as "div"
+                     :class "popup-dropdown-form"}
+         [:> ui/Dropdown {:loading (= :loading @groups&)
+                          :options @options&
+                          :placeholder "Search groups..."
+                          :search true
+                          :selection true
+                          :multiple true
+                          :selectOnBlur false
+                          :selectOnNavigation true
+                          :closeOnChange true
+                          :allowAdditions true
+                          :additionLabel "Hit 'Enter' to Write In "
+                          :onAddItem (fn [_ this]
+                                       (->> this
+                                            .-value
+                                            vector
+                                            ui/as-dropdown-options
+                                            (swap! options& concat)))
+                          :onSearchChange (fn [_ this] (reset! search-query& (aget this "searchQuery")))
+                          :onChange (fn [_ this] (reset! value& (.-value this)))}]
+         [:> ui/Button
+          {:color "teal"
+           :disabled (empty? @value&)
+           :on-click #(do (reset! popup-open?& false)
+                          (rf/dispatch [:g/join-request (js->clj @value&)]))}
+          "Request to Join"]]))))
+
 (defn c-join-group-button
-  []
-  (let [popup-open? (r/atom false)]
-    (fn []
+  [current-group-ids]
+  (let [popup-open?& (r/atom false)]
+    (fn [current-group-ids]
       [:> ui/Popup
-       {:position "right center"
+       {:position "bottom left"
         :on "click"
-        :open @popup-open?
-        :onOpen #(reset! popup-open? true)
-        :onClose #(reset! popup-open? false)
+        :open @popup-open?&
+        :onOpen #(reset! popup-open?& true)
+        :onClose #(reset! popup-open?& false)
         :hideOnScroll false
         :flowing true
-        :content "Choose a Community"
+        :content (r/as-element [c-join-group-form current-group-ids popup-open?&])
         :trigger (r/as-element
                   [:> ui/Button {:color "lightblue"
                                  :icon true
@@ -299,6 +375,6 @@
              ^{:key (:id group)}
              [c-group-filter group])]
           [:> ui/Segment {:class "detail-container profile"}
-           [c-join-group-button]]]
+           [c-join-group-button (->> @groups& :groups (map :id))]]]
          [:div.inner-container
           [c-groups (:groups @groups&)]]]))))
