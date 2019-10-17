@@ -46,7 +46,6 @@
 
 (defn insert-feed-event
   [{:keys [journal-entry-id journal-entry-created org-id ftype data]}]
-  (def ife1 [journal-entry-id journal-entry-created org-id ftype data])
   (let [[id idstr] (ut/mk-id&str)]
     (db/insert! :feed_events
                 {:id id
@@ -81,14 +80,12 @@
       (when (= ch trigger-pull-feed-events)
         (while
             (when-let [{:keys [id] :as entry} (select-one-new-journal-entry)]
-              (def e1 entry)
               (swap! last-journal-entry-id& (partial max id))
               (some-> entry
                       journal-entry->feed-event
                       insert-feed-event)
               true))))
     (catch Throwable e
-      (def ex1 e)
       (com/log-error e)
       (Thread/sleep 5000))))
 

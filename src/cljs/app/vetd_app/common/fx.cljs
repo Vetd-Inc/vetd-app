@@ -105,6 +105,10 @@
                {:local-store {:join-group-link-key link-key
                               :join-group-name (:group-name output-data)}
                 :dispatch-later [{:ms 100 :dispatch [:nav-signup :buyer]}]})
+     :email-unsubscribe {:toast {:type "success"
+                                 :title "Unsubscribed"
+                                 :message "You will no longer receive emails like this."}
+                         :dispatch [:nav-home]}
      {:toast {:type "error"
               :title "That link is expired or invalid."}
       :dispatch [:nav-home]})))

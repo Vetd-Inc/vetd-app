@@ -383,7 +383,6 @@
 
 (defn flx
   [{:keys [p c]} & children]
-  (def c1 children)
   (let [chs (find-map-heads children)]
     ;; `into` avoids unique key warnings
     (into [:div (flexer-xfrm-attrs

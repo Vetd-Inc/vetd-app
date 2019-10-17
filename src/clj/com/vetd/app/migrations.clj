@@ -4,7 +4,6 @@
             [com.vetd.app.migragen :as mig]            
             [taoensso.timbre :as log]))
 
-
 (def mig-2019-02-04-copy-from-categories-up
   (mig/mk-copy-from-up-fn "categories.sql"))
 
@@ -1993,19 +1992,31 @@
                     :owner :vetd
                     :grants {:hasura [:SELECT]}}]]
 
+<<<<<<< HEAD
    [[2019 10 11 11 00]
 
     [:create-table {:schema :vetd
                     :name :email_sent_log
+=======
+   [[2019 10 15 1 0]
+
+    [:create-table {:schema :vetd
+                    :name :unsubscribes
+>>>>>>> origin/master
                     :columns {:id [:bigint :NOT :NULL]
                               :idstr [:text]
                               :created [:timestamp :with :time :zone]
                               :updated [:timestamp :with :time :zone]
                               :deleted [:timestamp :with :time :zone]
                               :user_id [:bigint]
+<<<<<<< HEAD
                               :etype [:text]
                               :org_id [:bigint]
                               :data [:jsonb]}
+=======
+                              :org_id [:bigint]
+                              :etype [:text]}
+>>>>>>> origin/master
                     :owner :vetd
                     :grants {:hasura [:SELECT]}}]]])
 
