@@ -1,4 +1,4 @@
-(ns app.vetd-app.groups.pages.detail
+(ns vetd-app.groups.pages.detail
   (:require [vetd-app.ui :as ui]
             [vetd-app.util :as util]
             [vetd-app.common.components :as cc]
@@ -162,10 +162,13 @@
      [:h1 {:style {:text-align "center"}}
       gname " Community"]]]
    [:> ui/GridRow
+    [:> ui/GridColumn {:computer 4 :mobile 16}]
     [:> ui/GridColumn {:computer 8 :mobile 16}
      [c-orgs group]]
-    [:> ui/GridColumn {:computer 8 :mobile 16}
-     [c-popular-stack group]]]])
+    [:> ui/GridColumn {:computer 4 :mobile 16}]
+    ;; [:> ui/GridColumn {:computer 8 :mobile 16}
+    ;;  [c-popular-stack group]]
+    ]])
 
 (defn c-groups
   [groups]
@@ -197,7 +200,7 @@
         org-id& (rf/subscribe [:org-id])
         groups& (rf/subscribe [:gql/sub
                                {:queries
-                                [[:groups {:id @group-idstr&
+                                [[:groups {:idstr @group-idstr&
                                            :deleted nil}
                                   [:id :gname
                                    [:orgs

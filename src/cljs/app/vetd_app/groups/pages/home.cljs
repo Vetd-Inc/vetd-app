@@ -81,7 +81,7 @@
 (defn c-group-filter
   [group]
   (let [filter& (rf/subscribe [:groups.filter])]
-    (fn [{:keys [id gname orgs] :as group}]
+    (fn [{:keys [id idstr gname orgs] :as group}]
       (let [num-orgs (count orgs)]
         [:> ui/Checkbox
          {:checked (-> @filter& :groups (contains? id) boolean)
@@ -101,7 +101,7 @@
                      gname]
                     [:a {:on-click (fn [e]
                                      (do (.stopPropagation e)
-                                         (rf/dispatch [:c/nav-detail id])))}
+                                         (rf/dispatch [:g/nav-detail idstr])))}
                      [:> ui/Icon {:name "group"}]
                      (str " " num-orgs " organization" (when-not (= num-orgs 1) "s") " ")]])}}]))))
 
@@ -152,7 +152,7 @@
                      :disabled true}]]]))
 
 (defn c-popular-stack
-  [{:keys [id top-products] :as group}]
+  [top-products]
   (let [group-ids& (rf/subscribe [:group-ids])]
     (fn []
       (let [top-products-ids (map :product-id top-products)
@@ -228,25 +228,6 @@
                     :text "Super Cool added a stack item Hey Product"}]]
         ^{:key (:id event)}
         [c-feed-event event])]]))
-
-(defn c-group
-  [{:keys [gname] :as group}]
-  [:> ui/Grid {:stackable true
-               :style {:padding-bottom 35}} ; in case they are admin of multiple communities
-   [:> ui/GridRow
-    [:> ui/GridColumn {:computer 9 :mobile 16
-                       :style {:padding-right 7}}
-     [c-feed group]]
-    [:> ui/GridColumn {:computer 7 :mobile 16}
-     #_[c-orgs group]
-     [c-popular-stack group]]]])
-
-(defn c-groups
-  [groups]
-  [:div
-   (for [group groups]
-     ^{:key (:id group)}
-     [c-group group])])
 
 (defn c-join-group-form
   [current-group-ids popup-open?&]
@@ -328,24 +309,6 @@
                    "Join a Community"
                    [:> ui/Icon {:name "user plus"}]])}])))
 
-;; currently unused
-(defn c-explainer []
-  [:> ui/Segment {:placeholder true
-                  :class "how-vetd-works"}
-   [:h2 "How Vetd Works . . ."]
-   [cc/c-grid {:columns "equal"
-               :stackable true
-               :style {:margin-top 4}}
-    [[[:<>
-       [:h3 "Your Stack"]
-       "Add products to your stack to keep track of renewals, get recommendations, and share with your community."]]
-     [[:<>
-       [:h3 "Browse Products"]
-       "Search for products or product categories to find products that meet your needs."]]
-     [[:<>
-       [:h3 "VetdRounds"]
-       "Compare similar products side-by-side based on your unique requirements, and make an informed buying decision in a fraction of the time."]]]]])
-
 (defn c-page []
   (let [org-id& (rf/subscribe [:org-id])
         group-ids& (rf/subscribe [:group-ids])
@@ -353,12 +316,10 @@
                                {:queries
                                 [[:groups {:id @group-ids&
                                            :deleted nil}
-                                  [:id :gname
+                                  [:id :idstr :gname
                                    [:orgs
-                                    [:id :idstr :oname
-                                     [:memberships
-                                      [:id]]]]
-                                   ;; TODO all groups mixed together
+                                    [:id]]
+                                   ;; TODO put in separate gql and do single query for all group-ids
                                    [:top-products {:_order_by {:count-stack-items :desc}
                                                    :_limit 10}
                                     [:group-id :product-id :count-stack-items]]]]]}])]
@@ -375,4 +336,13 @@
           [:> ui/Segment {:class "detail-container profile"}
            [c-join-group-button (->> @groups& :groups (map :id))]]]
          [:div.inner-container
-          [c-groups (:groups @groups&)]]]))))
+          [:> ui/Grid {:stackable true
+                       :style {:padding-bottom 35}} ; in case they are admin of multiple communities
+           [:> ui/GridRow
+            [:> ui/GridColumn {:computer 9 :mobile 16
+                               :style {:padding-right 7}}
+             [c-feed {}]]
+            [:> ui/GridColumn {:computer 7 :mobile 16}
+             [c-popular-stack (->> (:groups @groups&)
+                                   (map :top-products)
+                                   flatten)]]]]]]))))
