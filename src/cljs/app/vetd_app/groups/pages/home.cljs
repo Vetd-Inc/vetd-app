@@ -123,9 +123,7 @@
     [:> ui/Item {:on-click #(rf/dispatch [:b/nav-product-detail product-idstr])}
      [bc/c-product-logo logo]
      [:> ui/ItemContent
-      [:> ui/ItemHeader
-       pname ;; " " [:small " by " (:oname vendor)]
-       ]
+      [:> ui/ItemHeader pname]
       [:> ui/ItemExtra {:class "product-tags"}
        [bc/c-categories product]]]
      [:div.community {:on-click #(rf/dispatch
