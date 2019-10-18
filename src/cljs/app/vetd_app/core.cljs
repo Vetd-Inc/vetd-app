@@ -249,7 +249,7 @@
 (sec/defroute settings-root "/settings" []
   (rf/dispatch [:route-settings]))
 
-(sec/defroute group-detail-path "/c/:path-or-idstr" [path-or-idstr]
+(sec/defroute groups-path "/c/:path-or-idstr" [path-or-idstr]
   (rf/dispatch (case path-or-idstr
                  "home" [:g/route-home]
                  "settings" [:g/route-settings]
