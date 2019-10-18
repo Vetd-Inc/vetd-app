@@ -153,9 +153,11 @@
 
 (defn c-popular-stack
   [top-products]
-  (let [group-ids& (rf/subscribe [:group-ids])]
-    (fn []
+  (let [group-ids& (rf/subscribe [:group-ids])
+        filter& (rf/subscribe [:groups.filter])]
+    (fn [top-products]
       (let [top-products-ids (map :product-id top-products)
+            selected-group-ids (:groups @filter&)
             products-unordered @(rf/subscribe
                                  [:gql/q
                                   {:queries
@@ -166,12 +168,12 @@
                                       [:categories {:ref-deleted nil
                                                     :_limit 1}
                                        [:id :idstr :cname]]
-                                      [:agg-group-prod-rating {:group-id @group-ids&}
+                                      [:agg-group-prod-rating {:group-id selected-group-ids}
                                        [:group-id :product-id
                                         :count-stack-items :rating]]
-                                      [:agg-group-prod-price {:group-id @group-ids&}
+                                      [:agg-group-prod-price {:group-id selected-group-ids}
                                        [:group-id :median-price]]
-                                      [:discounts {:id @group-ids&
+                                      [:discounts {:id selected-group-ids
                                                    :ref-deleted nil}
                                        [:group-discount-descr :gname]]]]]}])]
         [:div.popular-products
@@ -201,33 +203,53 @@
    :complete-vendor-profile-request "wpforms"
    :complete-product-profile-request "wpforms"})
 
+;; (defn event-data->message
+;;   (case )
+;;   {:round-started 
+;;    :round-winner-declared "trophy"
+;;    ;; blah blah rated product 4 stars
+;;    :stack-update-rating "star"
+;;    ;; this is a disaster, v1 just show everything piecemeal
+;;    :create-stack-item "grid layout"
+;;    :preposal-request "wpforms"
+;;    :buy-request "wpforms"
+;;    ;; these are the same event when user-facing
+;;    :complete-vendor-profile-request "wpforms"
+;;    :complete-product-profile-request "wpforms"})
+
 (defn c-feed-event
-  [{:keys [id ftype text]}]
+  [{:keys [id ftype created data]}]
   [:> ui/FeedEvent
    [:> ui/FeedLabel
-    [:> ui/Icon {:name (ftype->icon ftype)}]]
+    [:> ui/Icon {:name (ftype->icon (keyword ftype))}]]
    [:> ui/FeedContent
-    [:> ui/FeedSummary text]
-    [:> ui/FeedDate "2 days ago - Super VC"]]])
+    [:> ui/FeedSummary data]
+    [:> ui/FeedDate
+     (str created " - Some Org")]
+    ;; [:> ui/FeedDate "2 days ago - Super VC"]
+    ]])
 
 (defn c-feed
-  [{:keys [id gname orgs] :as group}]
-  (let [orgs-sorted (sort-by (comp count :stack-items) > orgs)]
-    [bc/c-profile-segment {:title [:<>
-                                   [:> ui/Icon {:name "feed"}]
-                                   "Recent Activity"]}
-     [:> ui/Feed
-      (for [event [{:id 3
-                    :ftype :round-started
-                    :text "Blah Blah started a VetdRound called \"Wowza Products\""}
-                   {:id 4
-                    :ftype :round-winner-declared
-                    :text "Blah Blah declared a winner in a  VetdRound called \"Wowza Products\""}
-                   {:id 5
-                    :ftype :create-stack-item
-                    :text "Super Cool added a stack item Hey Product"}]]
-        ^{:key (:id event)}
-        [c-feed-event event])]]))
+  [groups]
+  (let [org-ids (->> groups (map :orgs) flatten (map :id) distinct)
+        feed-events& (rf/subscribe [:gql/sub
+                                    {:queries
+                                     [[:feed-events {:org-id org-ids
+                                                     :_order_by {:created :desc}
+                                                     :_limit 20
+                                                     :deleted nil}
+                                       [:id :created :ftype ;; :data
+                                        ]]]}])]
+    (if (= :loading @feed-events&)
+      [cc/c-loader]
+      (let [feed-events (:feed-events @feed-events&)]
+        [bc/c-profile-segment {:title [:<> [:> ui/Icon {:name "feed"}] "Recent Activity"]}
+         (if (seq feed-events)
+           [:> ui/Feed
+            (for [event feed-events]
+              ^{:key (:id event)}
+              [c-feed-event event])]
+           [:p "No blah"])]))))
 
 (defn c-join-group-form
   [current-group-ids popup-open?&]
@@ -319,10 +341,11 @@
                                   [:id :idstr :gname
                                    [:orgs
                                     [:id]]
-                                   ;; TODO put in separate gql and do single query for all group-ids
+                                   ;; TODO put in separate gql and do single query for all selected-group-ids
                                    [:top-products {:_order_by {:count-stack-items :desc}
                                                    :_limit 10}
-                                    [:group-id :product-id :count-stack-items]]]]]}])]
+                                    [:group-id :product-id :count-stack-items]]]]]}])
+        filter& (rf/subscribe [:groups.filter])]
     (fn []
       (if (= :loading @groups&)
         [cc/c-loader]
@@ -335,14 +358,17 @@
              [c-group-filter group])]
           [:> ui/Segment {:class "detail-container profile"}
            [c-join-group-button (->> @groups& :groups (map :id))]]]
-         [:div.inner-container
-          [:> ui/Grid {:stackable true
-                       :style {:padding-bottom 35}} ; in case they are admin of multiple communities
-           [:> ui/GridRow
-            [:> ui/GridColumn {:computer 9 :mobile 16
-                               :style {:padding-right 7}}
-             [c-feed {}]]
-            [:> ui/GridColumn {:computer 7 :mobile 16}
-             [c-popular-stack (->> (:groups @groups&)
-                                   (map :top-products)
-                                   flatten)]]]]]]))))
+         (let [selected-groups (->> (:groups @groups&)
+                                    (filter (comp (:groups @filter&) :id)))]
+           [:div.inner-container
+            [:> ui/Grid {:stackable true
+                         :style {:padding-bottom 35}} ; in case they are admin of multiple communities
+             [:> ui/GridRow
+              [:> ui/GridColumn {:computer 9 :mobile 16
+                                 :style {:padding-right 7}}
+               [c-feed selected-groups]]
+              [:> ui/GridColumn {:computer 7 :mobile 16}
+               [c-popular-stack (->> selected-groups
+                                     (map :top-products)
+                                     ;; needs distinct ?
+                                     flatten)]]]]])]))))
