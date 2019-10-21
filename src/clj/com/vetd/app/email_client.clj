@@ -25,6 +25,74 @@
    :throw-exceptions false
    :headers {"Authorization" (str "Bearer " sendgrid-api-key)}})
 
+;; NOTE when :success is true, :resp is nil.
+(defn- request
+  [endpoint & [params headers]]
+  (try (let [resp (-> (client/post (str sendgrid-api-url endpoint)
+                                   (merge-with merge 
+                                               common-opts
+                                               {:form-params params}
+                                               {:headers headers}))
+                      :body)]
+         {:success (not (seq (:errors resp)))
+          :resp resp})
+       (catch Exception e
+         (com/log-error e)
+         {:success false
+          :resp {:error {:message (.getMessage e)}}})))
+
+(defn send-template-email
+  [to data & [{:keys [from from-name template-id]}]]
+  (request "mail/send"
+           {:personalizations [{:to [{:email to}]
+                                :dynamic_template_data data}]
+            :from {:email (or from sendgrid-default-from)
+                   :name (or from-name sendgrid-default-from-name)}
+            :template_id (or template-id sendgrid-default-template-id)}))
+
+;;;; Example Usage
+#_(send-template-email
+   "chris@vetd.com"
+   {:subject "Vetd Buying Platform"
+    :preheader "You're going to want to see what's in this email"
+    :main-content "Here is some example content."})
+
+(defn- insert-unsubscribe
+  [{:keys [user-id org-id etype]}]
+  (let [[id idstr] (ut/mk-id&str)]
+    (db/insert! :unsubscribes
+                {:id id
+                 :idstr idstr
+                 :created (ut/now-ts)
+                 :updated (ut/now-ts)
+                 :deleted nil
+                 :user_id user-id
+                 :org_id org-id
+                 :etype etype})
+    id))
+
+(defn unsubscribe
+  "Unsubscribe a user from an email type."
+  [{:keys [user-id org-id etype] :as args}]
+  (insert-unsubscribe args))
+
+(defn create-unsubscribe-link
+  "Create a new unsubscribe link. Return the link url."
+  [{:keys [user-id org-id etype] :as input}]
+  (str l/base-url
+       (l/create {:cmd :email-unsubscribe
+                  :input-data (select-keys input [:user-id :org-id :etype])
+                  ;; a year from now
+                  :expires-action (+ (ut/now) (* 1000 60 60 24 365))})))
+
+(defmethod l/action :email-unsubscribe
+  [{:keys [input-data] :as link} _]
+  (do (l/update-expires link "read" (+ (ut/now) (* 1000 60 5))) ; allow read for next 5 mins)
+      {:unsubscribed? (boolean (unsubscribe input-data))}))
+
+
+
+;; Auto Email
 
 #_ (def scheduled-email-thread& (atom nil))
 
@@ -32,8 +100,6 @@
 
 (defonce scheduled-email-thread& (atom nil))
 (defonce next-scheduled-event& (atom nil))
-
-
 
 (def override-now& (atom nil))
 
@@ -73,37 +139,6 @@
                      :data data})
         first)))
 
-;; NOTE when :success is true, :resp is nil.
-(defn- request
-  [endpoint & [params headers]]
-  (try (let [resp (-> (client/post (str sendgrid-api-url endpoint)
-                                   (merge-with merge 
-                                               common-opts
-                                               {:form-params params}
-                                               {:headers headers}))
-                      :body)]
-         {:success (not (seq (:errors resp)))
-          :resp resp})
-       (catch Exception e
-         (com/log-error e)
-         {:success false
-          :resp {:error {:message (.getMessage e)}}})))
-
-(defn send-template-email
-  [to data & [{:keys [from from-name template-id]}]]
-  (request "mail/send"
-           {:personalizations [{:to [{:email to}]
-                                :dynamic_template_data data}]
-            :from {:email (or from sendgrid-default-from)
-                   :name (or from-name sendgrid-default-from-name)}
-            :template_id (or template-id sendgrid-default-template-id)}))
-
-;;;; Example Usage
-#_(send-template-email
-   "chris@vetd.com"
-   {:subject "Vetd Buying Platform"
-    :preheader "You're going to want to see what's in this email"
-    :main-content "Here is some example content."})
 
 
 
@@ -112,7 +147,7 @@
   (-> {:select [[:%max.esl.created :max-created]
                 [:m.id :membership-id]
                 [:m.user_id :user-id]
-;;TODO                [:u.email :email]                
+                ;;TODO                [:u.email :email]                
                 [:m.org_id :org-id]
                 [:o.oname :oname]]
        :from [[:orgs :o]]
@@ -144,19 +179,31 @@
       first
       :max-created))
 
+;; days-forward should be less than 30/31 if using price-period of monthly
 (defn get-weekly-auto-email-data--product-renewals-soon [org-id price-period days-forward limit]
   (-> [[:stack-items {:_where
-                      {:_and [{:renewal-reminder {:_eq true}}
-                              {:renewal-date {:_gte (str (ut/now-ts))}}
-                              {:renewal-date {:_lte (->> (tick/new-period days-forward :days)
-                                                         (tick/+ (now-))
-                                                         tick->ts
-                                                         java.sql.Timestamp.
-                                                         str)}}
-                              {:price-period {:_eq price-period}}
-                              {:deleted {:_is_null true}}
-                              {:status {:_eq "current"}}
-                              {:buyer_id {:_eq (str org-id)}}]}
+                      {:_and (concat [{:status {:_eq "current"}}
+                                      {:buyer_id {:_eq (str org-id)}}
+                                      ;; {:renewal-reminder {:_eq true}} ;; include regardless of reminder checked
+                                      {:price-period {:_eq price-period}}
+                                      {:deleted {:_is_null true}}]
+                                     (if (= price-period "monthly")
+                                       (let [start-day (tick/day-of-month (now-))
+                                             end-day (->> (tick/new-period days-forward :days)
+                                                          (tick/+ (now-))
+                                                          tick/day-of-month)]
+                                         (if (> start-day end-day) ;; it wrapped around to next month
+                                           [{:_or
+                                             [{:renewal-day-of-month {:_gte start-day}}
+                                              {:renewal-day-of-month {:_lte end-day}}]}]
+                                           [{:renewal-day-of-month {:_gte start-day}}
+                                            {:renewal-day-of-month {:_lte end-day}}]))
+                                       [{:renewal-date {:_gte (str (ut/now-ts))}}
+                                        {:renewal-date {:_lte (->> (tick/new-period days-forward :days)
+                                                                   (tick/+ (now-))
+                                                                   tick->ts
+                                                                   java.sql.Timestamp.
+                                                                   str)}}]))}
                       :_order_by {:renewal-date :asc}
                       :_limit limit}
         [:price-amount :renewal-date
@@ -165,8 +212,10 @@
       ha/sync-query
       :stack-items))
 
+;; active rounds are rounds that are "in-progress"
 (defn get-weekly-auto-email-data--active-rounds [org-id]
   (-> [[:rounds {:deleted nil
+                 :status "in-progress"
                  :buyer-id org-id}
         [:id :title]]]
       ha/sync-query
@@ -187,10 +236,10 @@
         :where [:and
                 [:= :gd.deleted nil]
                 [:> :gd.created
-                      (->> (tick/new-period days-back :days)
-                           (tick/- (now-))
-                           tick->ts
-                           java.sql.Timestamp.)]]}
+                 (->> (tick/new-period days-back :days)
+                      (tick/- (now-))
+                      tick->ts
+                      java.sql.Timestamp.)]]}
        db/hs-query
        first
        :count))
@@ -251,18 +300,23 @@
      :communities-num-new-stacks (get-weekly-auto-email-data--communities-num-new-stacks org-id 7)}))
 
 (defn get-weekly-auto-email-data [user-id org-id oname]
-  {:base-url l/base-url 
+  {:base-url "https://app.vetd.com/"
    :unsubscribe-link (create-unsubscribe-link {:user-id user-id
                                                :org-id org-id
-                                               :etype etype})
+                                               ;; :etype etype
+                                               :etype (name :weekly-buyer-email)
+                                               })
    :org-name oname
    :product-annual-renewals-soon (get-weekly-auto-email-data--product-renewals-soon org-id "annual" 30 15)
    :product-monthly-renewals-soon (get-weekly-auto-email-data--product-renewals-soon org-id "monthly" 7 15) 
-   :active-rounds 0
+   :active-rounds (get-weekly-auto-email-data--active-rounds org-id)
    :communities [{:group-name ""
                   :num-new-discounts 0
                   :num-new-orgs 0
                   :num-new-stacks 0}]})
+
+
+(get-weekly-auto-email-data 1752146659009 1716828073773 "Choosers")
 
 #_
 (do-scheduled-emailer (now-))
@@ -344,35 +398,5 @@
 #_
 (clojure.pprint/pprint @scheduled-email-thread&)
 
-(defn- insert-unsubscribe
-  [{:keys [user-id org-id etype]}]
-  (let [[id idstr] (ut/mk-id&str)]
-    (db/insert! :unsubscribes
-                {:id id
-                 :idstr idstr
-                 :created (ut/now-ts)
-                 :updated (ut/now-ts)
-                 :deleted nil
-                 :user_id user-id
-                 :org_id org-id
-                 :etype etype})
-    id))
 
-(defn unsubscribe
-  "Unsubscribe a user from an email type."
-  [{:keys [user-id org-id etype] :as args}]
-  (insert-unsubscribe args))
-
-(defn create-unsubscribe-link
-  "Create a new unsubscribe link. Return the link key."
-  [{:keys [user-id org-id etype] :as input}]
-  (l/create {:cmd :email-unsubscribe
-             :input-data (select-keys input [:user-id :org-id :etype])
-             ;; a year from now
-             :expires-action (+ (ut/now) (* 1000 60 60 24 365))}))
-
-(defmethod l/action :email-unsubscribe
-  [{:keys [input-data] :as link} _]
-  (do (l/update-expires link "read" (+ (ut/now) (* 1000 60 5))) ; allow read for next 5 mins)
-      {:unsubscribed? (boolean (unsubscribe input-data))}))
 
