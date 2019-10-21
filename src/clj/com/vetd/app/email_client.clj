@@ -222,24 +222,20 @@
       :rounds))
 
 (defn get-weekly-auto-email-data--communities-num-new-discounts [org-id days-back]
-  (->> {:select [[:g.id :id]
-                 [:g.gname :gname]
-                 [:%count.gd.id :count]]
+  (->> {:select [[:%count.gd.id :count]]
         :from [[:group_discounts :gd]]
         :join [[:group_org_memberships :gom]
                [:and
                 [:= :gom.org_id org-id]
-                [:= :gom.deleted nil]]
-               [:groups :g]
-               [:= :gom.org_id :g.id]]
-        
+                [:= :gom.deleted nil]]]
         :where [:and
                 [:= :gd.deleted nil]
                 [:> :gd.created
                  (->> (tick/new-period days-back :days)
                       (tick/- (now-))
                       tick->ts
-                      java.sql.Timestamp.)]]}
+                      java.sql.Timestamp.)]]
+        :group-by [:gom.id]}
        db/hs-query
        first
        :count))
@@ -299,7 +295,25 @@
      :communities-num-new-orgs (get-weekly-auto-email-data--communities-num-new-orgs org-id 7)
      :communities-num-new-stacks (get-weekly-auto-email-data--communities-num-new-stacks org-id 7)}))
 
+(defn get-weekly-auto-email-data--communities
+  [group-id]
+  (let [{:keys [gname]} (-> [[:groups {:id group-id}
+                              [:gname]]]
+                            ha/sync-query
+                            vals
+                            first)]
+    {:group-name gname
+     ;; :num-new-discounts (get-weekly-auto-email-data--communities-num-new-discounts org-id 7)
+     ;; :num-new-orgs (get-weekly-auto-email-data--communities-num-new-orgs org-id 7)
+     ;; :num-new-stacks (get-weekly-auto-email-data--communities-num-new-stacks org-id 7)
+     }))
+
 (defn get-weekly-auto-email-data [user-id org-id oname]
+(let [group-ids (-> [[:group-org-memberships {:org-id org-id}
+                      [:group-id]]]
+                    ha/sync-query
+                    vals
+                    first)]
   {:base-url "https://app.vetd.com/"
    :unsubscribe-link (create-unsubscribe-link {:user-id user-id
                                                :org-id org-id
@@ -310,11 +324,11 @@
    :product-annual-renewals-soon (get-weekly-auto-email-data--product-renewals-soon org-id "annual" 30 15)
    :product-monthly-renewals-soon (get-weekly-auto-email-data--product-renewals-soon org-id "monthly" 7 15) 
    :active-rounds (get-weekly-auto-email-data--active-rounds org-id)
-   :communities [{:group-name ""
-                  :num-new-discounts 0
-                  :num-new-orgs 0
-                  :num-new-stacks 0}]})
+   :communities (map get-weekly-auto-email-data--communities group-ids)}))
 
+
+
+(get-weekly-auto-email-data--communities-num-new-orgs 1716828073773 7)
 
 (get-weekly-auto-email-data 1752146659009 1716828073773 "Choosers")
 
@@ -324,58 +338,58 @@
 
 
 (defn do-scheduled-emailer [dt]
-  (try
-    (log/info (str "CALL do-scheduled-emailer " dt))
-    (let [threshold-ts (-> dt
-                           (tick/- (tick/new-period 6 :days))
-                           tick->ts)]
-      (while (try
-               (when-let [{:keys [email oname user-id org-id max-created]} (select-next-email&recipient threshold-ts)]
-                 (let [data {:subject "TEST -- Weekly Email"
-                             :preheader "You're going to want to see what's in this email"
-                             :main-content
-                             (with-out-str
-                               (clojure.pprint/pprint
-                                (get-weekly-auto-email-data user-id org-id oname)))}]
-                   (def d1 data)
-                   (clojure.pprint/pprint (get-weekly-auto-email-data org-id oname))
-                   #_(send-template-email
-                      "bill@vetd.com" ;; TODO use `email`
-                      data)
-                   (insert-email-sent-log-entry
-                    {:etype :weekly-buyer-email
-                     :user-id user-id
-                     :org-id org-id
-                     :data data}))
-                 (Thread/sleep 1000)
-                 false ;; TODO => true
-                 #_true)
-               (catch Throwable e
-                 (com/log-error e)
-                 false))))
-    (catch Throwable e
-      (com/log-error e)
-      (Thread/sleep (* 1000 60 60)))))
+(try
+  (log/info (str "CALL do-scheduled-emailer " dt))
+  (let [threshold-ts (-> dt
+                         (tick/- (tick/new-period 6 :days))
+                         tick->ts)]
+    (while (try
+             (when-let [{:keys [email oname user-id org-id max-created]} (select-next-email&recipient threshold-ts)]
+               (let [data {:subject "TEST -- Weekly Email"
+                           :preheader "You're going to want to see what's in this email"
+                           :main-content
+                           (with-out-str
+                             (clojure.pprint/pprint
+                              (get-weekly-auto-email-data user-id org-id oname)))}]
+                 (def d1 data)
+                 (clojure.pprint/pprint (get-weekly-auto-email-data org-id oname))
+                 #_(send-template-email
+                    "bill@vetd.com" ;; TODO use `email`
+                    data)
+                 (insert-email-sent-log-entry
+                  {:etype :weekly-buyer-email
+                   :user-id user-id
+                   :org-id org-id
+                   :data data}))
+               (Thread/sleep 1000)
+               false ;; TODO => true
+               #_true)
+             (catch Throwable e
+               (com/log-error e)
+               false))))
+  (catch Throwable e
+    (com/log-error e)
+    (Thread/sleep (* 1000 60 60)))))
 
 (defn start-scheduled-emailer-thread []
-  (when (and (not env/building?)
-             (nil? @scheduled-email-thread&))
-    (reset! scheduled-email-thread&
-            (future
-              (log/info "Starting scheduled-emailer")
-              ;; TODO set next-scheduled-event& based on last email sent????
-              (reset! next-scheduled-event& (or (some-> "weekly-buyer-email"
-                                                        select-max-email-log-created-by-etype
-                                                        tick/date-time
-                                                        calc-next-due-ts)
-                                                (calc-next-due-ts (now-))))
-              (while (not @com/shutdown-signal)
-                (let [event-time @next-scheduled-event&]
-                  (if (tick/> (now-) event-time)
-                    (do (reset! next-scheduled-event& (calc-next-due-ts (now-) ))
-                        (#'do-scheduled-emailer event-time))
-                    (Thread/sleep (* 1000 10)))))
-              (log/info "Stopped scheduled-emailer")))))
+(when (and (not env/building?)
+           (nil? @scheduled-email-thread&))
+  (reset! scheduled-email-thread&
+          (future
+            (log/info "Starting scheduled-emailer")
+            ;; TODO set next-scheduled-event& based on last email sent????
+            (reset! next-scheduled-event& (or (some-> "weekly-buyer-email"
+                                                      select-max-email-log-created-by-etype
+                                                      tick/date-time
+                                                      calc-next-due-ts)
+                                              (calc-next-due-ts (now-))))
+            (while (not @com/shutdown-signal)
+              (let [event-time @next-scheduled-event&]
+                (if (tick/> (now-) event-time)
+                  (do (reset! next-scheduled-event& (calc-next-due-ts (now-) ))
+                      (#'do-scheduled-emailer event-time))
+                  (Thread/sleep (* 1000 10)))))
+            (log/info "Stopped scheduled-emailer")))))
 
 
 #_
