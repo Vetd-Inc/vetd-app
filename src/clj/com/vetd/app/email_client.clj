@@ -92,10 +92,6 @@
 
 ;;;; Auto Email
 
-#_ (def scheduled-email-thread& (atom nil))
-
-#_ (def next-scheduled-event& (atom nil))
-
 (defonce scheduled-email-thread& (atom nil))
 (defonce next-scheduled-event& (atom nil))
 
@@ -105,12 +101,15 @@
   (or @override-now&
       (tick/now)))
 
+
+
 (defn monday? [x] (= (tick/day-of-week x) #time/day-of-week "MONDAY"))
 
 (defn nine-am-pst? [x] (= (tick/hour x) 16))
 
 (defn calc-next-due-ts [dt]
-  (->> (tick/range (tick/truncate dt :hours)
+  (->> (tick/range (-> (tick/truncate dt :hours)
+                       (tick/+ (tick/new-duration 1 :hours)))
                    (tick/+ dt (tick/new-period 8 :days))
                    (tick/new-duration 1 :hours))
        (filter #(and (monday? %)
@@ -165,6 +164,7 @@
        :limit 1}
       db/hs-query
       first))
+
 
 (defn select-max-email-log-created-by-etype [etype]
   (-> {:select [[:%max.esl.created :max-created]]
@@ -322,8 +322,6 @@
      :active-rounds-count (count active-rounds)
      :communities (map get-weekly-auto-email-data--communities group-ids)}))
 
-#_
-(do-scheduled-emailer (now-))
 
 (defn do-scheduled-emailer [dt]
   (try
@@ -366,31 +364,12 @@
               (while (not @com/shutdown-signal)
                 (let [event-time @next-scheduled-event&]
                   (if (tick/> (now-) event-time)
-                    (do (reset! next-scheduled-event& (calc-next-due-ts (now-) ))
+                    (do (reset! next-scheduled-event& (calc-next-due-ts (now-)))
                         (#'do-scheduled-emailer event-time))
                     (Thread/sleep (* 1000 10)))))
               (log/info "Stopped scheduled-emailer")))))
 
 
-#_
-
-(start-scheduled-emailer-thread)
 
 
-#_
-@override-now&
-;; TODO calling this here is gross -- Bill
-
-#_
-(reset! override-now& (tick/date-time (java.util.Date. 120 1 1)))
-
-#_ (reset! override-now& nil)
-
-#_
-(reset! com/shutdown-signal true)
-
-#_
-(clojure.pprint/pprint @scheduled-email-thread&)
-
-
-
+(start-scheduled-emailer-thread) ;; TODO calling this here is gross -- Bill
