@@ -344,8 +344,7 @@
                      :org-id org-id
                      :data data}))
                  (Thread/sleep 1000)
-                 false ;; TODO => true
-                 #_true)
+                 true)
                (catch Throwable e
                  (com/log-error e)
                  false))))
