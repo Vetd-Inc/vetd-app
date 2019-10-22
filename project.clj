@@ -25,6 +25,7 @@
                  [cheshire "5.8.0"]
                  [clj-http "3.9.1"]
                  [clj-time "0.15.0"]
+                 [tick "0.4.20-alpha"]
                  [environ "1.1.0"]
 
                  [compojure "1.6.1"]
