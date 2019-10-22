@@ -90,9 +90,7 @@
   (do (l/update-expires link "read" (+ (ut/now) (* 1000 60 5))) ; allow read for next 5 mins)
       {:unsubscribed? (boolean (unsubscribe input-data))}))
 
-
-
-;; Auto Email
+;;;; Auto Email
 
 #_ (def scheduled-email-thread& (atom nil))
 
@@ -181,79 +179,71 @@
 
 ;; days-forward should be less than 30/31 if using price-period of monthly
 (defn get-weekly-auto-email-data--product-renewals-soon [org-id price-period days-forward limit]
-  (-> [[:stack-items {:_where
-                      {:_and (concat [{:status {:_eq "current"}}
-                                      {:buyer_id {:_eq (str org-id)}}
-                                      ;; {:renewal-reminder {:_eq true}} ;; include regardless of reminder checked
-                                      {:price-period {:_eq price-period}}
-                                      {:deleted {:_is_null true}}]
-                                     (if (= price-period "monthly")
-                                       (let [start-day (tick/day-of-month (now-))
-                                             end-day (->> (tick/new-period days-forward :days)
-                                                          (tick/+ (now-))
-                                                          tick/day-of-month)]
-                                         (if (> start-day end-day) ;; it wrapped around to next month
-                                           [{:_or
-                                             [{:renewal-day-of-month {:_gte start-day}}
-                                              {:renewal-day-of-month {:_lte end-day}}]}]
-                                           [{:renewal-day-of-month {:_gte start-day}}
-                                            {:renewal-day-of-month {:_lte end-day}}]))
-                                       [{:renewal-date {:_gte (str (ut/now-ts))}}
-                                        {:renewal-date {:_lte (->> (tick/new-period days-forward :days)
-                                                                   (tick/+ (now-))
-                                                                   tick->ts
-                                                                   java.sql.Timestamp.
-                                                                   str)}}]))}
-                      :_order_by {:renewal-date :asc}
-                      :_limit limit}
-        [:price-amount :renewal-date
-         [:product
-          [:pname]]]]]
-      ha/sync-query
-      :stack-items))
+  (->> [[:stack-items {:_where
+                       {:_and (concat [{:status {:_eq "current"}}
+                                       {:buyer_id {:_eq (str org-id)}}
+                                       ;; {:renewal-reminder {:_eq true}} ;; include regardless of reminder checked
+                                       {:price-period {:_eq price-period}}
+                                       {:deleted {:_is_null true}}]
+                                      (if (= price-period "monthly")
+                                        (let [start-day (tick/day-of-month (now-))
+                                              end-day (->> (tick/new-period days-forward :days)
+                                                           (tick/+ (now-))
+                                                           tick/day-of-month)]
+                                          (if (> start-day end-day) ;; it wrapped around to next month
+                                            [{:_or
+                                              [{:renewal-day-of-month {:_gte start-day}}
+                                               {:renewal-day-of-month {:_lte end-day}}]}]
+                                            [{:renewal-day-of-month {:_gte start-day}}
+                                             {:renewal-day-of-month {:_lte end-day}}]))
+                                        [{:renewal-date {:_gte (str (tick/date (ut/now-ts)))}}
+                                         {:renewal-date {:_lte (->> (tick/new-period days-forward :days)
+                                                                    (tick/+ (now-))
+                                                                    tick/date
+                                                                    str)}}]))}
+                       :_order_by {:renewal-date :asc}
+                       :_limit limit}
+         [:price-amount :renewal-date :renewal-day-of-month
+          [:product
+           [:pname]]]]]
+       ha/sync-query
+       :stack-items
+       (map (fn [{:keys [renewal-day-of-month] :as si}]
+              (if (= price-period "monthly")
+                (assoc si :renewal-date (str "on the "
+                                             renewal-day-of-month
+                                             (case renewal-day-of-month
+                                               1 "st"
+                                               2 "nd"
+                                               3 "rd"
+                                               21 "st"
+                                               22 "nd"
+                                               23 "rd"
+                                               31 "st"
+                                               "th")))
+                (update-in si [:renewal-date] (comp str tick/date)))))))
 
 ;; active rounds are rounds that are "in-progress"
 (defn get-weekly-auto-email-data--active-rounds [org-id]
-  (-> [[:rounds {:deleted nil
-                 :status "in-progress"
-                 :buyer-id org-id}
-        [:id :title]]]
-      ha/sync-query
-      :rounds))
+  (->> [[:rounds {:deleted nil
+                  :status "in-progress"
+                  :buyer-id org-id
+                  :_order_by {:created :desc}}
+         [:id :idstr :title
+          [:products
+           [:id]]]]]
+       ha/sync-query
+       :rounds
+       (map (fn [{:keys [products] :as round}]
+              (assoc round :num-products (count products))))))
 
-(defn get-weekly-auto-email-data--communities-num-new-discounts [org-id days-back]
+(defn get-weekly-auto-email-data--communities-num-new-discounts [group-id days-back]
   (->> {:select [[:%count.gd.id :count]]
         :from [[:group_discounts :gd]]
-        :join [[:group_org_memberships :gom]
-               [:and
-                [:= :gom.org_id org-id]
-                [:= :gom.deleted nil]]]
         :where [:and
                 [:= :gd.deleted nil]
+                [:= :gd.group_id group-id]
                 [:> :gd.created
-                 (->> (tick/new-period days-back :days)
-                      (tick/- (now-))
-                      tick->ts
-                      java.sql.Timestamp.)]]
-        :group-by [:gom.id]}
-       db/hs-query
-       first
-       :count))
-
-(defn get-weekly-auto-email-data--communities-num-new-orgs [org-id days-back]
-  (->> {:select [[:g.id :id]
-                 [:g.gname :gname]
-                 [:%count.gom2.org_id]]
-        :modifiers [:distinct]
-        :from [[:group_org_memberships :gom1]]
-        :join [[:group_org_memberships :gom2]
-               [:and
-                [:= :gom1.group_id :gom2.group_id]
-                [:= :gom2.deleted nil]]
-               [:groups :g]
-               [:= :gom.org_id :g.id]]
-        :where [:and [:= :gom1.org_id org-id]
-                [:> :gom2.created
                  (->> (tick/new-period days-back :days)
                       (tick/- (now-))
                       tick->ts
@@ -262,134 +252,127 @@
        first
        :count))
 
-(defn get-weekly-auto-email-data--communities-num-new-stacks [org-id days-back]
-  (-> {:select [[:%count-distinct.gom2.org_id :count-ids]]
-       :from [[:group_org_memberships :gom1]]
-       :join [[:group_org_memberships :gom2]
+(defn get-weekly-auto-email-data--communities-num-new-orgs [group-id days-back]
+  (->> {:select [[:%count.gom.org_id :count]]
+        :from [[:group_org_memberships :gom]]
+        :where [:and
+                [:= :gom.deleted nil]
+                [:= :gom.group_id group-id]
+                [:> :gom.created
+                 (->> (tick/new-period days-back :days)
+                      (tick/- (now-))
+                      tick->ts
+                      java.sql.Timestamp.)]]}
+       db/hs-query
+       first
+       :count))
+
+(defn get-weekly-auto-email-data--communities-num-new-stacks [group-id days-back]
+  ;; celwell: I can't say I fully understand this, but it seems to work
+  (-> {:select [[:%count.si.buyer_id :si-buyer-count]]
+       :from [[:group_org_memberships :gom]]
+       :join [[:stack_items :si]
               [:and
-               [:= :gom1.group_id :gom2.group_id]
-               [:= :gom2.deleted nil]]
-              [:stack_items :si]
-              [:and
-               [:= :si.buyer_id :gom2.org_id]
+               [:= :si.buyer_id :gom.org_id]
                [:= :si.deleted nil]]]
        :where [:and
-               [:= :gom1.deleted nil]
-               [:= :gom1.org_id org-id]]
-       :having [:> :%max.si.created
+               [:= :gom.deleted nil]
+               [:= :gom.group_id group-id]]
+       :group-by [:si.buyer_id]
+       :having [:> :%min.si.created
                 (->> (tick/new-period days-back :days)
                      (tick/- (now-))
                      tick->ts
                      java.sql.Timestamp.)]}
       db/hs-query
-      first
-      :count-ids))
-
-#_
-(defn get-weekly-auto-email-data [org-id oname]
-  (let [product-renewals-soon (get-weekly-auto-email-data--product-renewals-soon org-id 30 15)]
-    {:product-renewals-soon product-renewals-soon
-     :num-renewals-soon (count product-renewals-soon)
-     :active-rounds (get-weekly-auto-email-data--active-rounds org-id)
-     :communities-num-new-discounts (get-weekly-auto-email-data--communities-num-new-discounts org-id 7)
-     :communities-num-new-orgs (get-weekly-auto-email-data--communities-num-new-orgs org-id 7)
-     :communities-num-new-stacks (get-weekly-auto-email-data--communities-num-new-stacks org-id 7)}))
+      count))
 
 (defn get-weekly-auto-email-data--communities
   [group-id]
-  (let [{:keys [gname]} (-> [[:groups {:id group-id}
-                              [:gname]]]
-                            ha/sync-query
-                            vals
-                            first)]
+  (let [{:keys [gname]} (->> [[:groups {:id group-id}
+                               [:gname]]]
+                             ha/sync-query
+                             vals
+                             ffirst)]
     {:group-name gname
-     ;; :num-new-discounts (get-weekly-auto-email-data--communities-num-new-discounts org-id 7)
-     ;; :num-new-orgs (get-weekly-auto-email-data--communities-num-new-orgs org-id 7)
-     ;; :num-new-stacks (get-weekly-auto-email-data--communities-num-new-stacks org-id 7)
-     }))
+     :num-new-discounts (get-weekly-auto-email-data--communities-num-new-discounts group-id 7)
+     :num-new-orgs (get-weekly-auto-email-data--communities-num-new-orgs group-id 7)
+     :num-new-stacks (get-weekly-auto-email-data--communities-num-new-stacks group-id 7)}))
 
 (defn get-weekly-auto-email-data [user-id org-id oname]
-(let [group-ids (-> [[:group-org-memberships {:org-id org-id}
-                      [:group-id]]]
-                    ha/sync-query
-                    vals
-                    first)]
-  {:base-url "https://app.vetd.com/"
-   :unsubscribe-link (create-unsubscribe-link {:user-id user-id
-                                               :org-id org-id
-                                               ;; :etype etype
-                                               :etype (name :weekly-buyer-email)
-                                               })
-   :org-name oname
-   :product-annual-renewals-soon (get-weekly-auto-email-data--product-renewals-soon org-id "annual" 30 15)
-   :product-monthly-renewals-soon (get-weekly-auto-email-data--product-renewals-soon org-id "monthly" 7 15) 
-   :active-rounds (get-weekly-auto-email-data--active-rounds org-id)
-   :communities (map get-weekly-auto-email-data--communities group-ids)}))
-
-
-
-(get-weekly-auto-email-data--communities-num-new-orgs 1716828073773 7)
-
-(get-weekly-auto-email-data 1752146659009 1716828073773 "Choosers")
+  (let [group-ids (some->> [[:group-org-memberships {:org-id org-id}
+                             [:group-id]]]
+                           ha/sync-query
+                           vals
+                           first
+                           (map :group-id))
+        product-annual-renewals-soon (get-weekly-auto-email-data--product-renewals-soon org-id "annual" 30 15)
+        product-monthly-renewals-soon (get-weekly-auto-email-data--product-renewals-soon org-id "monthly" 7 15)
+        active-rounds (get-weekly-auto-email-data--active-rounds org-id)]
+    {:base-url "https://app.vetd.com/"
+     :unsubscribe-link (create-unsubscribe-link {:user-id user-id
+                                                 :org-id org-id
+                                                 :etype (name :weekly-buyer-email)})
+     :org-name oname
+     :product-annual-renewals-soon product-annual-renewals-soon
+     :product-annual-renewals-soon-count (count product-annual-renewals-soon)
+     :product-monthly-renewals-soon product-monthly-renewals-soon
+     :product-monthly-renewals-soon-count (count product-monthly-renewals-soon)
+     :active-rounds active-rounds
+     :active-rounds-count (count active-rounds)
+     :communities (map get-weekly-auto-email-data--communities group-ids)}))
 
 #_
 (do-scheduled-emailer (now-))
 
-
-
 (defn do-scheduled-emailer [dt]
-(try
-  (log/info (str "CALL do-scheduled-emailer " dt))
-  (let [threshold-ts (-> dt
-                         (tick/- (tick/new-period 6 :days))
-                         tick->ts)]
-    (while (try
-             (when-let [{:keys [email oname user-id org-id max-created]} (select-next-email&recipient threshold-ts)]
-               (let [data {:subject "TEST -- Weekly Email"
-                           :preheader "You're going to want to see what's in this email"
-                           :main-content
-                           (with-out-str
-                             (clojure.pprint/pprint
-                              (get-weekly-auto-email-data user-id org-id oname)))}]
-                 (def d1 data)
-                 (clojure.pprint/pprint (get-weekly-auto-email-data org-id oname))
-                 #_(send-template-email
-                    "bill@vetd.com" ;; TODO use `email`
-                    data)
-                 (insert-email-sent-log-entry
-                  {:etype :weekly-buyer-email
-                   :user-id user-id
-                   :org-id org-id
-                   :data data}))
-               (Thread/sleep 1000)
-               false ;; TODO => true
-               #_true)
-             (catch Throwable e
-               (com/log-error e)
-               false))))
-  (catch Throwable e
-    (com/log-error e)
-    (Thread/sleep (* 1000 60 60)))))
+  (try
+    (log/info (str "CALL do-scheduled-emailer " dt))
+    (let [threshold-ts (-> dt
+                           (tick/- (tick/new-period 6 :days))
+                           tick->ts)]
+      (while (try
+               (when-let [{:keys [email oname user-id org-id max-created]} (select-next-email&recipient threshold-ts)]
+                 (let [data (get-weekly-auto-email-data user-id org-id oname)]
+                   (clojure.pprint/pprint data)
+                   (send-template-email
+                    "chris@vetd.com" ;; TODO use `email`
+                    data
+                    {:template-id "d-76e51dc96f2d4d7e8438bd6b407504f9"})
+                   (insert-email-sent-log-entry
+                    {:etype :weekly-buyer-email
+                     :user-id user-id
+                     :org-id org-id
+                     :data data}))
+                 (Thread/sleep 1000)
+                 false ;; TODO => true
+                 #_true)
+               (catch Throwable e
+                 (com/log-error e)
+                 false))))
+    (catch Throwable e
+      (com/log-error e)
+      (Thread/sleep (* 1000 60 60)))))
 
 (defn start-scheduled-emailer-thread []
-(when (and (not env/building?)
-           (nil? @scheduled-email-thread&))
-  (reset! scheduled-email-thread&
-          (future
-            (log/info "Starting scheduled-emailer")
-            ;; TODO set next-scheduled-event& based on last email sent????
-            (reset! next-scheduled-event& (or (some-> "weekly-buyer-email"
-                                                      select-max-email-log-created-by-etype
-                                                      tick/date-time
-                                                      calc-next-due-ts)
-                                              (calc-next-due-ts (now-))))
-            (while (not @com/shutdown-signal)
-              (let [event-time @next-scheduled-event&]
-                (if (tick/> (now-) event-time)
-                  (do (reset! next-scheduled-event& (calc-next-due-ts (now-) ))
-                      (#'do-scheduled-emailer event-time))
-                  (Thread/sleep (* 1000 10)))))
-            (log/info "Stopped scheduled-emailer")))))
+  (when (and (not env/building?)
+             (nil? @scheduled-email-thread&))
+    (reset! scheduled-email-thread&
+            (future
+              (log/info "Starting scheduled-emailer")
+              ;; TODO set next-scheduled-event& based on last email sent????
+              (reset! next-scheduled-event& (or (some-> "weekly-buyer-email"
+                                                        select-max-email-log-created-by-etype
+                                                        tick/date-time
+                                                        calc-next-due-ts)
+                                                (calc-next-due-ts (now-))))
+              (while (not @com/shutdown-signal)
+                (let [event-time @next-scheduled-event&]
+                  (if (tick/> (now-) event-time)
+                    (do (reset! next-scheduled-event& (calc-next-due-ts (now-) ))
+                        (#'do-scheduled-emailer event-time))
+                    (Thread/sleep (* 1000 10)))))
+              (log/info "Stopped scheduled-emailer")))))
 
 
 #_
