@@ -209,19 +209,11 @@
        ha/sync-query
        :stack-items
        (map (fn [{:keys [renewal-day-of-month] :as si}]
-              (if (= price-period "monthly")
-                (assoc si :renewal-date (str "on the "
-                                             renewal-day-of-month
-                                             (case renewal-day-of-month
-                                               1 "st"
-                                               2 "nd"
-                                               3 "rd"
-                                               21 "st"
-                                               22 "nd"
-                                               23 "rd"
-                                               31 "st"
-                                               "th")))
-                (update-in si [:renewal-date] (comp str tick/date)))))))
+              (let [si-with-date (if (= price-period "monthly")
+                                   (assoc si :renewal-date (str "on the "
+                                                                (ut/append-ordinal-suffix renewal-day-of-month)))
+                                   (update-in si [:renewal-date] (comp str tick/date)))]
+                (update-in si-with-date [:price-amount] (comp int #(Math/ceil %))))))))
 
 ;; active rounds are rounds that are "in-progress"
 (defn get-weekly-auto-email-data--active-rounds [org-id]

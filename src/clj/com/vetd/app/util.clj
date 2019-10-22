@@ -132,6 +132,20 @@
 
 (defn uuid-str [] (.toString (uuid)))
 
+(defn append-ordinal-suffix
+  "Appends the ordinal suffix to number. (e.g., 3 => 3rd"
+  [n]
+  {:pre [(number? n)]}
+  (let [tens (mod n 100)
+        ones (mod n 10)
+        suffix (cond
+                 (< 10 tens 14) "th"
+                 (= ones 1) "st"
+                 (= ones 2) "nd"
+                 (= ones 3) "rd"
+                 :else "th")]
+    (str n suffix)))
+
 (defn traverse-values
   [f v]
   (if (coll? v)
