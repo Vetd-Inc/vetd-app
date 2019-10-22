@@ -27,9 +27,12 @@
     (if (or (not-empty term)
             (some seq (vals filter-map)))
       (let [ids (db/hs-query
-                 {:select [[:p.id :pid]
-                           [(honeysql.core/raw "coalesce(p.score, 1.0)") :nscore]
-                           [(honeysql.core/raw "coalesce(p.profile_score, 0.0)") :pscore]]
+                 {:select (concat
+                           [[:p.id :pid]
+                            [(honeysql.core/raw "coalesce(p.score, 1.0)") :nscore]
+                            [(honeysql.core/raw "coalesce(p.profile_score, 0.0)") :pscore]]
+                           (when (features "preposal")
+                             [[:d.created :dcreated]]))
                   :modifiers [:distinct]
                   :from [[:products :p]]
                   :join (concat [[:orgs :o] [:= :o.id :p.vendor_id]]
@@ -68,7 +71,9 @@
                              [:in :pc.cat_id cat-ids])]
                           (when (features "product-profile-completed")
                             [:>= :p.profile_score 0.9])]
-                  :order-by [[:pscore :desc] [:nscore :desc]]
+                  :order-by (if (features "preposal")
+                              [[:dcreated :desc]]
+                              [[:pscore :desc] [:nscore :desc]])
                   ;; this will be paginated on the frontend
                   :limit 200})
             pids (map :pid ids)]

@@ -17,7 +17,7 @@
 (def valid-journal-entry-types #{:round-started
                                  :round-winner-declared
                                  :stack-update-rating
-                                 :create-stack-item
+                                 :stack-add-items
                                  :preposal-request
                                  :buy-request
                                  :complete-vendor-profile-request

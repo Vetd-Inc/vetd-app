@@ -195,27 +195,27 @@
    :round-winner-declared "trophy"
    ;; blah blah rated product 4 stars
    :stack-update-rating "star"
-   ;; this is a disaster, v1 just show everything piecemeal
-   :create-stack-item "grid layout"
+   :stack-add-items "grid layout"
    :preposal-request "wpforms"
    :buy-request "wpforms"
    ;; these are the same event when user-facing
    :complete-vendor-profile-request "wpforms"
    :complete-product-profile-request "wpforms"})
 
-;; (defn event-data->message
-;;   (case )
-;;   {:round-started 
-;;    :round-winner-declared "trophy"
-;;    ;; blah blah rated product 4 stars
-;;    :stack-update-rating "star"
-;;    ;; this is a disaster, v1 just show everything piecemeal
-;;    :create-stack-item "grid layout"
-;;    :preposal-request "wpforms"
-;;    :buy-request "wpforms"
-;;    ;; these are the same event when user-facing
-;;    :complete-vendor-profile-request "wpforms"
-;;    :complete-product-profile-request "wpforms"})
+(defn event-data->message
+  [ftype data]
+  (case ftype
+    :round-started "Round Started"
+    :round-winner-declared "Round Winner Declared"
+    ;; blah blah rated product 4 stars
+    :stack-update-rating "Product Rated"
+    :stack-add-items "Added a Product to Their Stack"
+    :preposal-request "Request a Preposal"
+    :buy-request "Decided to Buy"
+    ;; these are the same event when user-facing
+    :complete-vendor-profile-request "Requested the complete profile of "
+    :complete-product-profile-request "Requested the complete profile of "
+    "Unknown event."))
 
 (defn c-feed-event
   [{:keys [id ftype created data]}]
@@ -223,9 +223,9 @@
    [:> ui/FeedLabel
     [:> ui/Icon {:name (ftype->icon (keyword ftype))}]]
    [:> ui/FeedContent
-    [:> ui/FeedSummary data]
+    [:> ui/FeedSummary (event-data->message (keyword ftype) data)]
     [:> ui/FeedDate
-     (str created " - Some Org")]
+     (str (util/relative-datetime (.getTime (js/Date. created))) " - Some Org")]
     ;; [:> ui/FeedDate "2 days ago - Super VC"]
     ]])
 
