@@ -334,9 +334,8 @@
       (while (try
                (when-let [{:keys [email oname user-id org-id max-created]} (select-next-email&recipient threshold-ts)]
                  (let [data (get-weekly-auto-email-data user-id org-id oname)]
-                   (clojure.pprint/pprint data)
                    (send-template-email
-                    "chris@vetd.com" ;; TODO use `email`
+                    "zach@vetd.com" ;; TODO use `email`
                     data
                     {:template-id "d-76e51dc96f2d4d7e8438bd6b407504f9"})
                    (insert-email-sent-log-entry
@@ -360,7 +359,6 @@
     (reset! scheduled-email-thread&
             (future
               (log/info "Starting scheduled-emailer")
-              ;; TODO set next-scheduled-event& based on last email sent????
               (reset! next-scheduled-event& (or (some-> "weekly-buyer-email"
                                                         select-max-email-log-created-by-etype
                                                         tick/date-time
