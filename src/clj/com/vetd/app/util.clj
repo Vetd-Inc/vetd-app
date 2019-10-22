@@ -146,6 +146,14 @@
                  :else "th")]
     (str n suffix)))
 
+(defn ->dollars-str
+  "Given a number, return number of dollars as formatted string. No $ prefix though."
+  [n]
+  {:pre [(number? n)]}
+  (->> (Math/ceil n)
+       int
+       (format "%,d")))
+
 (defn traverse-values
   [f v]
   (if (coll? v)
