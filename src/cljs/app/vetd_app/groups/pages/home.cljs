@@ -191,14 +191,12 @@
                 "No organizations have added products to their stack yet.")))]]))))
 
 (def ftype->icon
-  {:round-started "wpforms"
+  {:round-started "vetd"
    :round-winner-declared "trophy"
-   ;; blah blah rated product 4 stars
    :stack-update-rating "star"
    :stack-add-items "grid layout"
-   :preposal-request "wpforms"
-   :buy-request "wpforms"
-   ;; these are the same event when user-facing
+   :preposal-request "clipboard outline"
+   :buy-request "cart"
    :complete-vendor-profile-request "wpforms"
    :complete-product-profile-request "wpforms"})
 
@@ -209,22 +207,51 @@
     :round-started (let [{:keys [buyer-org-name title]} data]
                      [:span buyer-org-name " started a VetdRound called "
                       [:em title]])
-    :round-winner-declared "Round Winner Declared"
-    ;; blah blah rated product 4 stars
+    :round-winner-declared (let [{:keys [buyer-org-name product-name]} data]
+                             [:span buyer-org-name " chose " [:em product-name]
+                              " as the winner of their VetdRound"])
     :stack-update-rating (let [{:keys [buyer-org-name product-name rating]} data]
-                           [:span buyer-org-name " rated " [:em product-name] " with " rating " stars"])
+                           [:span buyer-org-name " rated "
+                            [:em product-name] " with " rating " star" (when-not (= rating 1) "s")])
     :stack-add-items (let [{:keys [buyer-org-name product-name]} data]
                        [:span buyer-org-name " added " [:em product-name] " to their Stack"])
-    :preposal-request "Request a Preposal"
-    :buy-request "Decided to Buy"
-    ;; these are the same event when user-facing
-    :complete-vendor-profile-request "Requested the complete profile of "
-    :complete-product-profile-request "Requested the complete profile of "
+    :preposal-request (let [{:keys [buyer-org-name product-name]} data]
+                        [:span buyer-org-name " requested an estimate for " [:em product-name]])
+    :buy-request (let [{:keys [buyer-org-name product-name]} data]
+                   [:span buyer-org-name " decided to buy " [:em product-name]])
+    :complete-vendor-profile-request (let [{:keys [buyer-org-name vendor-name]} data]
+                                       [:span buyer-org-name " requested the complete profile of "
+                                        [:em vendor-name]])
+    :complete-product-profile-request (let [{:keys [buyer-org-name product-name]} data]
+                                        [:span buyer-org-name " requested the complete profile of "
+                                         [:em product-name]])
+    "Unknown event."))
+
+(defn event-data->click-event
+  [ftype data]
+  (case ftype
+    :round-started (let [{:keys [round-id]} data] [:b/nav-round-detail (util/base31->str round-id)])
+    :round-winner-declared (let [{:keys [round-id]} data] [:b/nav-round-detail (util/base31->str round-id)])
+    :stack-update-rating (let [{:keys [product-id]} data]
+                           [:b/nav-product-detail (util/base31->str product-id)])
+    :stack-add-items (let [{:keys [buyer-org-id]} data]
+                       (if (= buyer-org-id @(rf/subscribe [:org-id]))
+                         [:b/nav-stack]
+                         [:b/nav-stack-detail (util/base31->str buyer-org-id)]))
+    :preposal-request (let [{:keys [product-id]} data]
+                        [:b/nav-product-detail (util/base31->str product-id)])
+    :buy-request (let [{:keys [product-id]} data]
+                   [:b/nav-product-detail (util/base31->str product-id)])
+    :complete-vendor-profile-request (let [{:keys [vendor-name]} data]
+                                       ;; TODO this is a questionable stopgap till we have vendor pages
+                                       [:b/nav-search vendor-name])
+    :complete-product-profile-request (let [{:keys [product-id]} data]
+                                        [:b/nav-product-detail (util/base31->str product-id)])
     "Unknown event."))
 
 (defn c-feed-event
   [{:keys [id ftype created data]} group-name]
-  [:> ui/FeedEvent
+  [:> ui/FeedEvent {:on-click #(rf/dispatch (event-data->click-event (keyword ftype) data))}
    [:> ui/FeedLabel
     [:> ui/Icon {:name (ftype->icon (keyword ftype))}]]
    [:> ui/FeedContent
@@ -243,7 +270,7 @@
                                     {:queries
                                      [[:feed-events {:org-id org-ids
                                                      :_order_by {:created :desc}
-                                                     :_limit 20
+                                                     :_limit 30
                                                      :deleted nil}
                                        [:id :created :ftype :data]]]}])]
     (if (= :loading @feed-events&)

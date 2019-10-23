@@ -564,6 +564,10 @@ i.icon.vetd:not(.small) {
   width: 50px !important;
   height: 50px !important;
 }
+.feed i.icon.vetd {
+  width: 19px !important;
+  height: 29px !important;
+}
 i.icon.vetd:not(.vetd-colors) {
   filter: grayscale(1) brightness(0.6);
 }
@@ -1293,9 +1297,14 @@ $cell-height: 201px;
 
   > .event {
     padding-top: 10px;
+    cursor: pointer;
+    
+    &:hover {
+      transform: scale(1.01);
+    }
 
     > .label {
-      width: 21px;
+      width: 25px;
       
       .icon {
         margin-top: 12px;
@@ -1303,7 +1312,7 @@ $cell-height: 201px;
       }
 
       + .content {
-        margin-left: 14px;
+        margin-left: 10px;
 
         .date {
           margin-top: 0px;

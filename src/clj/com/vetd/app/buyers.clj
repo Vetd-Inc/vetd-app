@@ -244,6 +244,7 @@ Round URLs (if any):
                                     {:jtype :buy-request
                                      :buyer-org-name buyer-name
                                      :buyer-org-id buyer-id
+                                     :product-id product-id
                                      :product-name pname})))
 
 (defn send-setup-call-req [buyer-id product-id]
@@ -337,6 +338,7 @@ Round URL: https://app.vetd.com/b/rounds/%s"
                                                {:jtype :round-winner-declared
                                                 :buyer-org-name buyer-org-name
                                                 :buyer-org-id buyer-org-id
+                                                :round-id round-id
                                                 :product-id product-id
                                                 :product-name product-name}))
              (catch Exception e
