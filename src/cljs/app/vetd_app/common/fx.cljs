@@ -57,13 +57,13 @@
                                :local-store {:session-token (:session-token output-data)}
                                :dispatch-later [{:ms 100 :dispatch [:ws-get-session-user]}
                                                 ;; first-time login, go to stack page
-                                                {:ms 200 :dispatch [:nav-home true]}
+                                                {:ms 1000 :dispatch [:nav-home true]} ;; TODO hacky
                                                 (when (:join-group-link-key local-store)
-                                                  {:ms 300 :dispatch [:read-link (:join-group-link-key local-store)]})
-                                                {:ms 500 :dispatch [:do-fx {:analytics/track
-                                                                            {:event "Signup Complete"
-                                                                             :props {:category "Accounts"
-                                                                                     :label "Standard"}}}]}]}
+                                                  {:ms 1300 :dispatch [:read-link (:join-group-link-key local-store)]})
+                                                {:ms 1500 :dispatch [:do-fx {:analytics/track
+                                                                             {:event "Signup Complete"
+                                                                              :props {:category "Accounts"
+                                                                                      :label "Standard"}}}]}]}
      :password-reset {:toast {:type "success"
                               :title "Password Updated"
                               :message "Your password has been successfully updated."}
