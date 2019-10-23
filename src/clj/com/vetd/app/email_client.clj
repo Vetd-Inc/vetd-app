@@ -150,10 +150,14 @@
               [:users :u]
               [:and
                [:= :u.id :user_id]
+               [:= :u.deleted nil]
+               [:like :u.email "%@%"]
                [:or
                 [:= :m.org_id 2208512249632]
                 [:not
-                 [:like :u.email "%@vetd.com"]]]]]
+                 [:or
+                  [:like :u.email "%@vetd.com"]
+                  [:like :u.email "temp@%"]]]]]]
        :left-join [[:email_sent_log :esl]
                    [:= :esl.user_id :m.user_id]]
        :where [:and
@@ -166,7 +170,6 @@
        :limit 1}
       db/hs-query
       first))
-
 
 (defn select-max-email-log-created-by-etype [etype]
   (-> {:select [[:%max.esl.created :max-created]]
@@ -327,9 +330,12 @@
                (when-let [{:keys [email oname user-id org-id max-created]} (select-next-email&recipient threshold-ts)]
                  (let [data (get-weekly-auto-email-data user-id org-id oname)]
                    (send-template-email
-;;                    "zach@vetd.com" 
-                    email
-                    data
+                    "zach@vetd.com" 
+#_                    email
+                    ;; TODO remove this
+                    (update data
+                            :org-name #(str oname " " email))
+#_                    data
                     {:template-id "d-76e51dc96f2d4d7e8438bd6b407504f9"})
                    (insert-email-sent-log-entry
                     {:etype :weekly-buyer-email
