@@ -97,6 +97,9 @@
 
 (def override-now& (atom nil))
 
+#_
+(reset! override-now& (tick/instant "2019-10-28T16:30:00"))
+
 (defn now- []
   (or @override-now&
       (tick/now)))
@@ -139,7 +142,8 @@
   (-> {:select [[:%max.esl.created :max-created]
                 [:m.id :membership-id]
                 [:m.user_id :user-id]
-                [:u.email :email]                
+                [:u.email :email]
+                [:u.uname :uname]
                 [:m.org_id :org-id]
                 [:o.oname :oname]]
        :from [[:orgs :o]]
@@ -163,7 +167,7 @@
        :where [:and
                [:= :o.deleted nil]
                [:= :o.buyer_qm true]]
-       :group-by [:m.id :m.user_id :m.org_id :o.oname :u.email]
+       :group-by [:m.id :m.user_id :m.org_id :o.oname :u.email :u.uname]
        :having [:or
                 [:= :%max.esl.created nil]
                 [:< :%max.esl.created nil (java.sql.Timestamp. max-ts)]]
@@ -296,7 +300,7 @@
      :num-new-orgs (get-weekly-auto-email-data--communities-num-new-orgs group-id 7)
      :num-new-stacks (get-weekly-auto-email-data--communities-num-new-stacks group-id 7)}))
 
-(defn get-weekly-auto-email-data [user-id org-id oname]
+(defn get-weekly-auto-email-data [user-id org-id oname uname]
   (let [group-ids (some->> [[:group-org-memberships {:org-id org-id}
                              [:group-id]]]
                            ha/sync-query
@@ -310,6 +314,7 @@
      :unsubscribe-link (create-unsubscribe-link {:user-id user-id
                                                  :org-id org-id
                                                  :etype (name :weekly-buyer-email)})
+     :user-name uname
      :org-name oname
      :product-annual-renewals-soon product-annual-renewals-soon
      :product-annual-renewals-soon-count (count product-annual-renewals-soon)
@@ -327,15 +332,12 @@
                            (tick/- (tick/new-period 6 :days))
                            tick->ts)]
       (while (try
-               (when-let [{:keys [email oname user-id org-id max-created]} (select-next-email&recipient threshold-ts)]
-                 (let [data (get-weekly-auto-email-data user-id org-id oname)]
+               (when-let [{:keys [email oname uname user-id org-id max-created]} (select-next-email&recipient threshold-ts)]
+                 (let [data (get-weekly-auto-email-data user-id org-id oname uname)]
                    (send-template-email
                     "zach@vetd.com" 
 #_                    email
-                    ;; TODO remove this
-                    (update data
-                            :org-name #(str oname " " email))
-#_                    data
+                    data
                     {:template-id "d-76e51dc96f2d4d7e8438bd6b407504f9"})
                    (insert-email-sent-log-entry
                     {:etype :weekly-buyer-email
