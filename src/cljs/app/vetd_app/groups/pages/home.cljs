@@ -206,11 +206,15 @@
   [ftype data]
   (println data (type data))
   (case ftype
-    :round-started "Round Started"
+    :round-started (let [{:keys [buyer-org-name title]} data]
+                     [:span buyer-org-name " started a VetdRound called "
+                      [:em title]])
     :round-winner-declared "Round Winner Declared"
     ;; blah blah rated product 4 stars
-    :stack-update-rating "Product Rated"
-    :stack-add-items "Added a Product to Their Stack"
+    :stack-update-rating (let [{:keys [buyer-org-name product-name rating]} data]
+                           [:span buyer-org-name " rated " [:em product-name] " with " rating " stars"])
+    :stack-add-items (let [{:keys [buyer-org-name product-name]} data]
+                       [:span buyer-org-name " added " [:em product-name] " to their Stack"])
     :preposal-request "Request a Preposal"
     :buy-request "Decided to Buy"
     ;; these are the same event when user-facing
@@ -219,20 +223,22 @@
     "Unknown event."))
 
 (defn c-feed-event
-  [{:keys [id ftype created data]}]
+  [{:keys [id ftype created data]} group-name]
   [:> ui/FeedEvent
    [:> ui/FeedLabel
     [:> ui/Icon {:name (ftype->icon (keyword ftype))}]]
    [:> ui/FeedContent
     [:> ui/FeedSummary (event-data->message (keyword ftype) data)]
     [:> ui/FeedDate
-     (str (util/relative-datetime (.getTime (js/Date. created))) " - Some Org")]
-    ;; [:> ui/FeedDate "2 days ago - Super VC"]
-    ]])
+     (str (util/relative-datetime (.getTime (js/Date. created))) " - " group-name)]]])
 
 (defn c-feed
   [groups]
   (let [org-ids (->> groups (map :orgs) flatten (map :id) distinct)
+        org-id->group-name (->> (for [{:keys [gname orgs]} groups]
+                                  (map (fn [org] [(:id org) gname]) orgs))
+                                (apply concat)
+                                (into {}))
         feed-events& (rf/subscribe [:gql/sub
                                     {:queries
                                      [[:feed-events {:org-id org-ids
@@ -248,8 +254,9 @@
            [:> ui/Feed
             (for [event feed-events]
               ^{:key (:id event)}
-              [c-feed-event event])]
-           [:p "No blah"])]))))
+              [c-feed-event event (org-id->group-name (-> event :data :buyer-org-id))])]
+           [:p {:style {:padding-bottom 15}}
+            "No recent activity."])]))))
 
 (defn c-join-group-form
   [current-group-ids popup-open?&]

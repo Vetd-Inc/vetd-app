@@ -178,6 +178,7 @@
         (journal/push-entry&sns-publish :ui-start-round "Vetd Round Started" msg
                                         {:jtype :round-started
                                          :round-id id
+                                         :title title
                                          :buyer-org-id (:id buyer)
                                          :buyer-org-name (:oname buyer)
                                          :product-names (mapv :pname products)
@@ -213,6 +214,7 @@ User '%s'
           "field name: " field-key)
      {:jtype (keyword (str "complete-" (name etype) "-profile-request"))
       :buyer-org-name buyer-name
+      :buyer-org-id buyer-id
       :field-name field-key
       (keyword (str (name etype) "-id")) eid
       (keyword (str (name etype) "-name")) ename})))
@@ -713,7 +715,7 @@ Round URL: https://app.vetd.com/b/rounds/%s"
                            :product-id (:id product)
                            :product-name (:pname product)
                            :buyer-org-id (:id buyer)
-                           :buyer-name (:oname buyer)}))))
+                           :buyer-org-name (:oname buyer)}))))
 
 (defmethod com/handle-ws-inbound :b/stack.update-item
   [{:keys [stack-item-id status

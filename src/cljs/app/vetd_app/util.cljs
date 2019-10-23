@@ -21,7 +21,10 @@
 
 (defn relative-datetime
   [time-ms]
-  (goog.date.relative/formatPast time-ms))
+  (let [x (goog.date.relative/formatPast time-ms)]
+    (if (= x "0 minutes ago")
+      "Just Now"
+      x)))
 
 (defn db->current-org-id
   "Given the app-db state, return the current org id of the user."
