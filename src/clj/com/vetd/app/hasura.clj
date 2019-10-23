@@ -306,7 +306,9 @@
 (defn walk-result-sub-val-pair
   [field sub v]
   [(walk-result-sub-kw field sub v)
-   (cond (map? v) (walk-result-sub-map field sub v)
+   (cond (and (map? v)
+              ;; :data is JSONB and shouldn't be walked
+              (not= sub :data)) (walk-result-sub-map field sub v)
          (sequential? v) (walk-result-sub-vec field sub v)
          :else (walk-result-sub-val field sub v))])
 
@@ -546,7 +548,7 @@
       not))
 
 (defmulti secure-gql? (fn [[field maybe-map] session-token]
-                       field))
+                        field))
 
 (defmethod secure-gql? :default [_ _]  true)
 

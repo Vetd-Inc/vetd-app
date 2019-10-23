@@ -204,6 +204,7 @@
 
 (defn event-data->message
   [ftype data]
+  (println data (type data))
   (case ftype
     :round-started "Round Started"
     :round-winner-declared "Round Winner Declared"
@@ -238,8 +239,7 @@
                                                      :_order_by {:created :desc}
                                                      :_limit 20
                                                      :deleted nil}
-                                       [:id :created :ftype ;; :data
-                                        ]]]}])]
+                                       [:id :created :ftype :data]]]}])]
     (if (= :loading @feed-events&)
       [cc/c-loader]
       (let [feed-events (:feed-events @feed-events&)]
