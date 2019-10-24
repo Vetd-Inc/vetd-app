@@ -300,7 +300,8 @@
                           (for [{:keys [id gname]} groups]
                             {:key id
                              :text gname
-                             :value id}))]
+                             :value id}))
+        group-ids& (rf/subscribe [:group-ids])]
     (fn [current-group-ids popup-open?&]
       (let [groups& (rf/subscribe
                      [:gql/q
@@ -308,6 +309,13 @@
                        [[:groups {:_where
                                   {:_and ;; while this trims search-query, the Dropdown's search filter doesn't...
                                    [{:gname {:_ilike (str "%" (s/trim @search-query&) "%")}}
+                                    {:id {:_nin (concat ;; not sure why these have to be strings
+                                                 (map str @group-ids&)
+                                                 ;; hide these groups (pertains to prod db)
+                                                 ["100" ;; Universal Discounts
+                                                  "1811043562864" ;; Test 1
+                                                  "2181817440407" ;; Sandbox Demo
+                                                  ])}}
                                     {:deleted {:_is_null true}}]}
                                   :_limit 100
                                   :_order_by {:gname :asc}}
