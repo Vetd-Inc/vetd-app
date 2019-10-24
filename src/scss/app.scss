@@ -1298,9 +1298,9 @@ $cell-height: 201px;
 
   > .event {
     padding-top: 10px;
-    cursor: pointer;
     
-    &:hover {
+    &:hover:not(.no-click) {
+      cursor: pointer;
       transform: scale(1.01);
     }
 

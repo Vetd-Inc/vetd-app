@@ -232,7 +232,7 @@
     ;; TODO use this after we have read-only rounds within community available
     ;; :round-started (let [{:keys [round-id]} data] [:b/nav-round-detail (util/base31->str round-id)])
     ;; :round-winner-declared (let [{:keys [round-id]} data] [:b/nav-round-detail (util/base31->str round-id)])
-    :round-started (let [{:keys [round-id]} data] [:b/nav-round-detail (util/base31->str round-id)])
+    :round-started nil
     :round-winner-declared (let [{:keys [product-id]} data]
                              [:b/nav-product-detail (util/base31->str product-id)])
     
@@ -255,7 +255,9 @@
 
 (defn c-feed-event
   [{:keys [id ftype journal-entry-created data]} group-name]
-  [:> ui/FeedEvent {:on-click #(rf/dispatch (event-data->click-event (keyword ftype) data))}
+  [:> ui/FeedEvent (if-let [event (event-data->click-event (keyword ftype) data)]
+                     {:on-click #(rf/dispatch event)}
+                     {:class "no-click"})
    [:> ui/FeedLabel
     [:> ui/Icon {:name (ftype->icon (keyword ftype))}]]
    [:> ui/FeedContent
@@ -273,8 +275,6 @@
         feed-events& (rf/subscribe [:gql/sub
                                     {:queries
                                      [[:feed-events {:org-id org-ids
-                                                     ;; :ftype [;; :round-started
-                                                     ;;         :round-winner-declared :stack-update-rating :stack-add-items :preposal-request :buy-request :complete-vendor-profile-request :complete-product-profile-request]
                                                      :_order_by {:journal-entry-created :desc}
                                                      :_limit 37
                                                      :deleted nil}
