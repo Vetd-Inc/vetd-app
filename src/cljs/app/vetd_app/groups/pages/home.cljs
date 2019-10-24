@@ -202,7 +202,6 @@
 
 (defn event-data->message
   [ftype data]
-  (println data (type data))
   (case ftype
     :round-started (let [{:keys [buyer-org-name title]} data]
                      [:span buyer-org-name " started a VetdRound called "
