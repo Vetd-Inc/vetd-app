@@ -371,6 +371,23 @@
                        :onClick #(rf/dispatch [:b/req-new-prod-cat @prod-cat-suggestion])}
          "Request It"]]])))
 
+(defn c-explainer []
+  [:> ui/Segment {:placeholder true
+                  :class "how-vetd-works"}
+   [:h2 "How Vetd Works . . ."]
+   [cc/c-grid {:columns "equal"
+               :stackable true
+               :style {:margin-top 4}}
+    [[[:<>
+       [:h3 "Your Stack"]
+       "Add products to your stack to keep track of renewals, get recommendations, and share with your community."]]
+     [[:<>
+       [:h3 "Browse Products"]
+       "Search for products or product categories to find products that meet your needs."]]
+     [[:<>
+       [:h3 "VetdRounds"]
+       "Compare similar products side-by-side based on your unique requirements, and make an informed buying decision in a fraction of the time."]]]]])
+
 (defn c-search-results*
   [props]
   (let [search-result-ids& (rf/subscribe [:b/search.results.ids])

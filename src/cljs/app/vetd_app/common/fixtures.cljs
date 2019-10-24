@@ -84,7 +84,7 @@
     (fn [top-nav-pages]
       (let [;; prepend "Community" menu item if accessible
             pages (cond->> top-nav-pages
-                    (seq @group-ids&) (into [{:text "Community"
+                    (seq @group-ids&) (into [{:text "Your Communities"
                                               :pages #{:g/home}
                                               :event [:g/nav-home]}]))]
         (when (and @page& @user-name&)

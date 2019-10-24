@@ -7,7 +7,8 @@
             [reagent.format :as format]
             [re-frame.registrar :as rf-reg]
             [clojure.zip :as z]
-            [markdown-to-hiccup.core :as md])
+            [markdown-to-hiccup.core :as md]
+            goog.date.relative)
   (:import [goog.functions]))
 
 (def force-refresh?& (atom false))
@@ -17,6 +18,13 @@
 (def currency-format format/currency-format)
 (defn decimal-format [n]
   (.format (goog.i18n.NumberFormat. (.-DECIMAL goog.i18n.NumberFormat.Format)) n))
+
+(defn relative-datetime
+  [time-ms]
+  (let [x (goog.date.relative/formatPast time-ms)]
+    (if (= x "0 minutes ago")
+      "Just Now"
+      x)))
 
 (defn db->current-org-id
   "Given the app-db state, return the current org id of the user."

@@ -42,6 +42,18 @@
 (def ListHeader (component "List" "Header"))
 (def ListDescription (component "List" "Description"))
 
+;; Card
+(def Card (component "Card"))
+
+;; Feed
+(def Feed (component "Feed"))
+(def FeedEvent (component "Feed" "Event"))
+(def FeedLabel (component "Feed" "Label"))
+(def FeedContent (component "Feed" "Content"))
+(def FeedDate (component "Feed" "Date"))
+(def FeedSummary (component "Feed" "Summary"))
+
+
 ;; Label
 (def Label (component "Label"))
 (def LabelDetail (component "Label" "Detail"))

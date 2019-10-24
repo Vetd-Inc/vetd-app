@@ -307,7 +307,7 @@
                                        [["Top Of Page" :top]
                                         ["Description" :top]
                                         (when (seq @group-ids&) ; is in a community?
-                                          ["Your Community" :product/community])
+                                          ["Your Communities" :product/community])
                                         ["Pricing" :product/pricing]
                                         ["Company Profile" :product/vendor-profile]
                                         ["Onboarding" :product/onboarding]

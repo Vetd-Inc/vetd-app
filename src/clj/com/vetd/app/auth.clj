@@ -406,6 +406,32 @@
                             :short-key? true})]
     {:url (str l/base-url link-key)}))
 
+(defn send-group-join-req
+  [buyer-id group-ids]
+  (let [gnames (->> [[:groups {:id (remove string? group-ids)}
+                      [:gname]]]
+                    ha/sync-query
+                    :groups
+                    (map :gname)
+                    (st/join ", "))
+        buyer-name (-> buyer-id select-org-by-id :oname)]
+    (com/sns-publish :ui-misc
+                     "Community Join Request"
+                     (format
+                      "Community Join Request
+Buyer (Org): '%s'
+Groups That Exist: '%s'
+Groups That Don't Exist: '%s'"
+                      buyer-name
+                      gnames
+                      (st/join ", " (filter string? group-ids))))))
+
+;; group-ids could include text
+(defmethod com/handle-ws-inbound :g/join-request
+  [{:keys [buyer-id group-ids]} ws-id sub-fn]
+  (send-group-join-req buyer-id group-ids))
+
+;; TODO remove these for security reasons?
 (defmethod com/handle-ws-inbound :create-membership
   [{:keys [user-id org-id]} ws-id sub-fn]
   (create-or-find-memb user-id org-id)

@@ -29,6 +29,7 @@
             [vetd-app.vendors.pages.round-product-detail :as p-vround-product-detail]
             [vetd-app.groups.pages.home :as p-ghome]
             [vetd-app.groups.pages.settings :as p-gsettings]
+            [vetd-app.groups.pages.detail :as p-gdetail]
             [vetd-app.common.components :as cc]
             [vetd-app.common.fixtures :as pub-fix]
             [vetd-app.common.pages.signup :as p-signup]
@@ -64,7 +65,8 @@
                    :v/rounds #'p-vrounds/c-page
                    :v/round-product-detail #'p-vround-product-detail/c-page
                    :g/home #'p-ghome/c-page
-                   :g/settings #'p-gsettings/c-page})
+                   :g/settings #'p-gsettings/c-page
+                   :g/detail #'p-gdetail/c-page})
 
 (hooks/reg-hooks! hooks/c-container
                   {:login #'pub-fix/container
@@ -85,12 +87,14 @@
                    :v/rounds #'v-fix/container
                    :v/round-product-detail #'v-fix/container
                    :g/home #'b-fix/container
-                   :g/settings #'b-fix/container})
+                   :g/settings #'b-fix/container
+                   :g/detail #'b-fix/container})
 
 (rf/reg-event-db
  :init-db
  (constantly
   {:search p-bsearch/init-db
+   :groups p-ghome/init-db
    :stack p-bstack/init-db
    :round p-bround-detail/init-db
    ;; stores refs by keywords, that can be used with :scroll-to fx
@@ -257,11 +261,11 @@
 (sec/defroute settings-root "/settings" []
   (rf/dispatch [:route-settings]))
 
-(sec/defroute group-home-path "/c/home" []
-  (rf/dispatch [:g/route-home]))
-
-(sec/defroute group-settings-path "/c/settings" []
-  (rf/dispatch [:g/route-settings]))
+(sec/defroute groups-path "/c/:path-or-idstr" [path-or-idstr]
+  (rf/dispatch (case path-or-idstr
+                 "home" [:g/route-home]
+                 "settings" [:g/route-settings]
+                 [:g/route-detail path-or-idstr])))
 
 ;; Link - special links for actions such as reset password, or account verification
 (sec/defroute link-path "/l/:link-key" [link-key]

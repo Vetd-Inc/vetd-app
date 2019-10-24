@@ -27,9 +27,12 @@
     (if (or (not-empty term)
             (some seq (vals filter-map)))
       (let [ids (db/hs-query
-                 {:select [[:p.id :pid]
-                           [(honeysql.core/raw "coalesce(p.score, 1.0)") :nscore]
-                           [(honeysql.core/raw "coalesce(p.profile_score, 0.0)") :pscore]]
+                 {:select (concat
+                           [[:p.id :pid]
+                            [(honeysql.core/raw "coalesce(p.score, 1.0)") :nscore]
+                            [(honeysql.core/raw "coalesce(p.profile_score, 0.0)") :pscore]]
+                           (when (features "preposal")
+                             [[:d.created :dcreated]]))
                   :modifiers [:distinct]
                   :from [[:products :p]]
                   :join (concat [[:orgs :o] [:= :o.id :p.vendor_id]]
@@ -68,7 +71,9 @@
                              [:in :pc.cat_id cat-ids])]
                           (when (features "product-profile-completed")
                             [:>= :p.profile_score 0.9])]
-                  :order-by [[:pscore :desc] [:nscore :desc]]
+                  :order-by (if (features "preposal")
+                              [[:dcreated :desc]]
+                              [[:pscore :desc] [:nscore :desc]])
                   ;; this will be paginated on the frontend
                   :limit 200})
             pids (map :pid ids)]
@@ -173,6 +178,7 @@
         (journal/push-entry&sns-publish :ui-start-round "Vetd Round Started" msg
                                         {:jtype :round-started
                                          :round-id id
+                                         :title title
                                          :buyer-org-id (:id buyer)
                                          :buyer-org-name (:oname buyer)
                                          :product-names (mapv :pname products)
@@ -208,6 +214,7 @@ User '%s'
           "field name: " field-key)
      {:jtype (keyword (str "complete-" (name etype) "-profile-request"))
       :buyer-org-name buyer-name
+      :buyer-org-id buyer-id
       :field-name field-key
       (keyword (str (name etype) "-id")) eid
       (keyword (str (name etype) "-name")) ename})))
@@ -237,6 +244,7 @@ Round URLs (if any):
                                     {:jtype :buy-request
                                      :buyer-org-name buyer-name
                                      :buyer-org-id buyer-id
+                                     :product-id product-id
                                      :product-name pname})))
 
 (defn send-setup-call-req [buyer-id product-id]
@@ -330,6 +338,7 @@ Round URL: https://app.vetd.com/b/rounds/%s"
                                                {:jtype :round-winner-declared
                                                 :buyer-org-name buyer-org-name
                                                 :buyer-org-id buyer-org-id
+                                                :round-id round-id
                                                 :product-id product-id
                                                 :product-name product-name}))
              (catch Exception e
@@ -708,7 +717,7 @@ Round URL: https://app.vetd.com/b/rounds/%s"
                            :product-id (:id product)
                            :product-name (:pname product)
                            :buyer-org-id (:id buyer)
-                           :buyer-name (:oname buyer)}))))
+                           :buyer-org-name (:oname buyer)}))))
 
 (defmethod com/handle-ws-inbound :b/stack.update-item
   [{:keys [stack-item-id status
