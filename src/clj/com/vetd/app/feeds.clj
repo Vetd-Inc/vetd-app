@@ -34,9 +34,9 @@
        :where [:and
                [:> :j.id @last-journal-entry-id&]
                ;; for safety
-               [:> :j.created (java.sql.Timestamp.
-                               (- (ut/now)
-                                  (* 1000 60 60 24)))]
+               ;; [:> :j.created (java.sql.Timestamp.
+               ;;                 (- (ut/now)
+               ;;                    (* 1000 60 60 24)))]
                [:= :f.id nil]
                [:in :j.jtype (mapv name valid-journal-entry-types)]]
        :order {:j.id :asc}
