@@ -194,7 +194,7 @@
   {:round-started "vetd vetd-colors"
    :round-winner-declared "trophy yellow"
    :stack-update-rating "star yellow"
-   :stack-add-items "grid layout black"
+   :stack-add-items "grid layout grey"
    :preposal-request "clipboard outline"
    :buy-request "cart"
    :complete-vendor-profile-request "wpforms grey"
