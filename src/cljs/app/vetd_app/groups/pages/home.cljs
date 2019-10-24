@@ -191,14 +191,14 @@
                 "No organizations have added products to their stack yet.")))]]))))
 
 (def ftype->icon
-  {:round-started "vetd"
-   :round-winner-declared "trophy"
-   :stack-update-rating "star"
-   :stack-add-items "grid layout"
+  {:round-started "vetd vetd-colors"
+   :round-winner-declared "trophy yellow"
+   :stack-update-rating "star yellow"
+   :stack-add-items "grid layout black"
    :preposal-request "clipboard outline"
    :buy-request "cart"
-   :complete-vendor-profile-request "wpforms"
-   :complete-product-profile-request "wpforms"})
+   :complete-vendor-profile-request "wpforms grey"
+   :complete-product-profile-request "wpforms grey"})
 
 (defn event-data->message
   [ftype data]
@@ -256,7 +256,7 @@
    [:> ui/FeedContent
     [:> ui/FeedSummary (event-data->message (keyword ftype) data)]
     [:> ui/FeedDate
-     (str (util/relative-datetime (.getTime (js/Date. created))) " - " group-name)]]])
+     (str (util/relative-datetime (.getTime (js/Date. created))) " in " group-name)]]])
 
 (defn c-feed
   [groups]
@@ -269,7 +269,7 @@
                                     {:queries
                                      [[:feed-events {:org-id org-ids
                                                      :_order_by {:created :desc}
-                                                     :_limit 30
+                                                     :_limit 37
                                                      :deleted nil}
                                        [:id :created :ftype :data]]]}])]
     (if (= :loading @feed-events&)
@@ -376,7 +376,7 @@
                                     [:id]]
                                    ;; TODO put in separate gql and do single query for all selected-group-ids
                                    [:top-products {:_order_by {:count-stack-items :desc}
-                                                   :_limit 10}
+                                                   :_limit 15}
                                     [:group-id :product-id :count-stack-items]]]]]}])
         filter& (rf/subscribe [:groups.filter])]
     (fn []
@@ -394,8 +394,7 @@
          (let [selected-groups (->> (:groups @groups&)
                                     (filter (comp (:groups @filter&) :id)))]
            [:div.inner-container
-            [:> ui/Grid {:stackable true
-                         :style {:padding-bottom 35}} ; in case they are admin of multiple communities
+            [:> ui/Grid {:stackable true}
              [:> ui/GridRow
               [:> ui/GridColumn {:computer 9 :mobile 16
                                  :style {:padding-right 7}}

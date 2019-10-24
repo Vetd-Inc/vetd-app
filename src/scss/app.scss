@@ -565,8 +565,9 @@ i.icon.vetd:not(.small) {
   height: 50px !important;
 }
 .feed i.icon.vetd {
-  width: 19px !important;
-  height: 29px !important;
+  width: 25px !important;
+  height: 28px !important;
+  margin-top: 10px !important;
 }
 i.icon.vetd:not(.vetd-colors) {
   filter: grayscale(1) brightness(0.6);
@@ -1309,10 +1310,28 @@ $cell-height: 201px;
       .icon {
         margin-top: 12px;
         padding: 0;
+
+        // &.vetd { color: $blue; }
+        // &.trophy { color: darkorange; }
+        &.star { color: gold; }
+        // &.grid.layout { color: $blue; }
+        &.clipboard.outline { color: $teal; }
+        &.cart { color: $blue; }
+        &.wpforms { color: $teal; }
       }
 
       + .content {
         margin-left: 10px;
+
+        .summary {
+          font-weight: normal;
+          
+          em {
+            // color: $teal;
+            font-weight: bold;
+            font-style: normal;
+          }
+        }
 
         .date {
           margin-top: 0px;
