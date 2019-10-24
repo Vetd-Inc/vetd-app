@@ -249,14 +249,14 @@
     "Unknown event."))
 
 (defn c-feed-event
-  [{:keys [id ftype created data]} group-name]
+  [{:keys [id ftype journal-entry-created data]} group-name]
   [:> ui/FeedEvent {:on-click #(rf/dispatch (event-data->click-event (keyword ftype) data))}
    [:> ui/FeedLabel
     [:> ui/Icon {:name (ftype->icon (keyword ftype))}]]
    [:> ui/FeedContent
     [:> ui/FeedSummary (event-data->message (keyword ftype) data)]
     [:> ui/FeedDate
-     (str (util/relative-datetime (.getTime (js/Date. created))) " in " group-name)]]])
+     (str (util/relative-datetime (.getTime (js/Date. journal-entry-created))) " in " group-name)]]])
 
 (defn c-feed
   [groups]
@@ -268,10 +268,10 @@
         feed-events& (rf/subscribe [:gql/sub
                                     {:queries
                                      [[:feed-events {:org-id org-ids
-                                                     :_order_by {:created :desc}
+                                                     :_order_by {:journal-entry-created :desc}
                                                      :_limit 37
                                                      :deleted nil}
-                                       [:id :created :ftype :data]]]}])]
+                                       [:id :journal-entry-created :ftype :data]]]}])]
     (if (= :loading @feed-events&)
       [cc/c-loader]
       (let [feed-events (:feed-events @feed-events&)]
