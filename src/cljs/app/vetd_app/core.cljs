@@ -112,7 +112,16 @@
    ;; only takes effect if the OS also is set to "Dark Mode"
    :dark-mode? (= (local-store/get-item :dark-mode?) "true")}))
 
-(def public-pages #{:login :signup :join-org-signup :forgot-password})
+;; Unless a path is listed here, non-sessioned users will be
+;; redirected to /login when they visit that path.
+(def public-routes #{""
+                     "/"
+                     "/login"
+                     "/signup/:type"
+                     "/signup-by-invite/:link-key"
+                     "/forgot-password/"
+                     "/forgot-password/:email-address"
+                     "/l/:link-key"})
 
 (rf/reg-sub
  :page
@@ -229,6 +238,9 @@
 ;;;; Routes
 
 ;; Common
+(sec/defroute blank-path "" []
+  (rf/dispatch [:nav-home]))
+
 (sec/defroute home-path "/" []
   (rf/dispatch [:nav-home]))
 
@@ -343,10 +355,15 @@
 
 (defn config-acct []
   (acct/configure-navigation!
-   {:nav-handler (fn [path]
-                   (r/after-render clerk/after-render!)
-                   (sec/dispatch! path)
-                   (clerk/navigate-page! path))
+   {:nav-handler (fn [requested-path]
+                   (let [logged-in? (not (s/blank? (local-store/get-item :session-token))) 
+                         path (if (or logged-in?
+                                      (public-routes (sec/locate-route-value requested-path)))
+                                requested-path
+                                "/login")]
+                     (r/after-render clerk/after-render!)
+                     (sec/dispatch! path)
+                     (clerk/navigate-page! path)))
     :path-exists? sec/locate-route
     :reload-same-path? false}))
 

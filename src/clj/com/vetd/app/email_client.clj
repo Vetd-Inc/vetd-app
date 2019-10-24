@@ -92,14 +92,13 @@
 
 ;;;; Auto Email
 
-#_ (def scheduled-email-thread& (atom nil))
-
-#_ (def next-scheduled-event& (atom nil))
-
 (defonce scheduled-email-thread& (atom nil))
 (defonce next-scheduled-event& (atom nil))
 
 (def override-now& (atom nil))
+
+#_
+(reset! override-now& (tick/instant "2019-10-28T16:30:00"))
 
 (defn now- []
   (or @override-now&
@@ -110,7 +109,8 @@
 (defn nine-am-pst? [x] (= (tick/hour x) 16))
 
 (defn calc-next-due-ts [dt]
-  (->> (tick/range (tick/truncate dt :hours)
+  (->> (tick/range (-> (tick/truncate dt :hours)
+                       (tick/+ (tick/new-duration 1 :hours)))
                    (tick/+ dt (tick/new-period 8 :days))
                    (tick/new-duration 1 :hours))
        (filter #(and (monday? %)
@@ -137,28 +137,37 @@
                      :data data})
         first)))
 
-
-
-
 ;; TODO This will get trickier when we have multiple app server instances running again
 (defn select-next-email&recipient [max-ts]
   (-> {:select [[:%max.esl.created :max-created]
                 [:m.id :membership-id]
                 [:m.user_id :user-id]
-                ;;TODO                [:u.email :email]                
+                [:u.email :email]
+                [:u.uname :uname]
                 [:m.org_id :org-id]
                 [:o.oname :oname]]
        :from [[:orgs :o]]
        :join [[:memberships :m]
               [:and
                [:= :m.deleted nil]
-               [:= :m.org_id :o.id]]]
+               [:= :m.org_id :o.id]]
+              [:users :u]
+              [:and
+               [:= :u.id :user_id]
+               [:= :u.deleted nil]
+               [:like :u.email "%@%"]
+               [:or
+                [:= :m.org_id 2208512249632]
+                [:not
+                 [:or
+                  [:like :u.email "%@vetd.com"]
+                  [:like :u.email "temp@%"]]]]]]
        :left-join [[:email_sent_log :esl]
                    [:= :esl.user_id :m.user_id]]
        :where [:and
                [:= :o.deleted nil]
                [:= :o.buyer_qm true]]
-       :group-by [:m.id :m.user_id :m.org_id :o.oname]
+       :group-by [:m.id :m.user_id :m.org_id :o.oname :u.email :u.uname]
        :having [:or
                 [:= :%max.esl.created nil]
                 [:< :%max.esl.created nil (java.sql.Timestamp. max-ts)]]
@@ -291,7 +300,7 @@
      :num-new-orgs (get-weekly-auto-email-data--communities-num-new-orgs group-id 7)
      :num-new-stacks (get-weekly-auto-email-data--communities-num-new-stacks group-id 7)}))
 
-(defn get-weekly-auto-email-data [user-id org-id oname]
+(defn get-weekly-auto-email-data [user-id org-id oname uname]
   (let [group-ids (some->> [[:group-org-memberships {:org-id org-id}
                              [:group-id]]]
                            ha/sync-query
@@ -305,6 +314,7 @@
      :unsubscribe-link (create-unsubscribe-link {:user-id user-id
                                                  :org-id org-id
                                                  :etype (name :weekly-buyer-email)})
+     :user-name uname
      :org-name oname
      :product-annual-renewals-soon product-annual-renewals-soon
      :product-annual-renewals-soon-count (count product-annual-renewals-soon)
@@ -314,8 +324,6 @@
      :active-rounds-count (count active-rounds)
      :communities (map get-weekly-auto-email-data--communities group-ids)}))
 
-#_
-(do-scheduled-emailer (now-))
 
 (defn do-scheduled-emailer [dt]
   (try
@@ -324,10 +332,11 @@
                            (tick/- (tick/new-period 6 :days))
                            tick->ts)]
       (while (try
-               (when-let [{:keys [email oname user-id org-id max-created]} (select-next-email&recipient threshold-ts)]
-                 (let [data (get-weekly-auto-email-data user-id org-id oname)]
+               (when-let [{:keys [email oname uname user-id org-id max-created]} (select-next-email&recipient threshold-ts)]
+                 (let [data (get-weekly-auto-email-data user-id org-id oname uname)]
                    (send-template-email
-                    "zach@vetd.com" ;; TODO use `email`
+                    "zach@vetd.com" 
+#_                    email
                     data
                     {:template-id "d-76e51dc96f2d4d7e8438bd6b407504f9"})
                    (insert-email-sent-log-entry
@@ -358,31 +367,10 @@
               (while (not @com/shutdown-signal)
                 (let [event-time @next-scheduled-event&]
                   (if (tick/> (now-) event-time)
-                    (do (reset! next-scheduled-event& (calc-next-due-ts (now-) ))
+                    (do (reset! next-scheduled-event& (calc-next-due-ts (now-)))
                         (#'do-scheduled-emailer event-time))
                     (Thread/sleep (* 1000 10)))))
               (log/info "Stopped scheduled-emailer")))))
 
-
 #_
-
-(start-scheduled-emailer-thread)
-
-
-#_
-@override-now&
-;; TODO calling this here is gross -- Bill
-
-#_
-(reset! override-now& (tick/date-time (java.util.Date. 120 1 1)))
-
-#_ (reset! override-now& nil)
-
-#_
-(reset! com/shutdown-signal true)
-
-#_
-(clojure.pprint/pprint @scheduled-email-thread&)
-
-
-
+(start-scheduled-emailer-thread) ;; TODO calling this here is gross -- Bill
