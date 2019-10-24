@@ -229,8 +229,13 @@
 (defn event-data->click-event
   [ftype data]
   (case ftype
+    ;; TODO use this after we have read-only rounds within community available
+    ;; :round-started (let [{:keys [round-id]} data] [:b/nav-round-detail (util/base31->str round-id)])
+    ;; :round-winner-declared (let [{:keys [round-id]} data] [:b/nav-round-detail (util/base31->str round-id)])
     :round-started (let [{:keys [round-id]} data] [:b/nav-round-detail (util/base31->str round-id)])
-    :round-winner-declared (let [{:keys [round-id]} data] [:b/nav-round-detail (util/base31->str round-id)])
+    :round-winner-declared (let [{:keys [product-id]} data]
+                             [:b/nav-product-detail (util/base31->str product-id)])
+    
     :stack-update-rating (let [{:keys [product-id]} data]
                            [:b/nav-product-detail (util/base31->str product-id)])
     :stack-add-items (let [{:keys [buyer-org-id]} data]
@@ -268,6 +273,8 @@
         feed-events& (rf/subscribe [:gql/sub
                                     {:queries
                                      [[:feed-events {:org-id org-ids
+                                                     ;; :ftype [;; :round-started
+                                                     ;;         :round-winner-declared :stack-update-rating :stack-add-items :preposal-request :buy-request :complete-vendor-profile-request :complete-product-profile-request]
                                                      :_order_by {:journal-entry-created :desc}
                                                      :_limit 37
                                                      :deleted nil}

@@ -1311,10 +1311,8 @@ $cell-height: 201px;
         margin-top: 12px;
         padding: 0;
 
-        // &.vetd { color: $blue; }
-        // &.trophy { color: darkorange; }
+        // NOTE: some others are colored inline with icon name
         &.star { color: gold; }
-        // &.grid.layout { color: $blue; }
         &.clipboard.outline { color: $teal; }
         &.cart { color: $blue; }
         &.wpforms { color: $teal; }

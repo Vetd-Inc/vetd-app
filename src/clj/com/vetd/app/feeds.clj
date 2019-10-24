@@ -39,7 +39,7 @@
                ;;                    (* 1000 60 60 24)))]
                [:= :f.id nil]
                [:in :j.jtype (mapv name valid-journal-entry-types)]]
-       :order {:j.id :asc}
+       :order-by {:j.id :asc}
        :limit 1}
       db/hs-query
       first))
