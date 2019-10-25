@@ -9,8 +9,8 @@
             [clj-http.client :as client]
             [clj-time.periodic :as t-per]
             [tick.core :as tick]
-            [tick.alpha.api :as tcka]))
-
+            [tick.alpha.api :as tcka]
+            [clojure.string :as s]))
 
 (def sendgrid-api-key "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")
 (def sendgrid-api-url "https://api.sendgrid.com/v3/")
@@ -314,7 +314,13 @@
      :unsubscribe-link (create-unsubscribe-link {:user-id user-id
                                                  :org-id org-id
                                                  :etype (name :weekly-buyer-email)})
-     :user-name uname
+     ;; get just the First Name
+     :user-name (str ;; nil -> ""
+                 (some->> (s/split (s/lower-case uname) #" ")
+                          (remove #{"mr." "mrs." "ms." "dr."
+                                    "mr" "mrs" "ms" "dr"})
+                          first
+                          s/capitalize))
      :org-name oname
      :product-annual-renewals-soon product-annual-renewals-soon
      :product-annual-renewals-soon-count (count product-annual-renewals-soon)
@@ -323,7 +329,6 @@
      :active-rounds active-rounds
      :active-rounds-count (count active-rounds)
      :communities (map get-weekly-auto-email-data--communities group-ids)}))
-
 
 (defn do-scheduled-emailer [dt]
   (try
@@ -336,7 +341,7 @@
                  (let [data (get-weekly-auto-email-data user-id org-id oname uname)]
                    (send-template-email
                     "zach@vetd.com" 
-#_                    email
+                    #_ email
                     data
                     {:template-id "d-76e51dc96f2d4d7e8438bd6b407504f9"})
                    (insert-email-sent-log-entry
