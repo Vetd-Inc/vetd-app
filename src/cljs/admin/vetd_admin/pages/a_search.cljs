@@ -67,7 +67,7 @@
      (reset! util/force-refresh?& true)
      {:db (assoc db
                  :org-id org-id)
-      :dispatch [:v/nav-preposals]})))
+      :dispatch [:nav-settings]})))
 
 (rf/reg-event-fx
  :a/create-membership
