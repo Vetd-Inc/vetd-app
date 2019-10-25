@@ -97,9 +97,6 @@
 
 (def override-now& (atom nil))
 
-#_
-(reset! override-now& (tick/instant "2019-10-28T16:30:00"))
-
 (defn now- []
   (or @override-now&
       (tick/now)))
@@ -163,14 +160,20 @@
                   [:like :u.email "%@vetd.com"]
                   [:like :u.email "temp@%"]]]]]]
        :left-join [[:email_sent_log :esl]
-                   [:= :esl.user_id :m.user_id]]
+                   [:= :esl.user_id :m.user_id]
+                   [:unsubscribes :uns]
+                   [:and
+                    [:= :uns.user_id :u.id]
+                    [:= :uns.org_id :o.id]
+                    [:= :uns.etype "weekly-buyer-email"]]]
        :where [:and
                [:= :o.deleted nil]
-               [:= :o.buyer_qm true]]
+               [:= :o.buyer_qm true]
+               [:= :uns.id nil]]
        :group-by [:m.id :m.user_id :m.org_id :o.oname :u.email :u.uname]
        :having [:or
                 [:= :%max.esl.created nil]
-                [:< :%max.esl.created nil (java.sql.Timestamp. max-ts)]]
+                [:< :%max.esl.created (java.sql.Timestamp. max-ts)]]
        :limit 1}
       db/hs-query
       first))
@@ -324,7 +327,6 @@
      :active-rounds-count (count active-rounds)
      :communities (map get-weekly-auto-email-data--communities group-ids)}))
 
-
 (defn do-scheduled-emailer [dt]
   (try
     (log/info (str "CALL do-scheduled-emailer " dt))
@@ -362,7 +364,8 @@
               (reset! next-scheduled-event& (or (some-> "weekly-buyer-email"
                                                         select-max-email-log-created-by-etype
                                                         tick/date-time
-                                                        calc-next-due-ts)
+                                                        calc-next-due-ts
+                                                        tick/instant)
                                                 (calc-next-due-ts (now-))))
               (while (not @com/shutdown-signal)
                 (let [event-time @next-scheduled-event&]
@@ -374,3 +377,4 @@
 
 #_
 (start-scheduled-emailer-thread) ;; TODO calling this here is gross -- Bill
+
