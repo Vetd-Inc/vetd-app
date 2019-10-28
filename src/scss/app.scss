@@ -260,6 +260,11 @@ ul {
   padding: 0 180px 14px 0 !important;
   margin: 0;
   font-size: 30px;
+  font-weight: 400;
+
+  small {
+    font-size: 20px;
+  }
 }
 .display-field {
   margin: 7px 0 7px 0 !important;
@@ -273,6 +278,7 @@ ul {
 }
 .display-field-key {
   margin: 0 0 5px 0 !important;
+  // font-weight: 400; // TODO still contemplating this one
 }
 .detail-container {
   box-shadow: 0 2px 14px 0 rgba(50,50,50,0.1) !important;

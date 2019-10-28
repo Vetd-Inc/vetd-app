@@ -1,6 +1,8 @@
 $import-google-fonts: true !default;
-$font-url: 'https://fonts.googleapis.com/css?family=Montserrat:300,400,600|Raleway:300,400' !default;
-$font-name: 'Montserrat' !default;
+// $font-url: 'https://fonts.googleapis.com/css?family=Montserrat:300,400,600|Raleway:300,400' !default;
+// $font-name: 'Montserrat' !default;
+$font-url: 'https://fonts.googleapis.com/css?family=Noto+Sans:400,700' !default;
+$font-name: 'Noto Sans' !default;
 $font-family: $font-name, 'Helvetica Neue', Arial, Helvetica, sans-serif !default;
 
 // Colors
