@@ -342,11 +342,9 @@
       (while (try
                (when-let [{:keys [email oname uname user-id org-id max-created]} (select-next-email&recipient threshold-ts)]
                  (let [data (get-weekly-auto-email-data user-id org-id oname uname)]
-                   (send-template-email
-                    "zach@vetd.com" 
-                    #_ email
-                    data
-                    {:template-id "d-76e51dc96f2d4d7e8438bd6b407504f9"})
+                   (send-template-email email
+                                        data
+                                        {:template-id "d-76e51dc96f2d4d7e8438bd6b407504f9"})
                    (insert-email-sent-log-entry
                     {:etype :weekly-buyer-email
                      :user-id user-id
