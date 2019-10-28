@@ -28,6 +28,11 @@
  :<- [:b/round]
  (fn [{:keys [products-order]}] products-order))
 
+(rf/reg-sub
+ :b/round.read-only?
+ (fn [{:keys [org-id round]}]
+   round))
+
 ;;;; Events
 (rf/reg-event-fx
  :b/round.add-requirements
