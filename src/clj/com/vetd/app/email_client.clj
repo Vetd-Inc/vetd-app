@@ -165,7 +165,8 @@
                    [:and
                     [:= :uns.user_id :u.id]
                     [:= :uns.org_id :o.id]
-                    [:= :uns.etype "weekly-buyer-email"]]]
+                    [:= :uns.etype "weekly-buyer-email"]
+                    [:= :uns.deleted nil]]]
        :where [:and
                [:= :o.deleted nil]
                [:= :o.buyer_qm true]
