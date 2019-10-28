@@ -92,7 +92,7 @@
 
 ;;;; Auto Email
 
-(defonce scheduled-email-thread& (atom nil))
+(defonce scheduled-email-thread& (atom nil)) 
 (defonce next-scheduled-event& (atom nil))
 
 (def override-now& (atom nil))
@@ -103,7 +103,7 @@
 
 (defn monday? [x] (= (tick/day-of-week x) #time/day-of-week "MONDAY"))
 
-(defn nine-am-pst? [x] (= (tick/hour x) 16))
+(defn nine-am-pdt? [x] (= (tick/hour x) 16))
 
 (defn calc-next-due-ts [dt]
   (->> (tick/range (-> (tick/truncate dt :hours)
@@ -111,7 +111,7 @@
                    (tick/+ dt (tick/new-period 8 :days))
                    (tick/new-duration 1 :hours))
        (filter #(and (monday? %)
-                     (nine-am-pst? %)))
+                     (nine-am-pdt? %)))
        first))
 
 (defn tick->ts [t]
@@ -334,12 +334,12 @@
      :active-rounds-count (count active-rounds)
      :communities (map get-weekly-auto-email-data--communities group-ids)}))
 
-(defn do-scheduled-emailer [dt]
+
+
+(defn do-scheduled-emailer [threshold-dt]
   (try
-    (log/info (str "CALL do-scheduled-emailer " dt))
-    (let [threshold-ts (-> dt
-                           (tick/- (tick/new-period 6 :days))
-                           tick->ts)]
+    (log/info (str "CALL do-scheduled-emailer " threshold-dt))
+    (let [threshold-ts (tick->ts threshold-dt)]
       (while (try
                (when-let [{:keys [email oname uname user-id org-id max-created]} (select-next-email&recipient threshold-ts)]
                  (let [data (get-weekly-auto-email-data user-id org-id oname uname)]
@@ -362,10 +362,13 @@
 
 (defn start-scheduled-emailer-thread []
   (when (and (not env/building?)
+             env/prod?
              (nil? @scheduled-email-thread&))
     (reset! scheduled-email-thread&
             (future
               (log/info "Starting scheduled-emailer")
+              (do-scheduled-emailer (tick/- (now-)
+                                            (tick/new-period 7 :days)))
               (reset! next-scheduled-event& (or (some-> "weekly-buyer-email"
                                                         select-max-email-log-created-by-etype
                                                         tick/date-time
@@ -376,8 +379,13 @@
                 (let [event-time @next-scheduled-event&]
                   (if (tick/> (now-) event-time)
                     (do (reset! next-scheduled-event& (calc-next-due-ts (now-)))
-                        (#'do-scheduled-emailer event-time))
+                        (#'do-scheduled-emailer (tick/- event-time
+                                                        (tick/new-period 6 :days))))
                     (Thread/sleep (* 1000 10)))))
               (log/info "Stopped scheduled-emailer")))))
 
 (start-scheduled-emailer-thread) ;; TODO calling this here is gross -- Bill
+
+#_
+(future-cancel @scheduled-email-thread&)
+
