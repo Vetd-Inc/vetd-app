@@ -4,6 +4,7 @@ $bg-color: #fafafa;
 // usage - @media #{$mobile} {  }
 $mobile: "only screen and (max-width: 767px)";
 $not-mobile: "only screen and (min-width: 768px)";
+$ipad-landscape: "only screen and (min-device-width : 768px) and (max-device-width : 1024px) and (orientation : landscape)";
 // even though the OS might be in Dark Mode, we also have our own class .dark-mode that is added to body
 $dark-mode: "(prefers-color-scheme: dark)";
 
@@ -503,7 +504,7 @@ ul {
     margin-top: 0;
   }
 }
-
+n
 .ui.rating {
   i {
     &:focus {
@@ -1283,6 +1284,10 @@ $cell-height: 201px;
         
         .metric {
           margin-bottom: 2px;
+        }
+
+        @media #{$ipad-landscape} {
+          display: none;
         }
       }
     }
