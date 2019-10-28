@@ -361,7 +361,8 @@
       (Thread/sleep (* 1000 60 60)))))
 
 (defn start-scheduled-emailer-thread []
-  (when (and (not env/building?)
+  (when (and (not env/building?) ;; yes, it's redundant
+             env/prod?
              (nil? @scheduled-email-thread&))
     (reset! scheduled-email-thread&
             (future
