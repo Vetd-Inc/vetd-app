@@ -231,7 +231,7 @@
       (if-not won?
         [:<>
          [:> ui/Popup
-          {:position "top right"
+          {:position "top center"
            :on "click"
            :open @popup-open?
            :on-close #(reset! popup-open? false)
@@ -301,7 +301,7 @@
       (if-not disqualified?
         [:<>
          [:> ui/Popup
-          {:position "top right"
+          {:position "top center"
            :on "click"
            :open @popup-open?
            :on-close #(reset! popup-open? false)
