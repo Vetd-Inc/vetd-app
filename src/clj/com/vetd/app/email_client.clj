@@ -97,9 +97,6 @@
 
 (def override-now& (atom nil))
 
-#_
-(reset! override-now& (tick/instant "2019-10-28T16:30:00"))
-
 (defn now- []
   (or @override-now&
       (tick/now)))
@@ -163,14 +160,21 @@
                   [:like :u.email "%@vetd.com"]
                   [:like :u.email "temp@%"]]]]]]
        :left-join [[:email_sent_log :esl]
-                   [:= :esl.user_id :m.user_id]]
+                   [:= :esl.user_id :m.user_id]
+                   [:unsubscribes :uns]
+                   [:and
+                    [:= :uns.user_id :u.id]
+                    [:= :uns.org_id :o.id]
+                    [:= :uns.etype "weekly-buyer-email"]
+                    [:= :uns.deleted nil]]]
        :where [:and
                [:= :o.deleted nil]
-               [:= :o.buyer_qm true]]
+               [:= :o.buyer_qm true]
+               [:= :uns.id nil]]
        :group-by [:m.id :m.user_id :m.org_id :o.oname :u.email :u.uname]
        :having [:or
                 [:= :%max.esl.created nil]
-                [:< :%max.esl.created nil (java.sql.Timestamp. max-ts)]]
+                [:< :%max.esl.created (java.sql.Timestamp. max-ts)]]
        :limit 1}
       db/hs-query
       first))
@@ -339,11 +343,9 @@
       (while (try
                (when-let [{:keys [email oname uname user-id org-id max-created]} (select-next-email&recipient threshold-ts)]
                  (let [data (get-weekly-auto-email-data user-id org-id oname uname)]
-                   (send-template-email
-                    "zach@vetd.com" 
-                    #_ email
-                    data
-                    {:template-id "d-76e51dc96f2d4d7e8438bd6b407504f9"})
+                   (send-template-email email
+                                        data
+                                        {:template-id "d-76e51dc96f2d4d7e8438bd6b407504f9"})
                    (insert-email-sent-log-entry
                     {:etype :weekly-buyer-email
                      :user-id user-id
@@ -367,7 +369,8 @@
               (reset! next-scheduled-event& (or (some-> "weekly-buyer-email"
                                                         select-max-email-log-created-by-etype
                                                         tick/date-time
-                                                        calc-next-due-ts)
+                                                        calc-next-due-ts
+                                                        tick/instant)
                                                 (calc-next-due-ts (now-))))
               (while (not @com/shutdown-signal)
                 (let [event-time @next-scheduled-event&]
@@ -377,5 +380,4 @@
                     (Thread/sleep (* 1000 10)))))
               (log/info "Stopped scheduled-emailer")))))
 
-#_
 (start-scheduled-emailer-thread) ;; TODO calling this here is gross -- Bill
