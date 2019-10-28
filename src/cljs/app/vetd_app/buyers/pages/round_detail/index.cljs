@@ -20,7 +20,7 @@
  :<- [:page-params] 
  (fn [{:keys [round-idstr]}] round-idstr))
 
-(defn rounds-gql
+(defn mk-round-detail-gql
   [round-idstr org-id]
   [:gql/sub
    {:queries
@@ -69,19 +69,20 @@
                 {:deleted nil}
                 [:nval]]]]]]]]]]]]]}])
 
-rounds-gql round-idstr org-id
-(rf/reg-sub
- :b/topics.loading?
- :<- topics-gql
- (fn [x] (= x :loading)))
+;; This is a failed experiment, but has potential.
+;; (rf/reg-sub
+;;  :b/round-detail.gql
+;;  (fn [{:keys [org-id page-params]}]
+;;    (mk-round-detail-gql (:round-idstr page-params) org-id)))
 
-(rf/reg-sub
- :b/topics.data
- :<- topics-gql
- (fn [x]
-   (if-not (= x :loading)
-     (:prompts x)
-     [])))
+;; (rf/reg-sub
+;;  :b/round-detail.data
+;;  :<- @(rf/subscribe [:b/round-detail.gql])
+;;  (fn [gql]
+;;    (println gql)
+;;    (if (= gql :loading)
+;;      :loading
+;;      (first (:rounds gql)))))
 
 (def curated-topics-terms
   [ ;; "preposal/pitch"
@@ -277,12 +278,12 @@ rounds-gql round-idstr org-id
 (defn c-page []
   (let [org-id& (rf/subscribe [:org-id])
         round-idstr& (rf/subscribe [:round-idstr])
-        rounds& (rf/subscribe )
+        round-detail& (rf/subscribe (mk-round-detail-gql @round-idstr& @org-id&))
         explainer-modal-showing?& (r/atom false)]
     (fn []
-      (if (= :loading @rounds&)
+      (if (= @round-detail& :loading)
         [cc/c-loader]
-        (let [{:keys [status req-form-template round-product] :as round} (-> @rounds& :rounds first)
+        (let [{:keys [status req-form-template round-product] :as round} (-> @round-detail& :rounds first)
               sorted-round-products (sort-round-products round-product)
               show-top-scrollbar? (> (count sorted-round-products) 4)]
           [:<>
