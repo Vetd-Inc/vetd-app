@@ -599,25 +599,53 @@
           restrict (cond id [:= :r.id id]
                          idstr [:= :r.idstr idstr])]
       (if restrict
-        (->> (db/hs-query {:select [:%count.s.id]
-                           :from [[:sessions :s]]
-                           :join [[:users :u] [:and
-                                               [:= :u.deleted nil]
-                                               [:= :u.id :s.user_id ]]
-                                  [:memberships :m] [:and
-                                                     [:= :m.deleted nil]
-                                                     [:= :m.user_id :u.id]]
-                                  [:orgs :o] [:and
-                                              [:= :o.deleted nil]
-                                              [:= :o.id :m.org_id]]
-                                  [:rounds :r] [:and
-                                                [:= :r.deleted nil]
-                                                [:= :o.id :r.buyer_id]
-                                                restrict]]
-                           :where   [:= :s.token session-token]})
-             first
-             :count
-             (= 1))
+        (or (->> (db/hs-query {:select [:%count.s.id]
+                               :from [[:sessions :s]]
+                               :join [[:users :u] [:and
+                                                   [:= :u.deleted nil]
+                                                   [:= :u.id :s.user_id ]]
+                                      [:memberships :m] [:and
+                                                         [:= :m.deleted nil]
+                                                         [:= :m.user_id :u.id]]
+                                      [:orgs :o] [:and
+                                                  [:= :o.deleted nil]
+                                                  [:= :o.id :m.org_id]]
+                                      [:rounds :r] [:and
+                                                    [:= :r.deleted nil]
+                                                    [:= :o.id :r.buyer_id]
+                                                    restrict]]
+                               :where   [:= :s.token session-token]})
+                 first
+                 :count
+                 (= 1))
+            (->> (db/hs-query {:select [:%count.s.id]
+                               :from [[:sessions :s]]
+                               :join [[:users :u] [:and
+                                                   [:= :u.deleted nil]
+                                                   [:= :u.id :s.user_id ]]
+
+                                      [:memberships :m] [:and
+                                                         [:= :m.deleted nil]
+                                                         [:= :m.user_id :u.id]]
+
+                                      [:group_org_memberships :gom]
+                                      [:and
+                                       [:= :gom.deleted nil]
+                                       [:= :gom.org_id :m.org_id]]
+                                  
+                                      [:group_org_memberships :gom2]
+                                      [:and
+                                       [:= :gom2.deleted nil]
+                                       [:= :gom2.group_id :gom.group_id]]
+
+                                      [:rounds :r] [:and
+                                                    [:= :r.deleted nil]
+                                                    [:= :gom2.org_id :r.buyer_id]
+                                                    restrict]]
+                               :where   [:= :s.token session-token]})
+                 first
+                 :count
+                 (= 1)))
         true))
     true))
 
