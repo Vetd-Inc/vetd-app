@@ -31,7 +31,7 @@
 (rf/reg-sub
  :b/round.read-only?
  (fn [{:keys [org-id round]}]
-   round))
+   (not= org-id (:buyer-id round))))
 
 ;;;; Events
 (rf/reg-event-fx

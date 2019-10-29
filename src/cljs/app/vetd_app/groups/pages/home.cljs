@@ -230,11 +230,11 @@
   [ftype data]
   (case ftype
     ;; TODO use this after we have read-only rounds within community available
-    ;; :round-started (let [{:keys [round-id]} data] [:b/nav-round-detail (util/base31->str round-id)])
-    ;; :round-winner-declared (let [{:keys [round-id]} data] [:b/nav-round-detail (util/base31->str round-id)])
-    :round-started nil
-    :round-winner-declared (let [{:keys [product-id]} data]
-                             [:b/nav-product-detail (util/base31->str product-id)])
+    :round-started (let [{:keys [round-id]} data] [:b/nav-round-detail (util/base31->str round-id)])
+    :round-winner-declared (let [{:keys [round-id]} data] [:b/nav-round-detail (util/base31->str round-id)])
+    ;; :round-started nil
+    ;; :round-winner-declared (let [{:keys [product-id]} data]
+    ;;                          [:b/nav-product-detail (util/base31->str product-id)])
     
     :stack-update-rating (let [{:keys [product-id]} data]
                            [:b/nav-product-detail (util/base31->str product-id)])

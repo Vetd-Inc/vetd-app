@@ -12,7 +12,9 @@
             [clojure.string :as s]))
 
 (def init-db
-  {:products-order []})
+  {:products-order []
+   ;; the org that created (or "owns") the round
+   :buyer-id nil})
 
 ;;;; Subscriptions
 (rf/reg-sub
@@ -20,19 +22,13 @@
  :<- [:page-params] 
  (fn [{:keys [round-idstr]}] round-idstr))
 
-(rf/reg-sub
- :b/round.read-only?
- (fn [{:keys [round-idstr]}]
-   ;; TODO
-   true))
-
 (defn mk-round-detail-gql
   [round-idstr org-id]
   [:gql/sub
    {:queries
     [[:rounds {:idstr round-idstr
                :deleted nil}
-      [:id :idstr :created :status :title
+      [:id :idstr :created :status :title :buyer-id
        ;; requirements form template
        [:req-form-template
         [:id
@@ -176,6 +172,12 @@
     :analytics/page {:name "Buyers Round Detail"
                      :props {:round-idstr round-idstr}}}))
 
+;; sets round buyer-id for use locally (app-db)
+(rf/reg-event-fx
+ :b/set-buyer-id
+ (fn [{:keys [db]} [_ buyer-id]]
+   {:db (assoc-in db [:round :buyer-id] buyer-id)}))
+
 ;;;; Components
 (defn c-round-initiation
   [{:keys [id status title products init-doc] :as round}]
@@ -237,6 +239,7 @@
          req-form-template
          round-product
          show-top-scrollbar?
+         read-only?
          explainer-modal-showing?&]
       [:<>
        [:> ui/Segment {:id "round-title-container"
@@ -293,9 +296,12 @@
     (fn []
       (if (= @round-detail& :loading)
         [cc/c-loader]
-        (let [{:keys [status req-form-template round-product] :as round} (-> @round-detail& :rounds first)
+        (let [{:keys [status req-form-template round-product buyer-id] :as round}
+              (-> @round-detail& :rounds first)
+              
               sorted-round-products (sort-round-products round-product)
               show-top-scrollbar? (> (count sorted-round-products) 4)
+              _ (rf/dispatch [:b/set-buyer-id buyer-id])
               read-only? @read-only?&]
           [:<>
            [:> ui/Container {:class "main-container"
