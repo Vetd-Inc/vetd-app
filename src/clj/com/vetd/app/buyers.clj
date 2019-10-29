@@ -682,7 +682,7 @@ Round URL: https://app.vetd.com/b/rounds/%s"
                              ha/ez-sync-query
                              :oname)]
           (doseq [pid product-ids]
-            (let [product-name (-> [:products {:id product-ids}
+            (let [product-name (-> [:products {:id pid}
                                     [:pname]]
                                    ha/ez-sync-query
                                    :pname)]
