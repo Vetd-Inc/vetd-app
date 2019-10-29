@@ -374,7 +374,8 @@
     (fn [round-id modal-showing?& modal-response&]
       (let [{:keys [req-prompt-id req-prompt-text
                     product-id pname
-                    resp-id resp-text resp-rating]
+                    resp-id resp-text resp-rating
+                    read-only?]
              :as modal-response} @modal-response&]
         [:> ui/Modal {:open @modal-showing?&
                       :on-close #(reset! modal-showing?& false)
@@ -387,40 +388,43 @@
          [:> ui/ModalContent {:class (str (when (= 1 resp-rating) "response-approved ")
                                           (when (= 0 resp-rating) "response-disapproved "))}
           [:h4 {:style {:padding-bottom 10}}
-           [c-action-button {:on-click #(rf/dispatch [:b/round.rate-response resp-id 0])
-                             :icon "thumbs down outline"
-                             :popup-text (if (= 0 resp-rating) "Disapproved" "Disapprove")
-                             :props {:class "disapprove"
-                                     :style {:float "right"
-                                             :margin-right 0}}}]
-           [c-action-button {:on-click #(rf/dispatch [:b/round.rate-response resp-id 1])
-                             :icon "thumbs up outline"
-                             :popup-text (if (= 1 resp-rating) "Approved" "Approve")
-                             :props {:class "approve"
-                                     :style {:float "right"
-                                             :margin-right 4}}}]
+           (when-not read-only?
+             [:<>
+              [c-action-button {:on-click #(rf/dispatch [:b/round.rate-response resp-id 0])
+                                :icon "thumbs down outline"
+                                :popup-text (if (= 0 resp-rating) "Disapproved" "Disapprove")
+                                :props {:class "disapprove"
+                                        :style {:float "right"
+                                                :margin-right 0}}}]
+              [c-action-button {:on-click #(rf/dispatch [:b/round.rate-response resp-id 1])
+                                :icon "thumbs up outline"
+                                :popup-text (if (= 1 resp-rating) "Approved" "Approve")
+                                :props {:class "approve"
+                                        :style {:float "right"
+                                                :margin-right 4}}}]])
            req-prompt-text]
           (if resp-text
             (util/parse-md resp-text)
             "Waiting for vendor response.")]
-         [:> ui/ModalActions
-          [:> ui/Form {:as "div"
-                       :style {:padding-bottom "1rem"}}
-           [:> ui/FormField
-            [:> ui/TextArea {:placeholder "Ask a follow-up question..."
-                             :autoFocus true
-                             :spellCheck true
-                             :onChange (fn [_ this]
-                                         (reset! modal-message& (.-value this)))}]]]
-          [:> ui/Button {:onClick #(reset! modal-showing?& false)}
-           "Cancel"]
-          [:> ui/Button
-           {:onClick #(do (rf/dispatch
-                           [:b/round.ask-a-question
-                            product-id pname @modal-message& round-id req-prompt-text])
-                          (reset! modal-showing?& false))
-            :color "blue"}
-           "Submit Question"]]]))))
+         (when-not read-only?
+           [:> ui/ModalActions
+            [:> ui/Form {:as "div"
+                         :style {:padding-bottom "1rem"}}
+             [:> ui/FormField
+              [:> ui/TextArea {:placeholder "Ask a follow-up question..."
+                               :autoFocus true
+                               :spellCheck true
+                               :onChange (fn [_ this]
+                                           (reset! modal-message& (.-value this)))}]]]
+            [:> ui/Button {:onClick #(reset! modal-showing?& false)}
+             "Cancel"]
+            [:> ui/Button
+             {:onClick #(do (rf/dispatch
+                             [:b/round.ask-a-question
+                              product-id pname @modal-message& round-id req-prompt-text])
+                            (reset! modal-showing?& false))
+              :color "blue"}
+             "Submit Question"]])]))))
 
 (defn c-cell-text
   [resp-text round-status]
@@ -469,12 +473,13 @@
                             :popup-text "Move topic row down"}]])])))
 
 (defn c-column
-  [round req-form-template rp show-modal-fn]
+  [round req-form-template rp show-modal-fn read-only?]
   (let [products-order& (rf/subscribe [:b/products-order])]
     (fn [{:keys [id status] :as round}
          {:keys [prompts] :as req-form-template}
          rp
-         show-modal-fn]
+         show-modal-fn
+         read-only?]
       (let [{pname :pname
              product-id :id
              product-idstr :idstr
@@ -493,18 +498,21 @@
                                      @curr-reordering-pos-x
                                      (* col-width (.indexOf @products-order& product-id)))
                                    "px)")}}
-         [:div.round-product {:class (when (> (count pname) 17) " long")}
+         [:div.round-product {:class (when (> (count pname) 17) " long")
+                              :style (when read-only? {:height 65})}
           [:div
            [:a.name {:on-mouse-down #(reset! cell-click-disabled? false)
                      :on-click #(when-not @cell-click-disabled?
                                   (rf/dispatch [:b/nav-product-detail product-idstr]))}
             pname]
-           (when-not disqualified?
-             [c-declare-winner-button round product won? reason])
-           (when-not disqualified?
-             [c-setup-call-button product vendor won?])
-           (when-not won?
-             [c-disqualify-button round product disqualified? reason])]]
+           (when-not read-only?
+             [:<>
+              (when-not disqualified?
+                [c-declare-winner-button round product won? reason])
+              (when-not disqualified?
+                [c-setup-call-button product vendor won?])
+              (when-not won?
+                [c-disqualify-button round product disqualified? reason])])]]
          (if (seq prompts)
            (for [req prompts
                  :let [{req-prompt-id :id
@@ -550,14 +558,17 @@
                                                       :pname pname
                                                       :resp-id resp-id
                                                       :resp-text resp-text
-                                                      :resp-rating resp-rating}))}
+                                                      :resp-rating resp-rating
+                                                      :read-only? read-only?}))}
               [:div.topic req-prompt-text]
               [c-cell-text resp-text status]
-              [c-cell-actions resp-id resp-rating id req-prompt-id prompts]])
+              (if read-only?
+                [:div {:style {:height 15}}]
+                [c-cell-actions resp-id resp-rating id req-prompt-id prompts])])
            [:div.cell [c-cell-text "Click \"Add Topics\" to learn more about this product." status]])]))))
 
 (defn c-round-grid*
-  [round req-form-template round-product show-top-scrollbar?]
+  [round req-form-template round-product show-top-scrollbar? read-only?]
   (let [;; The response currently in the modal.
         ;; E.g., {:req-prompt-id 123
         ;;        :req-prompt-text "Something"
@@ -572,7 +583,7 @@
                         (reset! modal-response& response)
                         (reset! modal-showing?& true))
         last-default-products-order& (atom [])]
-    (fn [round req-form-template round-product show-top-scrollbar?]
+    (fn [round req-form-template round-product show-top-scrollbar? read-only?]
       (let [default-products-order (vec (map (comp :id :product) round-product))]
         (when (not= @last-default-products-order& default-products-order)
           (reset! last-default-products-order& default-products-order)
@@ -591,7 +602,7 @@
                                      14)}}
          (for [rp round-product]
            ^{:key (-> rp :product :id)}
-           [c-column round req-form-template rp show-modal-fn])]]
+           [c-column round req-form-template rp show-modal-fn read-only?])]]
        [c-cell-modal (:id round) modal-showing?& modal-response&]])))
 
 (defn cmp->child-nodes [cmp] (-> cmp r/dom-node .-children array-seq))
@@ -729,7 +740,7 @@
       (reset! (:last-x mouse) @(:x mouse)))))
 
 (defn mouseup
-  [{:keys [round-id nodes mouse scroll] :as state} e]
+  [{:keys [round-id nodes mouse scroll read-only?] :as state} e]
   (reset! (:x mouse) (.-pageX e))
   (when @(:down? mouse)
     (reset! (:down? mouse) false)
@@ -737,7 +748,8 @@
     (when @reordering-product
       (do (util/remove-class @(:reordering-col nodes) "reordering")
           (reset! reordering-product nil)
-          (rf/dispatch [:b/store-products-order @round-id])))
+          (when-not read-only?
+            (rf/dispatch [:b/store-products-order @round-id]))))
     (reset! (:grabbing? scroll) false)
     (util/remove-class @(:grid nodes) "dragging")))
 
@@ -850,7 +862,8 @@
                         :hovering-top-scrollbar? (atom false)} ;; is the mouse over the top scrollbar?
                :drag {:direction-intention (atom nil) ;; (left/right) direction user is intending to drag a column
                       :handle-offset (atom nil)} ;; distance that user mousedown'd from left side of column being dragged
-               :products-order& (rf/subscribe [:b/products-order])}
+               :products-order& (rf/subscribe [:b/products-order])
+               :read-only? @(rf/subscribe [:b/round.read-only?])}
         window-scroll-ref (partial window-scroll state)]
     (with-meta c-round-grid*
       {:component-did-mount

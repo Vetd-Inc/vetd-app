@@ -20,6 +20,12 @@
  :<- [:page-params] 
  (fn [{:keys [round-idstr]}] round-idstr))
 
+(rf/reg-sub
+ :b/round.read-only?
+ (fn [{:keys [round-idstr]}]
+   ;; TODO
+   true))
+
 (defn mk-round-detail-gql
   [round-idstr org-id]
   [:gql/sub
@@ -225,7 +231,7 @@
 
 (defn c-round
   "Component to display round details."
-  [round req-form-template round-product show-top-scrollbar? explainer-modal-showing?&]
+  [round req-form-template round-product show-top-scrollbar? read-only? explainer-modal-showing?&]
   (let [share-modal-showing?& (r/atom false)]
     (fn [{:keys [id status title products] :as round}
          req-form-template
@@ -236,32 +242,35 @@
        [:> ui/Segment {:id "round-title-container"
                        :style {:margin-bottom 14}
                        :class (str "detail-container " (when (> (count title) 40) "long"))}
-        [:h1.round-title title
-         [:> ui/Button {:onClick #(reset! share-modal-showing?& true)
-                        :color "lightblue"
-                        :icon true
-                        :labelPosition "right"
-                        :floated "right"}
-          "Share"
-          [:> ui/Icon {:name "share"}]]]
-        (when (and (#{"in-progress" "complete"} status)
-                   (seq round-product))
+        (if read-only?
+          [:h1.round-title title]
           [:<>
-           [:a {:on-click #(reset! explainer-modal-showing?& true)
-                :style {:font-size 13}}
-            [:> ui/Icon {:name "question circle"}]
-            "How VetdRounds Work"]
-           [c-explainer-modal explainer-modal-showing?&]])
-        [bc/c-round-status status]
-        (when (and (#{"in-progress" "complete"} status)
-                   (empty? round-product))
-          [:<>
-           [:> ui/Header "Your VetdRound is in progress!"]
-           [:p
-            [:em "We will provide responses to your selected topics from top vendors shortly. "]
-            [:br][:br]
-            "If there are specific products you would like to have Vetd evaluate, feel free "
-            "to add them by clicking the Add Products button."]])]
+           [:h1.round-title title
+            [:> ui/Button {:onClick #(reset! share-modal-showing?& true)
+                           :color "lightblue"
+                           :icon true
+                           :labelPosition "right"
+                           :floated "right"}
+             "Share"
+             [:> ui/Icon {:name "share"}]]]
+           (when (and (#{"in-progress" "complete"} status)
+                      (seq round-product))
+             [:<>
+              [:a {:on-click #(reset! explainer-modal-showing?& true)
+                   :style {:font-size 13}}
+               [:> ui/Icon {:name "question circle"}]
+               "How VetdRounds Work"]
+              [c-explainer-modal explainer-modal-showing?&]])
+           [bc/c-round-status status]
+           (when (and (#{"in-progress" "complete"} status)
+                      (empty? round-product))
+             [:<>
+              [:> ui/Header "Your VetdRound is in progress!"]
+              [:p
+               [:em "We will provide responses to your selected topics from top vendors shortly. "]
+               [:br][:br]
+               "If there are specific products you would like to have Vetd evaluate, feel free "
+               "to add them by clicking the Add Products button."]])])]
        (when (= status "initiation")
          [:> ui/Segment {:class "detail-container"
                          :style {:margin-left 20}}
@@ -279,13 +288,15 @@
   (let [org-id& (rf/subscribe [:org-id])
         round-idstr& (rf/subscribe [:round-idstr])
         round-detail& (rf/subscribe (mk-round-detail-gql @round-idstr& @org-id&))
-        explainer-modal-showing?& (r/atom false)]
+        explainer-modal-showing?& (r/atom false)
+        read-only?& (rf/subscribe [:b/round.read-only?])]
     (fn []
       (if (= @round-detail& :loading)
         [cc/c-loader]
         (let [{:keys [status req-form-template round-product] :as round} (-> @round-detail& :rounds first)
               sorted-round-products (sort-round-products round-product)
-              show-top-scrollbar? (> (count sorted-round-products) 4)]
+              show-top-scrollbar? (> (count sorted-round-products) 4)
+              read-only? @read-only?&]
           [:<>
            [:> ui/Container {:class "main-container"
                              :style {:padding-top 0}}
@@ -293,15 +304,18 @@
              [:<> ; sidebar margins (and detail container margins) are customized on this page
               [:div.sidebar {:style {:margin-right 0}}
                [:div {:style {:padding "0 15px"}}
-                [bc/c-back-button {:on-click #(rf/dispatch [:b/nav-rounds])}
-                 "All VetdRounds"]]
-               (when (#{"in-progress" "complete"} status)
+                (if read-only?
+                  [bc/c-back-button]
+                  [bc/c-back-button {:on-click #(rf/dispatch [:b/nav-rounds])}
+                   "All VetdRounds"])]
+               (when (and (#{"in-progress" "complete"} status)
+                          (not read-only?))
                  (when-not (some (comp (partial = 1) :result) sorted-round-products) ; has a winner
                    [:<>
                     [:> ui/Segment
                      [grid/c-add-requirement-button round]
                      [grid/c-add-product-button round]]]))]
-              [:div.inner-container [c-round round req-form-template sorted-round-products show-top-scrollbar? explainer-modal-showing?&]]]]]
+              [:div.inner-container [c-round round req-form-template sorted-round-products show-top-scrollbar? read-only? explainer-modal-showing?&]]]]]
            (when (and (#{"in-progress" "complete"} status)
                       (seq sorted-round-products))
-             [grid/c-round-grid round req-form-template sorted-round-products show-top-scrollbar?])])))))
+             [grid/c-round-grid round req-form-template sorted-round-products show-top-scrollbar? read-only?])])))))
