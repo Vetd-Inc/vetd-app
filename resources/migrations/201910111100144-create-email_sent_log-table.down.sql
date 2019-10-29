@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS vetd.email_sent_log;

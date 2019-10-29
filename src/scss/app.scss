@@ -4,6 +4,7 @@ $bg-color: #fafafa;
 // usage - @media #{$mobile} {  }
 $mobile: "only screen and (max-width: 767px)";
 $not-mobile: "only screen and (min-width: 768px)";
+$ipad-landscape: "only screen and (min-device-width : 768px) and (max-device-width : 1024px) and (orientation : landscape)";
 // even though the OS might be in Dark Mode, we also have our own class .dark-mode that is added to body
 $dark-mode: "(prefers-color-scheme: dark)";
 
@@ -260,6 +261,11 @@ ul {
   padding: 0 180px 14px 0 !important;
   margin: 0;
   font-size: 30px;
+  font-weight: 400;
+
+  small {
+    font-size: 20px;
+  }
 }
 .display-field {
   margin: 7px 0 7px 0 !important;
@@ -273,6 +279,7 @@ ul {
 }
 .display-field-key {
   margin: 0 0 5px 0 !important;
+  // font-weight: 400; // TODO still contemplating this one
 }
 .detail-container {
   box-shadow: 0 2px 14px 0 rgba(50,50,50,0.1) !important;
@@ -497,7 +504,7 @@ ul {
     margin-top: 0;
   }
 }
-
+n
 .ui.rating {
   i {
     &:focus {
@@ -563,6 +570,11 @@ i.icon.vetd.small {
 i.icon.vetd:not(.small) {
   width: 50px !important;
   height: 50px !important;
+}
+.feed i.icon.vetd {
+  width: 25px !important;
+  height: 28px !important;
+  margin-top: 10px !important;
 }
 i.icon.vetd:not(.vetd-colors) {
   filter: grayscale(1) brightness(0.6);
@@ -1239,11 +1251,11 @@ $cell-height: 201px;
       padding: 10px !important;
 
       .header {
-        font-size: 17px;
+        font-size: 15px !important;
         white-space: nowrap;
         text-overflow: ellipsis;
         overflow: hidden;
-        max-width: 275px;
+        max-width: 133px;
       }
       
       .product-logo {
@@ -1255,24 +1267,88 @@ $cell-height: 201px;
       }
 
       .extra {
-        margin-top: 13px;
+        margin-top: 11px;
+
+        .category-tag {
+          white-space: nowrap;
+          text-overflow: ellipsis;
+          overflow: hidden;
+          max-width: 133px;
+        }
       }
 
       .community {
         width: 115px;
         min-width: 115px;
+        font-size: 13px;
         
         .metric {
-          margin-bottom: 4px;
+          margin-bottom: 2px;
+        }
+
+        @media #{$ipad-landscape} {
+          display: none;
         }
       }
     }
   }
 }
 
+.group-filter {
+  .checkbox {
+    margin-bottom: 14px;
 
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+}
 
+.ui.feed {
+  margin-bottom: 14px !important;
 
+  > .event {
+    padding-top: 10px;
+    
+    &:hover:not(.no-click) {
+      cursor: pointer;
+      transform: scale(1.01);
+    }
+
+    > .label {
+      width: 25px;
+      
+      .icon {
+        margin-top: 12px;
+        padding: 0;
+
+        // NOTE: some others are colored inline with icon name
+        &.star { color: gold; }
+        &.clipboard.outline { color: $teal; }
+        &.cart { color: $blue; }
+        &.wpforms { color: $teal; }
+      }
+
+      + .content {
+        margin-left: 10px;
+
+        .summary {
+          font-weight: normal;
+          
+          em {
+            // color: $teal;
+            font-weight: bold;
+            font-style: normal;
+          }
+        }
+
+        .date {
+          margin-top: 0px;
+        }
+      }
+    }
+  }
+}
 
 
 

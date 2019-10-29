@@ -8,6 +8,9 @@
             [re-frame.core :as rf]
             [clojure.string :as s]))
 
+(def init-db
+  {:filter {:groups #{}}})
+
 (rf/reg-event-fx
  :g/nav-home
  (constantly
@@ -19,55 +22,89 @@
 (rf/reg-event-fx
  :g/route-home
  (fn [{:keys [db]}]
-   {:db (assoc db :page :g/home)}))
+   {:db (assoc db :page :g/home)
+    :dispatch [:groups.filter.reset]}))
+
+(rf/reg-event-fx
+ :groups.filter.add ;; group arg is "filter group" not community
+ (fn [{:keys [db]} [_ group value]]
+   {:db (update-in db [:groups :filter group] conj value)}))
+
+(rf/reg-event-fx
+ :groups.filter.remove
+ (fn [{:keys [db]} [_ group value]]
+   {:db (update-in db [:groups :filter group] disj value)}))
+
+(rf/reg-event-fx
+ :groups.filter.reset
+ (fn [{:keys [db]}]
+   (let [{:keys [memberships active-memb-id]} db]
+     {:db (assoc-in db
+                    [:groups :filter :groups]
+                    (some->> memberships
+                             (filter #(-> % :id (= active-memb-id)))
+                             first
+                             :org
+                             :groups
+                             (map :id)
+                             set))})))
+
+(rf/reg-event-fx
+ :g/join-request
+ (fn [{:keys [db]} [_ group-ids]]
+   {:ws-send {:payload {:cmd :g/join-request
+                        :return {:handler :g/join-request.return}
+                        :group-ids group-ids
+                        :buyer-id (util/db->current-org-id db)}}
+    :analytics/track {:event "Request to Join"
+                      :props {:category "Community"}}}))
+
+(rf/reg-event-fx
+ :g/join-request.return
+ (constantly
+  {:toast {:type "success"
+           :title "Request Sent"
+           :message "We'll be in touch via email with next steps shortly."}}))
+
+;;;; Subscriptions
+(rf/reg-sub
+ :groups
+ (fn [{:keys [groups]}] groups))
+
+(rf/reg-sub
+ :groups.filter
+ :<- [:groups]
+ (fn [{:keys [filter]}]
+   filter))
 
 ;;;; Components
-(defn c-org
-  [org group]
-  (let [org-id& (rf/subscribe [:org-id])]
-    (fn [{:keys [id idstr oname memberships stack-items] :as org}
-         {:keys [gname] :as group}]
-      (let [num-members (count memberships)
-            num-stack-items (count stack-items)]
-        [cc/c-field {:label [:<>
-                             (when (pos? num-stack-items)
-                               [:> ui/Button {:on-click (fn []
-                                                          (if (= id @org-id&)
-                                                            (rf/dispatch [:b/nav-stack])
-                                                            (rf/dispatch [:b/nav-stack-detail idstr])))
-                                              :as "a"
-                                              :size "small"
-                                              :color "lightblue"
-                                              :style {:float "right"
-                                                      :width 170
-                                                      :text-align "left"
-                                                      :margin-top 7}}
-                                [:> ui/Icon {:name "grid layout"}]
-                                (str " " num-stack-items " Stack Item" (when-not (= num-stack-items 1) "s"))])
-                             oname]
-                     :value [:<> (str num-members " member" (when-not (= num-members 1) "s") " ")
-                             [:> ui/Popup
-                              {:position "bottom left"
-                               :wide "very"
-                               :offset -10
-                               :content (let [max-members-show 15]
-                                          (str (s/join ", " (->> memberships
-                                                                 (map (comp :uname :user))
-                                                                 (take max-members-show)))
-                                               (when (> num-members max-members-show)
-                                                 (str " and " (- num-members max-members-show) " more."))))
-                               :trigger (r/as-element
-                                         [:> ui/Icon {:name "question circle"}])}]]}]))))
+(defn c-group-filter
+  [group]
+  (let [filter& (rf/subscribe [:groups.filter])]
+    (fn [{:keys [id idstr gname orgs] :as group}]
+      (let [num-orgs (count orgs)]
+        [:> ui/Checkbox
+         {:checked (-> @filter& :groups (contains? id) boolean)
+          :on-click (fn [_ this]
+                      (rf/dispatch [(if (.-checked this)
+                                      :groups.filter.add
+                                      :groups.filter.remove)
+                                    :groups
+                                    id]))
+          :label {:children
+                  (r/as-element
+                   [:div {:style {:position "relative"
+                                  :top -1
+                                  :left 4}}
+                    [:h4 {:style {:margin "0 0 5px 0"
+                                  :padding "0 0 0 0"}}
+                     gname]
+                    [:a {:on-click (fn [e]
+                                     (do (.stopPropagation e)
+                                         (rf/dispatch [:g/nav-detail idstr])))}
+                     [:> ui/Icon {:name "group"}]
+                     (str " " num-orgs " organization" (when-not (= num-orgs 1) "s") " ")]])}}]))))
 
-(defn c-orgs
-  [{:keys [id orgs] :as group}]
-  (let [orgs-sorted (sort-by (comp count :stack-items) > orgs)]
-    [bc/c-profile-segment {:title [:<>
-                                   [:> ui/Icon {:name "group"}]
-                                   " Organizations"]}
-     (for [org orgs-sorted]
-       ^{:key (:id org)}
-       [c-org org group])]))
 
 (defn c-stack-item
   [product top-products]
@@ -86,17 +123,22 @@
     [:> ui/Item {:on-click #(rf/dispatch [:b/nav-product-detail product-idstr])}
      [bc/c-product-logo logo]
      [:> ui/ItemContent
-      [:> ui/ItemHeader
-       pname ;; " " [:small " by " (:oname vendor)]
-       ]
+      [:> ui/ItemHeader pname]
       [:> ui/ItemExtra {:class "product-tags"}
-       [bc/c-categories product]
-       (when (seq discounts)
-         [bc/c-discount-tag discounts])]]
-     [:div.community
-      [:div.metric
+       [bc/c-categories product]]]
+     [:div.community {:on-click #(rf/dispatch
+                                  [:dispatch-stash.push :product-detail-loaded
+                                   [:do-fx
+                                    {:dispatch-later
+                                     [{:ms 200
+                                       :dispatch [:scroll-to :product/community]}]}]])}
+      [:div.metric 
        "Used by " orgs-using-count " "
-       [:> ui/Icon {:name "group"}]]
+       [:> ui/Popup
+        {:position "bottom right"
+         :offset 10
+         :content "Click to see organizations that are using this product."
+         :trigger (r/as-element [:> ui/Icon {:name "group"}])}]]
       [:div.metric
        (let [median-prices (map :median-price agg-group-prod-price)]
          (if (seq median-prices)
@@ -110,10 +152,12 @@
                      :disabled true}]]]))
 
 (defn c-popular-stack
-  [{:keys [id top-products] :as group}]
-  (let [group-ids& (rf/subscribe [:group-ids])]
-    (fn []
+  [top-products]
+  (let [group-ids& (rf/subscribe [:group-ids])
+        filter& (rf/subscribe [:groups.filter])]
+    (fn [top-products]
       (let [top-products-ids (map :product-id top-products)
+            selected-group-ids (:groups @filter&)
             products-unordered @(rf/subscribe
                                  [:gql/q
                                   {:queries
@@ -124,12 +168,12 @@
                                       [:categories {:ref-deleted nil
                                                     :_limit 1}
                                        [:id :idstr :cname]]
-                                      [:agg-group-prod-rating {:group-id @group-ids&}
+                                      [:agg-group-prod-rating {:group-id selected-group-ids}
                                        [:group-id :product-id
                                         :count-stack-items :rating]]
-                                      [:agg-group-prod-price {:group-id @group-ids&}
+                                      [:agg-group-prod-price {:group-id selected-group-ids}
                                        [:group-id :median-price]]
-                                      [:discounts {:id @group-ids&
+                                      [:discounts {:id selected-group-ids
                                                    :ref-deleted nil}
                                        [:group-discount-descr :gname]]]]]}])]
         [:div.popular-products
@@ -146,44 +190,194 @@
                    [c-stack-item product top-products]))
                 "No organizations have added products to their stack yet.")))]]))))
 
-(defn c-group
-  [{:keys [gname] :as group}]
-  [:> ui/Grid {:stackable true
-               :style {:padding-bottom 35}} ; in case they are admin of multiple communities
-   [:> ui/GridRow
-    [:> ui/GridColumn {:computer 16 :mobile 16}
-     [:h1 {:style {:text-align "center"}}
-      gname " Community"]]]
-   [:> ui/GridRow
-    [:> ui/GridColumn {:computer 8 :mobile 16}
-     [c-orgs group]]
-    [:> ui/GridColumn {:computer 8 :mobile 16}
-     [c-popular-stack group]]]])
+(def ftype->icon
+  {:round-started "vetd vetd-colors"
+   :round-winner-declared "trophy yellow"
+   :stack-update-rating "star yellow"
+   :stack-add-items "grid layout grey"
+   :preposal-request "clipboard outline"
+   :buy-request "cart"
+   :complete-vendor-profile-request "wpforms grey"
+   :complete-product-profile-request "wpforms grey"})
 
-(defn c-groups
+(defn event-data->message
+  [ftype data]
+  (case ftype
+    :round-started (let [{:keys [buyer-org-name title]} data]
+                     [:span buyer-org-name " started a VetdRound called "
+                      [:em title]])
+    :round-winner-declared (let [{:keys [buyer-org-name product-name]} data]
+                             [:span buyer-org-name " chose " [:em product-name]
+                              " as the winner of their VetdRound"])
+    :stack-update-rating (let [{:keys [buyer-org-name product-name rating]} data]
+                           [:span buyer-org-name " rated "
+                            [:em product-name] " with " rating " star" (when-not (= rating 1) "s")])
+    :stack-add-items (let [{:keys [buyer-org-name product-name]} data]
+                       [:span buyer-org-name " added " [:em product-name] " to their Stack"])
+    :preposal-request (let [{:keys [buyer-org-name product-name]} data]
+                        [:span buyer-org-name " requested an estimate for " [:em product-name]])
+    :buy-request (let [{:keys [buyer-org-name product-name]} data]
+                   [:span buyer-org-name " decided to buy " [:em product-name]])
+    :complete-vendor-profile-request (let [{:keys [buyer-org-name vendor-name]} data]
+                                       [:span buyer-org-name " requested the complete profile of "
+                                        [:em vendor-name]])
+    :complete-product-profile-request (let [{:keys [buyer-org-name product-name]} data]
+                                        [:span buyer-org-name " requested the complete profile of "
+                                         [:em product-name]])
+    "Unknown event."))
+
+(defn event-data->click-event
+  [ftype data]
+  (case ftype
+    ;; TODO use this after we have read-only rounds within community available
+    ;; :round-started (let [{:keys [round-id]} data] [:b/nav-round-detail (util/base31->str round-id)])
+    ;; :round-winner-declared (let [{:keys [round-id]} data] [:b/nav-round-detail (util/base31->str round-id)])
+    :round-started nil
+    :round-winner-declared (let [{:keys [product-id]} data]
+                             [:b/nav-product-detail (util/base31->str product-id)])
+    
+    :stack-update-rating (let [{:keys [product-id]} data]
+                           [:b/nav-product-detail (util/base31->str product-id)])
+    :stack-add-items (let [{:keys [buyer-org-id]} data]
+                       (if (= buyer-org-id @(rf/subscribe [:org-id]))
+                         [:b/nav-stack]
+                         [:b/nav-stack-detail (util/base31->str buyer-org-id)]))
+    :preposal-request (let [{:keys [product-id]} data]
+                        [:b/nav-product-detail (util/base31->str product-id)])
+    :buy-request (let [{:keys [product-id]} data]
+                   [:b/nav-product-detail (util/base31->str product-id)])
+    :complete-vendor-profile-request (let [{:keys [vendor-name]} data]
+                                       ;; TODO this is a questionable stopgap till we have vendor pages
+                                       [:b/nav-search vendor-name])
+    :complete-product-profile-request (let [{:keys [product-id]} data]
+                                        [:b/nav-product-detail (util/base31->str product-id)])
+    "Unknown event."))
+
+(defn c-feed-event
+  [{:keys [id ftype journal-entry-created data]} group-name]
+  [:> ui/FeedEvent (if-let [event (event-data->click-event (keyword ftype) data)]
+                     {:on-click #(rf/dispatch event)}
+                     {:class "no-click"})
+   [:> ui/FeedLabel
+    [:> ui/Icon {:name (ftype->icon (keyword ftype))}]]
+   [:> ui/FeedContent
+    [:> ui/FeedSummary (event-data->message (keyword ftype) data)]
+    [:> ui/FeedDate
+     (str (util/relative-datetime (.getTime (js/Date. journal-entry-created))) " in " group-name)]]])
+
+(defn c-feed
   [groups]
-  [:div
-   (for [group groups]
-     ^{:key (:id group)}
-     [c-group group])])
+  (let [org-ids (->> groups (map :orgs) flatten (map :id) distinct)
+        org-id->group-name (->> (for [{:keys [gname orgs]} groups]
+                                  (map (fn [org] [(:id org) gname]) orgs))
+                                (apply concat)
+                                (into {}))
+        feed-events& (rf/subscribe [:gql/sub
+                                    {:queries
+                                     [[:feed-events {:org-id org-ids
+                                                     :_order_by {:journal-entry-created :desc}
+                                                     :_limit 37
+                                                     :deleted nil}
+                                       [:id :journal-entry-created :ftype :data]]]}])]
+    (if (= :loading @feed-events&)
+      [cc/c-loader]
+      (let [feed-events (:feed-events @feed-events&)]
+        [bc/c-profile-segment {:title [:<> [:> ui/Icon {:name "feed"}] "Recent Activity"]}
+         (if (seq feed-events)
+           [:> ui/Feed
+            (for [event feed-events]
+              ^{:key (:id event)}
+              [c-feed-event event (org-id->group-name (-> event :data :buyer-org-id))])]
+           [:p {:style {:padding-bottom 15}}
+            "No recent activity."])]))))
 
-;; currently unused
-(defn c-explainer []
-  [:> ui/Segment {:placeholder true
-                  :class "how-vetd-works"}
-   [:h2 "How Vetd Works . . ."]
-   [cc/c-grid {:columns "equal"
-               :stackable true
-               :style {:margin-top 4}}
-    [[[:<>
-       [:h3 "Your Stack"]
-       "Add products to your stack to keep track of renewals, get recommendations, and share with your community."]]
-     [[:<>
-       [:h3 "Browse Products"]
-       "Search for products or product categories to find products that meet your needs."]]
-     [[:<>
-       [:h3 "VetdRounds"]
-       "Compare similar products side-by-side based on your unique requirements, and make an informed buying decision in a fraction of the time."]]]]])
+(defn c-join-group-form
+  [current-group-ids popup-open?&]
+  (let [value& (r/atom [])
+        options& (r/atom []) ; options from search results + current values
+        search-query& (r/atom "")
+        groups->options (fn [groups]
+                          (for [{:keys [id gname]} groups]
+                            {:key id
+                             :text gname
+                             :value id}))
+        group-ids& (rf/subscribe [:group-ids])]
+    (fn [current-group-ids popup-open?&]
+      (let [groups& (rf/subscribe
+                     [:gql/q
+                      {:queries
+                       [[:groups {:_where
+                                  {:_and ;; while this trims search-query, the Dropdown's search filter doesn't...
+                                   [{:gname {:_ilike (str "%" (s/trim @search-query&) "%")}}
+                                    {:id {:_nin (concat ;; not sure why these have to be strings
+                                                 (map str @group-ids&)
+                                                 ;; hide these groups (pertains to prod db)
+                                                 ["100" ;; Universal Discounts
+                                                  "1811043562864" ;; Test 1
+                                                  "2181817440407" ;; Sandbox Demo
+                                                  ])}}
+                                    {:deleted {:_is_null true}}]}
+                                  :_limit 100
+                                  :_order_by {:gname :asc}}
+                         [:id :gname]]]}])
+            _ (when-not (= :loading @groups&)
+                (let [options (->> @groups&
+                                   :groups
+                                   groups->options ; now we have options from gql sub
+                                   ;; (this dumbly actually keeps everything, but that seems fine)
+                                   (concat @options&) ; keep options for the current values
+                                   distinct
+                                   (remove (comp (partial contains? current-group-ids) :value)))]
+                  (when-not (= @options& options)
+                    (reset! options& options))))]
+        [:> ui/Form {:as "div"
+                     :class "popup-dropdown-form"}
+         [:> ui/Dropdown {:loading (= :loading @groups&)
+                          :options @options&
+                          :placeholder "Search groups..."
+                          :search true
+                          :selection true
+                          :multiple true
+                          :selectOnBlur false
+                          :selectOnNavigation true
+                          :closeOnChange true
+                          :allowAdditions true
+                          :additionLabel "Hit 'Enter' to Write In "
+                          :onAddItem (fn [_ this]
+                                       (->> this
+                                            .-value
+                                            vector
+                                            ui/as-dropdown-options
+                                            (swap! options& concat)))
+                          :onSearchChange (fn [_ this] (reset! search-query& (aget this "searchQuery")))
+                          :onChange (fn [_ this] (reset! value& (.-value this)))}]
+         [:> ui/Button
+          {:color "teal"
+           :disabled (empty? @value&)
+           :on-click #(do (reset! popup-open?& false)
+                          (rf/dispatch [:g/join-request (js->clj @value&)]))}
+          "Request to Join"]]))))
+
+(defn c-join-group-button
+  [current-group-ids]
+  (let [popup-open?& (r/atom false)]
+    (fn [current-group-ids]
+      [:> ui/Popup
+       {:position "bottom left"
+        :on "click"
+        :open @popup-open?&
+        :onOpen #(reset! popup-open?& true)
+        :onClose #(reset! popup-open?& false)
+        :hideOnScroll false
+        :flowing true
+        :content (r/as-element [c-join-group-form current-group-ids popup-open?&])
+        :trigger (r/as-element
+                  [:> ui/Button {:color "lightblue"
+                                 :icon true
+                                 :labelPosition "left"
+                                 :fluid true}
+                   "Join a Community"
+                   [:> ui/Icon {:name "user plus"}]])}])))
 
 (defn c-page []
   (let [org-id& (rf/subscribe [:org-id])
@@ -192,20 +386,36 @@
                                {:queries
                                 [[:groups {:id @group-ids&
                                            :deleted nil}
-                                  [:id :gname
+                                  [:id :idstr :gname
                                    [:orgs
-                                    [:id :idstr :oname
-                                     [:memberships
-                                      [:id
-                                       [:user
-                                        [:id :uname]]]]
-                                     [:stack-items
-                                      [:id :idstr :status]]]]
+                                    [:id]]
+                                   ;; TODO put in separate gql and do single query for all selected-group-ids
                                    [:top-products {:_order_by {:count-stack-items :desc}
-                                                   :_limit 10}
-                                    [:group-id :product-id :count-stack-items]]]]]}])]
+                                                   :_limit 15}
+                                    [:group-id :product-id :count-stack-items]]]]]}])
+        filter& (rf/subscribe [:groups.filter])]
     (fn []
       (if (= :loading @groups&)
         [cc/c-loader]
-        [c-groups (:groups @groups&)]))))
-
+        [:div.container-with-sidebar
+         [:div.sidebar
+          [:> ui/Segment {:class "detail-container profile group-filter"}
+           [:h1.title  "Communities"]
+           (for [group (:groups @groups&)]
+             ^{:key (:id group)}
+             [c-group-filter group])]
+          [:> ui/Segment {:class "detail-container profile"}
+           [c-join-group-button (->> @groups& :groups (map :id))]]]
+         (let [selected-groups (->> (:groups @groups&)
+                                    (filter (comp (:groups @filter&) :id)))]
+           [:div.inner-container
+            [:> ui/Grid {:stackable true}
+             [:> ui/GridRow
+              [:> ui/GridColumn {:computer 9 :mobile 16
+                                 :style {:padding-right 7}}
+               [c-feed selected-groups]]
+              [:> ui/GridColumn {:computer 7 :mobile 16}
+               [c-popular-stack (->> selected-groups
+                                     (map :top-products)
+                                     ;; needs distinct ?
+                                     flatten)]]]]])]))))
