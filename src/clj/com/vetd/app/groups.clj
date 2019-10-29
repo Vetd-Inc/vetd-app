@@ -121,7 +121,7 @@
   (insert-group group-name admin-org-id)
   {})
 
-(defn add-org-to-group-pemitted? [group-id session-id]
+(defn add-org-to-group-permitted? [group-id session-id]
   (->> (db/hs-query {:select [[:%count.s.id :count]]
                      :from [[:sessions :s]]
                      :join [[:users :u] [:and
@@ -142,7 +142,7 @@
 
 (defmethod com/handle-ws-inbound :add-org-to-group
   [{:keys [org-id group-id]} ws-id sub-fn]
-  (if (add-org-to-group-pemitted? group-id com/*session-id*)
+  (if (add-org-to-group-permitted? group-id com/*session-id*)
     (do
       (create-or-find-group-org-memb org-id group-id)
       {})

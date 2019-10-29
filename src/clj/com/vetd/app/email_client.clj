@@ -384,6 +384,7 @@
                     (Thread/sleep (* 1000 10)))))
               (log/info "Stopped scheduled-emailer")))))
 
+
 (start-scheduled-emailer-thread) ;; TODO calling this here is gross -- Bill
 
 #_

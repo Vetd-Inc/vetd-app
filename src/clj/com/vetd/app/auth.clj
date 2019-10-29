@@ -348,7 +348,7 @@
   [{:keys [email pwd] :as req} ws-id sub-fn]
   (password-reset-request req))
 
-(defn invite-user-to-org-pemitted? [org-id session-id]
+(defn invite-user-to-org-permitted? [org-id session-id]
   (->> (db/hs-query {:select [[:%count.s.id :count]]
                      :from [[:sessions :s]]
                      :join [[:users :u] [:and
@@ -380,7 +380,7 @@
 
 (defmethod com/handle-ws-inbound :invite-user-to-org
   [{:keys [email org-id from-user-id] :as req} ws-id sub-fn]
-  (if (invite-user-to-org-pemitted? org-id com/*session-id*)
+  (if (invite-user-to-org-permitted? org-id com/*session-id*)
     (do
       (invite-user-to-org email org-id from-user-id)
       {})
