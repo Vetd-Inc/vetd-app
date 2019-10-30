@@ -154,13 +154,66 @@
                      :updated (ut/now-ts)})
         first)))
 
+(defn add-requirement-to-round
+  "Add requirement to round by Round ID or by the form template ID of requirements form template."
+  [requirement-term & [{:keys [round-id form-template-id]}]]
+  (let [req-form-template-id (or form-template-id
+                                 (-> [[:rounds {:id round-id}
+                                       [:req-form-template-id]]]
+                                     ha/sync-query
+                                     vals
+                                     ffirst
+                                     :req-form-template-id))
+        new-req? (s/starts-with? requirement-term "new-topic/")
+        {:keys [id]} (if new-req?
+                       ;; In frontend, new topics are given a fake term
+                       ;; like so: "new-topic/Topic Text That User Entered"
+                       (-> requirement-term 
+                           (s/replace #"new-topic/" "")
+                           docs/create-round-req-prompt&fields)
+                       (-> requirement-term
+                           docs/get-prompts-by-term
+                           first))
+        existing-prompts (docs/select-form-template-prompts-by-parent-id req-form-template-id)]
+    (when-not (some #(= id (:prompt-id %)) existing-prompts)
+      (docs/insert-form-template-prompt req-form-template-id id)
+      (let [form-ids (docs/merge-template-to-forms req-form-template-id)
+            doc-ids (->> [[:docs {:form-id form-ids}
+                           [:id]]]
+                         ha/sync-query
+                         :docs
+                         (map :id))]
+        (doseq [doc-id doc-ids]
+          (docs/auto-pop-missing-responses-by-doc-id doc-id))))))
+
 (defn create-round
-  [buyer-id title eid etype]
+  [buyer-id title eid etype prompt-ids product-ids]
   (let [{:keys [id] :as r} (insert-round buyer-id title)]
     (case etype
       ;; TODO call sync-round-vendor-req-forms too, once we're ready
       :product (rounds/invite-product-to-round eid id) 
-      :category (insert-round-category id eid))
+      :category (insert-round-category id eid)
+      ;; TODO put this in a future?
+      ;; hmmm the form template isn't created yet...
+      ;; :duplicate (let [req-form-template-id (-> [[:rounds {:id id}
+      ;;                                             [:req-form-template-id]]]
+      ;;                                           ha/sync-query
+      ;;                                           vals
+      ;;                                           ffirst
+      ;;                                           :req-form-template-id)]
+      ;;              (doseq [product-id product-ids]
+      ;;                (rounds/invite-product-to-round product-id id))
+      ;;              (doseq [prompt-id prompt-ids]
+      ;;                (do (docs/insert-form-template-prompt req-form-template-id prompt-id)
+      ;;                    (let [form-ids (docs/merge-template-to-forms req-form-template-id)
+      ;;                          doc-ids (->> [[:docs {:form-id form-ids}
+      ;;                                         [:id]]]
+      ;;                                       ha/sync-query
+      ;;                                       :docs
+      ;;                                       (map :id))]
+      ;;                      (doseq [doc-id doc-ids]
+      ;;                        (docs/auto-pop-missing-responses-by-doc-id doc-id))))))
+      nil)
     (try
       (let [{:keys [id buyer products categories] :as round}
             (-> [[:rounds {:id id}
@@ -373,38 +426,6 @@ Round URL: https://app.vetd.com/b/rounds/%s"
                            :status "complete"}
                           :rounds)))))
 
-(defn add-requirement-to-round
-  "Add requirement to round by Round ID or by the form template ID of requirements form template."
-  [requirement-term & [{:keys [round-id form-template-id]}]]
-  (let [req-form-template-id (or form-template-id
-                                 (-> [[:rounds {:id round-id}
-                                       [:req-form-template-id]]]
-                                     ha/sync-query
-                                     vals
-                                     ffirst
-                                     :req-form-template-id))
-        new-req? (s/starts-with? requirement-term "new-topic/")
-        {:keys [id]} (if new-req?
-                       ;; In frontend, new topics are given a fake term
-                       ;; like so: "new-topic/Topic Text That User Entered"
-                       (-> requirement-term 
-                           (s/replace #"new-topic/" "")
-                           docs/create-round-req-prompt&fields)
-                       (-> requirement-term
-                           docs/get-prompts-by-term
-                           first))
-        existing-prompts (docs/select-form-template-prompts-by-parent-id req-form-template-id)]
-    (when-not (some #(= id (:prompt-id %)) existing-prompts)
-      (docs/insert-form-template-prompt req-form-template-id id)
-      (let [form-ids (docs/merge-template-to-forms req-form-template-id)
-            doc-ids (->> [[:docs {:form-id form-ids}
-                           [:id]]]
-                         ha/sync-query
-                         :docs
-                         (map :id))]
-        (doseq [id doc-ids]
-          (docs/auto-pop-missing-responses-by-doc-id id))))))
-
 ;; TODO there could be multiple preposals/rounds per buyer-vendor pair
 
 ;; TODO use session-id to verify permissions!!!!!!!!!!!!!
@@ -418,8 +439,8 @@ Round URL: https://app.vetd.com/b/rounds/%s"
 ;; Start a round for either a Product or a Category
 ;; TODO record which user started round
 (defmethod com/handle-ws-inbound :b/start-round
-  [{:keys [buyer-id title etype eid]} ws-id sub-fn]
-  (create-round buyer-id title eid etype))
+  [{:keys [buyer-id title etype eid prompt-ids product-ids]} ws-id sub-fn]
+  (create-round buyer-id title eid etype prompt-ids product-ids))
 
 ;; Request Preposal              TODO this can be refactored to something like :b/preposals.request
 (defmethod com/handle-ws-inbound :b/create-preposal-req
@@ -582,7 +603,6 @@ Round URL: https://app.vetd.com/b/rounds/%s"
   (let [{form-template-id :id} (try (docs/create-form-template-from-round-doc round-id id)
                                     (catch Throwable t
                                       (com/log-error t)))]
-    
     (try
       (db/update-any! {:id round-id
                        :doc_id id

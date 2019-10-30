@@ -29,6 +29,11 @@
  (fn [{:keys [products-order]}] products-order))
 
 (rf/reg-sub
+ :b/round.buyer-name
+ (fn [{:keys [round]}]
+   (:buyer-name round)))
+
+(rf/reg-sub
  :b/round.buyer?
  (fn [{:keys [org-id round]}]
    (= org-id (:buyer-id round))))
@@ -739,7 +744,7 @@
       (reset! (:last-x mouse) @(:x mouse)))))
 
 (defn mouseup
-  [{:keys [round-id nodes mouse scroll read-only?] :as state} e]
+  [{:keys [round-id nodes mouse scroll read-only?&] :as state} e]
   (reset! (:x mouse) (.-pageX e))
   (when @(:down? mouse)
     (reset! (:down? mouse) false)
@@ -747,7 +752,7 @@
     (when @reordering-product
       (do (util/remove-class @(:reordering-col nodes) "reordering")
           (reset! reordering-product nil)
-          (when-not read-only?
+          (when-not @read-only?&
             (rf/dispatch [:b/store-products-order @round-id]))))
     (reset! (:grabbing? scroll) false)
     (util/remove-class @(:grid nodes) "dragging")))
@@ -862,7 +867,7 @@
                :drag {:direction-intention (atom nil) ;; (left/right) direction user is intending to drag a column
                       :handle-offset (atom nil)} ;; distance that user mousedown'd from left side of column being dragged
                :products-order& (rf/subscribe [:b/products-order])
-               :read-only? @(rf/subscribe [:b/round.read-only?])}
+               :read-only?& (rf/subscribe [:b/round.read-only?])}
         window-scroll-ref (partial window-scroll state)]
     (with-meta c-round-grid*
       {:component-did-mount

@@ -26,8 +26,10 @@
    {:queries
     [[:rounds {:idstr round-idstr
                :deleted nil}
-      [:id :idstr :created :status :title :buyer-id
-       ;; requirements form template
+      [:id :idstr :created :status :title
+       [:buyer
+        [:id :oname]]
+       ;; requirements (topics) form template
        [:req-form-template
         [:id
          [:prompts {:ref-deleted nil
@@ -41,7 +43,7 @@
            [:response-prompt-fields
             [:id :prompt-field-fname :idx
              :sval :nval :dval]]]]]]
-       ;; requirements responses from vendors
+       ;; products in the round
        [:round-product {:deleted nil
                         :_order_by {:sort :asc}}
         [:id :result :reason :sort
@@ -52,6 +54,7 @@
             [:id :idstr]]
            [:vendor
             [:id :oname]]]]
+         ;; requirements (topics) responses from vendors
          [:vendor-response-form-docs
           [:id :title :doc-id :doc-title
            :ftype :fsubtype
@@ -170,7 +173,12 @@
     :analytics/page {:name "Buyers Round Detail"
                      :props {:round-idstr round-idstr}}}))
 
-;; sets round buyer-id for use locally (app-db)
+;; sets round buyer-name for use locally (app-db)
+(rf/reg-event-fx
+ :b/set-buyer-name
+ (fn [{:keys [db]} [_ buyer-name]]
+   {:db (assoc-in db [:round :buyer-name] buyer-name)}))
+
 (rf/reg-event-fx
  :b/set-buyer-id
  (fn [{:keys [db]} [_ buyer-id]]
@@ -238,7 +246,8 @@
   "Component to display round details."
   [round req-form-template round-product show-top-scrollbar? read-only? explainer-modal-showing?&]
   (let [share-modal-showing?& (r/atom false)
-        buyer?& (rf/subscribe [:b/round.buyer?])]
+        buyer?& (rf/subscribe [:b/round.buyer?])
+        buyer-name& (rf/subscribe [:b/round.buyer-name])]
     (fn [{:keys [id status title products] :as round}
          req-form-template
          round-product
@@ -251,6 +260,16 @@
                        :class (str "detail-container " (when (> (count title) 40) "long"))}
         [:<>
          [:h1.round-title title
+          (when-not @buyer?&
+            ;; [:> ui/Label {:color "white"}
+            ;;  "created by " @buyer-name& ""]
+            [:small {:style {:font-size 14
+                             :font-weight 400
+                             :position "relative"
+                             :top -2
+                             :left 5}}
+             " (created by " @buyer-name& ")"]
+            )
           [:> ui/Button {:onClick #(reset! share-modal-showing?& true)
                          :color "lightblue"
                          :icon true
@@ -267,8 +286,11 @@
              [:> ui/Icon {:name "question circle"}]
              "How VetdRounds Work"]
             [c-explainer-modal explainer-modal-showing?&]])
-         (when-not read-only?
-           [bc/c-round-status status])
+         [bc/c-round-status status]
+         (when-not @buyer?&
+           (if (#{"complete"} status)
+             [:p "View the products that " @buyer-name& " compared and read vendor responses to their top questions."]
+             [:p "View the products that " @buyer-name& " is currently comparing and read vendor responses to their top questions."]))
          (when (and (#{"in-progress" "complete"} status)
                     (empty? round-product))
            (if @buyer?&
@@ -300,37 +322,49 @@
         round-idstr& (rf/subscribe [:round-idstr])
         round-detail& (rf/subscribe (mk-round-detail-gql @round-idstr& @org-id&))
         explainer-modal-showing?& (r/atom false)
+        buyer?& (rf/subscribe [:b/round.buyer?])
         read-only?& (rf/subscribe [:b/round.read-only?])]
     (fn []
       (if (= @round-detail& :loading)
         [cc/c-loader]
-        (let [{:keys [status req-form-template round-product buyer-id] :as round}
+        (let [{:keys [status req-form-template round-product buyer] :as round}
               (-> @round-detail& :rounds first)
               
               sorted-round-products (sort-round-products round-product)
               show-top-scrollbar? (> (count sorted-round-products) 4)
-              _ (rf/dispatch [:b/set-buyer-id buyer-id])
-              _ (rf/dispatch [:b/set-status status])
-              read-only? @read-only?&]
+              ;; TODO refactor this system
+              _ (rf/dispatch [:b/set-buyer-name (:oname buyer)])
+              _ (rf/dispatch [:b/set-buyer-id (:id buyer)])
+              _ (rf/dispatch [:b/set-status status])]
           [:<>
            [:> ui/Container {:class "main-container"
                              :style {:padding-top 0}}
             [:div.container-with-sidebar.round-details
-             [:<> ; sidebar margins (and detail container margins) are customized on this page
+             [:<> ;; sidebar margins (and detail container margins) are customized
               [:div.sidebar {:style {:margin-right 0}}
                [:div {:style {:padding "0 15px"}}
-                (if read-only?
-                  [bc/c-back-button]
+                (if @buyer?&
                   [bc/c-back-button {:on-click #(rf/dispatch [:b/nav-rounds])}
-                   "All VetdRounds"])]
-               (when (and (#{"in-progress" "complete"} status)
-                          (not read-only?))
-                 (when-not (some (comp (partial = 1) :result) sorted-round-products) ; has a winner
-                   [:<>
-                    [:> ui/Segment
-                     [grid/c-add-requirement-button round]
-                     [grid/c-add-product-button round]]]))]
-              [:div.inner-container [c-round round req-form-template sorted-round-products show-top-scrollbar? read-only? explainer-modal-showing?&]]]]]
+                   "All VetdRounds"]
+                  [bc/c-back-button])]
+               (if @buyer?&
+                 (when (= status "in-progress")
+                   [:> ui/Segment
+                    [grid/c-add-requirement-button round]
+                    [grid/c-add-product-button round]])
+                 nil
+                 ;; TODO duplicate round button
+                 ;; [:> ui/Segment
+                 ;;  [bc/c-start-round-button {:etype :duplicate
+                 ;;                            :defaults round
+                 ;;                            :props {:fluid true}}]]
+                 )]
+              [:div.inner-container
+               [c-round
+                round req-form-template sorted-round-products show-top-scrollbar?
+                @read-only?& explainer-modal-showing?&]]]]]
            (when (and (#{"in-progress" "complete"} status)
                       (seq sorted-round-products))
-             [grid/c-round-grid round req-form-template sorted-round-products show-top-scrollbar? read-only?])])))))
+             [grid/c-round-grid
+              round req-form-template sorted-round-products
+              show-top-scrollbar? @read-only?&])])))))
