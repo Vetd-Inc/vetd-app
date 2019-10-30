@@ -12,9 +12,7 @@
             [clojure.string :as s]))
 
 (def init-db
-  {:products-order []
-   ;; the org that created (or "owns") the round
-   :buyer-id nil})
+  {:products-order []})
 
 ;;;; Subscriptions
 (rf/reg-sub
@@ -178,6 +176,11 @@
  (fn [{:keys [db]} [_ buyer-id]]
    {:db (assoc-in db [:round :buyer-id] buyer-id)}))
 
+(rf/reg-event-fx
+ :b/set-status
+ (fn [{:keys [db]} [_ status]]
+   {:db (assoc-in db [:round :status] status)}))
+
 ;;;; Components
 (defn c-round-initiation
   [{:keys [id status title products init-doc] :as round}]
@@ -234,7 +237,8 @@
 (defn c-round
   "Component to display round details."
   [round req-form-template round-product show-top-scrollbar? read-only? explainer-modal-showing?&]
-  (let [share-modal-showing?& (r/atom false)]
+  (let [share-modal-showing?& (r/atom false)
+        buyer?& (rf/subscribe [:b/round.buyer?])]
     (fn [{:keys [id status title products] :as round}
          req-form-template
          round-product
@@ -245,35 +249,39 @@
        [:> ui/Segment {:id "round-title-container"
                        :style {:margin-bottom 14}
                        :class (str "detail-container " (when (> (count title) 40) "long"))}
-        (if read-only?
-          [:h1.round-title title]
-          [:<>
-           [:h1.round-title title
-            [:> ui/Button {:onClick #(reset! share-modal-showing?& true)
-                           :color "lightblue"
-                           :icon true
-                           :labelPosition "right"
-                           :floated "right"}
-             "Share"
-             [:> ui/Icon {:name "share"}]]]
-           (when (and (#{"in-progress" "complete"} status)
-                      (seq round-product))
-             [:<>
-              [:a {:on-click #(reset! explainer-modal-showing?& true)
-                   :style {:font-size 13}}
-               [:> ui/Icon {:name "question circle"}]
-               "How VetdRounds Work"]
-              [c-explainer-modal explainer-modal-showing?&]])
-           [bc/c-round-status status]
-           (when (and (#{"in-progress" "complete"} status)
-                      (empty? round-product))
+        [:<>
+         [:h1.round-title title
+          [:> ui/Button {:onClick #(reset! share-modal-showing?& true)
+                         :color "lightblue"
+                         :icon true
+                         :labelPosition "right"
+                         :floated "right"}
+           "Share" ;; this feature needs to handle buyer?s and visitors
+           [:> ui/Icon {:name "share"}]]]
+         (when (and (#{"in-progress" "complete"} status)
+                    (seq round-product)
+                    (not read-only?))
+           [:<>
+            [:a {:on-click #(reset! explainer-modal-showing?& true)
+                 :style {:font-size 13}}
+             [:> ui/Icon {:name "question circle"}]
+             "How VetdRounds Work"]
+            [c-explainer-modal explainer-modal-showing?&]])
+         (when-not read-only?
+           [bc/c-round-status status])
+         (when (and (#{"in-progress" "complete"} status)
+                    (empty? round-product))
+           (if @buyer?&
              [:<>
               [:> ui/Header "Your VetdRound is in progress!"]
               [:p
-               [:em "We will provide responses to your selected topics from top vendors shortly. "]
+               [:em "We will provide responses to your selected topics from top vendors shortly."]
                [:br][:br]
                "If there are specific products you would like to have Vetd evaluate, feel free "
-               "to add them by clicking the Add Products button."]])])]
+               "to add them by clicking the Add Products button."]]
+             [:<>
+              [:p {:style {:margin-top 10}}
+               [:em "This VetdRound does not currently have any products in it."]]]))]]
        (when (= status "initiation")
          [:> ui/Segment {:class "detail-container"
                          :style {:margin-left 20}}
@@ -302,6 +310,7 @@
               sorted-round-products (sort-round-products round-product)
               show-top-scrollbar? (> (count sorted-round-products) 4)
               _ (rf/dispatch [:b/set-buyer-id buyer-id])
+              _ (rf/dispatch [:b/set-status status])
               read-only? @read-only?&]
           [:<>
            [:> ui/Container {:class "main-container"

@@ -29,9 +29,22 @@
  (fn [{:keys [products-order]}] products-order))
 
 (rf/reg-sub
- :b/round.read-only?
+ :b/round.buyer?
  (fn [{:keys [org-id round]}]
-   (not= org-id (:buyer-id round))))
+   (= org-id (:buyer-id round))))
+
+(rf/reg-sub
+ :b/round.complete?
+ (fn [{:keys [round]}]
+   (= "complete" (:status round))))
+
+(rf/reg-sub
+ :b/round.read-only?
+ :<- [:b/round.buyer?]
+ :<- [:b/round.complete?]
+ (fn [[buyer? complete?]]
+   (or (not buyer?)
+       complete?)))
 
 ;;;; Events
 (rf/reg-event-fx
@@ -229,42 +242,29 @@
          "Declare Winner"]]])))
 
 (defn c-declare-winner-button
-  [round product won? reason]
+  [round product]
   (let [popup-open? (r/atom false)
         context-ref (r/atom nil)]
-    (fn [round product won? reason]
-      (if-not won?
-        [:<>
-         [:> ui/Popup
-          {:position "top center"
-           :on "click"
-           :open @popup-open?
-           :on-close #(reset! popup-open? false)
-           :context @context-ref
-           :content (r/as-element [c-declare-winner-form round product popup-open?])}]
-         [:> ui/Popup
-          {:content "Declare Winner"
-           :position "bottom center"
-           :context @context-ref
-           :trigger (r/as-element
-                     [:> ui/Button
-                      {:icon "checkmark"
-                       :color "lightblue"
-                       :ref (fn [this] (reset! context-ref (r/dom-node this)))
-                       :on-click #(swap! popup-open? not)
-                       :size "mini"}])}]]
-        ;; winner already declared
-        [:> ui/Popup
-         {:header "Declared Winner"
-          :content reason
-          :position "bottom center"
-          :trigger (r/as-element
-                    [:> ui/Button
-                     {:icon true
-                      :color "white"
-                      :size "mini"
-                      :style {:cursor "default"}}
-                     [:<> [:> ui/Icon {:name "checkmark"}] " Winner"]])}]))))
+    (fn [round product]
+      [:<>
+       [:> ui/Popup
+        {:position "top center"
+         :on "click"
+         :open @popup-open?
+         :on-close #(reset! popup-open? false)
+         :context @context-ref
+         :content (r/as-element [c-declare-winner-form round product popup-open?])}]
+       [:> ui/Popup
+        {:content "Declare Winner"
+         :position "bottom center"
+         :context @context-ref
+         :trigger (r/as-element
+                   [:> ui/Button
+                    {:icon "checkmark"
+                     :color "lightblue"
+                     :ref (fn [this] (reset! context-ref (r/dom-node this)))
+                     :on-click #(swap! popup-open? not)
+                     :size "mini"}])}]])))
 
 (defn c-setup-call-button
   [product vendor won?]
@@ -508,11 +508,10 @@
            (when-not read-only?
              [:<>
               (when-not disqualified?
-                [c-declare-winner-button round product won? reason])
+                [c-declare-winner-button round product])
               (when-not disqualified?
                 [c-setup-call-button product vendor won?])
-              (when-not won?
-                [c-disqualify-button round product disqualified? reason])])]]
+              [c-disqualify-button round product disqualified? reason]])]]
          (if (seq prompts)
            (for [req prompts
                  :let [{req-prompt-id :id
