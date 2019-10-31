@@ -503,8 +503,7 @@
                                      @curr-reordering-pos-x
                                      (* col-width (.indexOf @products-order& product-id)))
                                    "px)")}}
-         [:div.round-product {:class (when (> (count pname) 17) " long")
-                              :style (when read-only? {:height 65})}
+         [:div.round-product {:class (when (> (count pname) 17) "long")}
           [:div
            [:a.name {:on-mouse-down #(reset! cell-click-disabled? false)
                      :on-click #(when-not @cell-click-disabled?
@@ -518,57 +517,78 @@
                 [c-setup-call-button product vendor won?])
               [c-disqualify-button round product disqualified? reason]])]]
          (if (seq prompts)
-           (for [req prompts
-                 :let [{req-prompt-id :id
-                        req-prompt-text :prompt
-                        req-prompt-term :term} req
-                       response-prompts (-> rp :vendor-response-form-docs first :response-prompts)
-                       response-prompt (docs/get-response-prompt-by-prompt-id
-                                        response-prompts
-                                        req-prompt-id)
-                       resp-rating (some-> response-prompt
-                                           :subject-of-response-prompt
-                                           first
-                                           :response-prompt-fields
-                                           first
-                                           :nval)
-                       
-                       resps (docs/get-response-fields-by-prompt-id response-prompts req-prompt-id)
-                       resp-id (-> resps first :resp-id)
-                       display-resp (fn [{:keys [sval nval dval prompt-field-fname] :as resp}]
-                                      (cond
-                                        nval (util/decimal-format nval)
-                                        dval dval ;; TODO process date -> human readable
-                                        sval sval
-                                        :else nil))
-                       resp-text (cond ;; some terms get special treatment
-                                   (= req-prompt-term "preposal/pricing-estimate")
-                                   (let [fname->resps (group-by :prompt-field-fname resps)
-                                         fname->resp (comp first fname->resps)
-                                         [value unit details] (map fname->resp ["value" "unit" "details"])]
-                                     (if (:nval value)
-                                       (str "$" (util/decimal-format (:nval value)) " / " (:sval unit) " " (:sval details))
-                                       (:sval details)))
+           [:<>
+            (when (= status "complete")
+              (let [req-prompt-text (cond
+                                      won? "Winner of VetdRound"
+                                      disqualified? "Disqualified")
+                    resp-text (if (s/blank? reason)
+                                "No reason given."
+                                reason)]
+                [:div.cell {:on-mouse-down #(reset! cell-click-disabled? false)
+                            :on-click #(when-not @cell-click-disabled?
+                                         (show-modal-fn {:req-prompt-id nil
+                                                         :req-prompt-text req-prompt-text
+                                                         :product-id product-id
+                                                         :pname pname
+                                                         :resp-id nil
+                                                         :resp-text resp-text
+                                                         :resp-rating nil
+                                                         :read-only? true}))}
+                 [:div.topic req-prompt-text]
+                 [c-cell-text resp-text status]
+                 [:div {:style {:height 15}}]]))
+            (for [req prompts
+                  :let [{req-prompt-id :id
+                         req-prompt-text :prompt
+                         req-prompt-term :term} req
+                        response-prompts (-> rp :vendor-response-form-docs first :response-prompts)
+                        response-prompt (docs/get-response-prompt-by-prompt-id
+                                         response-prompts
+                                         req-prompt-id)
+                        resp-rating (some-> response-prompt
+                                            :subject-of-response-prompt
+                                            first
+                                            :response-prompt-fields
+                                            first
+                                            :nval)
+                        
+                        resps (docs/get-response-fields-by-prompt-id response-prompts req-prompt-id)
+                        resp-id (-> resps first :resp-id)
+                        display-resp (fn [{:keys [sval nval dval prompt-field-fname] :as resp}]
+                                       (cond
+                                         nval (util/decimal-format nval)
+                                         dval dval ;; TODO process date -> human readable
+                                         sval sval
+                                         :else nil))
+                        resp-text (cond ;; some terms get special treatment
+                                    (= req-prompt-term "preposal/pricing-estimate")
+                                    (let [fname->resps (group-by :prompt-field-fname resps)
+                                          fname->resp (comp first fname->resps)
+                                          [value unit details] (map fname->resp ["value" "unit" "details"])]
+                                      (if (:nval value)
+                                        (str "$" (util/decimal-format (:nval value)) " / " (:sval unit) " " (:sval details))
+                                        (:sval details)))
 
-                                   :else (apply str (map display-resp resps)))]]
-             ^{:key (str req-prompt-id "-" product-id)}
-             [:div.cell {:class (str (when (= 1 resp-rating) "response-approved ")
-                                     (when (= 0 resp-rating) "response-disapproved "))
-                         :on-mouse-down #(reset! cell-click-disabled? false)
-                         :on-click #(when-not @cell-click-disabled?
-                                      (show-modal-fn {:req-prompt-id req-prompt-id
-                                                      :req-prompt-text req-prompt-text
-                                                      :product-id product-id
-                                                      :pname pname
-                                                      :resp-id resp-id
-                                                      :resp-text resp-text
-                                                      :resp-rating resp-rating
-                                                      :read-only? read-only?}))}
-              [:div.topic req-prompt-text]
-              [c-cell-text resp-text status]
-              (if read-only?
-                [:div {:style {:height 15}}]
-                [c-cell-actions resp-id resp-rating id req-prompt-id prompts])])
+                                    :else (apply str (map display-resp resps)))]]
+              ^{:key (str req-prompt-id "-" product-id)}
+              [:div.cell {:class (str (when (= 1 resp-rating) "response-approved ")
+                                      (when (= 0 resp-rating) "response-disapproved "))
+                          :on-mouse-down #(reset! cell-click-disabled? false)
+                          :on-click #(when-not @cell-click-disabled?
+                                       (show-modal-fn {:req-prompt-id req-prompt-id
+                                                       :req-prompt-text req-prompt-text
+                                                       :product-id product-id
+                                                       :pname pname
+                                                       :resp-id resp-id
+                                                       :resp-text resp-text
+                                                       :resp-rating resp-rating
+                                                       :read-only? read-only?}))}
+               [:div.topic req-prompt-text]
+               [c-cell-text resp-text status]
+               (if read-only?
+                 [:div {:style {:height 15}}]
+                 [c-cell-actions resp-id resp-rating id req-prompt-id prompts])])]
            [:div.cell [c-cell-text "Click \"Add Topics\" to learn more about this product." status]])]))))
 
 (defn c-round-grid*
@@ -596,12 +616,17 @@
        [:div.round-grid-top-scrollbar {:style {:display (if show-top-scrollbar? "block" "none")}}
         [:div {:style {:width (* col-width (count round-product))
                        :height 1}}]]
-       [:div.round-grid {:style {:min-height (-> req-form-template
-                                                 :prompts
-                                                 count
-                                                 (* 203)
-                                                 (+ 122)
-                                                 (max (+ 122 (* 1 203))))}}
+       [:div.round-grid {:class (when read-only? "read-only")
+                         :style {:min-height
+                                 (-> req-form-template
+                                     :prompts
+                                     count
+                                     (#(if (= (:status round) "complete")
+                                         (inc %)
+                                         %))
+                                     (* 203)
+                                     (+ 122)
+                                     (max (+ 122 (* 1 203))))}}
         [:div {:style {:min-width (- (* col-width (count round-product))
                                      14)}}
          (for [rp round-product]

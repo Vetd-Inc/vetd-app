@@ -632,7 +632,7 @@
                                       [:and
                                        [:= :gom.deleted nil]
                                        [:= :gom.org_id :m.org_id]]
-                                  
+                                      
                                       [:group_org_memberships :gom2]
                                       [:and
                                        [:= :gom2.deleted nil]
@@ -640,6 +640,7 @@
 
                                       [:rounds :r] [:and
                                                     [:= :r.deleted nil]
+                                                    [:<> :r.status "initiation"]
                                                     [:= :gom2.org_id :r.buyer_id]
                                                     restrict]]
                                :where   [:= :s.token session-token]})

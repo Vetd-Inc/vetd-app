@@ -911,22 +911,23 @@ $cell-height: 201px;
   // if the header row is in sticky mode
   &.fixed {
     padding-top: 98px;
-  }
-  &.fixed .round-product {
-    position: absolute;
-    top: -98px;
-    z-index: 999;
-    padding-top: 10px;
-    height: 94px;
-    background: white;
-    // experiementing with shadow effect on upward scroll
-    // box-shadow: 0 2px 14px 0 rgba(50,50,50,0.1),
-    //             0 -150px 100px 0px rgba(50,50,50,0.4)
-    //               !important;
-    box-shadow: 0 2px 14px 0 rgba(50,50,50,0.1) !important;
-    border-bottom-left-radius: 4px;
-    border-bottom-right-radius: 4px;
-    transition: transform 0.3s 0s ease-out;
+
+    .round-product {
+      position: absolute;
+      top: -98px;
+      z-index: 999;
+      padding-top: 10px;
+      height: 94px;      
+      background: white;
+      // experiementing with shadow effect on upward scroll
+      // box-shadow: 0 2px 14px 0 rgba(50,50,50,0.1),
+      //             0 -150px 100px 0px rgba(50,50,50,0.4)
+      //               !important;
+      box-shadow: 0 2px 14px 0 rgba(50,50,50,0.1) !important;
+      border-bottom-left-radius: 4px;
+      border-bottom-right-radius: 4px;
+      transition: transform 0.3s 0s ease-out;
+    }
   }
   
   // commented out because it has issues when there's a lot of requirements
@@ -949,6 +950,26 @@ $cell-height: 201px;
     .topic {
       color: #4ec2c4;
       transition: none;
+    }
+  }
+}
+
+.round-grid.read-only {
+  .column {
+    &.disqualified {
+      opacity: 1;
+    }
+    
+    .round-product {
+      height: 65px;
+    }
+  }
+  &.fixed {
+    padding-top: 69px;
+    
+    .round-product {
+      height: 65px;
+      top: -69px;
     }
   }
 }
