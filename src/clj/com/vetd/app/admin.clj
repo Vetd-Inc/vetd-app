@@ -146,3 +146,12 @@
   [{:keys [admin-org-id community-name]} ws-id sub-fn]
   (gr/insert-group community-name admin-org-id)
   {})
+
+(defmethod com/handle-ws-inbound :a/round.remove-topic
+  [{:keys [round-id prompt-id]} ws-id sub-fn]
+  ;; TODO
+  (def round-id1 round-id)
+  (def form-template-prompt-id1 prompt-id)
+  {})
+
+(clojure.pprint/pprint form-template-prompt-id1)
