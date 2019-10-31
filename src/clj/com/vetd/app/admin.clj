@@ -152,6 +152,10 @@
   ;; TODO
   (def round-id1 round-id)
   (def form-template-prompt-id1 prompt-id)
+  ;; find round's form tempplate id
+  ;; delete form template prompt rec
+  ;; find round-prod forms
+  ;; delete form prompts for each prod
+  ;; find round-prod docs
+  ;; delete doc resps for each prod
   {})
-
-(clojure.pprint/pprint form-template-prompt-id1)
