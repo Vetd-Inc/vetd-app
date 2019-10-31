@@ -5,7 +5,6 @@
             [com.vetd.app.proc-tree :as ptree]
             [com.vetd.app.util :as ut]))
 
-
 (defn insert-round-product
   [round-id prod-id]
   (let [[id idstr] (ut/mk-id&str)]

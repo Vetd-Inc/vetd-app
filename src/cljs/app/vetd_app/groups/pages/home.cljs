@@ -191,7 +191,7 @@
                 "No organizations have added products to their stack yet.")))]]))))
 
 (def ftype->icon
-  {:round-started "vetd vetd-colors"
+  {:round-init-form-completed "vetd vetd-colors"
    :round-winner-declared "trophy yellow"
    :stack-update-rating "star yellow"
    :stack-add-items "grid layout grey"
@@ -203,9 +203,9 @@
 (defn event-data->message
   [ftype data]
   (case ftype
-    :round-started (let [{:keys [buyer-org-name title]} data]
-                     [:span buyer-org-name " started a VetdRound called "
-                      [:em title]])
+    :round-init-form-completed (let [{:keys [buyer-org-name title]} data]
+                                 [:span buyer-org-name " started a VetdRound called "
+                                  [:em title]])
     :round-winner-declared (let [{:keys [buyer-org-name product-name]} data]
                              [:span buyer-org-name " chose " [:em product-name]
                               " as the winner of their VetdRound"])
@@ -227,30 +227,19 @@
     "Unknown event."))
 
 (defn event-data->click-event
-  [ftype data]
+  [ftype {:keys [product-id round-id buyer-org-id vendor-name] :as data}]
   (case ftype
-    ;; TODO use this after we have read-only rounds within community available
-    ;; :round-started (let [{:keys [round-id]} data] [:b/nav-round-detail (util/base31->str round-id)])
-    ;; :round-winner-declared (let [{:keys [round-id]} data] [:b/nav-round-detail (util/base31->str round-id)])
-    :round-started nil
-    :round-winner-declared (let [{:keys [product-id]} data]
-                             [:b/nav-product-detail (util/base31->str product-id)])
-    
-    :stack-update-rating (let [{:keys [product-id]} data]
-                           [:b/nav-product-detail (util/base31->str product-id)])
-    :stack-add-items (let [{:keys [buyer-org-id]} data]
-                       (if (= buyer-org-id @(rf/subscribe [:org-id]))
-                         [:b/nav-stack]
-                         [:b/nav-stack-detail (util/base31->str buyer-org-id)]))
-    :preposal-request (let [{:keys [product-id]} data]
-                        [:b/nav-product-detail (util/base31->str product-id)])
-    :buy-request (let [{:keys [product-id]} data]
-                   [:b/nav-product-detail (util/base31->str product-id)])
-    :complete-vendor-profile-request (let [{:keys [vendor-name]} data]
-                                       ;; TODO this is a questionable stopgap till we have vendor pages
-                                       [:b/nav-search vendor-name])
-    :complete-product-profile-request (let [{:keys [product-id]} data]
-                                        [:b/nav-product-detail (util/base31->str product-id)])
+    :round-init-form-completed [:b/nav-round-detail (util/base31->str round-id)]
+    :round-winner-declared [:b/nav-round-detail (util/base31->str round-id)]
+    :stack-update-rating [:b/nav-product-detail (util/base31->str product-id)]
+    :stack-add-items (if (= buyer-org-id @(rf/subscribe [:org-id]))
+                       [:b/nav-stack]
+                       [:b/nav-stack-detail (util/base31->str buyer-org-id)])
+    :preposal-request [:b/nav-product-detail (util/base31->str product-id)]
+    :buy-request [:b/nav-product-detail (util/base31->str product-id)]
+    ;; TODO this is a stopgap till we have vendor pages
+    :complete-vendor-profile-request [:b/nav-search vendor-name]
+    :complete-product-profile-request [:b/nav-product-detail (util/base31->str product-id)]
     "Unknown event."))
 
 (defn c-feed-event
@@ -272,13 +261,27 @@
                                   (map (fn [org] [(:id org) gname]) orgs))
                                 (apply concat)
                                 (into {}))
-        feed-events& (rf/subscribe [:gql/sub
-                                    {:queries
-                                     [[:feed-events {:org-id org-ids
-                                                     :_order_by {:journal-entry-created :desc}
-                                                     :_limit 37
-                                                     :deleted nil}
-                                       [:id :journal-entry-created :ftype :data]]]}])]
+        ;; when adding an ftype, be sure to update:
+        ;;   event-data->click-event
+        ;;   event-data->message
+        ;;   ftype->icon
+        supported-ftypes ["round-init-form-completed"
+                          "round-winner-declared"
+                          "stack-update-rating"
+                          "stack-add-items"
+                          "preposal-request"
+                          "buy-request"
+                          "complete-vendor-profile-request"
+                          "complete-product-profile-request"]
+        feed-events& (rf/subscribe
+                      [:gql/sub
+                       {:queries
+                        [[:feed-events {:org-id org-ids
+                                        :ftype supported-ftypes
+                                        :_order_by {:journal-entry-created :desc}
+                                        :_limit 37
+                                        :deleted nil}
+                          [:id :journal-entry-created :ftype :data]]]}])]
     (if (= :loading @feed-events&)
       [cc/c-loader]
       (let [feed-events (:feed-events @feed-events&)]
