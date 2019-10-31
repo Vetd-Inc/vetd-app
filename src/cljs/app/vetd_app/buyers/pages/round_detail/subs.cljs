@@ -57,23 +57,14 @@
  :b/round.data
  (fn [round-idstr org-id]
    [(rf/subscribe (mk-round-detail-gql round-idstr org-id))])
- (fn [round]
+ (fn [[round]]
+   (println round)
    round))
-
-;; "fdpmfd5pc" x ;; 1716828073773
-;; (println @(rf/subscribe [:b/round.data "blah" "cool"]))
 
 (rf/reg-sub
  :b/round.buyer-name
- ;; :<- [:b/round.data]
- ;; (fn [[round]]
- ;;   ;; (println round)
- ;;   "hi"
- ;;   ;; (:buyer-name round)
- ;;   ) 
  (fn [{:keys [round]}]
-   (:buyer-name round))
- )
+   (:buyer-name round)))
 
 (rf/reg-sub
  :b/round.buyer?
