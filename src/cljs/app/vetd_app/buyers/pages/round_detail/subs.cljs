@@ -53,13 +53,13 @@
                 {:deleted nil}
                 [:nval]]]]]]]]]]]]]}])
 
-(rf/reg-sub
- :b/round.data
- (fn [round-idstr org-id]
-   [(rf/subscribe (mk-round-detail-gql round-idstr org-id))])
- (fn [[round]]
-   (println round)
-   round))
+;; (rf/reg-sub
+;;  :b/round.data
+;;  (fn [round-idstr org-id]
+;;    [(rf/subscribe (mk-round-detail-gql round-idstr org-id))])
+;;  (fn [[round]]
+;;    (println round)
+;;    round))
 
 (rf/reg-sub
  :b/round.buyer-name
