@@ -617,7 +617,7 @@
                                :where   [:= :s.token session-token]})
                  first
                  :count
-                 (= 1))
+                 pos?)
             (->> (db/hs-query {:select [:%count.s.id]
                                :from [[:sessions :s]]
                                :join [[:users :u] [:and
@@ -646,7 +646,7 @@
                                :where   [:= :s.token session-token]})
                  first
                  :count
-                 (= 1)))
+                 pos?))
         true))
     true))
 
