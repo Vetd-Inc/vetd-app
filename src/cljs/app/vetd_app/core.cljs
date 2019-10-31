@@ -356,10 +356,11 @@
 (defn config-acct []
   (acct/configure-navigation!
    {:nav-handler (fn [requested-path]
-                   (let [logged-in? (not (s/blank? (local-store/get-item :session-token))) 
+                   (let [logged-in? (not (s/blank? (local-store/get-item :session-token)))
+                         path-no-query-params (first (s/split requested-path #"\?"))
                          path (if (or logged-in?
-                                      (public-routes (sec/locate-route-value requested-path)))
-                                requested-path
+                                      (public-routes (sec/locate-route-value path-no-query-params)))
+                                path-no-query-params
                                 "/login")]
                      (r/after-render clerk/after-render!)
                      (sec/dispatch! path)
