@@ -15,6 +15,9 @@
 (defonce trigger-pull-feed-events (a/chan (a/dropping-buffer 1)))
 
 (def valid-journal-entry-types #{:round-started
+                                 ;; no longer showing the above event.
+                                 ;; instead, showing round after initiation
+                                 :round-init-form-completed
                                  :round-winner-declared
                                  :stack-update-rating
                                  :stack-add-items

@@ -236,7 +236,7 @@
                                          :buyer-org-name (:oname buyer)
                                          :product-names (mapv :pname products)
                                          :product-ids (mapv :id products)
-                                         :category-names (mapv :cname products)}))
+                                         :category-names (mapv :cname categories)}))
       (catch Throwable t))
     r))
 
@@ -554,7 +554,7 @@ Round URL: https://app.vetd.com/b/rounds/%s"
   [doc-id]
   (let [round (-> [[:docs {:id doc-id}
                     [[:rounds
-                      [:id :created
+                      [:id :title :created
                        [:buyer [:id :oname]]
                        [:products [:id :pname]]
                        [:categories [:id :cname]]
@@ -581,10 +581,12 @@ Round URL: https://app.vetd.com/b/rounds/%s"
                                                        (str "\n" (:prompt-prompt rp) ": "
                                                             (->> rp :response-prompt-fields (map :sval) (interpose ", ") (apply str)))))))
                                     {:jtype :round-init-form-completed
-                                     :buyer-org-name (-> round :buyer :oname)
+                                     :round-id (->> round :id)
+                                     :title (->> round :title)
                                      :buyer-org-id (-> round :buyer :id)
-                                     :products (:products round)
-                                     :categories (:categories round)})))
+                                     :buyer-org-name (-> round :buyer :oname)
+                                     :product-names (->> round :products (map :pname))
+                                     :product-ids (->> round :products (map :id))})))
 
 (defn set-round-products-order [round-id product-ids]
   (doall

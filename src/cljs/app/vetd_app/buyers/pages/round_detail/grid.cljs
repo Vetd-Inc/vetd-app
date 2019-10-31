@@ -1,6 +1,7 @@
 (ns vetd-app.buyers.pages.round-detail.grid
   (:require [vetd-app.buyers.components :as bc]
             [vetd-app.common.components :as cc]
+            vetd-app.buyers.pages.round-detail.subs
             [vetd-app.buyers.pages.round-detail.initiation :as initiation]
             [vetd-app.ui :as ui]
             [vetd-app.util :as util]
@@ -27,29 +28,6 @@
  :b/products-order
  :<- [:b/round]
  (fn [{:keys [products-order]}] products-order))
-
-(rf/reg-sub
- :b/round.buyer-name
- (fn [{:keys [round]}]
-   (:buyer-name round)))
-
-(rf/reg-sub
- :b/round.buyer?
- (fn [{:keys [org-id round]}]
-   (= org-id (:buyer-id round))))
-
-(rf/reg-sub
- :b/round.complete?
- (fn [{:keys [round]}]
-   (= "complete" (:status round))))
-
-(rf/reg-sub
- :b/round.read-only?
- :<- [:b/round.buyer?]
- :<- [:b/round.complete?]
- (fn [[buyer? complete?]]
-   (or (not buyer?)
-       complete?)))
 
 ;;;; Events
 (rf/reg-event-fx
