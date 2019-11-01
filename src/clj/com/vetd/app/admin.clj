@@ -147,6 +147,22 @@
   (gr/insert-group community-name admin-org-id)
   {})
 
+(defn find-all-topic-pieces [round-id]
+  (->> [[:rounds {:id round-id}
+         [[:req-form-template
+           [:id
+            [:prompts [:id :ref-id]]]]
+          [:round-product
+           [:id 
+            [:vendor-response-form-docs
+             [:id 
+              [:response-prompts
+               [:ref-id
+                :prompt_id]]]]]]]]]
+       ha/sync-query
+       :rounds
+       first))
+
 (defmethod com/handle-ws-inbound :a/round.remove-topic
   [{:keys [round-id prompt-id]} ws-id sub-fn]
   ;; TODO
@@ -159,3 +175,25 @@
   ;; find round-prod docs
   ;; delete doc resps for each prod
   {})
+
+
+(->> [[:rounds {:id 2182822820634}
+       [[:req-form-template
+         [:id
+          [:prompts [:id :ref-id]]]]
+        [:round-product
+          [:id 
+           [:vendor-response-form-docs
+            [:id 
+             [:response-prompts
+              [:ref-id
+               :prompt_id]]]]]]]]]
+     ha/sync-query
+     :rounds
+     first
+     clojure.pprint/pprint )
+
+:round-product
+
+#_
+(clojure.pprint/pprint round-id1)
