@@ -119,6 +119,11 @@
  (fn [{:keys [bad-input]}] bad-input))
 
 (rf/reg-event-fx
+ :bad-input.reset
+ (fn [{:keys [db]}]
+   {:db (assoc-in db [:page-params :bad-input] nil)}))
+
+(rf/reg-event-fx
  :modal
  (fn [{:keys [db]} [_ {:keys [header content buttons size] :as props}]]
    (do (-> db :modal :showing?& (reset! true)) ;; nastiness
