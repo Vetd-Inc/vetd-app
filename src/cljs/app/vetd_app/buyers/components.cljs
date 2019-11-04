@@ -42,12 +42,13 @@
    [:> ui/Icon {:name icon}]])
 
 (defn c-start-round-button
-  [{:keys [etype eid ename props popup-props]}]
+  [{:keys [etype eid ename props popup-props defaults]}]
   (let [popup-open?& (r/atom false)
         context-ref& (r/atom nil)
         default-title (case etype
                         :product (str "Products Similar to " ename)
                         :category (str (util/capitalize-words ename) " Products")
+                        :duplicate (:title defaults)
                         :none "")
         title& (atom default-title)
         bad-title?& (r/atom false)
@@ -56,7 +57,14 @@
                                       (case etype
                                         :none :category
                                         etype)
-                                      eid])]
+                                      eid
+                                      (->> defaults
+                                           :req-form-template
+                                           :prompts
+                                           (map :id))
+                                      (->> defaults
+                                           :round-product
+                                           (map (comp :id :product)))])]
     (fn []
       [:<>
        [:> ui/Popup
@@ -66,7 +74,9 @@
                 :on-close #(reset! popup-open?& false)
                 :on-click #(.stopPropagation %)
                 :context @context-ref&
-                :header "Create a New VetdRound"
+                :header (case etype
+                          :duplicate "Copy VetdRound"
+                          "Create a New VetdRound")
                 :content (r/as-element
                           [:div
                            [:p {:style {:margin-top 7
@@ -100,8 +110,11 @@
                                  " that meet your needs."]
                        :category (str "Find and compare " (util/capitalize-words ename)
                                       " products that meet your needs.")
+                       :duplicate "Create your own VetdRound using these topics and products as a starting point."
                        :none "Find and compare similar products that meet your needs.")])
-          :header "What is a VetdRound?"
+          :header (case etype
+                    :duplicate "Copy VetdRound"
+                    "What is a VetdRound?")
           :position "bottom left"
           :context @context-ref&
           :trigger (r/as-element
@@ -116,6 +129,7 @@
                      (case etype
                        :product "Create VetdRound"
                        :category (str "Create VetdRound for \"" ename "\"")
+                       :duplicate "Copy VetdRound"
                        :none "Create VetdRound")
                      [:> ui/Icon {:name "vetd-icon"}]])}
          popup-props)]])))
@@ -151,7 +165,7 @@
     [:> ui/Icon {:name "wpforms"}]
     [:> ui/StepContent
      [:> ui/StepTitle "Initiation"]
-     [:> ui/StepDescription "Define your requirements"]]]
+     [:> ui/StepDescription "Define requirements"]]]
    [:> ui/Step {:style {:cursor "inherit"}
                 :disabled (not= status "in-progress")}
     [:> ui/Icon {:name "chart bar"}]
