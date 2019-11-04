@@ -147,53 +147,53 @@
   (gr/insert-group community-name admin-org-id)
   {})
 
-(defn find-all-topic-pieces [round-id]
+(defn find-all-round-topic-pieces [round-id prompt-id]
   (->> [[:rounds {:id round-id}
          [[:req-form-template
            [:id
-            [:prompts [:id :ref-id]]]]
+            [:prompts {:id prompt-id}
+             [:id :ref-id]]]]
           [:round-product
            [:id 
             [:vendor-response-form-docs
              [:id 
               [:response-prompts
-               [:ref-id
-                :prompt_id]]]]]]]]]
+               {:prompt-id prompt-id}
+               [:id
+                :ref-id
+                :prompt-id]]]]]]]]]
        ha/sync-query
        :rounds
        first))
 
+(defn delete-all-round-topic-pieces--req-form-template
+  [{:keys [id prompts]}]
+  (when-let [ref-id (-> prompts first :ref-id)]
+    (db/update-deleted :form_template_prompt ref-id)))
+
+(defn delete-all-round-topic-pieces--round-product
+  [{:keys [id vendor-response-form-docs]}]
+  (let [{:keys [id ref-id prompt-id]} (-> vendor-response-form-docs
+                                          first
+                                          :response-prompts
+                                          first)]
+    (when ref-id
+      (db/update-deleted :doc_resp ref-id))
+    (when (and id prompt-id)
+      (db/update-deleted-where :form_prompt
+                               [:and
+                                [:= :form_id id]
+                                [:= :prompt_id prompt-id]]))))
+
+(defn delete-all-round-topic-pieces
+  [{:keys [req-form-template round-product]}]
+  (delete-all-round-topic-pieces--req-form-template req-form-template)
+  (doseq [rp round-product]
+    (delete-all-round-topic-pieces--round-product rp)))
+
 (defmethod com/handle-ws-inbound :a/round.remove-topic
   [{:keys [round-id prompt-id]} ws-id sub-fn]
-  ;; TODO
-  (def round-id1 round-id)
-  (def form-template-prompt-id1 prompt-id)
-  ;; find round's form tempplate id
-  ;; delete form template prompt rec
-  ;; find round-prod forms
-  ;; delete form prompts for each prod
-  ;; find round-prod docs
-  ;; delete doc resps for each prod
+  (delete-all-round-topic-pieces
+   (find-all-round-topic-pieces
+    round-id prompt-id))
   {})
-
-
-(->> [[:rounds {:id 2182822820634}
-       [[:req-form-template
-         [:id
-          [:prompts [:id :ref-id]]]]
-        [:round-product
-          [:id 
-           [:vendor-response-form-docs
-            [:id 
-             [:response-prompts
-              [:ref-id
-               :prompt_id]]]]]]]]]
-     ha/sync-query
-     :rounds
-     first
-     clojure.pprint/pprint )
-
-:round-product
-
-#_
-(clojure.pprint/pprint round-id1)
