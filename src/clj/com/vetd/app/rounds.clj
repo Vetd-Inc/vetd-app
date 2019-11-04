@@ -17,9 +17,23 @@
                      :updated (ut/now-ts)})
         first)))
 
+(defn product-is-in-round?
+  [product-id round-id]
+  (-> [[:rounds {:id round-id}
+        [:id
+         [:products {:id product-id}
+          [:id]]]]]
+      ha/sync-query
+      :rounds
+      first
+      :products
+      seq
+      boolean))
+
 (defn invite-product-to-round
   [product-id round-id]
-  (insert-round-product round-id product-id))
+  (when-not (product-is-in-round? product-id round-id)
+    (insert-round-product round-id product-id)))
 
 (defn sync-round-vendor-req-forms-to-add?
   [{:keys [deleted] forms :vendor-response-form-docs}]

@@ -623,6 +623,7 @@ Round URL: https://app.vetd.com/b/rounds/%s"
 
 (defmethod com/handle-ws-inbound :b/round.add-products
   [{:keys [round-id product-ids product-names buyer-id]} ws-id sub-fn]
+  ;; notify about adding existing products
   (when-not (empty? product-ids)
     (com/sns-publish
      :ui-misc
@@ -631,6 +632,7 @@ Round URL: https://app.vetd.com/b/rounds/%s"
           "Round ID: " round-id
           "\nRound Link: https://app.vetd.com/b/rounds/" (ut/base31->str round-id)
           "\nProduct(s) Added: " (s/join ", " product-ids))))
+  ;; notify about adding products that don't exist in our system yet
   (when-not (empty? product-names)
     (com/sns-publish
      :ui-misc
