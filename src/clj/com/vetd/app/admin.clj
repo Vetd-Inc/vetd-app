@@ -146,3 +146,54 @@
   [{:keys [admin-org-id community-name]} ws-id sub-fn]
   (gr/insert-group community-name admin-org-id)
   {})
+
+(defn find-all-round-topic-pieces [round-id prompt-id]
+  (->> [[:rounds {:id round-id}
+         [[:req-form-template
+           [:id
+            [:prompts {:id prompt-id}
+             [:id :ref-id]]]]
+          [:round-product
+           [:id 
+            [:vendor-response-form-docs
+             [:id 
+              [:response-prompts
+               {:prompt-id prompt-id}
+               [:id
+                :ref-id
+                :prompt-id]]]]]]]]]
+       ha/sync-query
+       :rounds
+       first))
+
+(defn delete-all-round-topic-pieces--req-form-template
+  [{:keys [id prompts]}]
+  (when-let [ref-id (-> prompts first :ref-id)]
+    (db/update-deleted :form_template_prompt ref-id)))
+
+(defn delete-all-round-topic-pieces--round-product
+  [{:keys [id vendor-response-form-docs]}]
+  (let [{:keys [id ref-id prompt-id]} (-> vendor-response-form-docs
+                                          first
+                                          :response-prompts
+                                          first)]
+    (when ref-id
+      (db/update-deleted :doc_resp ref-id))
+    (when (and id prompt-id)
+      (db/update-deleted-where :form_prompt
+                               [:and
+                                [:= :form_id id]
+                                [:= :prompt_id prompt-id]]))))
+
+(defn delete-all-round-topic-pieces
+  [{:keys [req-form-template round-product]}]
+  (delete-all-round-topic-pieces--req-form-template req-form-template)
+  (doseq [rp round-product]
+    (delete-all-round-topic-pieces--round-product rp)))
+
+(defmethod com/handle-ws-inbound :a/round.remove-topic
+  [{:keys [round-id prompt-id]} ws-id sub-fn]
+  (delete-all-round-topic-pieces
+   (find-all-round-topic-pieces
+    round-id prompt-id))
+  {})

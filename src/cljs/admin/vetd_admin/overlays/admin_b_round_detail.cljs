@@ -39,6 +39,44 @@
                  :on-click #(rf/dispatch [:a/delete-any {:id round-id}])}
    "Delete VetdRound"])
 
+(defn prompt->topic-option
+  [{:keys [id prompt]}]
+  {:key (str prompt)
+   :text (str prompt) 
+   :value id})
+
+(rf/reg-event-fx
+ :a/remove-round-topic
+ (fn [{:keys [db]} [_ {:keys [round-id prompt-id]}]]
+   {:ws-send {:payload {:cmd :a/round.remove-topic
+                        :round-id round-id
+                        :prompt-id prompt-id}}}))
+
+(defn c-remove-topic [round-id round-idstr]
+  (let [selected& (r/atom nil)
+        rounds& (rf/subscribe [:gql/sub
+                               {:queries
+                                [[:rounds {:idstr round-idstr
+                                           :deleted nil}
+                                  [:id :idstr :created :status :title
+                                   ;; requirements form template
+                                   [:req-form-template
+                                    [:id
+                                     [:prompts {:ref-deleted nil
+                                                :_order_by {:sort :asc}}
+                                      [:id :idstr :prompt :term :descr :sort]]]]]]]}])]
+    (fn []
+      (let [topics (->> @rounds& :rounds first :req-form-template :prompts (mapv prompt->topic-option))]
+        [:<>
+         [:> ui/Dropdown {:value @selected&
+                          :onChange #(reset! selected& (.-value %2))
+                          :selection true
+                          :options topics}]
+         [:> ui/Button {:color "teal"
+                        :on-click #(rf/dispatch [:a/remove-round-topic {:round-id round-id
+                                                                        :prompt-id @selected&}])}
+          "Remove Topic"]]))))
+
 
 (defn c-product-selector [round-id round-with-products&]
   (let [search-term& (r/atom "")
@@ -104,4 +142,6 @@
         [:div
          [:div {:style {:display "flex"}}
           [c-product-selector round-id rounds&]]
-         [c-delete-round round-id]]))))
+         [c-delete-round round-id]
+         [:div {:style {:margin-top "20px"}}
+          [c-remove-topic round-id @round-idstr&]]]))))
