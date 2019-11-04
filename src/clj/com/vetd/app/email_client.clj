@@ -152,10 +152,15 @@
               [:and
                [:= :u.id :user_id]
                [:= :u.deleted nil]
-               [:like :u.email "%@%"]
-               [:or
+               ;; exclude users that were created less than 3 days ago
+               [:< :u.created (->> (tick/new-period 3 :days)
+                                   (tick/- (now-))
+                                   tick->ts
+                                   java.sql.Timestamp.)]
+               [:like :u.email "%@%"] ;; primitive email address validation
+               [:or ;; exclude test accounts, but let through real "Vetd" org
                 [:= :m.org_id 2208512249632]
-                [:not
+                [:not                       
                  [:or
                   [:like :u.email "%@vetd.com"]
                   [:like :u.email "temp@%"]]]]]]
