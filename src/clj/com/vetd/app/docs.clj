@@ -12,16 +12,28 @@
             clojure.set))
 
 #_ (def handle-doc-creation nil)
-(defmulti handle-doc-creation (fn [{:keys [dtype]} handler-args] (keyword dtype)))
+(defmulti handle-doc-creation
+  "Gets called just before exiting a `with-doc-handling` form. Called
+  once per CREATED form. Allows for custom logic by doc type."
+  (fn [{:keys [dtype]} handler-args] (keyword dtype)))
+
 (defmethod handle-doc-creation :default [_ _])
 (def ^:dynamic *docs-created* nil)
 
 #_ (def handle-doc-update nil)
-(defmulti handle-doc-update (fn [{:keys [dtype]} & [handler-args]] (keyword dtype)))
+(defmulti handle-doc-update
+  "Gets called just before exiting a `with-doc-handling` form. Called
+  once per UPDATED form. Allows for custom logic by doc type."
+  (fn [{:keys [dtype]} & [handler-args]] (keyword dtype)))
+
 (defmethod handle-doc-update :default [_ _])
 (def ^:dynamic *docs-updated* nil)
 
 (defmacro with-doc-handling
+  "This keeps track of any document creation/updating that occurs within
+  the form. Before exiting, calls are made to `handle-doc-creation`
+  and `handle-doc-update` for each doc that has been created or
+  updated, respectively."
   [handler-args & body]
   `(let [dc&# (atom #{})
          du&# (atom #{})
@@ -46,11 +58,15 @@
      r#))
 
 (defn proc-tree
+  "This is a convenience so we always remember to perform
+  `ptree/proc-tree` within a `with-doc-handling`."
   [ops {:keys [handler-args] :as v}]
   (with-doc-handling handler-args
     (ptree/proc-tree ops v)))
 
 (defn convert-field-val
+  "Takes a value `v` and a field type `ftype` and returns a map of
+  values for writing to db."
   [v ftype fsubtype]
   (case ftype
     "n" {:sval (str v)
@@ -181,7 +197,8 @@
                      :sort sort'})
         first)))
 
-(defn propagate-prompt [form-prompt-ref-id target-form-id]
+(defn propagate-prompt
+  [form-prompt-ref-id target-form-id]
   (let [{prompt-id :prompt_id sort' :sort} (-> {:select [:sort :prompt_id]
                                                 :from [:form_prompt]
                                                 :where [:= :id form-prompt-ref-id]}
@@ -289,6 +306,7 @@
        doall))
 
 (defn infer-field-type-kw
+  "Field type guessing priority"
   [{:keys [sval nval dval jval]}]
   (cond
     sval :sval
@@ -354,6 +372,7 @@
          first)))
 
 (defn create-attached-doc-response
+  "Inserts a response, and its fields, and associates it with a doc"
   [doc-id {:keys [org-id prompt-id notes user-id fields] :as resp}]
   (let [{resp-id :id} (insert-response resp)]
     (insert-doc-response doc-id resp-id)
@@ -405,6 +424,7 @@
 (def delete-doc-response (partial update-deleted :doc_resp))
 
 (defn find-latest-form-template-id [where]
+  "When there's multiple form templates that match some criteria, select the most recently created."
   (-> {:select [:id]
        :from [:form_templates]
        :where where

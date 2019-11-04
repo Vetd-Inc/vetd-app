@@ -16,7 +16,7 @@
 (def ^:dynamic *session-id* nil)
 (def ^:dynamic *user-id* nil)
 
-;; TODO this should be a channel (so timeout is available), but I don't feel like it right now -- Bill
+;; This tells all the various worker threads that it's time to die
 (defonce shutdown-signal (atom false))
 
 (defonce supress-sns? (atom false))

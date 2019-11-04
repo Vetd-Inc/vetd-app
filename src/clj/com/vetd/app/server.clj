@@ -36,6 +36,20 @@
   (let [now (ut/now)]
     (- now (mod now (* 1000 60 5)))))
 
+
+;; Multi-Payload Requests & Msg Ids =================================================
+
+;; In order to combat the inherent instability of websockets, we have
+;; the following system in place:
+
+;; - clients (browser-side) keep a collection of outgoing requests
+;; - clients listen for acks from the server
+;; - upon receiving an ack, the client removes the ack'd request from the collection
+;; - clients send the entire collection of requests to the server 
+;; - to protect against processing a previously processed request, each request has a unique (to the client) msg id
+;; - the server keeps track of the last 30 msg ids seen from each client
+
+
 (def msg-ids-by-ws-id& (atom {}))
 
 (defn push-msg-ids [ws-id ids]
@@ -61,6 +75,8 @@
                vec)]
     (push-msg-ids ws-id (keys payloads))
     r))
+
+;; END Multi-Payload Requests & Msg Ids =============================================
 
 (defn uri->content-type
   [uri]
