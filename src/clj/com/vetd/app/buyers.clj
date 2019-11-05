@@ -223,20 +223,15 @@
                    [:categories [:cname]]]]]
                 ha/sync-query
                 vals
-                ffirst)
-            msg (with-out-str
-                  (clojure.pprint/with-pprint-dispatch clojure.pprint/code-dispatch
-                    (clojure.pprint/pprint round)))]
-        ;; TODO make msg human friendly
-        (journal/push-entry&sns-publish :ui-start-round "Vetd Round Started" msg
-                                        {:jtype :round-started
-                                         :round-id id
-                                         :title title
-                                         :buyer-org-id (:id buyer)
-                                         :buyer-org-name (:oname buyer)
-                                         :product-names (mapv :pname products)
-                                         :product-ids (mapv :id products)
-                                         :category-names (mapv :cname categories)}))
+                ffirst)]
+        (journal/push-entry {:jtype :round-started
+                             :round-id id
+                             :title title
+                             :buyer-org-id (:id buyer)
+                             :buyer-org-name (:oname buyer)
+                             :product-names (mapv :pname products)
+                             :product-ids (mapv :id products)
+                             :category-names (mapv :cname categories)}))
       (catch Throwable t))
     r))
 
