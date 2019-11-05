@@ -3,11 +3,13 @@
   :description "Vetd is a buying platform for B2B SaaS products."
   :url "https://app.vetd.com"
   
-  :dependencies [[org.clojure/clojure "1.10.1-beta2"]
+  :dependencies [;; Core
+                 [org.clojure/clojure "1.10.1-beta2"]
                  [org.clojure/clojurescript "1.10.516" :scope "provided"]
                  [org.clojure/core.async "0.4.474"]
-                 [org.clojure/data.csv "0.1.4"]
-
+                 ;; Config
+                 [environ "1.1.0"]
+                 ;; DB
                  [org.clojure/java.jdbc "0.7.5"]
                  [org.postgresql/postgresql "42.2.2"]
                  [clj-postgresql "0.7.0"]
@@ -16,31 +18,26 @@
                  [migratus "1.2.0"]
                  [district0x/graphql-query "1.0.5"]
                  [district0x/district-graphql-utils "1.0.5"]
-
+                 ;; AWS
                  [com.cognitect.aws/api "0.8.305"]
                  [com.cognitect.aws/endpoints "1.1.11.553"]
                  [com.cognitect.aws/sns "718.2.444.0"]
-                 [com.cognitect.aws/s3 "718.2.457.0"]                 
-
-                 [cheshire "5.8.0"]
-                 [clj-http "3.9.1"]
-                 [clj-time "0.15.0"]
-                 [tick "0.4.20-alpha"]
-                 [environ "1.1.0"]
-
+                 [com.cognitect.aws/s3 "718.2.457.0"]
+                 ;; Server
                  [compojure "1.6.1"]
                  [metosin/muuntaja "0.5.0"]
                  [aleph "0.4.6"]
                  [ring/ring-core "1.5.1"]
                  [javax.servlet/servlet-api "2.5"]
                  [hiccup "1.0.5"]
-                 
+                 [cheshire "5.8.0"]
+                 [clj-http "3.9.1"]
+                 ;; Frontend
                  [re-frame "0.10.5"]
                  [re-frame-utils "0.1.0"]
                  [reagent "0.8.1"]
                  [reagent-utils "0.3.2"]
-                 [re-frisk "0.4.5"]
-                 
+                 [re-frisk "0.4.5"]                 
                  [re-com/re-com "2.1.0"]
                  [cljsjs/semantic-ui-react "0.87.1-0"]
                  [cljsjs/toastr "2.1.2-1"]
@@ -48,22 +45,22 @@
                  [venantius/accountant "0.2.4"]
                  [pez/clerk "1.0.0"]
                  [markdown-to-hiccup "0.6.2"]
-
+                 ;; Logging & Analytics
                  [org.clojure/tools.reader "1.2.2"]
                  [com.taoensso/timbre "4.10.0"]
                  [com.fzakaria/slf4j-timbre "0.3.12"] ;; req'd by migratus
                  [conormcd/clj-honeycomb "1.0.6.536"]
-
-                 [buddy/buddy-hashers "1.3.0"]
-
+                 [circleci/analytics-clj "0.8.0"]
                  [expound "0.7.2"]
-
+                 ;; Auth
+                 [buddy/buddy-hashers "1.3.0"]
+                 ;; Misc
+                 [org.clojure/data.csv "0.1.4"]
                  [image-resizer "0.1.10"]
                  [net.mikera/imagez "0.12.0"]
-
                  [com.plaid/plaid-java "5.1.2"]
-
-                 [circleci/analytics-clj "0.8.0"]]
+                 [clj-time "0.15.0"]
+                 [tick "0.4.20-alpha"]]
 
   :repl-options {:timeout 120000}
   

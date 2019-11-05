@@ -12,6 +12,7 @@
             [taoensso.timbre :as log]
             [honeysql.core :as hs]))
 
+;; TODO move to email_client
 ;; Sendgrid template id's
 (def verify-account-template-id "d-d1f3509a0c664b4d84a54777714d5272")
 (def password-reset-template-id "d-a782e6648d054f34b8453cbf8e14c007")
