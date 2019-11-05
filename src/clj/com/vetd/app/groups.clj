@@ -2,14 +2,9 @@
   (:require [com.vetd.app.db :as db]
             [com.vetd.app.common :as com]
             [com.vetd.app.util :as ut]
-            [com.vetd.app.journal :as journal]            
+            [com.vetd.app.journal :as journal]
             [com.vetd.app.hasura :as ha]
-            [com.vetd.app.email-client :as ec]
-            [com.vetd.app.links :as l]
-            [clojure.string :as st]
-            [buddy.hashers :as bhsh]
-            [taoensso.timbre :as log]
-            [honeysql.core :as hs]))
+            [clojure.string :as st]))
 
 (defn select-groups-by-admins
   "Get all the groups of which any of org-ids is an admin."
