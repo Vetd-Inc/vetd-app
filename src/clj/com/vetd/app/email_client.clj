@@ -184,7 +184,7 @@
       db/hs-query
       first))
 
-(defn select-max-email-log-created-by-etype [etype]
+(defn last-email-sent [etype]
   (-> {:select [[:%max.esl.created :max-created]]
        :from [[:email_sent_log :esl]]
        :where [:and
@@ -339,8 +339,6 @@
      :active-rounds-count (count active-rounds)
      :communities (map get-weekly-auto-email-data--communities group-ids)}))
 
-
-
 (defn do-scheduled-emailer [threshold-dt]
   (try
     (log/info (str "CALL do-scheduled-emailer " threshold-dt))
@@ -348,18 +346,14 @@
       (while (try
                (when-let [{:keys [email oname uname user-id org-id max-created]} (select-next-email&recipient threshold-ts)]
                  (let [data (get-weekly-auto-email-data user-id org-id oname uname)]
-                   
-                   (send-template-email "chris@vetd.com" ;; email
+                   (send-template-email email
                                         data
                                         {:template-id "d-76e51dc96f2d4d7e8438bd6b407504f9"})
-                   
-                   ;; (insert-email-sent-log-entry
-                   ;;  {:etype :weekly-buyer-email
-                   ;;   :user-id user-id
-                   ;;   :org-id org-id
-                   ;;   :data data})
-
-                   )
+                   (insert-email-sent-log-entry
+                    {:etype :weekly-buyer-email
+                     :user-id user-id
+                     :org-id org-id
+                     :data data}))
                  (Thread/sleep 1000)
                  true)
                (catch Throwable e
@@ -369,29 +363,30 @@
       (com/log-error e)
       (Thread/sleep (* 1000 60 60)))))
 
+;; this is not tested with multiple concurrent instances, but should be fine
 (defn start-scheduled-emailer-thread []
-  (when (and (not env/building?)
-             env/prod?
-             (nil? @scheduled-email-thread&))
+  (when (and (not env/building?)              ;; not while building
+             env/prod?                        ;; only in prod
+             (nil? @scheduled-email-thread&)) ;; we only need one thread
     (reset! scheduled-email-thread&
             (future
               (log/info "Starting scheduled-emailer")
-              (reset! next-scheduled-event& (or (some-> "weekly-buyer-email"
-                                                        select-max-email-log-created-by-etype
-                                                        tick/date-time
-                                                        calc-next-due-ts
-                                                        tick/instant)
-                                                (calc-next-due-ts (tick/- (now-) (tick/new-period 1 :days)))))
+              (reset! next-scheduled-event&
+                      ;; find the next send time based on email sent log
+                      (calc-next-due-ts
+                       (or (some-> (last-email-sent "weekly-buyer-email") tick/date-time)
+                           ;; if never sent, the -1 day allows it to possibly send today (if Monday)
+                           (tick/- (now-) (tick/new-period 1 :days)))))
               (while (not @com/shutdown-signal)
                 (let [event-time @next-scheduled-event&]
                   (if (tick/> (now-) event-time)
-                    (do (reset! next-scheduled-event& (calc-next-due-ts (now-))) ;; TODO 6 or 7?
+                    (do (reset! next-scheduled-event& (calc-next-due-ts (now-)))
                         (#'do-scheduled-emailer (tick/- event-time (tick/new-period 6 :days))))
                     (Thread/sleep (* 1000 10)))))
               (log/info "Stopped scheduled-emailer")))))
 
 (start-scheduled-emailer-thread) ;; TODO calling this here is gross -- Bill
 
-#_
-(future-cancel @scheduled-email-thread&)
+#_ (future-cancel @scheduled-email-thread&)
 
+#_ (reset! override-now& (tick/+ (tick/now) (tick/new-period 6 :days)))
