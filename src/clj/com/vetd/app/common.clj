@@ -69,7 +69,8 @@
 (def topic->arn
   {:ui-misc "arn:aws:sns:us-east-1:744151627940:ui-misc"
    :ui-req-new-prod-cat "arn:aws:sns:us-east-1:744151627940:ui-req-new-prod-cat"
-   :ui-start-round "arn:aws:sns:us-east-1:744151627940:ui-start-round"})
+   :ui-start-round "arn:aws:sns:us-east-1:744151627940:ui-start-round"
+   :customer-success "arn:aws:sns:us-east-1:744151627940:customer-success"})
 
 (defn sns-publish
   "Publishes new notification to AWS SNS.

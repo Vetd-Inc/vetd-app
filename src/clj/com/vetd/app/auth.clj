@@ -416,7 +416,7 @@
                     (map :gname)
                     (st/join ", "))
         buyer-name (-> buyer-id select-org-by-id :oname)]
-    (com/sns-publish :ui-misc
+    (com/sns-publish :customer-success
                      "Community Join Request"
                      (format
                       "Community Join Request

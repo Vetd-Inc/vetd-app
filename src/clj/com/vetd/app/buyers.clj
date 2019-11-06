@@ -254,7 +254,7 @@ User '%s'
                 (product-id->name eid))
         buyer-name (-> buyer-id auth/select-org-by-id :oname)]
     (journal/push-entry&sns-publish
-     :ui-misc
+     :customer-success
      (str "Complete " (name etype) " Profile Request")
      (str "Complete " (name etype) " Profile Request\n"
           "buyer: " buyer-name "\n"
@@ -276,7 +276,7 @@ User '%s'
                                    :products
                                    first)
         buyer-name (-> buyer-id auth/select-org-by-id :oname)]
-    (journal/push-entry&sns-publish :ui-misc
+    (journal/push-entry&sns-publish :customer-success
                                     "Buy Request"
                                     (format
                                      "Buy Request
@@ -303,7 +303,7 @@ Round URLs (if any):
                                    ha/sync-query
                                    :products
                                    first)]
-    (com/sns-publish :ui-misc
+    (com/sns-publish :customer-success
                      "Setup Call Request"
                      (format
                       "Setup Call Request
@@ -318,7 +318,7 @@ Round URLs (if any):
                            (clojure.string/join "\n"))))))
 
 (defn send-ask-question-req [product-id message round-id requirement-text buyer-id]
-  (com/sns-publish :ui-misc
+  (com/sns-publish :customer-success
                    "Ask a Question Request"
                    (str "Ask a Question Request"
                         "\nBuyer (Org): " (-> buyer-id auth/select-org-by-id :oname) ; buyer name
@@ -334,7 +334,7 @@ Round URLs (if any):
         buyer-user-name (-> from-user-id auth/select-user-by-id :uname)
         product-id prod-id
         product-name (product-id->name prod-id)]
-    (journal/push-entry&sns-publish :ui-misc
+    (journal/push-entry&sns-publish :customer-success
                                     "PrePosal Request"
                                     (format
                                      "PrePosal Request
@@ -374,7 +374,7 @@ Product: '%s'"
                    buyer-org-name (:oname buyer)
                    buyer-org-id (:id buyer)
                    product-name (-> products first :pname)]
-               (journal/push-entry&sns-publish :ui-misc
+               (journal/push-entry&sns-publish :customer-success
                                                "Round Winner Declared"
                                                (format
                                                 "Round Winner Declared
@@ -484,7 +484,7 @@ Round URL: https://app.vetd.com/b/rounds/%s"
                                                        ffirst)]
     (doseq [requirement requirements]
       (add-requirement-to-round requirement {:form-template-id req-form-template-id}))
-    (journal/push-entry&sns-publish :ui-misc
+    (journal/push-entry&sns-publish :customer-success
                                     "New Topics Added to Round"
                                     (format
                                      "New Topics Added to Round
@@ -565,7 +565,7 @@ Round Link: https://app.vetd.com/b/rounds/%s"
                   vals
                   ffirst
                   :rounds)]
-    (journal/push-entry&sns-publish :ui-misc
+    (journal/push-entry&sns-publish :customer-success
                                     "Round Initiated"
                                     (str "Round Initiated\n\n"
                                          ;; add round link
@@ -622,7 +622,7 @@ Round Link: https://app.vetd.com/b/rounds/%s"
 (defmethod com/handle-ws-inbound :b/round.add-products
   [{:keys [round-id product-ids product-names buyer-id]} ws-id sub-fn]
   (com/sns-publish
-   :ui-misc
+   :customer-success
    "Product(s) Added to Round"
    (str "Product(s) Added to Round\n\n"
         "Round ID: " round-id
@@ -649,7 +649,7 @@ Round Link: https://app.vetd.com/b/rounds/%s"
 (defmethod com/handle-ws-inbound :b/round.share
   [{:keys [round-id round-title email-addresses buyer-id]} ws-id sub-fn]
   (let [buyer-org-name (-> buyer-id auth/select-org-by-id :oname)]
-    (journal/push-entry&sns-publish :ui-misc
+    (journal/push-entry&sns-publish :customer-success
                                     "Share VetdRound"
                                     (str "Share VetdRound"
                                          "\n\nBuyer Name: " buyer-org-name
