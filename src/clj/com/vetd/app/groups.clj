@@ -51,16 +51,17 @@
                                       [:oname]]]
                                     ha/sync-query
                                     vals
-                                    ffirst)
-            _ (journal/push-entry&sns-publish :ui-misc
-                                              "Org Added to Community"
-                                              (str oname " (org) was added to " gname " (community)")
-                                              {:jtype :org-added-to-community
-                                               :org-id org-id
-                                               :group-id group-id
-                                               :group-name gname
-                                               :org-name oname})]
-        [true inserted]))))
+                                    ffirst)]
+        (do (journal/push-entry {:jtype :org-added-to-community
+                                 :org-id org-id
+                                 :group-id group-id
+                                 :group-name gname
+                                 :org-name oname})
+            (com/sns-publish :ui-misc
+                             "Org Added to Community"
+                             (str oname " (org) was added to "
+                                  gname " (community)"))
+            [true inserted])))))
 
 (defn delete-group-org-memb
   [group-org-memb-id]

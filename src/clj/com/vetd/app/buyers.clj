@@ -253,19 +253,21 @@ User '%s'
                 (-> eid auth/select-org-by-id :oname)
                 (product-id->name eid))
         buyer-name (-> buyer-id auth/select-org-by-id :oname)]
-    (journal/push-entry&sns-publish
-     :customer-success
-     (str "Complete " (name etype) " Profile Request")
-     (str "Complete " (name etype) " Profile Request\n"
-          "buyer: " buyer-name "\n"
-          (name etype) ": " ename " (ID: " eid ")\n"
-          "field name: " field-key)
-     {:jtype (keyword (str "complete-" (name etype) "-profile-request"))
-      :buyer-org-name buyer-name
-      :buyer-org-id buyer-id
-      :field-name field-key
-      (keyword (str (name etype) "-id")) eid
-      (keyword (str (name etype) "-name")) ename})))
+    (do (journal/push-entry
+         {:jtype (keyword (str "complete-" (name etype) "-profile-request"))
+          :buyer-org-name buyer-name
+          :buyer-org-id buyer-id
+          :field-name field-key
+          (keyword (str (name etype) "-id")) eid
+          (keyword (str (name etype) "-name")) ename})
+        (com/sns-publish
+         :customer-success
+         (str "Complete " (name etype) " Profile Request")
+         (str "Complete " (name etype) " Profile Request\n"
+              "buyer: " buyer-name "\n"
+              (name etype) ": " ename " (ID: " eid ")\n"
+              "field name: " field-key)
+         {:org-id buyer-id}))))
 
 (defn send-buy-req [buyer-id product-id]
   (let [{:keys [pname rounds]} (-> [[:products {:id product-id}
@@ -276,24 +278,27 @@ User '%s'
                                    :products
                                    first)
         buyer-name (-> buyer-id auth/select-org-by-id :oname)]
-    (journal/push-entry&sns-publish :customer-success
-                                    "Buy Request"
-                                    (format
-                                     "Buy Request
+    (do (journal/push-entry
+         {:jtype :buy-request
+          :buyer-org-name buyer-name
+          :buyer-org-id buyer-id
+          :product-id product-id
+          :product-name pname})
+        (com/sns-publish
+         :customer-success
+         "Buy Request"
+         (format
+          "Buy Request
 Buyer (Org): '%s'
 Product: '%s'
 Round URLs (if any):
 %s"
-                                     (-> buyer-id auth/select-org-by-id :oname) ; buyer name
-                                     pname
-                                     (->> (for [{:keys [idstr]} rounds]
-                                            (str "https://app.vetd.com/b/rounds/" idstr))
-                                          (clojure.string/join "\n")))
-                                    {:jtype :buy-request
-                                     :buyer-org-name buyer-name
-                                     :buyer-org-id buyer-id
-                                     :product-id product-id
-                                     :product-name pname})))
+          (-> buyer-id auth/select-org-by-id :oname) ; buyer name
+          pname
+          (->> (for [{:keys [idstr]} rounds]
+                 (str "https://app.vetd.com/b/rounds/" idstr))
+               (clojure.string/join "\n")))
+         {:org-id buyer-id}))))
 
 (defn send-setup-call-req [buyer-id product-id]
   (let [{:keys [pname rounds]} (-> [[:products {:id product-id}
@@ -303,30 +308,34 @@ Round URLs (if any):
                                    ha/sync-query
                                    :products
                                    first)]
-    (com/sns-publish :customer-success
-                     "Setup Call Request"
-                     (format
-                      "Setup Call Request
+    (com/sns-publish
+     :customer-success
+     "Setup Call Request"
+     (format
+      "Setup Call Request
 Buyer (Org): '%s'
 Product: '%s'
 Round URLs (if any):
 %s"
-                      (-> buyer-id auth/select-org-by-id :oname) ; buyer name
-                      pname
-                      (->> (for [{:keys [idstr]} rounds]
-                             (str "https://app.vetd.com/b/rounds/" idstr))
-                           (clojure.string/join "\n"))))))
+      (-> buyer-id auth/select-org-by-id :oname) ; buyer name
+      pname
+      (->> (for [{:keys [idstr]} rounds]
+             (str "https://app.vetd.com/b/rounds/" idstr))
+           (clojure.string/join "\n")))
+     {:org-id buyer-id})))
 
 (defn send-ask-question-req [product-id message round-id requirement-text buyer-id]
-  (com/sns-publish :customer-success
-                   "Ask a Question Request"
-                   (str "Ask a Question Request"
-                        "\nBuyer (Org): " (-> buyer-id auth/select-org-by-id :oname) ; buyer name
-                        "\nProduct: " (product-id->name product-id) ; product name
-                        (when round-id (str  "\nRound ID: " round-id
-                                             "\nRound Link: https://app.vetd.com/b/rounds/" (ut/base31->str round-id)))
-                        (when requirement-text (str  "\nRequirement: " requirement-text))
-                        "\nMessage:\n" message)))
+  (com/sns-publish
+   :customer-success
+   "Ask a Question Request"
+   (str "Ask a Question Request"
+        "\nBuyer (Org): " (-> buyer-id auth/select-org-by-id :oname) ; buyer name
+        "\nProduct: " (product-id->name product-id) ; product name
+        (when round-id (str  "\nRound ID: " round-id
+                             "\nRound Link: https://app.vetd.com/b/rounds/" (ut/base31->str round-id)))
+        (when requirement-text (str  "\nRequirement: " requirement-text))
+        "\nMessage:\n" message)
+   {:org-id buyer-id}))
 
 (defn send-prep-req
   [{:keys [to-org-id to-user-id from-org-id from-user-id prod-id] :as prep-req}]
@@ -334,24 +343,27 @@ Round URLs (if any):
         buyer-user-name (-> from-user-id auth/select-user-by-id :uname)
         product-id prod-id
         product-name (product-id->name prod-id)]
-    (journal/push-entry&sns-publish :customer-success
-                                    "PrePosal Request"
-                                    (format
-                                     "PrePosal Request
+    (do (journal/push-entry
+         {:jtype :preposal-request
+          :buyer-org-id from-org-id
+          :buyer-org-name buyer-org-name
+          :vendor-org-id to-org-id
+          :user-id from-user-id
+          :user-name buyer-user-name
+          :product-id product-id
+          :product-name product-name})
+        (com/sns-publish
+         :customer-success
+         "PrePosal Request"
+         (format
+          "PrePosal Request
 Buyer (Org): '%s'
 Buyer User: '%s'
 Product: '%s'"
-                                     (-> from-org-id auth/select-org-by-id :oname) ; buyer org name
-                                     (-> from-user-id auth/select-user-by-id :uname) ; buyer user name
-                                     (product-id->name prod-id))
-                                    {:jtype :preposal-request
-                                     :buyer-org-id from-org-id
-                                     :buyer-org-name buyer-org-name
-                                     :vendor-org-id to-org-id
-                                     :user-id from-user-id
-                                     :user-name buyer-user-name
-                                     :product-id product-id
-                                     :product-name product-name})))
+          (-> from-org-id auth/select-org-by-id :oname) ; buyer org name
+          (-> from-user-id auth/select-user-by-id :uname) ; buyer user name
+          (product-id->name prod-id))
+         {:org-id from-org-id}))))
 
 (defn set-preposal-result [id result reason]
   "Set the result of a preposal (0 - rejected, nil - live)."
@@ -374,22 +386,23 @@ Product: '%s'"
                    buyer-org-name (:oname buyer)
                    buyer-org-id (:id buyer)
                    product-name (-> products first :pname)]
-               (journal/push-entry&sns-publish :customer-success
-                                               "Round Winner Declared"
-                                               (format
-                                                "Round Winner Declared
+               (do (journal/push-entry {:jtype :round-winner-declared
+                                        :buyer-org-name buyer-org-name
+                                        :buyer-org-id buyer-org-id
+                                        :round-id round-id
+                                        :product-id product-id
+                                        :product-name product-name})
+                   (com/sns-publish :customer-success
+                                    "Round Winner Declared"
+                                    (format
+                                     "Round Winner Declared
 Buyer: '%s'
 Product: '%s'
 Round URL: https://app.vetd.com/b/rounds/%s"
-                                                buyer-org-name
-                                                product-name
-                                                idstr)
-                                               {:jtype :round-winner-declared
-                                                :buyer-org-name buyer-org-name
-                                                :buyer-org-id buyer-org-id
-                                                :round-id round-id
-                                                :product-id product-id
-                                                :product-name product-name}))
+                                     buyer-org-name
+                                     product-name
+                                     idstr)
+                                    {:org-id (:id buyer)})))
              (catch Exception e
                (com/log-error e))))
       (when-let [id (->> [[:round-product {:round-id round-id
@@ -484,21 +497,22 @@ Round URL: https://app.vetd.com/b/rounds/%s"
                                                        ffirst)]
     (doseq [requirement requirements]
       (add-requirement-to-round requirement {:form-template-id req-form-template-id}))
-    (journal/push-entry&sns-publish :customer-success
-                                    "New Topics Added to Round"
-                                    (format
-                                     "New Topics Added to Round
+    (journal/push-entry {:jtype :new-topics-added-to-round
+                         :buyer-org-name (:oname buyer)
+                         :buyer-org-id (:id buyer)
+                         :round-id round-id
+                         :topics requirements})
+    (com/sns-publish :customer-success
+                     "New Topics Added to Round"
+                     (format
+                      "New Topics Added to Round
 Buyer: '%s'
 Topics: '%s'
 Round Link: https://app.vetd.com/b/rounds/%s"
-                                     (:oname buyer)
-                                     (s/join ", " requirements)
-                                     idstr)
-                                    {:jtype :new-topics-added-to-round
-                                     :buyer-org-name (:oname buyer)
-                                     :buyer-org-id (:id buyer)                                     
-                                     :round-id round-id
-                                     :topics requirements})
+                      (:oname buyer)
+                      (s/join ", " requirements)
+                      idstr)
+                     {:org-id (:id buyer)})
     {}))
 
 (defmethod com/handle-ws-inbound :b/round.set-topic-order
@@ -565,26 +579,29 @@ Round Link: https://app.vetd.com/b/rounds/%s"
                   vals
                   ffirst
                   :rounds)]
-    (journal/push-entry&sns-publish :customer-success
-                                    "Round Initiated"
-                                    (str "Round Initiated\n\n"
-                                         ;; add round link
-                                         (str "Round ID: " (-> round :id)
-                                              "\nRound Link: https://app.vetd.com/b/rounds/" (-> round :idstr)
-                                              "\nBuyer (Org): " (-> round :buyer :oname)
-                                              "\nProducts: " (->> round :products (map :pname) (s/join ", "))
-                                              "\nCategories: " (->> round :categories (map :cname) (s/join ", "))
-                                              (apply str
-                                                     (for [rp (-> round :init-doc :response-prompts)]
-                                                       (str "\n" (:prompt-prompt rp) ": "
-                                                            (->> rp :response-prompt-fields (map :sval) (s/join ", ")))))))
-                                    {:jtype :round-init-form-completed
-                                     :round-id (->> round :id)
-                                     :title (->> round :title)
-                                     :buyer-org-id (-> round :buyer :id)
-                                     :buyer-org-name (-> round :buyer :oname)
-                                     :product-names (->> round :products (map :pname))
-                                     :product-ids (->> round :products (map :id))})))
+    (do (journal/push-entry
+         {:jtype :round-init-form-completed
+          :round-id (->> round :id)
+          :title (->> round :title)
+          :buyer-org-id (-> round :buyer :id)
+          :buyer-org-name (-> round :buyer :oname)
+          :product-names (->> round :products (map :pname))
+          :product-ids (->> round :products (map :id))})
+        (com/sns-publish
+         :customer-success
+         "Round Initiated"
+         (str "Round Initiated\n\n"
+              ;; add round link
+              (str "Round ID: " (-> round :id)
+                   "\nRound Link: https://app.vetd.com/b/rounds/" (-> round :idstr)
+                   "\nBuyer (Org): " (-> round :buyer :oname)
+                   "\nProducts: " (->> round :products (map :pname) (s/join ", "))
+                   "\nCategories: " (->> round :categories (map :cname) (s/join ", "))
+                   (apply str
+                          (for [rp (-> round :init-doc :response-prompts)]
+                            (str "\n" (:prompt-prompt rp) ": "
+                                 (->> rp :response-prompt-fields (map :sval) (s/join ", ")))))))
+         {:org-id (-> round :buyer :id)}))))
 
 (defn set-round-products-order [round-id product-ids]
   (doall
@@ -633,7 +650,8 @@ Round Link: https://app.vetd.com/b/rounds/%s"
           "\nProduct(s) Added: ") (s/join ", " product-ids)
         ;; adding products that don't exist in our system yet
         (when-not (empty? product-names)
-          "\nNonexistent Product(s) Requested: ") (s/join ", " product-names)))
+          "\nNonexistent Product(s) Requested: ") (s/join ", " product-names))
+   {:org-id buyer-id})
   (when-not (empty? product-ids)
     (doseq [product-id product-ids]
       (rounds/invite-product-to-round product-id round-id))
@@ -649,19 +667,22 @@ Round Link: https://app.vetd.com/b/rounds/%s"
 (defmethod com/handle-ws-inbound :b/round.share
   [{:keys [round-id round-title email-addresses buyer-id]} ws-id sub-fn]
   (let [buyer-org-name (-> buyer-id auth/select-org-by-id :oname)]
-    (journal/push-entry&sns-publish :customer-success
-                                    "Share VetdRound"
-                                    (str "Share VetdRound"
-                                         "\n\nBuyer Name: " buyer-org-name
-                                         "\nRound ID: " round-id
-                                         "\nRound Link: https://app.vetd.com/b/rounds/" (ut/base31->str round-id)
-                                         "\nRound Title: " round-title
-                                         "\nEmail Addresses: " (s/join ", " email-addresses))
-                                    {:jtype :share-round
-                                     :round-id round-id
-                                     :email-addresses email-addresses
-                                     :buyer-org-id buyer-id
-                                     :buyer-org-name buyer-org-name}))
+    (do (journal/push-entry
+         {:jtype :share-round
+          :round-id round-id
+          :email-addresses email-addresses
+          :buyer-org-id buyer-id
+          :buyer-org-name buyer-org-name})
+        (com/sns-publish
+         :customer-success
+         "Share VetdRound"
+         (str "Share VetdRound"
+              "\n\nBuyer Name: " buyer-org-name
+              "\nRound ID: " round-id
+              "\nRound Link: https://app.vetd.com/b/rounds/" (ut/base31->str round-id)
+              "\nRound Title: " round-title
+              "\nEmail Addresses: " (s/join ", " email-addresses))
+         {:org-id buyer-id})))
   {})
 
 (defn insert-stack-item

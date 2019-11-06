@@ -44,10 +44,11 @@
     (catch Throwable e
       (com/log-error e))))
 
+;; don't use this
 (defn push-entry&sns-publish
   [topic subject message & [entry]]
-  (push-entry (merge {:topic topic
-                      :subject subject
-                      :message message}
-                     entry))
-  (com/sns-publish topic subject message))
+  (do (push-entry (merge {:topic topic
+                          :subject subject
+                          :message message}
+                         entry))
+      (com/sns-publish topic subject message)))
