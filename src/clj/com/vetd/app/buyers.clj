@@ -323,7 +323,8 @@ Round URLs (if any):
                    (str "Ask a Question Request"
                         "\nBuyer (Org): " (-> buyer-id auth/select-org-by-id :oname) ; buyer name
                         "\nProduct: " (product-id->name product-id) ; product name
-                        (when round-id (str  "\nRound ID: " round-id))
+                        (when round-id (str  "\nRound ID: " round-id
+                                             "\nRound Link: https://app.vetd.com/b/rounds/" (ut/base31->str round-id)))
                         (when requirement-text (str  "\nRequirement: " requirement-text))
                         "\nMessage:\n" message)))
 
