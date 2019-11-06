@@ -157,14 +157,14 @@
                                     vals
                                     ffirst)]
         (when-not suppress-notification?
-          (journal/push-entry&sns-publish :ui-misc
-                                          "User Added to Org"
-                                          (str uname " (user) was added to " oname " (org)")
-                                          {:jtype :user-added-to-org
-                                           :user-id user-id
-                                           :org-id org-id
-                                           :user-name uname
-                                           :org-name oname}))
+          (do (journal/push-entry {:jtype :user-added-to-org
+                                   :user-id user-id
+                                   :org-id org-id
+                                   :user-name uname
+                                   :org-name oname})
+              (com/sns-publish :ui-misc
+                               "User Added to Org"
+                               (str uname " (user) was added to " oname " (org)"))))
         [true inserted]))))
 
 (defn prepare-account-map
@@ -416,7 +416,7 @@
                     (map :gname)
                     (st/join ", "))
         buyer-name (-> buyer-id select-org-by-id :oname)]
-    (com/sns-publish :ui-misc
+    (com/sns-publish :customer-success
                      "Community Join Request"
                      (format
                       "Community Join Request
@@ -425,7 +425,8 @@ Groups That Exist: '%s'
 Groups That Don't Exist: '%s'"
                       buyer-name
                       gnames
-                      (st/join ", " (filter string? group-ids))))))
+                      (st/join ", " (filter string? group-ids)))
+                     {:org-id buyer-id})))
 
 ;; group-ids could include text
 (defmethod com/handle-ws-inbound :g/join-request

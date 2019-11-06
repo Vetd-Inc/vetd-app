@@ -249,6 +249,6 @@
 #_ (convert-ids->base31)
 
 ;; get up and running
-#_ (do (create-vendor-profiles 20000)
-       (create-product-profiles 50000)
+#_ (do (create-vendor-profiles 10000)
+       (create-product-profiles 20000)
        (convert-ids->base31))
