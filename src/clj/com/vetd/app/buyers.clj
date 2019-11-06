@@ -549,7 +549,7 @@ Round URL: https://app.vetd.com/b/rounds/%s"
   [doc-id]
   (let [round (-> [[:docs {:id doc-id}
                     [[:rounds
-                      [:id :title :created
+                      [:id :idstr :title :created
                        [:buyer [:id :oname]]
                        [:products [:id :pname]]
                        [:categories [:id :cname]]
@@ -565,16 +565,18 @@ Round URL: https://app.vetd.com/b/rounds/%s"
                   ffirst
                   :rounds)]
     (journal/push-entry&sns-publish :ui-misc
-                                    "Vendor Round Initiation Form Completed"
-                                    (str "Vendor Round Initiation Form Completed\n\n"
-                                         (str "Buyer (Org): " (-> round :buyer :oname)
-                                              "\nProducts: " (->> round :products (map :pname) (interpose ", ") (apply str))
-                                              "\nCategories: " (->> round :categories (map :cname) (interpose ", ") (apply str))
-                                              "\n-- Form Data --"
+                                    "Round Initiated"
+                                    (str "Round Initiated\n\n"
+                                         ;; add round link
+                                         (str "Round ID: " (-> round :id)
+                                              "\nRound Link: https://app.vetd.com/b/rounds/" (-> round :idstr)
+                                              "\nBuyer (Org): " (-> round :buyer :oname)
+                                              "\nProducts: " (->> round :products (map :pname) (s/join ", "))
+                                              "\nCategories: " (->> round :categories (map :cname) (s/join ", "))
                                               (apply str
                                                      (for [rp (-> round :init-doc :response-prompts)]
                                                        (str "\n" (:prompt-prompt rp) ": "
-                                                            (->> rp :response-prompt-fields (map :sval) (interpose ", ") (apply str)))))))
+                                                            (->> rp :response-prompt-fields (map :sval) (s/join ", ")))))))
                                     {:jtype :round-init-form-completed
                                      :round-id (->> round :id)
                                      :title (->> round :title)
