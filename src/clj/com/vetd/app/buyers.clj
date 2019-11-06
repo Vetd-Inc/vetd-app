@@ -489,7 +489,7 @@ Round URL: https://app.vetd.com/b/rounds/%s"
                                      "New Topics Added to Round
 Buyer: '%s'
 Topics: '%s'
-Round URL: https://app.vetd.com/b/rounds/%s"
+Round Link: https://app.vetd.com/b/rounds/%s"
                                      (:oname buyer)
                                      (s/join ", " requirements)
                                      idstr)
@@ -620,24 +620,19 @@ Round URL: https://app.vetd.com/b/rounds/%s"
 
 (defmethod com/handle-ws-inbound :b/round.add-products
   [{:keys [round-id product-ids product-names buyer-id]} ws-id sub-fn]
-  ;; notify about adding existing products
-  (when-not (empty? product-ids)
-    (com/sns-publish
-     :ui-misc
-     "Product(s) Added to Round"
-     (str "Product(s) Added to Round\n\n"
-          "Round ID: " round-id
-          "\nRound Link: https://app.vetd.com/b/rounds/" (ut/base31->str round-id)
-          "\nProduct(s) Added: " (s/join ", " product-ids))))
-  ;; notify about adding products that don't exist in our system yet
-  (when-not (empty? product-names)
-    (com/sns-publish
-     :ui-misc
-     "Nonexistent Product(s) Added to Round"
-     (str "Nonexistent Product(s) Added to Round\n\n"
-          "Round ID: " round-id
-          "\nRound Link: https://app.vetd.com/b/rounds/" (ut/base31->str round-id)
-          "\nNonexistent Product(s) Added: " (s/join ", " product-names))))
+  (com/sns-publish
+   :ui-misc
+   "Product(s) Added to Round"
+   (str "Product(s) Added to Round\n\n"
+        "Round ID: " round-id
+        "\nRound Link: https://app.vetd.com/b/rounds/" (ut/base31->str round-id)
+        "\nBuyer (Org): " (-> buyer-id auth/select-org-by-id :oname) ; buyer name
+        ;; adding existing products
+        (when-not (empty? product-ids)
+          "\nProduct(s) Added: ") (s/join ", " product-ids)
+        ;; adding products that don't exist in our system yet
+        (when-not (empty? product-names)
+          "\nNonexistent Product(s) Requested: ") (s/join ", " product-names)))
   (when-not (empty? product-ids)
     (doseq [product-id product-ids]
       (rounds/invite-product-to-round product-id round-id))
