@@ -386,9 +386,9 @@
                                         :style {:float "right"
                                                 :margin-right 4}}}]])
            req-prompt-text]
-          (if resp-text
-            (util/parse-md resp-text)
-            "Waiting for vendor response.")]
+          (if (s/blank? resp-text)
+            "Waiting for vendor response."
+            (util/parse-md resp-text))]
          (when-not read-only?
            [:> ui/ModalActions
             [:> ui/Form {:as "div"
