@@ -129,8 +129,10 @@
             {}
             paths)))
 
+;; prefill can be used to prefill the initiation form
+;; currently only :prompt-ids key is supported
 (defn insert-round
-  [buyer-id title]
+  [buyer-id title & [prefill]]
   (let [[id idstr] (ut/mk-id&str)]
     (-> (db/insert! :rounds
                     {:id id
@@ -138,6 +140,7 @@
                      :buyer_id buyer-id
                      :status "initiation"
                      :title title
+                     :initiation_form_prefill prefill
                      :created (ut/now-ts)
                      :updated (ut/now-ts)})
         first)))
@@ -188,31 +191,15 @@
 
 (defn create-round
   [buyer-id title eid etype prompt-ids product-ids]
-  (let [{:keys [id] :as r} (insert-round buyer-id title)]
+  (let [{:keys [id] :as r} (insert-round buyer-id title {:prompt-ids prompt-ids})]
     (case etype
       ;; TODO call sync-round-vendor-req-forms too, once we're ready
       :product (rounds/invite-product-to-round eid id) 
       :category (insert-round-category id eid)
       ;; TODO put this in a future?
       ;; hmmm the form template isn't created yet...
-      ;; :duplicate (let [req-form-template-id (-> [[:rounds {:id id}
-      ;;                                             [:req-form-template-id]]]
-      ;;                                           ha/sync-query
-      ;;                                           vals
-      ;;                                           ffirst
-      ;;                                           :req-form-template-id)]
-      ;;              (doseq [product-id product-ids]
-      ;;                (rounds/invite-product-to-round product-id id))
-      ;;              (doseq [prompt-id prompt-ids]
-      ;;                (do (docs/insert-form-template-prompt req-form-template-id prompt-id)
-      ;;                    (let [form-ids (docs/merge-template-to-forms req-form-template-id)
-      ;;                          doc-ids (->> [[:docs {:form-id form-ids}
-      ;;                                         [:id]]]
-      ;;                                       ha/sync-query
-      ;;                                       :docs
-      ;;                                       (map :id))]
-      ;;                      (doseq [doc-id doc-ids]
-      ;;                        (docs/auto-pop-missing-responses-by-doc-id doc-id))))))
+      :duplicate (doseq [product-id product-ids]
+                   (rounds/invite-product-to-round product-id id))
       nil)
     (try
       (let [{:keys [id buyer products categories] :as round}
@@ -619,7 +606,15 @@ Round Link: https://app.vetd.com/b/rounds/%s"
   [{:keys [id]} {:keys [round-id]}]
   (let [{form-template-id :id} (try (docs/create-form-template-from-round-doc round-id id)
                                     (catch Throwable t
-                                      (com/log-error t)))]
+                                      (com/log-error t)))
+        _ (println round-id)
+        initiation-form-prefill (-> [[:rounds {:id round-id}
+                                      [:initiation-form-prefill]]]
+                                    ha/sync-query
+                                    println
+                                    vals
+                                    ffirst
+                                    :initiation-form-prefill)]
     (try
       (db/update-any! {:id round-id
                        :doc_id id
@@ -630,7 +625,29 @@ Round Link: https://app.vetd.com/b/rounds/%s"
         (com/log-error t)))
     (try
       (rounds/sync-round-vendor-req-forms&docs round-id)
-      (catch Throwable t))    
+      (catch Throwable t))
+    (println initiation-form-prefill)
+    
+    ;; (let [req-form-template-id (-> [[:rounds {:id id}
+    ;;                                  [:req-form-template-id]]]
+    ;;                                ha/sync-query
+    ;;                                vals
+    ;;                                ffirst
+    ;;                                :req-form-template-id)]
+    ;;   (doseq [product-id product-ids]
+    ;;     (rounds/invite-product-to-round product-id id))
+    ;;   )
+    
+    ;; (doseq [prompt-id prompt-ids]
+    ;;   (do (docs/insert-form-template-prompt req-form-template-id prompt-id)
+    ;;       (let [form-ids (docs/merge-template-to-forms req-form-template-id)
+    ;;             doc-ids (->> [[:docs {:form-id form-ids}
+    ;;                            [:id]]]
+    ;;                          ha/sync-query
+    ;;                          :docs
+    ;;                          (map :id))]
+    ;;         (doseq [doc-id doc-ids]
+    ;;           (docs/auto-pop-missing-responses-by-doc-id doc-id)))))
     (try
       (notify-round-init-form-completed id)
       (catch Throwable t

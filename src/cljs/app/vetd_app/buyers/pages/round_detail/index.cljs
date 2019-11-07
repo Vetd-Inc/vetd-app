@@ -183,51 +183,49 @@
 (defn c-page []
   (let [org-id& (rf/subscribe [:org-id])
         round-idstr& (rf/subscribe [:round-idstr])
-        round-detail& (rf/subscribe (vetd-app.buyers.pages.round-detail.subs/mk-round-detail-gql @round-idstr& @org-id&))
         explainer-modal-showing?& (r/atom false)
         buyer?& (rf/subscribe [:b/round.buyer?])
         read-only?& (rf/subscribe [:b/round.read-only?])]
     (fn []
-      (if (= @round-detail& :loading)
-        [cc/c-loader]
-        (let [{:keys [status req-form-template round-product buyer] :as round}
-              (-> @round-detail& :rounds first)
-              
-              sorted-round-products (sort-round-products round-product)
-              show-top-scrollbar? (> (count sorted-round-products) 4)
-              ;; TODO refactor this system
-              _ (rf/dispatch [:b/set-buyer-name (:oname buyer)])
-              _ (rf/dispatch [:b/set-buyer-id (:id buyer)])
-              _ (rf/dispatch [:b/set-status status])]
-          [:<>
-           [:> ui/Container {:class "main-container"
-                             :style {:padding-top 0}}
-            [:div.container-with-sidebar.round-details
-             [:<> ;; sidebar margins (and detail container margins) are customized
-              [:div.sidebar {:style {:margin-right 0}}
-               [:div {:style {:padding "0 15px"}}
-                (if @buyer?&
-                  [bc/c-back-button {:on-click #(rf/dispatch [:b/nav-rounds])}
-                   "All VetdRounds"]
-                  [bc/c-back-button])]
-               (if @buyer?&
-                 (when (= status "in-progress")
+      (let [round-detail& (rf/subscribe
+                           (vetd-app.buyers.pages.round-detail.subs/mk-round-detail-gql @round-idstr& @org-id&))]
+        (if (= @round-detail& :loading)
+          [cc/c-loader]
+          (let [{:keys [status req-form-template round-product buyer] :as round}
+                (-> @round-detail& :rounds first)
+                
+                sorted-round-products (sort-round-products round-product)
+                show-top-scrollbar? (> (count sorted-round-products) 4)
+                ;; TODO refactor this system
+                _ (rf/dispatch [:b/set-buyer-name (:oname buyer)])
+                _ (rf/dispatch [:b/set-buyer-id (:id buyer)])
+                _ (rf/dispatch [:b/set-status status])]
+            [:<>
+             [:> ui/Container {:class "main-container"
+                               :style {:padding-top 0}}
+              [:div.container-with-sidebar.round-details
+               [:<> ;; sidebar margins (and detail container margins) are customized
+                [:div.sidebar {:style {:margin-right 0}}
+                 [:div {:style {:padding "0 15px"}}
+                  (if @buyer?&
+                    [bc/c-back-button {:on-click #(rf/dispatch [:b/nav-rounds])}
+                     "All VetdRounds"]
+                    [bc/c-back-button])]
+                 (if @buyer?&
+                   (when (= status "in-progress")
+                     [:> ui/Segment
+                      [grid/c-add-requirement-button round]
+                      [grid/c-add-product-button round]])
                    [:> ui/Segment
-                    [grid/c-add-requirement-button round]
-                    [grid/c-add-product-button round]])
-                 nil
-                 ;; TODO duplicate round button
-                 ;; [:> ui/Segment
-                 ;;  [bc/c-start-round-button {:etype :duplicate
-                 ;;                            :defaults round
-                 ;;                            :props {:fluid true}}]]
-                 )]
-              [:div.inner-container
-               [c-round
-                round req-form-template sorted-round-products show-top-scrollbar?
-                @read-only?& explainer-modal-showing?&]]]]]
-           (when (and (#{"in-progress" "complete"} status)
-                      (seq sorted-round-products))
-             [grid/c-round-grid
-              round req-form-template sorted-round-products
-              show-top-scrollbar? @read-only?&])])))))
+                    [bc/c-start-round-button {:etype :duplicate
+                                              :defaults round
+                                              :props {:fluid true}}]])]
+                [:div.inner-container
+                 [c-round
+                  round req-form-template sorted-round-products show-top-scrollbar?
+                  @read-only?& explainer-modal-showing?&]]]]]
+             (when (and (#{"in-progress" "complete"} status)
+                        (seq sorted-round-products))
+               [grid/c-round-grid
+                round req-form-template sorted-round-products
+                show-top-scrollbar? @read-only?&])]))))))

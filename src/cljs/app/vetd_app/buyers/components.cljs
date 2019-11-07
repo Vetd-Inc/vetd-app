@@ -739,7 +739,7 @@
        [:> ui/ModalHeader "Share VetdRound"]
        [:> ui/ModalContent
         [:p
-         "Share " [:strong round-title] " with someone outside your organization via email."]
+         "Share " [:strong round-title] " with someone via email."]
         [:> ui/Form {:as "div"
                      :style {:padding-bottom "1rem"}}
          [:> ui/Dropdown {:style {:width "100%"}
