@@ -96,7 +96,9 @@
                         "Integration"]}]]}])
 
 (defn c-round-initiation-form
-  [round-id]
+  [{round-id :id
+    round-product :round-product
+    :as round}]
   (let [goal (r/atom "")
         start-using (r/atom "")
         num-users (r/atom "")
@@ -106,20 +108,28 @@
         new-topic-options (r/atom [])
         topics (r/atom default-topics-terms)
         topics-explainer-modal-showing?& (r/atom false)
-        
-        products (r/atom [])
-        products-options& (r/atom []) ; options from search results + current values
-        products-search-query& (r/atom "")
+
         products-results->options (fn [products-results]
                                     (for [{:keys [id pname vendor]} products-results]
                                       {:key id
                                        :text (str pname
                                                   (when-not (= pname (:oname vendor))
                                                     (str " by " (:oname vendor))))
-                                       :value id}))        
+                                       :value id}))
+        products (r/atom (->> round-product
+                              (map (comp :id :product))
+                              distinct
+                              vec))
+        products-options& (r/atom (->> round-product
+                                       (map :product)
+                                       products-results->options))
+        products-search-query& (r/atom "")
+        
         
         bad-input& (rf/subscribe [:bad-input])]
-    (fn [round-id]
+    (fn [{round-id :id
+          round-product :round-product
+          :as round}]
       (let [products-results& (rf/subscribe
                                [:gql/q
                                 {:queries
@@ -213,6 +223,7 @@
            [:label "Are there specific products you want to include?"]
            [:> ui/Dropdown {:loading (= :loading @products-results&)
                             :options @products-options&
+                            :value @products
                             :placeholder "Search products..."
                             :search true
                             :selection true
@@ -229,7 +240,8 @@
                                               ui/as-dropdown-options
                                               (swap! products-options& concat)))
                             :onSearchChange (fn [_ this] (reset! products-search-query& (aget this "searchQuery")))
-                            :onChange (fn [_ this] (reset! products (.-value this)))}]]
+                            :onChange (fn [_ this]
+                                        (reset! products (.-value this)))}]]
           [:> ui/FormTextArea
            {:label "Is there any additional information you would like to provide? (optional)"
             :placeholder "E.g., we've been using XYZ product, but it doesn't have the ability to integrate with ABC system."

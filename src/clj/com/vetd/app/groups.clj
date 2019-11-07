@@ -2,14 +2,9 @@
   (:require [com.vetd.app.db :as db]
             [com.vetd.app.common :as com]
             [com.vetd.app.util :as ut]
-            [com.vetd.app.journal :as journal]            
+            [com.vetd.app.journal :as journal]
             [com.vetd.app.hasura :as ha]
-            [com.vetd.app.email-client :as ec]
-            [com.vetd.app.links :as l]
-            [clojure.string :as st]
-            [buddy.hashers :as bhsh]
-            [taoensso.timbre :as log]
-            [honeysql.core :as hs]))
+            [clojure.string :as st]))
 
 (defn select-groups-by-admins
   "Get all the groups of which any of org-ids is an admin."
@@ -56,16 +51,17 @@
                                       [:oname]]]
                                     ha/sync-query
                                     vals
-                                    ffirst)
-            _ (journal/push-entry&sns-publish :ui-misc
-                                              "Org Added to Community"
-                                              (str oname " (org) was added to " gname " (community)")
-                                              {:jtype :org-added-to-community
-                                               :org-id org-id
-                                               :group-id group-id
-                                               :group-name gname
-                                               :org-name oname})]
-        [true inserted]))))
+                                    ffirst)]
+        (do (journal/push-entry {:jtype :org-added-to-community
+                                 :org-id org-id
+                                 :group-id group-id
+                                 :group-name gname
+                                 :org-name oname})
+            (com/sns-publish :ui-misc
+                             "Org Added to Community"
+                             (str oname " (org) was added to "
+                                  gname " (community)"))
+            [true inserted])))))
 
 (defn delete-group-org-memb
   [group-org-memb-id]

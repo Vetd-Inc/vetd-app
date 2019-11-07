@@ -188,7 +188,7 @@
                  (for [product products]
                    ^{:key (:id product)}
                    [c-stack-item product top-products]))
-                "No organizations have added products to their stack yet.")))]]))))
+                "No popular products yet.")))]]))))
 
 (def ftype->icon
   {:round-init-form-completed "vetd vetd-colors"

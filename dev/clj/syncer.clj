@@ -12,7 +12,7 @@
 ;; this sucks. ws and alb not friends because no cookies -- Bill
 ;; Note: you can get the latest IP from:
 ;; AWS Console -> ECS -> vetd-app -> Tasks -> (choose any) -> Network -> Public IP
-(def prod-ip "100.26.20.130")
+(def prod-ip "52.91.157.43")
 
 (defn ws-on-closed []
   (println "ws-on-closed"))
@@ -101,7 +101,7 @@
                         :query {:queries
                                 [[:form-templates
                                   {:ftype ["vendor-profile" "product-profile"
-                                           "round-initiation"]
+                                           "preposal" "round-initiation"]
                                    :deleted nil}
                                   [:id
                                    :idstr

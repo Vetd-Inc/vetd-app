@@ -42,15 +42,16 @@
               (do ~@body))
          dc# @dc&#
          du# @du&#]
-     (future
+     (do
+       ;; future
        (doseq [d# dc#]
          (try
            (journal/push-entry (assoc d#
                                       :jtype (->> d#
-                                                 :dtype
-                                                 name
-                                                 (str "doc-created-")
-                                                 keyword)))
+                                                  :dtype
+                                                  name
+                                                  (str "doc-created-")
+                                                  keyword)))
            (catch Throwable e#))
          (handle-doc-creation d# ~handler-args))
        (doseq [d# du#]

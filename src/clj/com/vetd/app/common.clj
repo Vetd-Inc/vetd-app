@@ -63,30 +63,45 @@
                              :credentials-provider aws-creds-provider}))
 
 (def s3-client (aws/client {:api :s3
-                             :region "us-east-1"
-                             :credentials-provider aws-creds-provider-s3-writer}))
+                            :region "us-east-1"
+                            :credentials-provider aws-creds-provider-s3-writer}))
 
 (def topic->arn
   {:ui-misc "arn:aws:sns:us-east-1:744151627940:ui-misc"
    :ui-req-new-prod-cat "arn:aws:sns:us-east-1:744151627940:ui-req-new-prod-cat"
-   :ui-start-round "arn:aws:sns:us-east-1:744151627940:ui-start-round"})
+   :ui-start-round "arn:aws:sns:us-east-1:744151627940:ui-start-round"
+   :customer-success "arn:aws:sns:us-east-1:744151627940:customer-success"})
 
+;; config
+(def org-ids-suppress-sns
+  "org ids to suppress SNS, as strings"
+  #{"610687260958" ;; Vetd Test 1
+    ;; "2208512249632" ;; Vetd
+    })
+
+(defn org-id-suppress-sns?
+  "Should suppress SNS message for this org id?"
+  [org-id]
+  (boolean (org-ids-suppress-sns (str org-id))))
+
+;; TODO consider using a future (to speed up some frontend reactions)
 (defn sns-publish
   "Publishes new notification to AWS SNS.
   topic - keyword abbrev. for topic's ARN
   subject - notification Subject
   message - notification message body"
-  [topic subject message & [override-suppress?]]
+  [topic subject message & [{:keys [org-id]}]]
   (let [arg {:op :Publish
-                 :request {:TopicArn (topic->arn topic)
-                           :Subject subject
-                           :Message message}}]
-    (if (or (not @supress-sns?) override-suppress?)
+             :request {:TopicArn (topic->arn topic)
+                       :Subject subject
+                       :Message message}}]
+    (if-not (or @supress-sns?
+                (org-id-suppress-sns? org-id))
       (aws/invoke sns-client arg)
       ;; TODO make separate sns for dev
       (do (println "SNS PUBLISH SUPPRESSED")
           (clojure.pprint/pprint arg)
-          {} ; to ensure ws return gets triggered
+          {} ;; to ensure ws return gets triggered
           ))))
 
 
