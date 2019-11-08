@@ -1,6 +1,7 @@
 (ns vetd-app.buyers.pages.round-detail.initiation
   (:require [vetd-app.buyers.components :as bc]
             [vetd-app.common.components :as cc]
+            [vetd-app.buyers.pages.round-detail.subs :as round-subs]
             [vetd-app.ui :as ui]
             [vetd-app.util :as util]
             [vetd-app.docs :as docs]
@@ -86,45 +87,6 @@
                         "Easy to onboard"
                         "Integration"]}]]}])
 
-(def curated-topics-terms
-  [ ;; "preposal/pitch"
-   "preposal/pricing-estimate"
-   "product/cancellation-process"
-   "product/case-studies"
-   ;; "product/categories"
-   "product/clients"
-   "product/competitive-differentiator"
-   "product/competitors"
-   "product/data-security"
-   "product/demo"
-   ;; "product/description"
-   ;; "product/free-trial-terms"
-   "product/free-trial?"
-   "product/ideal-client"
-   "product/integrations"
-   "product/kpis"
-   ;; "product/logo"
-   "product/meeting-frequency"
-   "product/minimum-contract"
-   "product/num-clients"
-   "product/onboarding-estimated-time"
-   "product/onboarding-process"
-   "product/onboarding-team-involvement"
-   "product/payment-options"
-   "product/point-of-contact"
-   "product/price-range"
-   "product/pricing-model"
-   "product/reporting"
-   "product/roadmap"
-   "product/tagline"
-   ;; "product/website"
-   "vendor/employee-count"
-   "vendor/funding"
-   "vendor/headquarters"
-   ;; "vendor/logo"
-   ;; "vendor/website"
-   "vendor/year-founded"])
-
 (defn c-round-initiation-form
   [{round-id :id
     round-product :round-product
@@ -138,7 +100,7 @@
         prefill-prompt-ids (vec (map (comp str :id) (:prompts initiation-form-prefill)))
         topic-options (rf/subscribe [:gql/q
                                      {:queries
-                                      [[:prompts {:_where {:_or [{:term {:_in curated-topics-terms}}
+                                      [[:prompts {:_where {:_or [{:term {:_in round-subs/curated-topics-terms}}
                                                                  {:id {:_in prefill-prompt-ids}}]} 
                                                   :deleted nil
                                                   :_limit 500 ;; sanity check

@@ -157,6 +157,11 @@
                      :updated (ut/now-ts)})
         first)))
 
+;; Adding a topic (requirement) to a round after the round already is
+;; 'in-progress' is done by prompt term.
+;; However, it's treated differently when the round initiation form
+;; is first submitted: topics are added by prompt id.
+;; This function is used for in-progress rounds.
 (defn add-requirement-to-round
   "Add requirement to round by Round ID or by the form template ID of requirements form template."
   [requirement-term & [{:keys [round-id form-template-id]}]]
