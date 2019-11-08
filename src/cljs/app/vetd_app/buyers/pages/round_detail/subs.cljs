@@ -7,7 +7,7 @@
    {:queries
     [[:rounds {:idstr round-idstr
                :deleted nil}
-      [:id :idstr :created :status :title
+      [:id :idstr :created :status :title :initiation-form-prefill
        [:buyer
         [:id :oname]]
        ;; requirements (topics) form template

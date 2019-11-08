@@ -191,9 +191,10 @@
                            (vetd-app.buyers.pages.round-detail.subs/mk-round-detail-gql @round-idstr& @org-id&))]
         (if (= @round-detail& :loading)
           [cc/c-loader]
-          (let [{:keys [status req-form-template round-product buyer] :as round}
+          (let [{:keys [status req-form-template round-product buyer initiation-form-prefill] :as round}
                 (-> @round-detail& :rounds first)
-                
+
+                _ (println initiation-form-prefill)
                 sorted-round-products (sort-round-products round-product)
                 show-top-scrollbar? (> (count sorted-round-products) 4)
                 ;; TODO refactor this system

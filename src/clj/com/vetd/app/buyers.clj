@@ -606,15 +606,7 @@ Round Link: https://app.vetd.com/b/rounds/%s"
   [{:keys [id]} {:keys [round-id]}]
   (let [{form-template-id :id} (try (docs/create-form-template-from-round-doc round-id id)
                                     (catch Throwable t
-                                      (com/log-error t)))
-        _ (println round-id)
-        initiation-form-prefill (-> [[:rounds {:id round-id}
-                                      [:initiation-form-prefill]]]
-                                    ha/sync-query
-                                    println
-                                    vals
-                                    ffirst
-                                    :initiation-form-prefill)]
+                                      (com/log-error t)))]
     (try
       (db/update-any! {:id round-id
                        :doc_id id
@@ -626,28 +618,6 @@ Round Link: https://app.vetd.com/b/rounds/%s"
     (try
       (rounds/sync-round-vendor-req-forms&docs round-id)
       (catch Throwable t))
-    (println initiation-form-prefill)
-    
-    ;; (let [req-form-template-id (-> [[:rounds {:id id}
-    ;;                                  [:req-form-template-id]]]
-    ;;                                ha/sync-query
-    ;;                                vals
-    ;;                                ffirst
-    ;;                                :req-form-template-id)]
-    ;;   (doseq [product-id product-ids]
-    ;;     (rounds/invite-product-to-round product-id id))
-    ;;   )
-    
-    ;; (doseq [prompt-id prompt-ids]
-    ;;   (do (docs/insert-form-template-prompt req-form-template-id prompt-id)
-    ;;       (let [form-ids (docs/merge-template-to-forms req-form-template-id)
-    ;;             doc-ids (->> [[:docs {:form-id form-ids}
-    ;;                            [:id]]]
-    ;;                          ha/sync-query
-    ;;                          :docs
-    ;;                          (map :id))]
-    ;;         (doseq [doc-id doc-ids]
-    ;;           (docs/auto-pop-missing-responses-by-doc-id doc-id)))))
     (try
       (notify-round-init-form-completed id)
       (catch Throwable t
