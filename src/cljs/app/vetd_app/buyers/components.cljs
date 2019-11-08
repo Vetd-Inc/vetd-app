@@ -60,8 +60,7 @@
                                       eid
                                       (->> defaults
                                            :req-form-template
-                                           :prompts
-                                           (map :id))
+                                           :prompts)
                                       (->> defaults
                                            :round-product
                                            (map (comp :id :product)))])]

@@ -190,8 +190,8 @@
           (docs/auto-pop-missing-responses-by-doc-id doc-id))))))
 
 (defn create-round
-  [buyer-id title eid etype prompt-ids product-ids]
-  (let [{:keys [id] :as r} (insert-round buyer-id title {:prompt-ids prompt-ids})]
+  [buyer-id title eid etype prompts product-ids]
+  (let [{:keys [id] :as r} (insert-round buyer-id title {:prompts prompts})]
     (case etype
       ;; TODO call sync-round-vendor-req-forms too, once we're ready
       :product (rounds/invite-product-to-round eid id) 
@@ -435,10 +435,10 @@ Round URL: https://app.vetd.com/b/rounds/%s"
 ;; Start a round for either a Product or a Category
 ;; TODO record which user started round
 (defmethod com/handle-ws-inbound :b/start-round
-  [{:keys [buyer-id title etype eid prompt-ids product-ids]} ws-id sub-fn]
-  (create-round buyer-id title eid etype prompt-ids product-ids))
+  [{:keys [buyer-id title etype eid prompts product-ids]} ws-id sub-fn]
+  (create-round buyer-id title eid etype prompts product-ids))
 
-;; Request Preposal              TODO this can be refactored to something like :b/preposals.request
+;; Request Preposal    TODO this can be renamed to something like :b/preposals.request
 (defmethod com/handle-ws-inbound :b/create-preposal-req
   [{:keys [prep-req]} ws-id sub-fn]
   (send-prep-req prep-req)

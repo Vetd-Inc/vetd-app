@@ -2026,7 +2026,7 @@
    [[2019 11 7 00 00]
 
     [:alter-table {:schema :vetd
-                   :name :forms
+                   :name :rounds
                    :columns ;; used primarily for storing prompt-ids to prefill initiation form
                    {:add {:initiation_form_prefill [:jsonb]}}}]]])
 

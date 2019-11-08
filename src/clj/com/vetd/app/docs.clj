@@ -920,6 +920,13 @@
      :children (->> response-prompts first :fields
                     (map (fn [field] {:item field})))}))
 
+(defn get-prompts-by-id [id]
+  (-> [[:prompts
+        {:id id}
+        [:id]]]
+      ha/sync-query
+      :prompts))
+
 (defn get-prompts-by-sval [sval]
   (-> [[:prompts
         {:prompt sval} 
@@ -941,9 +948,8 @@
          (map (fn [{:keys [item]}]
                 {:item
                  (merge (-> item
-                            :sval
-                            ;; actually the prompt's term
-                            get-prompts-by-term
+                            :sval ;; the sval is actually the carrying over the prompt's id
+                            get-prompts-by-id
                             first)
                         (dissoc item :id))}))
          (group-by (comp nil? :id :item))
@@ -975,7 +981,7 @@
           :prompt-new [(tree-assoc-fn [item]
                                       (let [{:keys [sval idx]} item]
                                         [:item (-> sval
-                                                   ;; In frontend, new topics are given a fake term
+                                                   ;; In frontend, new topics are given a fake id
                                                    ;; like so: "new-topic/Topic Text That User Entered"
                                                    (s/replace #"new-topic/" "")
                                                    create-round-req-prompt&fields
