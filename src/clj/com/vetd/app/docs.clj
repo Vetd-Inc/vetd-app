@@ -949,7 +949,8 @@
                 {:item
                  (merge (-> item
                             :sval ;; the sval is actually the carrying over the prompt's id
-                            get-prompts-by-id
+                            (#(when-not (s/starts-with? % "new-topic/")
+                                (get-prompts-by-id %)))
                             first)
                         (dissoc item :id))}))
          (group-by (comp nil? :id :item))

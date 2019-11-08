@@ -135,11 +135,11 @@
         num-users (r/atom "")
         budget (r/atom "")
 
-        prefill-prompt-ids (vec (map :id (:prompts initiation-form-prefill)))
+        prefill-prompt-ids (vec (map (comp str :id) (:prompts initiation-form-prefill)))
         topic-options (rf/subscribe [:gql/q
                                      {:queries
                                       [[:prompts {:_where {:_or [{:term {:_in curated-topics-terms}}
-                                                                 {:id {:_in (map str prefill-prompt-ids)}}]} 
+                                                                 {:id {:_in prefill-prompt-ids}}]} 
                                                   :deleted nil
                                                   :_limit 500 ;; sanity check
                                                   :_order_by {:term :asc}} ;; a little easier to read
@@ -165,12 +165,17 @@
                                        products-results->options))
         products-search-query& (r/atom "")
         
-        
         bad-input& (rf/subscribe [:bad-input])]
     (fn [{round-id :id
           round-product :round-product
           :as round}]
-      (let [products-results& (rf/subscribe
+      (let [db-topic-options (if (= :loading @topic-options)
+                               []
+                               (map #(hash-map :key (str (:id %))
+                                               :text (:prompt %)
+                                               :value (str (:id %)))
+                                    (:prompts @topic-options)))
+            products-results& (rf/subscribe
                                [:gql/q
                                 {:queries
                                  [[:products {:_where
@@ -204,12 +209,7 @@
              [:> ui/Icon {:name "question circle"}]
              "Learn more about topics"]]
            [:> ui/Dropdown {:value @topics
-                            :options (concat (when-not (= :loading @topic-options)
-                                               (map #(hash-map :key (:id %)
-                                                               :text (:prompt %)
-                                                               :value (:id %))
-                                                    (:prompts @topic-options)))
-                                             @new-topic-options)
+                            :options (concat db-topic-options @new-topic-options)
                             :placeholder "Add topics..."
                             :search true
                             :selection true
@@ -229,11 +229,11 @@
                             :onChange
                             (fn [_ this]
                               (reset! topics
-                                      (let [db-topic-set (set (map :value @topic-options))
-                                            has-term? (some-fn db-topic-set              
-                                                               #(s/starts-with? % "new-topic/"))]
+                                      (let [db-topic-set (set (map :value db-topic-options))
+                                            needs-prefix-added? (some-fn db-topic-set              
+                                                                         #(s/starts-with? % "new-topic/"))]
                                         (->> (.-value this)
-                                             (map #(if (has-term? %)
+                                             (map #(if (needs-prefix-added? %)
                                                      %
                                                      (str "new-topic/" %)))))))}]]
           [:> ui/FormGroup {:widths "equal"}
