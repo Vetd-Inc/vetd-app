@@ -130,7 +130,7 @@
             paths)))
 
 ;; prefill can be used to prefill the initiation form
-;; currently only :prompt-ids key is supported
+;; currently only :prompts key is supported
 (defn insert-round
   [buyer-id title & [prefill]]
   (let [[id idstr] (ut/mk-id&str)]
