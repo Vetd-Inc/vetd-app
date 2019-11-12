@@ -307,8 +307,8 @@
   [field sub v]
   [(walk-result-sub-kw field sub v)
    (cond (and (map? v)
-              ;; :data is JSONB and shouldn't be walked
-              (not= sub :data)) (walk-result-sub-map field sub v)
+              ;; JSONB shouldn't be walked
+              (not (#{:data :initiation_form_prefill} sub))) (walk-result-sub-map field sub v)
          (sequential? v) (walk-result-sub-vec field sub v)
          :else (walk-result-sub-val field sub v))])
 

@@ -25,12 +25,13 @@
 (defn c-page []
   (let [org-id& (rf/subscribe [:org-id])
         round-idstr& (rf/subscribe [:round-idstr])
-        product-idstr& (rf/subscribe [:product-idstr])        
+        product-idstr& (rf/subscribe [:product-idstr])
         round-product& (rf/subscribe [:gql/sub
                                       {:queries
                                        [[:round-product {:round-id (util/base31->num @round-idstr&)
                                                          :product-id (util/base31->num @product-idstr&)}
-                                         [[:vendor-response-form-docs
+                                         [:id
+                                          [:vendor-response-form-docs
                                            [:id :title :doc-id :doc-title
                                             :ftype :fsubtype
                                             [:doc-from-org [:id :oname]]

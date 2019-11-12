@@ -56,13 +56,13 @@
 
 (rf/reg-event-fx
  :b/start-round
- (fn [{:keys [db]} [_ title etype eid prompt-ids product-ids]]
+ (fn [{:keys [db]} [_ title etype eid prompts product-ids]]
    {:ws-send {:payload {:cmd :b/start-round
                         :return {:handler :b/start-round-return}
                         :title title
                         :etype etype
                         :eid eid
-                        :prompt-ids prompt-ids
+                        :prompts prompts
                         :product-ids product-ids
                         :buyer-id (util/db->current-org-id db)}}
     :analytics/track {:event "Start"

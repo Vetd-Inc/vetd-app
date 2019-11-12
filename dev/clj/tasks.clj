@@ -213,9 +213,12 @@
   []
   (when (empty? @tables--convert-ids->base31&)
     (do (reset! tables--convert-ids->base31&
-                (->> (db/select-all-table-names-MZ "vetd")
-                     (mapv keyword)
-                     sort))
+                [:categories :doc_resp :docs :email_sent_log :enum_vals :enums :feed_events :form_prompt :form_template_prompt :form_templates :forms :group_discounts :group_org_memberships :groups :journal_entries :links :memberships :orgs :product_categories :products :prompt_fields :prompts :resp_fields :responses :round_category :round_product :rounds :users]
+                ;; I hardcoded the list above because some of tables didn't have id or idstr and would cause the process to fail
+                ;; (->> (db/select-all-table-names-MZ "vetd")
+                ;;      (mapv keyword)
+                ;;      sort)
+                )
         (reset! last-table--convert-ids->base31& nil)
         (reset! last-id--convert-ids->base31& 0)))
   (loop [[table-kw & tail] @tables--convert-ids->base31&

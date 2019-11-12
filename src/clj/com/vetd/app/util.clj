@@ -224,6 +224,7 @@
                (inc idx)
                (+ r d))))))
 
+;; this is might be a misnomer, i.e., should be num->base31
 (defn base31->str
   [v]
   (let [x (loop [v' v
