@@ -56,13 +56,13 @@
 
 (rf/reg-event-fx
  :b/start-round
- (fn [{:keys [db]} [_ title etype eid prompt-ids product-ids]]
+ (fn [{:keys [db]} [_ title etype eid prompts product-ids]]
    {:ws-send {:payload {:cmd :b/start-round
                         :return {:handler :b/start-round-return}
                         :title title
                         :etype etype
                         :eid eid
-                        :prompt-ids prompt-ids
+                        :prompts prompts
                         :product-ids product-ids
                         :buyer-id (util/db->current-org-id db)}}
     :analytics/track {:event "Start"
@@ -144,6 +144,32 @@
   [rounds selected-statuses]
   (filter #(selected-statuses (:status %)) rounds))
 
+(defn c-explainer []
+  [:> ui/Segment {:placeholder true
+                  :class "how-vetd-works"}
+   [:h2 "What's a VetdRound?"]
+   [:p {:style {:text-align "center"}}
+    "Easily compare vendors based on your specific needs, all without getting on a sales call."]
+   [:> ui/StepGroup {:class "round-status"
+                     :size "small"
+                     :widths 3
+                     :style {:user-select "none"}}
+    [:> ui/Step {:style {:cursor "inherit"}}
+     [:> ui/Icon {:name "wpforms"}]
+     [:> ui/StepContent
+      [:> ui/StepTitle "Initiation"]
+      [:> ui/StepDescription "Enter your product requirements, timeline, and any specific topics you want vendors to respond to."]]]
+    [:> ui/Step {:style {:cursor "inherit"}}
+     [:> ui/Icon {:name "chart bar"}]
+     [:> ui/StepContent
+      [:> ui/StepTitle "In Progress"]
+      [:> ui/StepDescription "Vetd will recommend top products to you and provide vendor responses to your topics for review."]]]
+    [:> ui/Step {:style {:cursor "inherit"}}
+     [:> ui/Icon {:name "check"}]
+     [:> ui/StepContent
+      [:> ui/StepTitle "Complete"]
+      [:> ui/StepDescription "Choose a winner after reviewing vendor responses and collaborating with your team on the options."]]]]])
+
 (defn c-page []
   (let [org-id& (rf/subscribe [:org-id])]
     (when @org-id&
@@ -188,7 +214,9 @@
                  [:> ui/GridRow
                   [:> ui/GridColumn {:computer 2 :mobile 0}]
                   [:> ui/GridColumn {:computer 12 :mobile 16}
-                   [:> ui/Segment {:placeholder true}
+                   [c-explainer]
+                   [:> ui/Segment {:placeholder true
+                                   :class "how-vetd-works"}
                     [:> ui/Header {:icon true}
                      [:> ui/Icon {:name "vetd"}]
                      "You don't have any active VetdRounds."]

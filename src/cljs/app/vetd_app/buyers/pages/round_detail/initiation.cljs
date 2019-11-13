@@ -1,6 +1,7 @@
 (ns vetd-app.buyers.pages.round-detail.initiation
   (:require [vetd-app.buyers.components :as bc]
             [vetd-app.common.components :as cc]
+            [vetd-app.buyers.pages.round-detail.subs :as round-subs]
             [vetd-app.ui :as ui]
             [vetd-app.util :as util]
             [vetd-app.docs :as docs]
@@ -8,15 +9,6 @@
             [reagent.format :as format]
             [re-frame.core :as rf]
             [clojure.string :as s]))
-
-;;;; Config
-;; topics that are selected by default in the Round Initiation Form
-(def default-topics-terms
-  []
-  ;; ["preposal/pricing-estimate"
-  ;;  "product/pricing-model"
-  ;;  "product/free-trial?"]
-  )
 
 ;;;; Events
 (rf/reg-event-fx
@@ -98,15 +90,25 @@
 (defn c-round-initiation-form
   [{round-id :id
     round-product :round-product
+    initiation-form-prefill :initiation-form-prefill
     :as round}]
   (let [goal (r/atom "")
         start-using (r/atom "")
         num-users (r/atom "")
         budget (r/atom "")
 
-        topic-options (rf/subscribe [:b/topics.data-as-dropdown-options])
+        prefill-prompt-ids (vec (map (comp str :id) (:prompts initiation-form-prefill)))
+        topic-options (rf/subscribe [:gql/q
+                                     {:queries
+                                      [[:prompts {:_where {:_or [{:term {:_in round-subs/curated-topics-terms}}
+                                                                 {:id {:_in prefill-prompt-ids}}]} 
+                                                  :deleted nil
+                                                  :_limit 500 ;; sanity check
+                                                  :_order_by {:term :asc}} ;; a little easier to read
+                                        [:id :prompt :term]]]}])
         new-topic-options (r/atom [])
-        topics (r/atom default-topics-terms)
+        ;; the ids of the selected topics
+        topics (r/atom prefill-prompt-ids)
         topics-explainer-modal-showing?& (r/atom false)
 
         products-results->options (fn [products-results]
@@ -125,12 +127,17 @@
                                        products-results->options))
         products-search-query& (r/atom "")
         
-        
         bad-input& (rf/subscribe [:bad-input])]
     (fn [{round-id :id
           round-product :round-product
           :as round}]
-      (let [products-results& (rf/subscribe
+      (let [db-topic-options (if (= :loading @topic-options)
+                               []
+                               (map #(hash-map :key (str (:id %))
+                                               :text (:prompt %)
+                                               :value (str (:id %)))
+                                    (:prompts @topic-options)))
+            products-results& (rf/subscribe
                                [:gql/q
                                 {:queries
                                  [[:products {:_where
@@ -164,7 +171,7 @@
              [:> ui/Icon {:name "question circle"}]
              "Learn more about topics"]]
            [:> ui/Dropdown {:value @topics
-                            :options (concat @topic-options @new-topic-options)
+                            :options (concat db-topic-options @new-topic-options)
                             :placeholder "Add topics..."
                             :search true
                             :selection true
@@ -184,11 +191,11 @@
                             :onChange
                             (fn [_ this]
                               (reset! topics
-                                      (let [db-topic-set (set (map :value @topic-options))
-                                            has-term? (some-fn db-topic-set              
-                                                               #(s/starts-with? % "new-topic/"))]
+                                      (let [db-topic-set (set (map :value db-topic-options))
+                                            needs-prefix-added? (some-fn db-topic-set              
+                                                                         #(s/starts-with? % "new-topic/"))]
                                         (->> (.-value this)
-                                             (map #(if (has-term? %)
+                                             (map #(if (needs-prefix-added? %)
                                                      %
                                                      (str "new-topic/" %)))))))}]]
           [:> ui/FormGroup {:widths "equal"}
@@ -220,7 +227,7 @@
                       :on-change #(reset! budget (-> % .-target .-value))}]
              [:> ui/Label {:basic true} " per year"]]]]
           [:> ui/FormField
-           [:label "Are there specific products you want to include?"]
+           [:label "Are there specific products you want to include in your VetdRound? (optional)"]
            [:> ui/Dropdown {:loading (= :loading @products-results&)
                             :options @products-options&
                             :value @products

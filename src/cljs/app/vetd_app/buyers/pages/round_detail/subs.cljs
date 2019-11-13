@@ -7,7 +7,7 @@
    {:queries
     [[:rounds {:idstr round-idstr
                :deleted nil}
-      [:id :idstr :created :status :title
+      [:id :idstr :created :status :title :initiation-form-prefill
        [:buyer
         [:id :oname]]
        ;; requirements (topics) form template
@@ -84,6 +84,7 @@
    (or (not buyer?)
        complete?)))
 
+
 (def curated-topics-terms
   [ ;; "preposal/pitch"
    "preposal/pricing-estimate"
@@ -123,7 +124,6 @@
    ;; "vendor/website"
    "vendor/year-founded"])
 
-;; TODO use this pattern elsewhere in app
 (def topics-gql
   [:gql/q
    {:queries

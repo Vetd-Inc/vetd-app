@@ -481,7 +481,7 @@
                               :form_template_id [:bigint]
                               :title [:text]
                               :subject [:bigint]                              
-                              :descr [:text]                              
+                              :descr [:text]
                               :notes [:text]
                               :ftype [:text]
                               :fsubtype [:text]
@@ -2021,7 +2021,14 @@
                               :org_id [:bigint]
                               :etype [:text]}
                     :owner :vetd
-                    :grants {:hasura [:SELECT]}}]]])
+                    :grants {:hasura [:SELECT]}}]]
+
+   [[2019 11 7 00 00]
+
+    [:alter-table {:schema :vetd
+                   :name :rounds
+                   :columns ;; used primarily for storing prompt-ids to prefill initiation form
+                   {:add {:initiation_form_prefill [:jsonb]}}}]]])
 
 
 #_(mig/mk-migration-files migrations
