@@ -368,6 +368,12 @@
                     :vetd :top_products_by_group]
            :fields [:top-products]
            :cols [:id :group_id]
+           :rel :one-many}
+
+          {:tables [:vetd :groups
+                    :vetd :recent_rounds_by_group]
+           :fields [:recent-rounds]
+           :cols [:id :group_id]
            :rel :one-many}]})
 
 

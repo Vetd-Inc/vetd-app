@@ -117,7 +117,7 @@
        title
        [:div {:style {:margin-top 3
                       :font-weight 400}} 
-        [:small (apply str (interpose ", " (map :pname products)))]]]
+        [:small (s/join ", " (map :pname products))]]]
       [bc/c-round-status status]]]))
 
 (defn c-status-filter-checkboxes

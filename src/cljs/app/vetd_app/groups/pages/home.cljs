@@ -190,6 +190,45 @@
                    [c-stack-item product top-products]))
                 "No popular products yet.")))]]))))
 
+(defn c-round
+  [round]
+  (println round)
+  (let [{:keys [id idstr created status title products]} round]
+    [:> ui/Item {:on-click #(rf/dispatch [:b/nav-round-detail idstr])}
+     [:> ui/ItemContent
+      [:> ui/ItemHeader title]
+      [:> ui/ItemExtra {:class "product-tags"}
+       (s/join ", " (map :pname products))]]]))
+
+(defn c-recent-rounds
+  [recent-rounds]
+  (let [group-ids& (rf/subscribe [:group-ids])
+        filter& (rf/subscribe [:groups.filter])]
+    (fn [recent-rounds]
+      (let [recent-round-ids (map :round-id recent-rounds)
+            selected-group-ids (:groups @filter&)
+            rounds-unordered @(rf/subscribe
+                               [:gql/q
+                                {:queries
+                                 [[:rounds {;; :id recent-round-ids
+                                            :_limit 10}
+                                   [:id :idstr :created :status :title
+                                    [:products {:ref-deleted nil}
+                                     [:pname]]]]]}])]
+        [:div.popular-products
+         [:h1 "Recent VetdRounds"]
+         [:> ui/ItemGroup {:class "results"}
+          (when-not (= :loading rounds-unordered)
+            (let [rounds (->> rounds-unordered
+                              :rounds
+                              (sort-by #(.indexOf recent-round-ids (:id %))))]
+              (if (seq rounds)
+                (doall
+                 (for [round rounds]
+                   ^{:key (:id round)}
+                   [c-round round]))
+                "No recent VetdRounds.")))]]))))
+
 (def ftype->icon
   {:round-init-form-completed "vetd vetd-colors"
    :round-winner-declared "trophy yellow"
@@ -392,6 +431,8 @@
                                   [:id :idstr :gname
                                    [:orgs
                                     [:id]]
+                                   [:recent-rounds {:_limit 15}
+                                    [:group-id :round-id]]
                                    ;; TODO put in separate gql and do single query for all selected-group-ids
                                    [:top-products {:_order_by {:count-stack-items :desc}
                                                    :_limit 15}
@@ -418,6 +459,10 @@
                                  :style {:padding-right 7}}
                [c-feed selected-groups]]
               [:> ui/GridColumn {:computer 7 :mobile 16}
+               [c-recent-rounds (->> selected-groups
+                                     (map :recent-rounds)
+                                     ;; needs distinct ?
+                                     flatten)]
                [c-popular-stack (->> selected-groups
                                      (map :top-products)
                                      ;; needs distinct ?
