@@ -762,6 +762,7 @@
 
 ;; TODO support list?=true / multiple values per field
 (defn fields->proc-tree
+  "Prepare fields for proc-tree"
   [resp-fields fields]
   (let [fields-by-fname (group-by :fname fields)]
     (vec (for [[k value] resp-fields]
@@ -775,6 +776,7 @@
                                               fsubtype))})))))
 
 (defn response-prompts->proc-tree
+  "Prepare response prompts for proc-tree"
   [{:keys [terms prompt-ids]} prompts]
   (let [responses (merge terms prompt-ids)
         grouped-prompts (-> (merge (group-by (comp keyword :term) prompts)
@@ -790,6 +792,7 @@
 
 ;; TODO set responses.subject
 (defn doc->proc-tree
+  "Prepare doc for proc-tree"
   [{:keys [data dtype dsubtype update-doc-id] :as d}]
   (if-let [{:keys [id ftype fsubtype prompts]} (doc->appliable--find-form d)]
     {:handler-args d
@@ -862,6 +865,7 @@
           :else (update agg :common conj [a b]))))
 
 (defn group-match
+  "Some kind of grouping multiplexer and diff'er"
   [a group-by-a-fn b group-by-b-fn]
   (let [grouped-a (->> a
                        (group-by group-by-a-fn)
@@ -1020,6 +1024,9 @@
     form-id))
 
 (defn merge-template-to-forms
+  "Find all prompts for a given form templates and upsert them to all
+  forms it has spawned. Use this to propoagate templates changes to
+  forms."
   [req-form-template-id]
   (let [prompts (->> [[:form-templates {:id req-form-template-id}
                        [[:prompts [:id :sort]]]]]
@@ -1064,6 +1071,7 @@
   (or jval dval nval sval))
 
 (defn select-reusable-response-fields
+  "Find existing response fields that can be reused for a new doc (round) based on author, recipient and which product is the subject."
   [subject from-org-id to-org-id prompt-rows]
   (let [prompt-ids (->> prompt-rows (map :prompt-id) distinct)
         prompt-terms (->> prompt-rows (map :prompt-term) distinct)
@@ -1100,8 +1108,8 @@
          (map #(assoc %
                       :value (find-prompt-field-value %))))))
 
-;; add doc_resp references to doc that point to reusable responses
 (defn reuse-responses
+  "add doc_resp references to doc that point to reusable responses"
   [doc-id responses]
   (doseq [{:keys [response-id]} responses]
     (insert-doc-response doc-id response-id)))

@@ -275,6 +275,7 @@
   (clj-kw->sql-field field))
 
 (defn walk-gql-query
+  "Walk a graphql query to do all sorts of manipulations."
   [root? [field a b]]
   (let [[args sub] (if (map? a)
                      [a b] [nil a])
@@ -289,6 +290,7 @@
       [field' subs'])))
 
 (defn walk-gql
+  "Walk a graphql query to do all sorts of manipulations."
   [{:keys [queries]}]
   {:queries (mapv (partial walk-gql-query true) queries)})
 
@@ -324,7 +326,7 @@
     :else v))
 
 (defn walk-result-sub-val-pair
-  "Walk the "
+  "Walk the.... sub value pair?"
   [field sub v]
   [(walk-result-sub-kw field sub v)
    (cond (and (map? v)
@@ -387,8 +389,9 @@
       (com/log-error e)
       false)))
 
-(defn send-terminate []
+(defn send-terminate
   "Send connection termination message to hasura"
+  []
   (let [{:keys [ws]} @cn&]
     (reset! cn& {:ws nil
                  :state :closed})
@@ -449,8 +452,8 @@
        :ackd true
        :closed false))))
 
-;; send the queued messages to hasura via the websocket connection
 (defn send-queue
+  "send the queued messages to hasura via the websocket connection"
   [ws]
   (try
     (when-let [msgs (-> queue&
@@ -464,19 +467,21 @@
       (com/log-error e)
       false)))
 
-;; add message to queue to be sent once a websocket connection to hasura is opened
-(defn add-to-queue [msg]
+(defn add-to-queue
+  "add message to queue to be sent once a websocket connection to hasura is opened"
+  [msg]
   (swap! queue& conj msg))
 
-;; try to send a message to hasura via websocket
-;; if websocket is closed, queue the message for later
-(defn try-send [{:keys [ws] :as cn} msg]
+(defn try-send
+  "Try to send a message to hasura via websocket. If websocket is
+  closed, queue the message for later"
+  [{:keys [ws] :as cn} msg]g
   (if (ensure-ws-setup cn)
     (ws-send ws msg)
     (add-to-queue msg)))
 
-;; register a subscription id to various tracking map atoms
 (defn register-sub-id
+  "register a subscription id to various tracking map atoms"
   [sub-id resp-fn info]
   (swap! sub-id->created-ts&
          assoc sub-id (ut/now))
@@ -485,8 +490,8 @@
   (swap! sub-id->resp-fn&
          assoc sub-id resp-fn))
 
-;; unregister a subscription id from various tracking map atoms
 (defn unregister-sub-id
+  "unregister a subscription id from various tracking map atoms"
   [sub-id]
   (swap! sub-id->created-ts&
          dissoc sub-id)
@@ -495,8 +500,8 @@
   (swap! sub-id->resp-fn&
          dissoc sub-id))
 
-;; respond to cljs client via websocket
 (defn respond-to-client
+  "respond to cljs client via websocket"
   [id msg]
   (try
     (when-let [f (@sub-id->resp-fn& (keyword id))]
@@ -531,16 +536,17 @@
   (respond-to-client id {:mtype :complete
                          :payload pdata}))
 
-;; unsubcribe a subscription by qualified subscription id
-(defn unsub [qual-sub-id]
+(defn unsub
+  "unsubcribe a subscription by qualified subscription id"
+  [qual-sub-id]
   (when (@sub-id->resp-fn& qual-sub-id)
     (try-send @cn&
               {:type (gql-msg-types-kw->str :stop)
                :id qual-sub-id})
     (unregister-sub-id qual-sub-id)))
 
-;; synchronously run a graphql query against hasura
 (defn sync-query
+  "synchronously run a graphql query against hasura"
   [queries]
   (try
     (let [r (-> @(ah/post env/hasura-http-url
