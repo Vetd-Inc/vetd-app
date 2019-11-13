@@ -227,7 +227,7 @@
                       :on-change #(reset! budget (-> % .-target .-value))}]
              [:> ui/Label {:basic true} " per year"]]]]
           [:> ui/FormField
-           [:label "Are there specific products you want to include?"]
+           [:label "Are there specific products you want to include in your VetdRound? (optional)"]
            [:> ui/Dropdown {:loading (= :loading @products-results&)
                             :options @products-options&
                             :value @products
