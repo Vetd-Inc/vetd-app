@@ -373,10 +373,11 @@
               (log/info "Starting scheduled-emailer")
               (reset! next-scheduled-event&
                       ;; find the next send time based on email sent log
-                      (calc-next-due-ts
-                       (or (some-> (last-email-sent "weekly-buyer-email") tick/date-time)
-                           ;; if never sent, the -1 day allows it to possibly send today (if Monday)
-                           (tick/- (now-) (tick/new-period 1 :days)))))
+                      (tick/instant
+                       (calc-next-due-ts
+                        (or (some-> (last-email-sent "weekly-buyer-email") tick/date-time)
+                            ;; if never sent, the -1 day allows it to possibly send today (if Monday)
+                            (tick/- (now-) (tick/new-period 1 :days))))))
               (while (not @com/shutdown-signal)
                 (let [event-time @next-scheduled-event&]
                   (if (tick/> (now-) event-time)
