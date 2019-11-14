@@ -1248,9 +1248,8 @@ $cell-height: 201px;
   }
 }
 
-.popular-products {
+.secondary-list {
   padding: 14px;
-  margin: 0 !important;
   background-image: radial-gradient(at center 100px, #f5f5f5 0px, #eee 120px);
   background-repeat: no-repeat;
   border-radius: 4px;
@@ -1276,7 +1275,11 @@ $cell-height: 201px;
         white-space: nowrap;
         text-overflow: ellipsis;
         overflow: hidden;
-        max-width: 133px;
+        max-width: 325px;
+
+        &.shorten {
+          max-width: 133px;
+        }
       }
       
       .product-logo {
@@ -1288,14 +1291,23 @@ $cell-height: 201px;
       }
 
       .extra {
-        margin-top: 11px;
+        margin-top: 0px;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        max-width: 325px;
 
-        .category-tag {
-          white-space: nowrap;
-          text-overflow: ellipsis;
-          overflow: hidden;
+        &.shorten {
+          margin-top: 11px;
           max-width: 133px;
         }
+      }
+
+      .product-list {
+        max-width: 325px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
       .community {
@@ -1475,7 +1487,7 @@ div.spinner i:nth-child(2) {
   -moz-user-select: inherit !important;
   -ms-user-select: inherit !important;
   user-select: inherit !important;
-}
+} 
 
 @media #{$mobile} {
   .collapsible:not(:active):not(:hover):not(:focus) {
@@ -1568,7 +1580,7 @@ div.spinner i:nth-child(2) {
           display: none !important;
         }
       }
-      .popular-products, .ui.steps .disabled.step, .stack {
+      .secondary-list, .ui.steps .disabled.step, .stack {
         background: #666 !important;
 
         h1, h2 {
