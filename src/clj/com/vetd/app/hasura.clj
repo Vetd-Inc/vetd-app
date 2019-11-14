@@ -128,7 +128,6 @@
 (defn mk-sql-field->clj-kw
   "Make mapping of sql field names to keywords"
   [fields]
-
   (into {}
         (for [f fields]
           [f (convert-kw f)])))
@@ -475,7 +474,7 @@
 (defn try-send
   "Try to send a message to hasura via websocket. If websocket is
   closed, queue the message for later"
-  [{:keys [ws] :as cn} msg]g
+  [{:keys [ws] :as cn} msg]
   (if (ensure-ws-setup cn)
     (ws-send ws msg)
     (add-to-queue msg)))
