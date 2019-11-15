@@ -297,7 +297,6 @@
                      (empty? @data&))
                 @loading?&)
           [cc/c-loader]
-          ;; class name is being re-used here, so it's a misnomer
           [:div.secondary-list {:style {:margin-bottom 14}}
            [:h1 "Recent VetdRounds"]
            [:> ui/ItemGroup {:class "results"}
@@ -308,7 +307,7 @@
                   ^{:key (:id round)}
                   [c-round round]))
                (if (= :loading rounds-details)
-                 [c-load-more {:event nil}] ;; dummy to make it less jarring
+                 [c-load-more {:event nil}] ;; dummy to make layout less jarring
                  (when (> (count recent-round-ids) @limit&)
                    [c-load-more {:event [:g/recent-rounds.limit.add 4]}]))]
               "No recent VetdRounds.")]])))))
