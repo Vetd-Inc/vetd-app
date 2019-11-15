@@ -246,7 +246,8 @@
                              "initiation" "Not yet initiated"
                              "in-progress" "In Progress"
                              "complete" "Complete")}]
-       (util/relative-datetime (.getTime (js/Date. created)))
+       (util/relative-datetime (.getTime (js/Date. created))
+                               {:trim-day-of-week? true})
        " by " (:oname buyer)]
       [:div.product-list (s/join ", " (map :pname products))]]]))
 

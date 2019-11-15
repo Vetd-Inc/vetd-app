@@ -20,11 +20,12 @@
   (.format (goog.i18n.NumberFormat. (.-DECIMAL goog.i18n.NumberFormat.Format)) n))
 
 (defn relative-datetime
-  [time-ms]
+  [time-ms & [{:keys [trim-day-of-week?]}]]
   (let [formatted-dt (goog.date.relative/formatPast time-ms)]
     (case formatted-dt
       "0 minutes ago" "Just Now"
-      "" (goog.date.relative/getDateString (js/Date. time-ms)) ;; was 2 weeks or more ago
+      "" (cond-> (goog.date.relative/getDateString (js/Date. time-ms))
+           trim-day-of-week? (#(subs % (+ 2 (.indexOf % ","))))) ;; was 2 weeks or more ago
       formatted-dt)))
 
 (defn db->current-org-id
