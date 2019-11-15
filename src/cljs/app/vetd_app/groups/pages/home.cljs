@@ -9,7 +9,10 @@
             [clojure.string :as s]))
 
 (def init-db
-  {:filter {:groups #{}}})
+  {:filter {:groups #{}}
+   :recent-rounds {:data []
+                   :limit 4
+                   :loading? true}})
 
 (rf/reg-event-fx
  :g/nav-home
@@ -23,20 +26,20 @@
  :g/route-home
  (fn [{:keys [db]}]
    {:db (assoc db :page :g/home)
-    :dispatch [:groups.filter.reset]}))
+    :dispatch [:g/home.filter.reset]}))
 
 (rf/reg-event-fx
- :groups.filter.add ;; group arg is "filter group" not community
+ :g/home.filter.add ;; group arg is "filter group" not community
  (fn [{:keys [db]} [_ group value]]
    {:db (update-in db [:groups :filter group] conj value)}))
 
 (rf/reg-event-fx
- :groups.filter.remove
+ :g/home.filter.remove
  (fn [{:keys [db]} [_ group value]]
    {:db (update-in db [:groups :filter group] disj value)}))
 
 (rf/reg-event-fx
- :groups.filter.reset
+ :g/home.filter.reset
  (fn [{:keys [db]}]
    (let [{:keys [memberships active-memb-id]} db]
      {:db (assoc-in db
@@ -48,6 +51,21 @@
                              :groups
                              (map :id)
                              set))})))
+
+(rf/reg-event-fx
+ :g/recent-rounds.data.set
+ (fn [{:keys [db]} [_ rounds]]
+   {:db (assoc-in db [:groups :recent-rounds :data] rounds)}))
+
+(rf/reg-event-fx
+ :g/recent-rounds.limit.add
+ (fn [{:keys [db]} [_ num-items]]
+   {:db (update-in db [:groups :recent-rounds :limit] + num-items)}))
+
+(rf/reg-event-fx
+ :g/recent-rounds.loading?.set
+ (fn [{:keys [db]} [_ loading?]]
+   {:db (assoc-in db [:groups :recent-rounds :loading?] loading?)}))
 
 (rf/reg-event-fx
  :g/join-request
@@ -68,27 +86,46 @@
 
 ;;;; Subscriptions
 (rf/reg-sub
- :groups
+ :g/home
  (fn [{:keys [groups]}] groups))
 
 (rf/reg-sub
- :groups.filter
- :<- [:groups]
- (fn [{:keys [filter]}]
-   filter))
+ :g/home.filter
+ :<- [:g/home]
+ (fn [{:keys [filter]}] filter))
+
+(rf/reg-sub
+ :g/home.recent-rounds
+ :<- [:g/home]
+ (fn [{:keys [recent-rounds]}] recent-rounds))
+
+(rf/reg-sub
+ :g/home.recent-rounds.data
+ :<- [:g/home.recent-rounds]
+ (fn [{:keys [data]}] data))
+
+(rf/reg-sub
+ :g/home.recent-rounds.limit
+ :<- [:g/home.recent-rounds]
+ (fn [{:keys [limit]}] limit))
+
+(rf/reg-sub
+ :g/home.recent-rounds.loading?
+ :<- [:g/home.recent-rounds]
+ (fn [{:keys [loading?]}] loading?))
 
 ;;;; Components
 (defn c-group-filter
   [group]
-  (let [filter& (rf/subscribe [:groups.filter])]
+  (let [filter& (rf/subscribe [:g/home.filter])]
     (fn [{:keys [id idstr gname orgs] :as group}]
       (let [num-orgs (count orgs)]
         [:> ui/Checkbox
          {:checked (-> @filter& :groups (contains? id) boolean)
           :on-click (fn [_ this]
                       (rf/dispatch [(if (.-checked this)
-                                      :groups.filter.add
-                                      :groups.filter.remove)
+                                      :g/home.filter.add
+                                      :g/home.filter.remove)
                                     :groups
                                     id]))
           :label {:children
@@ -123,8 +160,9 @@
     [:> ui/Item {:on-click #(rf/dispatch [:b/nav-product-detail product-idstr])}
      [bc/c-product-logo logo]
      [:> ui/ItemContent
-      [:> ui/ItemHeader pname]
-      [:> ui/ItemExtra {:class "product-tags"}
+      [:> ui/ItemHeader {:class "shorten"}
+       pname]
+      [:> ui/ItemExtra {:class "product-tags shorten"}
        [bc/c-categories product]]]
      [:div.community {:on-click #(rf/dispatch
                                   [:dispatch-stash.push :product-detail-loaded
@@ -154,7 +192,7 @@
 (defn c-popular-stack
   [top-products]
   (let [group-ids& (rf/subscribe [:group-ids])
-        filter& (rf/subscribe [:groups.filter])]
+        filter& (rf/subscribe [:g/home.filter])]
     (fn [top-products]
       (let [top-products-ids (map :product-id top-products)
             selected-group-ids (:groups @filter&)
@@ -176,7 +214,7 @@
                                       [:discounts {:id selected-group-ids
                                                    :ref-deleted nil}
                                        [:group-discount-descr :gname]]]]]}])]
-        [:div.popular-products
+        [:div.secondary-list
          [:h1 "Popular Products"]
          [:> ui/ItemGroup {:class "results"}
           (when-not (= :loading products-unordered)
@@ -189,6 +227,90 @@
                    ^{:key (:id product)}
                    [c-stack-item product top-products]))
                 "No popular products yet.")))]]))))
+
+(defn c-round
+  [round]
+  (let [{:keys [id idstr created status title buyer products]} round]
+    [:> ui/Item {:on-click #(rf/dispatch [:b/nav-round-detail idstr])}
+     [:> ui/ItemContent
+      [:> ui/ItemHeader title]
+      [:> ui/ItemExtra {:class "product-tags"
+                        :style {:margin-bottom 6}}
+       [:> ui/Icon {:name (case status
+                            "initiation" "wpforms" ;; this status is hidden anyways
+                            "in-progress" "chart bar"
+                            "complete" "check")
+                    :style {:margin-right 4}
+                    :title (case status
+                             ;; initiation status is hidden anyways
+                             "initiation" "Not yet initiated"
+                             "in-progress" "In Progress"
+                             "complete" "Complete")}]
+       (util/relative-datetime (.getTime (js/Date. created)))
+       " by " (:oname buyer)]
+      [:div.product-list (s/join ", " (map :pname products))]]]))
+
+(defn c-load-more
+  [{:keys [event]}]
+  [:> ui/Button {:on-click #(when event
+                              (rf/dispatch event))
+                 :color "lightgrey"
+                 :fluid true}
+   "View More"])
+
+(defn c-recent-rounds
+  [selected-group-ids]
+  (let [data& (rf/subscribe [:g/home.recent-rounds.data])
+        limit& (rf/subscribe [:g/home.recent-rounds.limit])
+        loading?& (rf/subscribe [:g/home.recent-rounds.loading?])]
+    (fn [selected-group-ids]
+      (let [groups->rounds @(rf/subscribe [:gql/sub
+                                           {:queries
+                                            [[:groups {:id selected-group-ids
+                                                       :deleted nil}
+                                              [:id
+                                               [:recent-rounds {:_limit (inc @limit&)}
+                                                [:group-id :round-id]]]]]}])
+            recent-round-ids (if (= :loading groups->rounds)
+                               nil
+                               (->> groups->rounds
+                                    :groups
+                                    (map :recent-rounds)
+                                    flatten
+                                    (map :round-id)))
+            rounds-details @(rf/subscribe
+                             [:gql/q
+                              {:queries
+                               [[:rounds {:_where {:id {:_in (map str recent-round-ids)}}
+                                          :_limit @limit&
+                                          :_order_by {:created :desc}}
+                                 [:id :idstr :created :status :title
+                                  [:buyer
+                                   [:oname]]
+                                  [:products {:ref-deleted nil}
+                                   [:pname]]]]]}])
+            _ (when-not (or (= :loading groups->rounds)
+                            (= :loading rounds-details))
+                (do (rf/dispatch [:g/recent-rounds.data.set (:rounds rounds-details)])
+                    (rf/dispatch [:g/recent-rounds.loading?.set false])))]
+        (if (or (and (= :loading groups->rounds)
+                     (empty? @data&))
+                @loading?&)
+          [cc/c-loader]
+          [:div.secondary-list {:style {:margin-bottom 14}}
+           [:h1 "Recent VetdRounds"]
+           [:> ui/ItemGroup {:class "results"}
+            (if (seq @data&)
+              [:<>
+               (doall
+                (for [round @data&]
+                  ^{:key (:id round)}
+                  [c-round round]))
+               (if (= :loading rounds-details)
+                 [c-load-more {:event nil}] ;; dummy to make layout less jarring
+                 (when (> (count recent-round-ids) @limit&)
+                   [c-load-more {:event [:g/recent-rounds.limit.add 4]}]))]
+              "No recent VetdRounds.")]])))))
 
 (def ftype->icon
   {:round-init-form-completed "vetd vetd-colors"
@@ -394,9 +516,9 @@
                                     [:id]]
                                    ;; TODO put in separate gql and do single query for all selected-group-ids
                                    [:top-products {:_order_by {:count-stack-items :desc}
-                                                   :_limit 15}
+                                                   :_limit 10}
                                     [:group-id :product-id :count-stack-items]]]]]}])
-        filter& (rf/subscribe [:groups.filter])]
+        filter& (rf/subscribe [:g/home.filter])]
     (fn []
       (if (= :loading @groups&)
         [cc/c-loader]
@@ -418,6 +540,7 @@
                                  :style {:padding-right 7}}
                [c-feed selected-groups]]
               [:> ui/GridColumn {:computer 7 :mobile 16}
+               [c-recent-rounds (:groups @filter&)]
                [c-popular-stack (->> selected-groups
                                      (map :top-products)
                                      ;; needs distinct ?

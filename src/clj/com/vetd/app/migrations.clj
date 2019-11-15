@@ -2028,7 +2028,30 @@
     [:alter-table {:schema :vetd
                    :name :rounds
                    :columns ;; used primarily for storing prompt-ids to prefill initiation form
-                   {:add {:initiation_form_prefill [:jsonb]}}}]]])
+                   {:add {:initiation_form_prefill [:jsonb]}}}]]
+
+   [[2019 11 13 0 0]
+
+    ;; VIEW: Recent Rounds By Group
+    ;; in-progress, or complete
+    ;; ordered by created
+    
+    [:create-or-replace-view {:schema :vetd
+                              :name :recent_rounds_by_group
+                              :honey {:select [[:gom.group_id :group_id]
+                                               [:r.id :round_id]]
+                                      :from [[:group_org_memberships :gom]]
+                                      :join [[:rounds :r]
+                                             [:and
+                                              [:= :r.buyer_id :gom.org_id]
+                                              [:= :r.deleted nil]
+                                              [:in :r.status (honeysql.core/raw "('in-progress', 'complete')")]]]
+                                      :group-by [:gom.group_id :r.id]
+                                      :order-by [[:r.created :desc]]}
+                              :owner :vetd
+                              :grants {:hasura [:SELECT]}}]]
+
+   ])
 
 
 #_(mig/mk-migration-files migrations

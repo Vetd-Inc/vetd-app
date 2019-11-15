@@ -1,0 +1,1 @@
+DROP VIEW IF EXISTS vetd.recent_rounds_by_group;

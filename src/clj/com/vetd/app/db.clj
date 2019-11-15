@@ -26,7 +26,7 @@
 
 
 #_
-(dotimes [_ 10]
+(dotimes [_ 3]
   (mig/rollback {:store :database
                  :db env/pg-db}))
 
