@@ -16,23 +16,30 @@
             [clj-time.coerce :as tc]
             clojure.edn))
 
-;; :pre-init :init-sent :ackd :closed
-
+;; websocket connection to hasura server
 (defonce cn& (atom {:ws nil
                     :state :closed}))
 
+;; Date of last keep-alive sent
 (def last-ka& (atom nil))
 
-;; TODO switch to channel??
+;; queue of requests that have accumulated while connection to hasura is closed
+;; These will be sent once a connection is opened
 (defonce queue& (atom []))
 
-#_ (def sub-id->resp-fn& (atom {}))
+;; Maps from Subscription ids to response functions
+;; Calling a response function will send a response to the cljs client
 (defonce sub-id->resp-fn& (atom {}))
 
+;; Maps from Subscription ids to timestamp of subscription creation
 (defonce sub-id->created-ts& (atom {}))
 
+;; Maps from Subscription ids to misc info used for monitoring
+;; Info is sent to honeycomb.io
 (defonce sub-id->info& (atom {}))
 
+;; Thread for transmitting monitoring data
+;; Does more than just subscripion count -- name is legacy
 (defonce sub-count-monitor (atom nil))
 
 (defn get-oldest-sub-age []
@@ -64,7 +71,9 @@
 #_
 (get-oldest-sub-age)
 
-(defn start-sub-count-monitor-thread []
+(defn start-sub-count-monitor-thread
+  "Monitor thread send monitoring data to honeycomb.io"
+  []
   (when (and env/prod?
              (nil? @sub-count-monitor))
     (reset! sub-count-monitor
@@ -84,6 +93,7 @@
 
 ;; https://github.com/apollographql/subscriptions-transport-ws/blob/faa219cff7b6f9873cae59b490da46684d7bea19/src/message-types.ts
 
+;; Various types of messages that can be used (sent/received) when communicating with hasura
 (def gql-msg-types-kw->str
   {:connection-init "connection_init"
    :connection-ack "connection_ack"
@@ -96,8 +106,8 @@
    :complete "complete"
    :stop "stop"})
 
+;; Uses map above to convert a received message type to a keyword
 (def gql-msg-types-str->kw (clojure.set/map-invert gql-msg-types-kw->str))
-
 
 (defn convert-kw
   [kw]
@@ -115,12 +125,16 @@
         (clojure.string/replace #"-" "_")
         keyword)))
 
-(defn mk-sql-field->clj-kw [fields]
+(defn mk-sql-field->clj-kw
+  "Make mapping of sql field names to keywords"
+  [fields]
   (into {}
         (for [f fields]
           [f (convert-kw f)])))
 
-(defn get-all-field-names []
+(defn get-all-field-names
+  "get all field names from db"
+  []
   (-> (concat (->> (db/select-distinct-col-names)
                    (map keyword))
               (->> hm/hasura-meta-cfg
@@ -136,20 +150,25 @@
                    (map reverse-convert-kw)))
       distinct))
 
+;; convert a sql field name to a keyword
 (def sql-field->clj-kw
   (try (mk-sql-field->clj-kw (get-all-field-names))
        (catch Throwable t
          (com/log-error t)
          {})))
 
+;; convert a keyword to a sql field name
 (def clj-kw->sql-field (clojure.set/map-invert sql-field->clj-kw))
 
-(defn walk-sql-field->clj-kw [v]
+(defn walk-sql-field->clj-kw
+  "walk a data structure, converting sql field names to keywords"
+  [v]
   (w/prewalk-replace sql-field->clj-kw v))
 
-(defn walk-clj-kw->sql-field [v]
+(defn walk-clj-kw->sql-field
+  "walk a data structure, converting keywords to sql field names"
+  [v]
   (w/prewalk-replace clj-kw->sql-field v))
-
 
 (defn smoosh [a b]
   (if (every? map? [a b])
@@ -255,6 +274,7 @@
   (clj-kw->sql-field field))
 
 (defn walk-gql-query
+  "Walk a graphql query to do all sorts of manipulations."
   [root? [field a b]]
   (let [[args sub] (if (map? a)
                      [a b] [nil a])
@@ -269,6 +289,7 @@
       [field' subs'])))
 
 (defn walk-gql
+  "Walk a graphql query to do all sorts of manipulations."
   [{:keys [queries]}]
   {:queries (mapv (partial walk-gql-query true) queries)})
 
@@ -304,6 +325,7 @@
     :else v))
 
 (defn walk-result-sub-val-pair
+  "Walk the.... sub value pair?"
   [field sub v]
   [(walk-result-sub-kw field sub v)
    (cond (and (map? v)
@@ -313,12 +335,14 @@
          :else (walk-result-sub-val field sub v))])
 
 (defn walk-result-recs
+  "Walk the records of a result pair for processing."
   [field rec]
   (->> (for [[k v] rec]
          (walk-result-sub-val-pair field k v))
        (into {})))
 
 (defn walk-result->entity-kw
+  "Return the entity keyword for a given field&records pair"
   [field recs]
   (-> field
       name
@@ -331,6 +355,7 @@
   field)
 
 (defn walk-result-field-recs-pair
+  "Walk a pair (field name and associated records) for processing"
   [root? field recs]
   [(if root?
      (walk-result->entity-kw field recs)
@@ -339,14 +364,19 @@
          recs)])
 
 (defn walk-result
+  "Walk a graphql result received from hasura to do all sorts of
+  processing and manipulation"
   [r]
   (->> (for [[k v] r]
          (walk-result-field-recs-pair true k v))
        (into {})))
 
+;; handle messages from graphql
 (defmulti handle-from-graphql (fn [{gtype :type}] (gql-msg-types-str->kw gtype)))
 
-(defn ws-send [ws msg]
+(defn ws-send
+  "Send message to hasura via websocket"
+  [ws msg]
   (try
     (ut/$- -> msg
            json/generate-string
@@ -358,7 +388,9 @@
       (com/log-error e)
       false)))
 
-(defn send-terminate []
+(defn send-terminate
+  "Send connection termination message to hasura"
+  []
   (let [{:keys [ws]} @cn&]
     (reset! cn& {:ws nil
                  :state :closed})
@@ -368,6 +400,7 @@
 #_(send-terminate)
 
 (defn send-init
+  "Send connection initialization message to hasura"
   [ws]
   (ws-send ws {:type (gql-msg-types-kw->str :connection-init)}))
 
@@ -385,7 +418,9 @@
 
 (declare ensure-ws-setup)
 
-(defn mk-ws []
+(defn mk-ws
+  "Make and open websocket to hasura"
+  []
   (log/info "hasura mk-ws")  
   (let [ws @(ah/websocket-client env/hasura-ws-url
                                  {:sub-protocols "graphql-ws"
@@ -402,6 +437,7 @@
 #_ (mk-ws)
 
 (defn ensure-ws-setup
+  "Ensure websocket to hasura is setup and open"
   [{:keys [ws state]}]
   (true?
    (if (or (nil? ws) (.isClosed ws))
@@ -416,6 +452,7 @@
        :closed false))))
 
 (defn send-queue
+  "send the queued messages to hasura via the websocket connection"
   [ws]
   (try
     (when-let [msgs (-> queue&
@@ -429,15 +466,21 @@
       (com/log-error e)
       false)))
 
-(defn add-to-queue [msg]
+(defn add-to-queue
+  "add message to queue to be sent once a websocket connection to hasura is opened"
+  [msg]
   (swap! queue& conj msg))
 
-(defn try-send [{:keys [ws] :as cn} msg]
+(defn try-send
+  "Try to send a message to hasura via websocket. If websocket is
+  closed, queue the message for later"
+  [{:keys [ws] :as cn} msg]
   (if (ensure-ws-setup cn)
     (ws-send ws msg)
     (add-to-queue msg)))
 
 (defn register-sub-id
+  "register a subscription id to various tracking map atoms"
   [sub-id resp-fn info]
   (swap! sub-id->created-ts&
          assoc sub-id (ut/now))
@@ -447,6 +490,7 @@
          assoc sub-id resp-fn))
 
 (defn unregister-sub-id
+  "unregister a subscription id from various tracking map atoms"
   [sub-id]
   (swap! sub-id->created-ts&
          dissoc sub-id)
@@ -456,6 +500,7 @@
          dissoc sub-id))
 
 (defn respond-to-client
+  "respond to cljs client via websocket"
   [id msg]
   (try
     (when-let [f (@sub-id->resp-fn& (keyword id))]
@@ -490,7 +535,9 @@
   (respond-to-client id {:mtype :complete
                          :payload pdata}))
 
-(defn unsub [qual-sub-id]
+(defn unsub
+  "unsubcribe a subscription by qualified subscription id"
+  [qual-sub-id]
   (when (@sub-id->resp-fn& qual-sub-id)
     (try-send @cn&
               {:type (gql-msg-types-kw->str :stop)
@@ -498,6 +545,7 @@
     (unregister-sub-id qual-sub-id)))
 
 (defn sync-query
+  "synchronously run a graphql query against hasura"
   [queries]
   (try
     (let [r (-> @(ah/post env/hasura-http-url
