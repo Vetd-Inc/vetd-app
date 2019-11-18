@@ -231,7 +231,7 @@
                                    (assoc si :renewal-date (str "on the "
                                                                 (ut/append-ordinal-suffix renewal-day-of-month)))
                                    (update-in si [:renewal-date] (comp str tick/date)))]
-                (update-in si-with-date [:price-amount] ut/->dollars-str))))))
+                (update-in si-with-date [:price-amount] #(some-> % ut/->dollars-str)))))))
 
 ;; active rounds are rounds that are "in-progress"
 (defn get-weekly-auto-email-data--active-rounds [org-id]
@@ -248,66 +248,66 @@
               (assoc round :num-products (count products))))))
 
 (defn get-weekly-auto-email-data--communities-num-new-discounts [group-id days-back]
-  (->> {:select [[:%count.gd.id :count]]
-        :from [[:group_discounts :gd]]
-        :where [:and
-                [:= :gd.deleted nil]
-                [:= :gd.group_id group-id]
-                [:> :gd.created
-                 (->> (tick/new-period days-back :days)
-                      (tick/- (now-))
-                      tick->ts
-                      java.sql.Timestamp.)]]}
-       db/hs-query
-       first
-       :count))
+(->> {:select [[:%count.gd.id :count]]
+      :from [[:group_discounts :gd]]
+      :where [:and
+              [:= :gd.deleted nil]
+              [:= :gd.group_id group-id]
+              [:> :gd.created
+               (->> (tick/new-period days-back :days)
+                    (tick/- (now-))
+                    tick->ts
+                    java.sql.Timestamp.)]]}
+     db/hs-query
+     first
+     :count))
 
 (defn get-weekly-auto-email-data--communities-num-new-orgs [group-id days-back]
-  (->> {:select [[:%count.gom.org_id :count]]
-        :from [[:group_org_memberships :gom]]
-        :where [:and
-                [:= :gom.deleted nil]
-                [:= :gom.group_id group-id]
-                [:> :gom.created
-                 (->> (tick/new-period days-back :days)
-                      (tick/- (now-))
-                      tick->ts
-                      java.sql.Timestamp.)]]}
-       db/hs-query
-       first
-       :count))
+(->> {:select [[:%count.gom.org_id :count]]
+      :from [[:group_org_memberships :gom]]
+      :where [:and
+              [:= :gom.deleted nil]
+              [:= :gom.group_id group-id]
+              [:> :gom.created
+               (->> (tick/new-period days-back :days)
+                    (tick/- (now-))
+                    tick->ts
+                    java.sql.Timestamp.)]]}
+     db/hs-query
+     first
+     :count))
 
 (defn get-weekly-auto-email-data--communities-num-new-stacks [group-id days-back]
-  ;; celwell: I can't say I fully understand this, but it seems to work
-  (-> {:select [[:%count.si.buyer_id :si-buyer-count]]
-       :from [[:group_org_memberships :gom]]
-       :join [[:stack_items :si]
-              [:and
-               [:= :si.buyer_id :gom.org_id]
-               [:= :si.deleted nil]]]
-       :where [:and
-               [:= :gom.deleted nil]
-               [:= :gom.group_id group-id]]
-       :group-by [:si.buyer_id]
-       :having [:> :%min.si.created
-                (->> (tick/new-period days-back :days)
-                     (tick/- (now-))
-                     tick->ts
-                     java.sql.Timestamp.)]}
-      db/hs-query
-      count))
+;; celwell: I can't say I fully understand this, but it seems to work
+(-> {:select [[:%count.si.buyer_id :si-buyer-count]]
+     :from [[:group_org_memberships :gom]]
+     :join [[:stack_items :si]
+            [:and
+             [:= :si.buyer_id :gom.org_id]
+             [:= :si.deleted nil]]]
+     :where [:and
+             [:= :gom.deleted nil]
+             [:= :gom.group_id group-id]]
+     :group-by [:si.buyer_id]
+     :having [:> :%min.si.created
+              (->> (tick/new-period days-back :days)
+                   (tick/- (now-))
+                   tick->ts
+                   java.sql.Timestamp.)]}
+    db/hs-query
+    count))
 
 (defn get-weekly-auto-email-data--communities
-  [group-id]
-  (let [{:keys [gname]} (->> [[:groups {:id group-id}
-                               [:gname]]]
-                             ha/sync-query
-                             vals
-                             ffirst)]
-    {:group-name gname
-     :num-new-discounts (get-weekly-auto-email-data--communities-num-new-discounts group-id 7)
-     :num-new-orgs (get-weekly-auto-email-data--communities-num-new-orgs group-id 7)
-     :num-new-stacks (get-weekly-auto-email-data--communities-num-new-stacks group-id 7)}))
+[group-id]
+(let [{:keys [gname]} (->> [[:groups {:id group-id}
+                             [:gname]]]
+                           ha/sync-query
+                           vals
+                           ffirst)]
+  {:group-name gname
+   :num-new-discounts (get-weekly-auto-email-data--communities-num-new-discounts group-id 7)
+   :num-new-orgs (get-weekly-auto-email-data--communities-num-new-orgs group-id 7)
+   :num-new-stacks (get-weekly-auto-email-data--communities-num-new-stacks group-id 7)}))
 
 (defn get-weekly-auto-email-data [user-id org-id oname uname]
   (let [group-ids (some->> [[:group-org-memberships {:org-id org-id}
