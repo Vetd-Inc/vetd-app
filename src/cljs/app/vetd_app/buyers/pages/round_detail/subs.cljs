@@ -16,14 +16,6 @@
          [:prompts {:ref-deleted nil
                     :_order_by {:sort :asc}}
           [:id :idstr :prompt :term :descr :sort]]]]
-       ;; round initiation form response
-       [:init-doc
-        [:id
-         [:response-prompts {:ref-deleted nil}
-          [:id :prompt-id :prompt-prompt :prompt-term
-           [:response-prompt-fields
-            [:id :prompt-field-fname :idx
-             :sval :nval :dval]]]]]]
        ;; products in the round
        [:round-product {:deleted nil
                         :_order_by {:sort :asc}}

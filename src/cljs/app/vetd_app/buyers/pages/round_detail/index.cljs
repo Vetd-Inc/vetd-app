@@ -54,10 +54,8 @@
 
 ;;;; Components
 (defn c-round-initiation
-  [{:keys [init-doc] :as round}]
-  (if init-doc
-    "You have already submitted your requirements." ; this should never show
-    [initiation/c-round-initiation-form round]))
+  [round]
+  [initiation/c-round-initiation-form round])
 
 (defn c-explainer-modal
   [modal-showing?&]
