@@ -26,18 +26,21 @@
             [:id :oname]]]]
          ;; requirements (topics) responses from vendors
          [:vendor-response-form-docs
-          [:id :title :doc-id :doc-title :ftype :fsubtype
+          [:id :doc-id :ftype :fsubtype
            [:response-prompts {:ref-deleted nil}
             [:id :prompt-id :prompt-prompt :prompt-term
              [:response-prompt-fields
               [:id :prompt-field-fname :idx :resp-id
                :sval :nval :dval]]
-             [:subject-of-response-prompt
-              {:deleted nil
-               :prompt-term "round.response/rating"}
-              [[:response-prompt-fields
-                {:deleted nil}
-                [:nval]]]]]]]]]]]]]}])
+             ;; temporarily ignoring this because we aren't properly using it
+             ;; and it just slows the response time down (adds about 50% time)
+             ;; [:subject-of-response-prompt
+             ;;  {:deleted nil
+             ;;   :prompt-term "round.response/rating"}
+             ;;  [[:response-prompt-fields
+             ;;    {:deleted nil}
+             ;;    [:nval]]]]
+             ]]]]]]]]]}])
 
 ;; (rf/reg-sub
 ;;  :b/round.data
