@@ -1,0 +1,1 @@
+CREATE INDEX idx_journal_entries_id ON vetd.journal_entries (id)

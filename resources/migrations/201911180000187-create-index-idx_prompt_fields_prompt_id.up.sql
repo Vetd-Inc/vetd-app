@@ -1,0 +1,1 @@
+CREATE INDEX idx_prompt_fields_prompt_id ON vetd.prompt_fields (prompt_id)

@@ -1,0 +1,1 @@
+CREATE INDEX idx_responses_prompt_id ON vetd.responses (prompt_id)

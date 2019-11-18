@@ -1,0 +1,1 @@
+CREATE INDEX idx_sessions_user_id ON vetd.sessions (user_id)

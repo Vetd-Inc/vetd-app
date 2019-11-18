@@ -1,0 +1,1 @@
+CREATE INDEX idx_unsubscribes_org_id ON vetd.unsubscribes (org_id)

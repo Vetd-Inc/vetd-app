@@ -1,0 +1,1 @@
+CREATE INDEX idx_journal_entries_jtype ON vetd.journal_entries (jtype)

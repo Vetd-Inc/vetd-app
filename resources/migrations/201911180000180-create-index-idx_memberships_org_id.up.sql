@@ -1,0 +1,1 @@
+CREATE INDEX idx_memberships_org_id ON vetd.memberships (org_id)

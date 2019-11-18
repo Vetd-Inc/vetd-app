@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS idx_groups_admin_org_id

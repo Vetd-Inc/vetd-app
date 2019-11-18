@@ -1,0 +1,1 @@
+CREATE INDEX idx_resp_fields_resp_id ON vetd.resp_fields (resp_id)

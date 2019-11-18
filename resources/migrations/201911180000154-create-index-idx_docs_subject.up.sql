@@ -1,0 +1,1 @@
+CREATE INDEX idx_docs_subject ON vetd.docs (subject)

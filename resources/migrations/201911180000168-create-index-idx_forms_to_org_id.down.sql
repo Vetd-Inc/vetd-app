@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS idx_forms_to_org_id

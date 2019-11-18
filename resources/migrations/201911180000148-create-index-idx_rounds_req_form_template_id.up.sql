@@ -1,0 +1,1 @@
+CREATE INDEX idx_rounds_req_form_template_id ON vetd.rounds (req_form_template_id)

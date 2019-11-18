@@ -1,0 +1,1 @@
+CREATE INDEX idx_prompts_term ON vetd.prompts (term)

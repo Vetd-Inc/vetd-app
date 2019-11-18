@@ -1,0 +1,1 @@
+CREATE INDEX idx_groups_id ON vetd.groups (id)

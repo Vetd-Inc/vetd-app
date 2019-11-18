@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS idx_round_product_round_id

@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS idx_links_key

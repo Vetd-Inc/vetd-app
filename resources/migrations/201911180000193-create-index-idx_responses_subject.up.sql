@@ -1,0 +1,1 @@
+CREATE INDEX idx_responses_subject ON vetd.responses (subject)

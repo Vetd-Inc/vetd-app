@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS idx_unsubscribes_user_id

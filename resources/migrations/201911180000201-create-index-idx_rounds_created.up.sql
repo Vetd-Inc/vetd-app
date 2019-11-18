@@ -1,0 +1,1 @@
+CREATE INDEX idx_rounds_created ON vetd.rounds (created)

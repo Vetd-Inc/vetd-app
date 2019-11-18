@@ -1,0 +1,1 @@
+CREATE INDEX idx_products_score ON vetd.products (score)

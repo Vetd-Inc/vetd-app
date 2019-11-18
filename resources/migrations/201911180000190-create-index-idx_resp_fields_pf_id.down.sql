@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS idx_resp_fields_pf_id

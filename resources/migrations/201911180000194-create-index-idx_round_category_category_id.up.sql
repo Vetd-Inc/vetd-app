@@ -1,0 +1,1 @@
+CREATE INDEX idx_round_category_category_id ON vetd.round_category (category_id)

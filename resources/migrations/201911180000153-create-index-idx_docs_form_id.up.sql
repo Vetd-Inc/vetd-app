@@ -1,0 +1,1 @@
+CREATE INDEX idx_docs_form_id ON vetd.docs (form_id)

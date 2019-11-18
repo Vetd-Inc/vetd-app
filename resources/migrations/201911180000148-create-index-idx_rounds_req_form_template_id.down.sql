@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS idx_rounds_req_form_template_id

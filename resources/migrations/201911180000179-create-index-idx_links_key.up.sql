@@ -1,0 +1,1 @@
+CREATE INDEX idx_links_key ON vetd.links (key)
