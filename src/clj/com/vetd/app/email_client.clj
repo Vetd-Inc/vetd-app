@@ -231,7 +231,7 @@
                                    (assoc si :renewal-date (str "on the "
                                                                 (ut/append-ordinal-suffix renewal-day-of-month)))
                                    (update-in si [:renewal-date] (comp str tick/date)))]
-                (update-in si-with-date [:price-amount] ut/->dollars-str))))))
+                (update-in si-with-date [:price-amount] #(some-> % ut/->dollars-str)))))))
 
 ;; active rounds are rounds that are "in-progress"
 (defn get-weekly-auto-email-data--active-rounds [org-id]
