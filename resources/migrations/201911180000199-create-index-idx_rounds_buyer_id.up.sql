@@ -1,0 +1,1 @@
+CREATE INDEX idx_rounds_buyer_id ON vetd.rounds (buyer_id)

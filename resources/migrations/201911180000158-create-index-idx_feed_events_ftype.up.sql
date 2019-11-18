@@ -1,0 +1,1 @@
+CREATE INDEX idx_feed_events_ftype ON vetd.feed_events (ftype)

@@ -1,0 +1,1 @@
+CREATE INDEX idx_memberships_user_id ON vetd.memberships (user_id)

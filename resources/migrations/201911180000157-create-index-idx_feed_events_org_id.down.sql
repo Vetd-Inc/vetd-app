@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS idx_feed_events_org_id

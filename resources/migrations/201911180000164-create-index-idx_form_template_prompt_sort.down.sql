@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS idx_form_template_prompt_sort

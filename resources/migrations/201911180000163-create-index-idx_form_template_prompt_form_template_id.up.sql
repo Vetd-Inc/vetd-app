@@ -1,0 +1,1 @@
+CREATE INDEX idx_form_template_prompt_form_template_id ON vetd.form_template_prompt (form_template_id)

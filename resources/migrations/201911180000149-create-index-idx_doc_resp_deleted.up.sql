@@ -1,0 +1,1 @@
+CREATE INDEX idx_doc_resp_deleted ON vetd.doc_resp (deleted)

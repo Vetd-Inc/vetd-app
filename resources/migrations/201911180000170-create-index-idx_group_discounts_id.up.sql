@@ -1,0 +1,1 @@
+CREATE INDEX idx_group_discounts_id ON vetd.group_discounts (id)

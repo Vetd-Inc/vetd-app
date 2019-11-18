@@ -1,0 +1,1 @@
+CREATE INDEX idx_prompt_fields_ftype ON vetd.prompt_fields (ftype)

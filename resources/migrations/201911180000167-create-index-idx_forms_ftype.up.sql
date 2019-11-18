@@ -1,0 +1,1 @@
+CREATE INDEX idx_forms_ftype ON vetd.forms (ftype)

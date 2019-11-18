@@ -1,0 +1,1 @@
+CREATE INDEX idx_round_product_product_id ON vetd.round_product (product_id)

@@ -1,0 +1,1 @@
+CREATE INDEX idx_docs_dtype ON vetd.docs (dtype)

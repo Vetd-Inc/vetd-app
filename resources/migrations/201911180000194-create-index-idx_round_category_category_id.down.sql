@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS idx_round_category_category_id

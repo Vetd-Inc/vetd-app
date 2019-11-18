@@ -1,0 +1,1 @@
+CREATE INDEX idx_rounds_status ON vetd.rounds (status)

@@ -6,7 +6,6 @@
             [vetd-app.buyers.pages.round-detail.grid :as grid]
             [vetd-app.ui :as ui]
             [vetd-app.util :as util]
-            [vetd-app.docs :as docs]
             [reagent.core :as r]
             [reagent.format :as format]
             [re-frame.core :as rf]
@@ -54,10 +53,8 @@
 
 ;;;; Components
 (defn c-round-initiation
-  [{:keys [init-doc] :as round}]
-  (if init-doc
-    "You have already submitted your requirements." ; this should never show
-    [initiation/c-round-initiation-form round]))
+  [round]
+  [initiation/c-round-initiation-form round])
 
 (defn c-explainer-modal
   [modal-showing?&]

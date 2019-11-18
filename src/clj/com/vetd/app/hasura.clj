@@ -297,7 +297,11 @@
   [v]
   (->> v
        walk-gql
-       dgql/graphql-query))
+       dgql/graphql-query
+       ;; debug: tap in with this to view final GraphQL query
+       ;; (#(do (println %)
+       ;;       %))
+       ))
 
 (defn walk-result-sub-kw [field sub v]
   (or (sql-field->clj-kw sub)
@@ -701,9 +705,9 @@
 ;; ws from client
 (defmethod com/handle-ws-inbound :graphql
   [{:keys [sub-id query admin? subscription? stop session-token] :as msg} ws-id resp-fn]
-  (def q1 query)
-  #_ (clojure.pprint/pprint q1)
-  #_(clojure.pprint/pprint msg)
+  ;; (def q1 query)
+  ;; (clojure.pprint/pprint q1)
+  ;; (clojure.pprint/pprint msg)
   (if (or stop
           (and admin? (admin-session? session-token))
           (some-> query :queries first (secure-gql? session-token)))

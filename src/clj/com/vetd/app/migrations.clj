@@ -2051,6 +2051,328 @@
                               :owner :vetd
                               :grants {:hasura [:SELECT]}}]]
 
+   [[2019 11 18 0 0]
+    
+    [:create-index {:idx-name :idx_rounds_req_form_template_id
+                    :schema :vetd
+                    :table :rounds
+                    :columns [:req_form_template_id]}]
+
+    [:create-index {:idx-name :idx_doc_resp_deleted
+                    :schema :vetd
+                    :table :doc_resp
+                    :columns [:deleted]}]
+
+    [:create-index {:idx-name :idx_doc_resp_doc_id
+                    :schema :vetd
+                    :table :doc_resp
+                    :columns [:doc_id]}]
+
+    [:create-index {:idx-name :idx_doc_resp_resp_id
+                    :schema :vetd
+                    :table :doc_resp
+                    :columns [:resp_id]}]
+
+    [:create-index {:idx-name :idx_docs_dtype
+                    :schema :vetd
+                    :table :docs
+                    :columns [:dtype]}]
+
+    [:create-index {:idx-name :idx_docs_form_id
+                    :schema :vetd
+                    :table :docs
+                    :columns [:form_id]}]
+
+    [:create-index {:idx-name :idx_docs_subject
+                    :schema :vetd
+                    :table :docs
+                    :columns [:subject]}]
+
+    [:create-index {:idx-name :idx_feed_events_id
+                    :schema :vetd
+                    :table :feed_events
+                    :columns [:id]}]
+
+    [:create-index {:idx-name :idx_feed_events_created
+                    :schema :vetd
+                    :table :feed_events
+                    :columns [:created]}]
+
+    [:create-index {:idx-name :idx_feed_events_org_id
+                    :schema :vetd
+                    :table :feed_events
+                    :columns [:org_id]}]
+
+    [:create-index {:idx-name :idx_feed_events_ftype
+                    :schema :vetd
+                    :table :feed_events
+                    :columns [:ftype]}]
+
+    [:create-index {:idx-name :idx_form_prompt_form_id
+                    :schema :vetd
+                    :table :form_prompt
+                    :columns [:form_id]}]
+
+    [:create-index {:idx-name :idx_form_prompt_prompt_id
+                    :schema :vetd
+                    :table :form_prompt
+                    :columns [:prompt_id]}]
+
+    [:create-index {:idx-name :idx_form_prompt_sort
+                    :schema :vetd
+                    :table :form_prompt
+                    :columns [:sort]}]
+
+    [:create-index {:idx-name :idx_form_template_prompt_prompt_id
+                    :schema :vetd
+                    :table :form_template_prompt
+                    :columns [:prompt_id]}]
+
+    [:create-index {:idx-name :idx_form_template_prompt_form_template_id
+                    :schema :vetd
+                    :table :form_template_prompt
+                    :columns [:form_template_id]}]
+
+    [:create-index {:idx-name :idx_form_template_prompt_sort
+                    :schema :vetd
+                    :table :form_template_prompt
+                    :columns [:sort]}]
+
+    [:create-index {:idx-name :idx_form_templates_ftype
+                    :schema :vetd
+                    :table :form_templates
+                    :columns [:ftype]}]
+
+    [:create-index {:idx-name :idx_forms_form_template_id
+                    :schema :vetd
+                    :table :forms
+                    :columns [:form_template_id]}]
+
+    [:create-index {:idx-name :idx_forms_ftype
+                    :schema :vetd
+                    :table :forms
+                    :columns [:ftype]}]
+
+    [:create-index {:idx-name :idx_forms_to_org_id
+                    :schema :vetd
+                    :table :forms
+                    :columns [:to_org_id]}]
+
+    [:create-index {:idx-name :idx_forms_from_org_id
+                    :schema :vetd
+                    :table :forms
+                    :columns [:from_org_id]}]
+
+    [:create-index {:idx-name :idx_group_discounts_id
+                    :schema :vetd
+                    :table :group_discounts
+                    :columns [:id]}]
+
+    [:create-index {:idx-name :idx_group_discounts_origin_id
+                    :schema :vetd
+                    :table :group_discounts
+                    :columns [:origin_id]}]
+
+    [:create-index {:idx-name :idx_group_org_memberships_id
+                    :schema :vetd
+                    :table :group_org_memberships
+                    :columns [:id]}]
+
+    [:create-index {:idx-name :idx_group_org_memberships_group_id
+                    :schema :vetd
+                    :table :group_org_memberships
+                    :columns [:group_id]}]
+
+    [:create-index {:idx-name :idx_group_org_memberships_org_id
+                    :schema :vetd
+                    :table :group_org_memberships
+                    :columns [:org_id]}]
+
+    [:create-index {:idx-name :idx_groups_admin_org_id
+                    :schema :vetd
+                    :table :groups
+                    :columns [:admin_org_id]}]
+
+    [:create-index {:idx-name :idx_groups_id
+                    :schema :vetd
+                    :table :groups
+                    :columns [:id]}]
+
+    [:create-index {:idx-name :idx_journal_entries_id
+                    :schema :vetd
+                    :table :journal_entries
+                    :columns [:id]}]
+
+    [:create-index {:idx-name :idx_journal_entries_jtype
+                    :schema :vetd
+                    :table :journal_entries
+                    :columns [:jtype]}]
+
+    [:create-index {:idx-name :idx_links_key
+                    :schema :vetd
+                    :table :links
+                    :columns [:key]}]
+
+    [:create-index {:idx-name :idx_memberships_org_id
+                    :schema :vetd
+                    :table :memberships
+                    :columns [:org_id]}]
+
+    [:create-index {:idx-name :idx_memberships_user_id
+                    :schema :vetd
+                    :table :memberships
+                    :columns [:user_id]}]
+
+    [:create-index {:idx-name :idx_product_categories_cat_id
+                    :schema :vetd
+                    :table :product_categories
+                    :columns [:cat_id]}]
+
+    [:create-index {:idx-name :idx_products_idstr
+                    :schema :vetd
+                    :table :products
+                    :columns [:idstr]}]
+
+    [:create-index {:idx-name :idx_products_score
+                    :schema :vetd
+                    :table :products
+                    :columns [:score]}]
+
+    [:create-index {:idx-name :idx_products_profile_score
+                    :schema :vetd
+                    :table :products
+                    :columns [:profile_score]}]
+
+    [:create-index {:idx-name :idx_prompt_fields_ftype
+                    :schema :vetd
+                    :table :prompt_fields
+                    :columns [:ftype]}]
+
+    [:create-index {:idx-name :idx_prompt_fields_prompt_id
+                    :schema :vetd
+                    :table :prompt_fields
+                    :columns [:prompt_id]}]
+
+    [:create-index {:idx-name :idx_prompt_fields_sort
+                    :schema :vetd
+                    :table :prompt_fields
+                    :columns [:sort]}]
+
+    [:create-index {:idx-name :idx_prompts_term
+                    :schema :vetd
+                    :table :prompts
+                    :columns [:term]}]
+
+    [:create-index {:idx-name :idx_resp_fields_pf_id
+                    :schema :vetd
+                    :table :resp_fields
+                    :columns [:pf_id]}]
+
+    [:create-index {:idx-name :idx_resp_fields_resp_id
+                    :schema :vetd
+                    :table :resp_fields
+                    :columns [:resp_id]}]
+
+    [:create-index {:idx-name :idx_responses_prompt_id
+                    :schema :vetd
+                    :table :responses
+                    :columns [:prompt_id]}]
+
+    [:create-index {:idx-name :idx_responses_subject
+                    :schema :vetd
+                    :table :responses
+                    :columns [:subject]}]
+
+    [:create-index {:idx-name :idx_round_category_category_id
+                    :schema :vetd
+                    :table :round_category
+                    :columns [:category_id]}]
+
+    [:create-index {:idx-name :idx_round_category_round_id
+                    :schema :vetd
+                    :table :round_category
+                    :columns [:round_id]}]
+
+    [:create-index {:idx-name :idx_round_product_product_id
+                    :schema :vetd
+                    :table :round_product
+                    :columns [:product_id]}]
+
+    [:create-index {:idx-name :idx_round_product_round_id
+                    :schema :vetd
+                    :table :round_product
+                    :columns [:round_id]}]
+
+    [:create-index {:idx-name :idx_round_product_sort
+                    :schema :vetd
+                    :table :round_product
+                    :columns [:sort]}]
+
+    [:create-index {:idx-name :idx_rounds_buyer_id
+                    :schema :vetd
+                    :table :rounds
+                    :columns [:buyer_id]}]
+
+    [:create-index {:idx-name :idx_rounds_status
+                    :schema :vetd
+                    :table :rounds
+                    :columns [:status]}]
+
+    [:create-index {:idx-name :idx_rounds_created
+                    :schema :vetd
+                    :table :rounds
+                    :columns [:created]}]
+
+    [:create-index {:idx-name :idx_sessions_user_id
+                    :schema :vetd
+                    :table :sessions
+                    :columns [:user_id]}]
+
+    [:create-index {:idx-name :idx_sessions_token
+                    :schema :vetd
+                    :table :sessions
+                    :columns [:token]}]
+
+    [:create-index {:idx-name :idx_stack_items_buyer_id
+                    :schema :vetd
+                    :table :stack_items
+                    :columns [:buyer_id]}]
+
+    [:create-index {:idx-name :idx_stack_items_id
+                    :schema :vetd
+                    :table :stack_items
+                    :columns [:id]}]
+
+    [:create-index {:idx-name :idx_stack_items_product_id
+                    :schema :vetd
+                    :table :stack_items
+                    :columns [:product_id]}]
+
+    [:create-index {:idx-name :idx_stack_items_status
+                    :schema :vetd
+                    :table :stack_items
+                    :columns [:status]}]
+
+    [:create-index {:idx-name :idx_unsubscribes_etype
+                    :schema :vetd
+                    :table :unsubscribes
+                    :columns [:etype]}]
+
+    [:create-index {:idx-name :idx_unsubscribes_org_id
+                    :schema :vetd
+                    :table :unsubscribes
+                    :columns [:org_id]}]
+
+    [:create-index {:idx-name :idx_unsubscribes_user_id
+                    :schema :vetd
+                    :table :unsubscribes
+                    :columns [:user_id]}]
+
+    [:create-index {:idx-name :idx_users_email
+                    :schema :vetd
+                    :table :users
+                    :columns [:email]}]]
+
    ])
 
 

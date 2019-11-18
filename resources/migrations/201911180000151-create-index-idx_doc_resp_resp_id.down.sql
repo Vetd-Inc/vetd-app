@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS idx_doc_resp_resp_id

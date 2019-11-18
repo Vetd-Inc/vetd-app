@@ -1,0 +1,1 @@
+CREATE INDEX idx_form_prompt_sort ON vetd.form_prompt (sort)

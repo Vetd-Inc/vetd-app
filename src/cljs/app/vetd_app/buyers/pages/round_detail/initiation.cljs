@@ -4,7 +4,6 @@
             [vetd-app.buyers.pages.round-detail.subs :as round-subs]
             [vetd-app.ui :as ui]
             [vetd-app.util :as util]
-            [vetd-app.docs :as docs]
             [reagent.core :as r]
             [reagent.format :as format]
             [re-frame.core :as rf]

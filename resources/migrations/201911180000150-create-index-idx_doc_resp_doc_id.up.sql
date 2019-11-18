@@ -1,0 +1,1 @@
+CREATE INDEX idx_doc_resp_doc_id ON vetd.doc_resp (doc_id)
