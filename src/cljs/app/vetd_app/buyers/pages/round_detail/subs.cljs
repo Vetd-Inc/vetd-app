@@ -22,9 +22,6 @@
         [:id :result :reason :sort
          [:product
           [:id :idstr :pname
-           [:docs {:dtype "preposal"    ; completed preposals
-                   :to-org-id org-id}
-            [:id :idstr]]
            [:vendor
             [:id :oname]]]]
          ;; requirements (topics) responses from vendors
