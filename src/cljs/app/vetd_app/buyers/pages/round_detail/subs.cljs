@@ -26,10 +26,7 @@
             [:id :oname]]]]
          ;; requirements (topics) responses from vendors
          [:vendor-response-form-docs
-          [:id :title :doc-id :doc-title
-           :ftype :fsubtype
-           [:doc-from-org [:id :oname]]
-           [:doc-to-org [:id :oname]]
+          [:id :title :doc-id :doc-title :ftype :fsubtype
            [:response-prompts {:ref-deleted nil}
             [:id :prompt-id :prompt-prompt :prompt-term
              [:response-prompt-fields
