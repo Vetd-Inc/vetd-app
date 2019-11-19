@@ -10,6 +10,9 @@
 
 (def init-db
   {:filter {:groups #{}}
+   :threads {:data []
+             :limit 4
+             :loading? true}
    :recent-rounds {:data []
                    :limit 4
                    :loading? true}})
@@ -25,7 +28,9 @@
 (rf/reg-event-fx
  :g/route-home
  (fn [{:keys [db]}]
-   {:db (assoc db :page :g/home)
+   {:db (assoc db
+               :page :g/home
+               :page-params {:fields-editing #{}})
     :dispatch [:g/home.filter.reset]}))
 
 (rf/reg-event-fx
@@ -51,6 +56,21 @@
                              :groups
                              (map :id)
                              set))})))
+
+(rf/reg-event-fx
+ :g/threads.data.set
+ (fn [{:keys [db]} [_ threads]]
+   {:db (assoc-in db [:groups :threads :data] threads)}))
+
+(rf/reg-event-fx
+ :g/threads.limit.add
+ (fn [{:keys [db]} [_ num-items]]
+   {:db (update-in db [:groups :threads :limit] + num-items)}))
+
+(rf/reg-event-fx
+ :g/threads.loading?.set
+ (fn [{:keys [db]} [_ loading?]]
+   {:db (assoc-in db [:groups :threads :loading?] loading?)}))
 
 (rf/reg-event-fx
  :g/recent-rounds.data.set
@@ -93,6 +113,26 @@
  :g/home.filter
  :<- [:g/home]
  (fn [{:keys [filter]}] filter))
+
+(rf/reg-sub
+ :g/home.threads
+ :<- [:g/home]
+ (fn [{:keys [threads]}] threads))
+
+(rf/reg-sub
+ :g/home.threads.data
+ :<- [:g/home.threads]
+ (fn [{:keys [data]}] data))
+
+(rf/reg-sub
+ :g/home.threads.limit
+ :<- [:g/home.threads]
+ (fn [{:keys [limit]}] limit))
+
+(rf/reg-sub
+ :g/home.threads.loading?
+ :<- [:g/home.threads]
+ (fn [{:keys [loading?]}] loading?))
 
 (rf/reg-sub
  :g/home.recent-rounds
@@ -416,6 +456,83 @@
               [c-feed-event event (org-id->group-name (-> event :data :buyer-org-id))])]
            [:p {:style {:padding-bottom 15}}
             "No recent activity."])]))))
+(defn c-thread
+  [thread]
+  "here is a thread")
+
+(defn c-threads
+  [selected-group-ids]
+  (let [data& (rf/subscribe [:g/home.threads.data])
+        limit& (rf/subscribe [:g/home.threads.limit])
+        loading?& (rf/subscribe [:g/home.threads.loading?])
+        fields-editing& (rf/subscribe [:fields-editing])]
+    (fn [selected-group-ids]
+      (let [_ (rf/dispatch [:g/threads.loading?.set false])]
+        (if @loading?&
+          [cc/c-loader]
+          [bc/c-profile-segment {:title [:<>
+                                         (if (@fields-editing& "new-thread")
+                                           [:> ui/Label {:on-click #(rf/dispatch [:stop-edit-field "new-thread"])
+                                                         :as "a"
+                                                         :style {:float "right"}}
+                                            "Cancel"]
+                                           [:> ui/Label {:on-click #(rf/dispatch [:edit-field "new-thread"])
+                                                         :as "a"
+                                                         :color "teal"
+                                                         :style {:float "right"}}
+                                            [:> ui/Icon {:name "add"}]
+                                            "New Thread"])
+                                         [:> ui/Icon {:name "discussions"}] "Discussions"]}
+           [:div {:style {:width "100%"}}
+            (when (@fields-editing& "new-thread")
+              [:> ui/Form {:as "div"
+                           :style {:padding-bottom 15}}
+               [:> ui/FormField
+                (when (> (count selected-group-ids) 1)
+                  [:> ui/Dropdown {:options (for [group-id selected-group-ids]
+                                              {:key group-id
+                                               :text group-id
+                                               :value group-id})
+                                   :placeholder "Post to which community..."
+                                   :search false
+                                   :selection true
+                                   :multiple false
+                                   :selectOnBlur false
+                                   :selectOnNavigation true
+                                   :closeOnChange true
+                                   :allowAdditions false
+                                   ;; :onChange (fn [_ this]
+                                   ;;             (reset! value& (remove (set lc-org-names-already-in-group) (.-value this)))
+                                   ;;             (reset! new-orgs&
+                                   ;;                     (remove (comp not (set (js->clj (.-value this))) :oname)
+                                   ;;                             @new-orgs&)))
+                                   }])]
+               [:> ui/FormField
+                [:> ui/Input
+                 {:placeholder "New thread title..."
+                  :spellCheck true
+                  :autoFocus true
+                  ;; :on-change (fn [_ this] (reset! title& (.-value this)))
+                  }]]
+               [:> ui/FormField
+                [:> ui/TextArea {:placeholder "Message..."
+                                 :spellCheck true
+                                 ;; :onChange (fn [_ this] (reset! message (.-value this)))
+                                 }]]
+               
+               [:> ui/Button
+                {:color "teal"
+                 ;; :on-click (fn [] (rf/dispatch [:g/add-orgs-to-group.submit ]))
+                 }
+                "Post Thread"]])
+            (if (seq @data&)
+              [:> ui/Feed
+               (for [thread @data&]
+                 ^{:key (:id thread)}
+                 [c-thread thread])]
+              (when-not (@fields-editing& "new-thread")
+                [:p {:style {:padding-bottom 15}}
+                 "No discussion threads yet."]))]])))))
 
 (defn c-join-group-form
   [current-group-ids popup-open?&]
@@ -539,6 +656,7 @@
              [:> ui/GridRow
               [:> ui/GridColumn {:computer 9 :mobile 16
                                  :style {:padding-right 7}}
+               [c-threads (:groups @filter&)]
                [c-feed selected-groups]]
               [:> ui/GridColumn {:computer 7 :mobile 16}
                [c-recent-rounds (:groups @filter&)]
