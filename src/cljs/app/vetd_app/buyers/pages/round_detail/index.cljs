@@ -204,10 +204,7 @@
                [:<> ;; sidebar margins (and detail container margins) are customized
                 [:div.sidebar {:style {:margin-right 0}}
                  [:div {:style {:padding "0 15px"}}
-                  (if @buyer?&
-                    [bc/c-back-button {:on-click #(rf/dispatch [:b/nav-rounds])}
-                     "All VetdRounds"]
-                    [bc/c-back-button])]
+                  [bc/c-back-button]]
                  (if @buyer?&
                    (when (= status "in-progress")
                      [:> ui/Segment
