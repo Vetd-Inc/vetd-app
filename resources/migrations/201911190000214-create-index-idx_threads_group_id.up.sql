@@ -1,0 +1,1 @@
+CREATE INDEX idx_threads_group_id ON vetd.threads (group_id)

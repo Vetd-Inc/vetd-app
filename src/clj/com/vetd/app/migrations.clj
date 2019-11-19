@@ -2373,6 +2373,56 @@
                     :table :users
                     :columns [:email]}]]
 
+   [[2019 11 19 0 0]
+
+    [:create-table {:schema :vetd
+                    :name :threads
+                    :columns {:id [:bigint :NOT :NULL]
+                              :idstr [:text]
+                              :created [:timestamp :with :time :zone]
+                              :updated [:timestamp :with :time :zone]
+                              :deleted [:timestamp :with :time :zone]
+                              :group_id [:bigint]
+                              :user_id [:bigint]
+                              :org_id [:bigint]
+                              :title [:text]}
+                    :owner :vetd
+                    :grants {:hasura [:SELECT]}}]
+
+    [:create-index {:idx-name :idx_threads_id
+                    :schema :vetd
+                    :table :threads
+                    :columns [:id]}]
+
+    [:create-index {:idx-name :idx_threads_group_id
+                    :schema :vetd
+                    :table :threads
+                    :columns [:group_id]}]
+    
+    [:create-table {:schema :vetd
+                    :name :messages
+                    :columns {:id [:bigint :NOT :NULL]
+                              :idstr [:text]
+                              :created [:timestamp :with :time :zone]
+                              :updated [:timestamp :with :time :zone]
+                              :deleted [:timestamp :with :time :zone]
+                              :thread_id [:bigint]
+                              :user_id [:bigint]
+                              :org_id [:bigint]
+                              :text [:text]}
+                    :owner :vetd
+                    :grants {:hasura [:SELECT]}}]
+
+    [:create-index {:idx-name :idx_messages_id
+                    :schema :vetd
+                    :table :messages
+                    :columns [:id]}]
+    
+    [:create-index {:idx-name :idx_messages_thread_id
+                    :schema :vetd
+                    :table :messages
+                    :columns [:thread_id]}]]   
+
    ])
 
 

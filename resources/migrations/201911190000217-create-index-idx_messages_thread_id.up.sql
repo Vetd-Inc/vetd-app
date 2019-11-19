@@ -1,0 +1,1 @@
+CREATE INDEX idx_messages_thread_id ON vetd.messages (thread_id)

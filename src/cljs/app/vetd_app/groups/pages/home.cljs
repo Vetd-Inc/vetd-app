@@ -104,6 +104,37 @@
            :title "Request Sent"
            :message "We'll be in touch via email with next steps shortly."}}))
 
+(rf/reg-event-fx
+ :g/threads.create.submit
+ (fn [{:keys [db]} [_ {:keys [group-id title message] :as input}]]
+   (cfx/validated-dispatch-fx db
+                              [:g/threads.create input]
+                              #(cond
+                                 (s/blank? group-id) [:thread-title "Please select a community to post to."]
+                                 (s/blank? title) [:thread-title "Please enter a title for your thread."]
+                                 (s/blank? message) [:message "Please enter a message."]
+                                 :else nil))))
+
+(rf/reg-event-fx
+ :g/threads.create
+ (fn [{:keys [db]} [_ {:keys [group-id title message] :as input}]]
+   {:ws-send {:payload {:cmd :g/threads.create
+                        :return {:handler :g/threads.create.return}
+                        :group-id group-id
+                        :title title
+                        :message message
+                        :user-id (-> db :user :id)
+                        :org-id (-> db :org-id)}}
+    :analytics/track {:event "Create Thread"
+                      :props {:category "Discussions"}}}))
+
+(rf/reg-event-fx
+ :g/threads.create.return
+ (fn [{:keys [db]}]
+   {:toast {:type "success"
+            :title "Discussion thread posted!"}
+    :dispatch [:stop-edit-field "new-thread"]}))
+
 ;;;; Subscriptions
 (rf/reg-sub
  :g/home
@@ -461,12 +492,16 @@
   "here is a thread")
 
 (defn c-threads
-  [selected-group-ids]
+  [groups]
   (let [data& (rf/subscribe [:g/home.threads.data])
         limit& (rf/subscribe [:g/home.threads.limit])
         loading?& (rf/subscribe [:g/home.threads.loading?])
-        fields-editing& (rf/subscribe [:fields-editing])]
-    (fn [selected-group-ids]
+        fields-editing& (rf/subscribe [:fields-editing])
+        bad-input& (rf/subscribe [:bad-input])
+        target-group-id& (r/atom (:id (first groups)))
+        thread-title& (r/atom "")
+        message& (r/atom "")]
+    (fn [groups]
       (let [_ (rf/dispatch [:g/threads.loading?.set false])]
         (if @loading?&
           [cc/c-loader]
@@ -487,12 +522,13 @@
             (when (@fields-editing& "new-thread")
               [:> ui/Form {:as "div"
                            :style {:padding-bottom 15}}
-               [:> ui/FormField
-                (when (> (count selected-group-ids) 1)
-                  [:> ui/Dropdown {:options (for [group-id selected-group-ids]
-                                              {:key group-id
-                                               :text group-id
-                                               :value group-id})
+               (when (> (count groups) 1)
+                 [:> ui/FormField {:error (= @bad-input& :target-group-id)}
+                  [:> ui/Dropdown {:options (for [{:keys [id gname]} groups]
+                                              {:key id
+                                               :text gname
+                                               :value id})
+                                   :default-value @target-group-id&
                                    :placeholder "Post to which community..."
                                    :search false
                                    :selection true
@@ -501,29 +537,23 @@
                                    :selectOnNavigation true
                                    :closeOnChange true
                                    :allowAdditions false
-                                   ;; :onChange (fn [_ this]
-                                   ;;             (reset! value& (remove (set lc-org-names-already-in-group) (.-value this)))
-                                   ;;             (reset! new-orgs&
-                                   ;;                     (remove (comp not (set (js->clj (.-value this))) :oname)
-                                   ;;                             @new-orgs&)))
-                                   }])]
-               [:> ui/FormField
+                                   :onChange (fn [_ this] (reset! target-group-id& (.-value this)))}]])
+               [:> ui/FormField {:error (= @bad-input& :thread-title)}
                 [:> ui/Input
                  {:placeholder "New thread title..."
                   :spellCheck true
-                  :autoFocus true
-                  ;; :on-change (fn [_ this] (reset! title& (.-value this)))
-                  }]]
-               [:> ui/FormField
+                  :autoFocus (not (> (count groups) 1))
+                  :on-change (fn [_ this] (reset! thread-title& (.-value this)))}]]
+               [:> ui/FormField {:error (= @bad-input& :message)}
                 [:> ui/TextArea {:placeholder "Message..."
                                  :spellCheck true
-                                 ;; :onChange (fn [_ this] (reset! message (.-value this)))
-                                 }]]
+                                 :onChange (fn [_ this] (reset! message& (.-value this)))}]]
                
                [:> ui/Button
                 {:color "teal"
-                 ;; :on-click (fn [] (rf/dispatch [:g/add-orgs-to-group.submit ]))
-                 }
+                 :on-click (fn [] (rf/dispatch [:g/threads.create.submit {:group-id @target-group-id&
+                                                                          :title @thread-title&
+                                                                          :message @message&}]))}
                 "Post Thread"]])
             (if (seq @data&)
               [:> ui/Feed
@@ -656,7 +686,7 @@
              [:> ui/GridRow
               [:> ui/GridColumn {:computer 9 :mobile 16
                                  :style {:padding-right 7}}
-               [c-threads (:groups @filter&)]
+               [c-threads selected-groups]
                [c-feed selected-groups]]
               [:> ui/GridColumn {:computer 7 :mobile 16}
                [c-recent-rounds (:groups @filter&)]
