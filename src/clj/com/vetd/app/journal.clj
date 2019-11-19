@@ -15,7 +15,7 @@
   (try
     (when env/prod?
       (anlytx/track analytics
-                    com/*user-id*
+                    (str com/*user-id*)
                     (name jtype)
                     event-props))
     (catch Throwable e
