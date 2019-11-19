@@ -374,6 +374,18 @@
                     :vetd :recent_rounds_by_group]
            :fields [:recent-rounds]
            :cols [:id :group_id]
+           :rel :one-many}
+          
+          {:tables [:vetd :threads
+                    :vetd :messages]
+           :fields [:messages]
+           :cols [:id :thread_id]
+           :rel :one-many}
+
+          {:tables [:vetd :users
+                    :vetd :messages]
+           :fields [:messages :user]
+           :cols [:id :user_id]
            :rel :one-many}]})
 
 

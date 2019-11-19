@@ -165,6 +165,16 @@ ul {
   -ms-user-select: none; /* Internet Explorer/Edge */
   user-select: none; /* Non-prefixed version, currently supported by Chrome and Opera */
 }
+.feed .avatar-initials {
+  width: 30px;
+  height: 30px;
+  margin-top: 10px;
+  margin-left: -3px;
+  padding-left: 4px;
+  font-size: 12px;
+  line-height: 30px;
+  letter-spacing: 2px;
+}
 .avatar-container {
   cursor: pointer;
   

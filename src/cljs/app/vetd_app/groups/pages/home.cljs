@@ -319,7 +319,7 @@
                              "complete" "Complete")}]
        (util/relative-datetime (.getTime (js/Date. created))
                                {:trim-day-of-week? true})
-       " by " (:oname buyer)]
+       " for " (:oname buyer)]
       [:div.product-list (s/join ", " (map :pname products))]]]))
 
 (defn c-load-more
@@ -488,8 +488,19 @@
            [:p {:style {:padding-bottom 15}}
             "No recent activity."])]))))
 (defn c-thread
-  [thread]
-  "here is a thread")
+  [{:keys [title created messages] :as thread}]
+  [:> ui/FeedEvent ;; {:on-click #(rf/dispatch event)}
+   [:> ui/FeedLabel
+    [cc/c-avatar-initials (:uname (:user (first messages))) ;; user-name
+     ]]
+   [:> ui/FeedContent
+    ;; (for [message messages]
+    ;;   ^{:key (:id message)}
+    ;;   (str message))
+    [:> ui/FeedSummary title]
+    [:> ui/FeedDate
+     (str (util/relative-datetime (.getTime (js/Date. created))) ;; " in " group-name
+          )]]])
 
 (defn c-threads
   [groups]
@@ -502,7 +513,20 @@
         thread-title& (r/atom "")
         message& (r/atom "")]
     (fn [groups]
-      (let [_ (rf/dispatch [:g/threads.loading?.set false])]
+      (let [threads @(rf/subscribe
+                      [:gql/sub
+                       {:queries
+                        [[:threads {:_where {:group_id {:_in (map (comp str :id) groups)}}
+                                    :_limit @limit&
+                                    :_order_by {:created :desc}}
+                          [:id :created :title :user-id :org-id :group-id
+                           [:messages {:deleted nil}
+                            [:id :created :text :org-id
+                             [:user
+                              [:id :uname]]]]]]]}])
+            _ (when-not (= :loading threads)
+                (do (rf/dispatch [:g/threads.data.set (:threads threads)])
+                    (rf/dispatch [:g/threads.loading?.set false])))]
         (if @loading?&
           [cc/c-loader]
           [bc/c-profile-segment {:title [:<>
