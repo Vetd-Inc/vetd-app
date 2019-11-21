@@ -386,6 +386,12 @@
                     :vetd :messages]
            :fields [:messages :user]
            :cols [:id :user_id]
+           :rel :one-many}
+
+          {:tables [:vetd :orgs
+                    :vetd :messages]
+           :fields [:messages :org]
+           :cols [:id :org_id]
            :rel :one-many}]})
 
 

@@ -12,7 +12,9 @@
   {:filter {:groups #{}}
    :threads {:data []
              :limit 4
-             :loading? true}
+             :loading? true
+             ;; ids of threads that are expanded to show the contained messages
+             :expanded-ids #{}}
    :recent-rounds {:data []
                    :limit 4
                    :loading? true}})
@@ -58,21 +60,6 @@
                              set))})))
 
 (rf/reg-event-fx
- :g/threads.data.set
- (fn [{:keys [db]} [_ threads]]
-   {:db (assoc-in db [:groups :threads :data] threads)}))
-
-(rf/reg-event-fx
- :g/threads.limit.add
- (fn [{:keys [db]} [_ num-items]]
-   {:db (update-in db [:groups :threads :limit] + num-items)}))
-
-(rf/reg-event-fx
- :g/threads.loading?.set
- (fn [{:keys [db]} [_ loading?]]
-   {:db (assoc-in db [:groups :threads :loading?] loading?)}))
-
-(rf/reg-event-fx
  :g/recent-rounds.data.set
  (fn [{:keys [db]} [_ rounds]]
    {:db (assoc-in db [:groups :recent-rounds :data] rounds)}))
@@ -103,6 +90,31 @@
   {:toast {:type "success"
            :title "Request Sent"
            :message "We'll be in touch via email with next steps shortly."}}))
+
+(rf/reg-event-fx
+ :g/threads.data.set
+ (fn [{:keys [db]} [_ threads]]
+   {:db (assoc-in db [:groups :threads :data] threads)}))
+
+(rf/reg-event-fx
+ :g/threads.limit.add
+ (fn [{:keys [db]} [_ num-items]]
+   {:db (update-in db [:groups :threads :limit] + num-items)}))
+
+(rf/reg-event-fx
+ :g/threads.loading?.set
+ (fn [{:keys [db]} [_ loading?]]
+   {:db (assoc-in db [:groups :threads :loading?] loading?)}))
+
+(rf/reg-event-fx
+ :g/home.threads.expand
+ (fn [{:keys [db]} [_ id]]
+   {:db (update-in db [:groups :threads :expanded-ids] conj id)}))
+
+(rf/reg-event-fx
+ :g/home.threads.collapse
+ (fn [{:keys [db]} [_ id]]
+   {:db (update-in db [:groups :threads :expanded-ids] disj id)}))
 
 (rf/reg-event-fx
  :g/threads.create.submit
@@ -164,6 +176,11 @@
  :g/home.threads.loading?
  :<- [:g/home.threads]
  (fn [{:keys [loading?]}] loading?))
+
+(rf/reg-sub
+ :g/home.threads.expanded-ids
+ :<- [:g/home.threads]
+ (fn [{:keys [expanded-ids]}] expanded-ids))
 
 (rf/reg-sub
  :g/home.recent-rounds
@@ -487,26 +504,49 @@
               [c-feed-event event (org-id->group-name (-> event :data :buyer-org-id))])]
            [:p {:style {:padding-bottom 15}}
             "No recent activity."])]))))
+
+(defn c-message
+  [{:keys [id text created user org] :as message}]
+  (let [{:keys [uname]} user
+        {:org-id id
+         :keys [oname]} org]
+    [:> ui/FeedEvent {:class "no-click"}
+     [:> ui/FeedLabel
+      [cc/c-avatar-initials uname]]
+     [:> ui/FeedContent
+      [:> ui/FeedSummary text]
+      [:> ui/FeedDate
+       (str (util/relative-datetime (.getTime (js/Date. created))) " by " uname " (" oname ")")]]]))
+
 (defn c-thread
-  [{:keys [title created messages] :as thread}]
-  [:> ui/FeedEvent ;; {:on-click #(rf/dispatch event)}
-   [:> ui/FeedLabel
-    [cc/c-avatar-initials (:uname (:user (first messages))) ;; user-name
-     ]]
-   [:> ui/FeedContent
-    ;; (for [message messages]
-    ;;   ^{:key (:id message)}
-    ;;   (str message))
-    [:> ui/FeedSummary title]
-    [:> ui/FeedDate
-     (str (util/relative-datetime (.getTime (js/Date. created))) ;; " in " group-name
-          )]]])
+  [{:keys [id title created messages] :as thread} expanded?]
+  (let [ ;; the root message of the thread is the message that the thread was started with
+        root-message (first messages)
+        root-uname (:uname (:user root-message))
+        root-oname (:oname (:org root-message))]
+    [:<>
+     [:> ui/FeedEvent {:on-click #(rf/dispatch [(if expanded?
+                                                  :g/home.threads.collapse
+                                                  :g/home.threads.expand) id])}
+      [:> ui/FeedLabel
+       [cc/c-avatar-initials root-uname]]
+      [:> ui/FeedContent
+       [:> ui/FeedSummary title]
+       [:> ui/FeedDate
+        (str (util/relative-datetime (.getTime (js/Date. created))) " by " root-uname " (" root-oname ")")]]]
+     (when expanded?
+       [:> ui/Feed {:class "nested"}
+        (doall
+         (for [message messages]
+           ^{:key (:id message)}
+           [c-message message]))])]))
 
 (defn c-threads
   [groups]
   (let [data& (rf/subscribe [:g/home.threads.data])
         limit& (rf/subscribe [:g/home.threads.limit])
         loading?& (rf/subscribe [:g/home.threads.loading?])
+        expanded-ids& (rf/subscribe [:g/home.threads.expanded-ids])
         fields-editing& (rf/subscribe [:fields-editing])
         bad-input& (rf/subscribe [:bad-input])
         target-group-id& (r/atom (:id (first groups)))
@@ -521,9 +561,11 @@
                                     :_order_by {:created :desc}}
                           [:id :created :title :user-id :org-id :group-id
                            [:messages {:deleted nil}
-                            [:id :created :text :org-id
+                            [:id :created :text
                              [:user
-                              [:id :uname]]]]]]]}])
+                              [:id :uname]]
+                             [:org
+                              [:id :oname]]]]]]]}])
             _ (when-not (= :loading threads)
                 (do (rf/dispatch [:g/threads.data.set (:threads threads)])
                     (rf/dispatch [:g/threads.loading?.set false])))]
@@ -581,9 +623,10 @@
                 "Post Thread"]])
             (if (seq @data&)
               [:> ui/Feed
-               (for [thread @data&]
-                 ^{:key (:id thread)}
-                 [c-thread thread])]
+               (doall
+                (for [{:keys [id] :as thread} @data&]
+                  ^{:key id}
+                  [c-thread thread (@expanded-ids& id)]))]
               (when-not (@fields-editing& "new-thread")
                 [:p {:style {:padding-bottom 15}}
                  "No discussion threads yet."]))]])))))

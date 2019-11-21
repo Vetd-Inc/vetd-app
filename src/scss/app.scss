@@ -1392,6 +1392,11 @@ $cell-height: 201px;
       }
     }
   }
+
+  &.nested {
+    margin-top: 0px;
+    margin-left: 20px;
+  }
 }
 
 
