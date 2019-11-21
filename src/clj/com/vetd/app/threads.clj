@@ -58,5 +58,21 @@
               "\nMessage: " message
               "\nAuthor's Org: " (-> org-id auth/select-org-by-id :oname))
          {:org-id org-id})))
-  
   {})
+
+(defmethod com/handle-ws-inbound :g/threads.reply
+  [{:keys [text thread-id user-id org-id]} ws-id sub-fn]
+  (do (insert-message {:text text
+                       :thread-id thread-id
+                       :user-id user-id
+                       :org-id org-id})
+      (com/sns-publish
+       :ui-misc
+       "Reply Posted to Discussion Thread"
+       (str "Reply Posted to Discussion Thread\n\n"
+            "Thread ID: " thread-id
+            "\nText: " text
+            "\nAuthor's Org: " (-> org-id auth/select-org-by-id :oname))
+       {:org-id org-id}))
+  {})
+

@@ -147,6 +147,34 @@
             :title "Discussion thread posted!"}
     :dispatch [:stop-edit-field "new-thread"]}))
 
+(rf/reg-event-fx
+ :g/threads.reply.submit
+ (fn [{:keys [db]} [_ {:keys [thread-id text after-valid-fn] :as input}]]
+   (cfx/validated-dispatch-fx db
+                              [:g/threads.reply input]
+                              #(cond
+                                 (s/blank? text) [:thread-title "Please enter a message."]
+                                 :else nil))))
+
+(rf/reg-event-fx
+ :g/threads.reply
+ (fn [{:keys [db]} [_ {:keys [thread-id text after-valid-fn] :as input}]]
+   (do (when after-valid-fn (after-valid-fn))
+       {:ws-send {:payload {:cmd :g/threads.reply
+                            :return {:handler :g/threads.reply.return}
+                            :text text
+                            :thread-id thread-id
+                            :user-id (-> db :user :id)
+                            :org-id (-> db :org-id)}}
+        :analytics/track {:event "Reply To Thread"
+                          :props {:category "Discussions"}}})))
+
+(rf/reg-event-fx
+ :g/threads.reply.return
+ (fn [{:keys [db]}]
+   {:toast {:type "success"
+            :title "Reply posted!"}}))
+
 ;;;; Subscriptions
 (rf/reg-sub
  :g/home
@@ -514,32 +542,53 @@
      [:> ui/FeedLabel
       [cc/c-avatar-initials uname]]
      [:> ui/FeedContent
-      [:> ui/FeedSummary text]
+      [:> ui/FeedSummary (util/text->hiccup text)]
       [:> ui/FeedDate
        (str (util/relative-datetime (.getTime (js/Date. created))) " by " uname " (" oname ")")]]]))
 
 (defn c-thread
-  [{:keys [id title created messages] :as thread} expanded?]
-  (let [ ;; the root message of the thread is the message that the thread was started with
-        root-message (first messages)
-        root-uname (:uname (:user root-message))
-        root-oname (:oname (:org root-message))]
-    [:<>
-     [:> ui/FeedEvent {:on-click #(rf/dispatch [(if expanded?
-                                                  :g/home.threads.collapse
-                                                  :g/home.threads.expand) id])}
-      [:> ui/FeedLabel
-       [cc/c-avatar-initials root-uname]]
-      [:> ui/FeedContent
-       [:> ui/FeedSummary title]
-       [:> ui/FeedDate
-        (str (util/relative-datetime (.getTime (js/Date. created))) " by " root-uname " (" root-oname ")")]]]
-     (when expanded?
-       [:> ui/Feed {:class "nested"}
-        (doall
-         (for [message messages]
-           ^{:key (:id message)}
-           [c-message message]))])]))
+  [thread expanded?]
+  (let [reply-text& (atom "")
+        reply-text-ref& (r/atom nil)]
+    (fn [{:keys [id title created messages] :as thread} expanded?]
+      (let [ ;; the root message of the thread is the message that the thread was started with
+            root-message (first messages)
+            root-uname (:uname (:user root-message))
+            root-oname (:oname (:org root-message))]
+        [:<>
+         [:> ui/FeedEvent {:on-click #(rf/dispatch [(if expanded?
+                                                      :g/home.threads.collapse
+                                                      :g/home.threads.expand) id])}
+          [:> ui/FeedLabel
+           [cc/c-avatar-initials root-uname]]
+          [:> ui/FeedContent
+           [:> ui/FeedSummary (when expanded? {:style {:font-weight "bold"}})
+            title]
+           (when expanded? (-> messages first :text))
+           [:> ui/FeedDate
+            (str (util/relative-datetime (.getTime (js/Date. created))) " by " root-uname " (" root-oname ")")]]]
+         (when expanded?
+           [:> ui/Feed {:class "nested"}
+            (doall
+             (for [message (rest messages)]
+               ^{:key (:id message)}
+               [c-message message]))
+            [:> ui/Form {:as "div"
+                         :style {:padding-top 10
+                                 :padding-bottom 10}}
+             [:> ui/FormField ;; {:error (= @bad-input& :message)}
+              [:> ui/TextArea {:placeholder "Reply to this thread..."
+                               :spellCheck true
+                               :ref (fn [this] (reset! reply-text-ref& (r/dom-node this)))
+                               :onChange (fn [_ this] (reset! reply-text& (.-value this)))}]]
+             [:> ui/Button
+              {:color "teal"
+               :on-click (fn [] (rf/dispatch [:g/threads.reply.submit
+                                              {:thread-id id
+                                               :text @reply-text&
+                                               :after-valid-fn #(do (aset @reply-text-ref& "value" "")
+                                                                    #_(reset! reply-text& ""))}]))}
+              "Post Reply"]]])]))))
 
 (defn c-threads
   [groups]
