@@ -11,7 +11,7 @@
 (def init-db
   {:filter {:groups #{}}
    :threads {:data []
-             :limit 4
+             :limit 5
              :loading? true
              ;; ids of threads that are expanded to show the contained messages
              :expanded-ids #{}}
@@ -574,7 +574,7 @@
                ^{:key (:id message)}
                [c-message message]))
             [:> ui/Form {:as "div"
-                         :style {:padding-top 10
+                         :style {:padding-top 14
                                  :padding-bottom 10}}
              [:> ui/FormField ;; {:error (= @bad-input& :message)}
               [:> ui/TextArea {:placeholder "Reply to this thread..."

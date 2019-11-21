@@ -289,12 +289,7 @@
 (defn text->hiccup
   "Convert newlines to [:br]'s."
   [text]
-  (augment-with-keys (map (partial conj [:p]) (remove s/blank? (s/split text "\n"))))
-  ;; (->> (for [line (remove s/blank? (s/split text "\n"))]
-  ;;        [line (with-meta [:br] {:key (gensym "br-")})])
-  ;;      (apply concat)
-  ;;      drop-last)
-  )
+  (augment-with-keys (map (partial conj [:p]) (remove s/blank? (s/split text "\n")))))
 
 ;;;; (legacy) Dispatch Debounce
 ;; you almost always should prefer to use the :dispatch-debounce fx (see debounce.cljs)
