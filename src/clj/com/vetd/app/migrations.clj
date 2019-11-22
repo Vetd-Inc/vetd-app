@@ -2202,7 +2202,9 @@
                     :schema :vetd
                     :table :journal_entries
                     :columns [:id]}]
-
+    
+    ;; TODO drop this index if it is slowing down insertion
+    ;; (especially if that is ever happening syncrhonously)
     [:create-index {:idx-name :idx_journal_entries_jtype
                     :schema :vetd
                     :table :journal_entries

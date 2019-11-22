@@ -1350,6 +1350,10 @@ $cell-height: 201px;
 
 .ui.feed {
   margin-bottom: 14px !important;
+  /* HACK to prevent rendering bug on scroll.
+   * I think it trigger hardware accel. IDK why it helps.
+   */
+  transform: translate3d(0, 0, 0);
 
   > .event {
     padding-top: 10px;

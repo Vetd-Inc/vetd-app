@@ -153,7 +153,7 @@
    (cfx/validated-dispatch-fx db
                               [:g/threads.reply input]
                               #(cond
-                                 (s/blank? text) [:thread-title "Please enter a message."]
+                                 (s/blank? text) [:reply-text "Please enter a message."]
                                  :else nil))))
 
 (rf/reg-event-fx
@@ -518,7 +518,7 @@
                         [[:feed-events {:org-id org-ids
                                         :ftype supported-ftypes
                                         :_order_by {:journal-entry-created :desc}
-                                        :_limit 37
+                                        :_limit 15
                                         :deleted nil}
                           [:id :journal-entry-created :ftype :data]]]}])]
     (if (= :loading @feed-events&)
@@ -551,7 +551,8 @@
 (defn c-thread
   [thread expanded?]
   (let [reply-text& (atom "")
-        reply-text-ref& (r/atom nil)]
+        reply-text-ref& (r/atom nil)
+        bad-input& (rf/subscribe [:bad-input])]
     (fn [{:keys [id title created messages] :as thread} expanded?]
       (let [ ;; the root message of the thread is the message that the thread was started with
             root-message (first messages)
@@ -566,7 +567,7 @@
           [:> ui/FeedContent
            [:> ui/FeedSummary (when expanded? {:style {:font-weight "bold"}})
             title]
-           (when expanded? (-> messages first :text))
+           (when expanded? (-> messages first :text util/text->hiccup))
            [:> ui/FeedDate
             (str (util/relative-datetime (.getTime (js/Date. created))) " by " root-uname " (" root-oname ")")]]]
          (when expanded?
@@ -578,18 +579,20 @@
             [:> ui/Form {:as "div"
                          :style {:padding-top 14
                                  :padding-bottom 10}}
-             [:> ui/FormField ;; {:error (= @bad-input& :message)}
+             [:> ui/FormField {:error (= @bad-input& :reply-text)}
               [:> ui/TextArea {:placeholder "Reply to this thread..."
                                :spellCheck true
                                :ref (fn [this] (reset! reply-text-ref& (r/dom-node this)))
-                               :onChange (fn [_ this] (reset! reply-text& (.-value this)))}]]
+                               :onChange (fn [_ this]
+                                           (reset! reply-text& (.-value this))
+                                           (rf/dispatch [:bad-input.reset]))}]]
              [:> ui/Button
               {:color "teal"
                :on-click (fn [] (rf/dispatch [:g/threads.reply.submit
                                               {:thread-id id
                                                :text @reply-text&
                                                :after-valid-fn #(do (aset @reply-text-ref& "value" "")
-                                                                    #_(reset! reply-text& ""))}]))}
+                                                                    (reset! reply-text& ""))}]))}
               "Post Reply"]]])]))))
 
 (defn c-threads
