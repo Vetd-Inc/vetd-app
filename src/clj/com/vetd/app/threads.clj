@@ -3,7 +3,6 @@
             [com.vetd.app.journal :as journal]
             [com.vetd.app.hasura :as ha]
             [com.vetd.app.auth :as auth]
-            [com.vetd.app.rounds :as rounds]
             [com.vetd.app.common :as com]
             [com.vetd.app.util :as ut]
             [com.vetd.app.docs :as docs]

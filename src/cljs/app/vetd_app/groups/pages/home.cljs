@@ -544,7 +544,9 @@
      [:> ui/FeedContent
       [:> ui/FeedSummary (util/text->hiccup text)]
       [:> ui/FeedDate
-       (str (util/relative-datetime (.getTime (js/Date. created))) " by " uname " (" oname ")")]]]))
+       (str (util/relative-datetime (.getTime (js/Date. created))
+                                    {:trim-day-of-week? true})
+            " by " uname " (" oname ")")]]]))
 
 (defn c-thread
   [thread expanded?]

@@ -1398,10 +1398,10 @@ $cell-height: 201px;
     padding-top: 0px;
     margin-bottom: 5px;
     margin-left: 20px;
-    animation: expand-in 0.4s ease-out;
 
     > .event {
       padding-top: 7px;
+      animation: expand-in 0.4s ease-out;
       
       &:first-child {
         padding-top: 3px;
