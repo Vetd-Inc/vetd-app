@@ -371,7 +371,7 @@
   [{:keys [event]}]
   [:> ui/Button {:on-click #(when event
                               (rf/dispatch event))
-                 :color "lightgrey"
+                 :color "cleargrey"
                  :fluid true}
    "View More"])
 
@@ -423,10 +423,9 @@
                 (for [round @data&]
                   ^{:key (:id round)}
                   [c-round round]))
-               (if (= :loading rounds-details)
-                 [c-load-more {:event nil}] ;; dummy to make layout less jarring
-                 (when (> (count recent-round-ids) @limit&)
-                   [c-load-more {:event [:g/recent-rounds.limit.add 4]}]))]
+               (when (or (> (count recent-round-ids) @limit&)
+                         (= :loading rounds-details))
+                 [c-load-more {:event [:g/recent-rounds.limit.add 4]}])]
               "No recent VetdRounds.")]])))))
 
 (def ftype->icon
@@ -642,7 +641,7 @@
             (when (@fields-editing& "new-thread")
               [:> ui/Form {:as "div"
                            :style {:padding-bottom 15}}
-               (when (> (count groups) 1)
+               (if (> (count groups) 1)
                  [:> ui/FormField {:error (= @bad-input& :target-group-id)}
                   [:> ui/Dropdown {:options (for [{:keys [id gname]} groups]
                                               {:key id
@@ -657,7 +656,9 @@
                                    :selectOnNavigation true
                                    :closeOnChange true
                                    :allowAdditions false
-                                   :onChange (fn [_ this] (reset! target-group-id& (.-value this)))}]])
+                                   :onChange (fn [_ this] (reset! target-group-id& (.-value this)))}]]
+                 (do (reset! target-group-id& (:id (first groups)))
+                     nil))
                [:> ui/FormField {:error (= @bad-input& :thread-title)}
                 [:> ui/Input
                  {:placeholder "New thread title..."
@@ -676,11 +677,16 @@
                                                                           :message @message&}]))}
                 "Post Thread"]])
             (if (seq @data&)
-              [:> ui/Feed
-               (doall
-                (for [{:keys [id] :as thread} @data&]
-                  ^{:key id}
-                  [c-thread thread (@expanded-ids& id)]))]
+              [:<>
+               [:> ui/Feed
+                (doall
+                 (for [{:keys [id] :as thread} @data&]
+                   ^{:key id}
+                   [c-thread thread (@expanded-ids& id)]))]
+               (when (or (>= (count @data&) @limit&)
+                         (= :loading threads))
+                 [:div {:style {:padding-bottom 14}}
+                  [c-load-more {:event [:g/threads.limit.add 5]}]])]
               (when-not (@fields-editing& "new-thread")
                 [:p {:style {:padding-bottom 15}}
                  "No discussion threads yet."]))]])))))
