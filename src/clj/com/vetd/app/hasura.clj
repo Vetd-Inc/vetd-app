@@ -147,7 +147,9 @@
                    (map :fields)
                    flatten
                    distinct
-                   (map reverse-convert-kw)))
+                   (map reverse-convert-kw))
+              [:threads_aggregate :aggregate ;; :count
+               ])
       distinct))
 
 ;; convert a sql field name to a keyword
@@ -299,8 +301,8 @@
        walk-gql
        dgql/graphql-query
        ;; debug: tap in with this to view final GraphQL query
-       ;; (#(do (println %)
-       ;;       %))
+       (#(do (println %)
+             %))
        ))
 
 (defn walk-result-sub-kw [field sub v]
