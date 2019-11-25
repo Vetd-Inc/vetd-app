@@ -148,6 +148,21 @@
     :dispatch [:stop-edit-field "new-thread"]}))
 
 (rf/reg-event-fx
+ :g/threads.delete
+ (fn [{:keys [db]} [_ id]]
+   {:ws-send {:payload {:cmd :g/threads.delete
+                        :return {:handler :g/threads.delete.return}
+                        :id id}}
+    :analytics/track {:event "Delete Thread"
+                      :props {:category "Discussions"}}}))
+
+(rf/reg-event-fx
+ :g/threads.delete.return
+ (fn [{:keys [db]}]
+   {:toast {:type "success"
+            :title "Discussion thread deleted"}}))
+
+(rf/reg-event-fx
  :g/threads.reply.submit
  (fn [{:keys [db]} [_ {:keys [thread-id text after-valid-fn] :as input}]]
    (cfx/validated-dispatch-fx db
@@ -174,6 +189,22 @@
  (fn [{:keys [db]}]
    {:toast {:type "success"
             :title "Reply posted!"}}))
+
+;; NOTE "messages" are thread replies
+(rf/reg-event-fx
+ :g/messages.delete
+ (fn [{:keys [db]} [_ id]]
+   {:ws-send {:payload {:cmd :g/messages.delete
+                        :return {:handler :g/messages.delete.return}
+                        :id id}}
+    :analytics/track {:event "Delete Thread Reply"
+                      :props {:category "Discussions"}}}))
+
+(rf/reg-event-fx
+ :g/messages.delete.return
+ (fn [{:keys [db]}]
+   {:toast {:type "success"
+            :title "Reply deleted"}}))
 
 ;;;; Subscriptions
 (rf/reg-sub
@@ -532,26 +563,67 @@
            [:p {:style {:padding-bottom 15}}
             "No recent activity."])]))))
 
+(defn c-delete-button
+  "Component for a delete button for a certain entity.
+  etype - entity type (e.g., 'thread' or 'message')
+  id - the id of that entity"
+  [etype id]
+  (let [popup-open?& (r/atom false)]
+    (fn [etype id]
+      [:> ui/Popup
+       {:position "bottom right"
+        :on "click"
+        :open @popup-open?&
+        :on-close #(reset! popup-open?& false)
+        :content (r/as-element
+                  [:div
+                   [:h5 "Are you sure you want to delete this " (case etype
+                                                                  "message" "reply"
+                                                                  etype) "?"]
+                   [:> ui/ButtonGroup {:fluid true}
+                    [:> ui/Button {:on-click (fn [e]
+                                               (do (.stopPropagation e)
+                                                   (reset! popup-open?& false)))}
+                     "Cancel"]
+                    [:> ui/Button {:on-click (fn [e]
+                                               (do (.stopPropagation e)
+                                                   (reset! popup-open?& false)
+                                                   (rf/dispatch (case etype
+                                                                  "thread" [:g/threads.delete id]
+                                                                  "message" [:g/messages.delete id]))))
+                                   :color "red"}
+                     "Delete"]]])
+        :trigger (r/as-element
+                  [:small.delete-link {:on-click (fn [e]
+                                                   (do (.stopPropagation e)
+                                                       (swap! popup-open?& not)))}
+                   "Delete"])}])))
+
 (defn c-message
-  [{:keys [id text created user org] :as message}]
-  (let [{:keys [uname]} user
-        {:org-id id
-         :keys [oname]} org]
-    [:> ui/FeedEvent {:class "no-click"}
-     [:> ui/FeedLabel
-      [cc/c-avatar-initials uname]]
-     [:> ui/FeedContent
-      [:> ui/FeedSummary (util/text->hiccup text)]
-      [:> ui/FeedDate
-       (str (util/relative-datetime (.getTime (js/Date. created))
-                                    {:trim-day-of-week? true})
-            " by " uname " (" oname ")")]]]))
+  [message]
+  (let [user-id& (rf/subscribe [:user-id])]
+    (fn [{:keys [id text created user org] :as message}]
+      (let [{:keys [uname]} user
+            {:org-id id
+             :keys [oname]} org]
+        [:> ui/FeedEvent {:class "no-click"}
+         [:> ui/FeedLabel
+          [cc/c-avatar-initials uname]]
+         [:> ui/FeedContent
+          [:> ui/FeedSummary (util/text->hiccup text)]
+          [:> ui/FeedDate
+           (str (util/relative-datetime (.getTime (js/Date. created))
+                                        {:trim-day-of-week? true})
+                " by " uname " at " oname)]
+          (when (= @user-id& (:id user))
+            [c-delete-button "message" id])]]))))
 
 (defn c-thread
   [thread expanded?]
   (let [reply-text& (atom "")
         reply-text-ref& (r/atom nil)
-        bad-input& (rf/subscribe [:bad-input])]
+        bad-input& (rf/subscribe [:bad-input])
+        user-id& (rf/subscribe [:user-id])]
     (fn [{:keys [id title created messages] :as thread} expanded?]
       (let [ ;; the root message of the thread is the message that the thread was started with
             root-message (first messages)
@@ -568,7 +640,14 @@
             title]
            (when expanded? (-> messages first :text util/text->hiccup))
            [:> ui/FeedDate
-            (str (util/relative-datetime (.getTime (js/Date. created))) " by " root-uname " (" root-oname ")")]]]
+            (str (util/relative-datetime (.getTime (js/Date. created))) " by " root-uname " at " root-oname)]
+           (let [num-replies (dec (count messages))]
+             [:small.reply-count {:style {:margin-right 10}}
+              (if (zero? num-replies)
+                (if expanded? "Hide" "Post a Reply")
+                (if expanded? (str "Hide replies") (str "View " num-replies " replies")))])
+           (when (= @user-id& (:id (:user root-message)))
+             [c-delete-button "thread" id])]]
          (when expanded?
            [:> ui/Feed {:class "nested"}
             (doall
@@ -610,6 +689,7 @@
                       [:gql/sub
                        {:queries
                         [[:threads {:_where {:group_id {:_in (map (comp str :id) groups)}}
+                                    :deleted nil
                                     :_limit @limit&
                                     :_order_by {:created :desc}}
                           [:id :created :title :user-id :org-id :group-id

@@ -59,6 +59,15 @@
          {:org-id org-id})))
   {})
 
+;; TODO permissions
+(defmethod com/handle-ws-inbound :g/threads.delete
+  [{:keys [id]} ws-id sub-fn]
+  (db/update-deleted :threads id))
+
+(defmethod com/handle-ws-inbound :g/messages.delete
+  [{:keys [id]} ws-id sub-fn]
+  (db/update-deleted :messages id))
+
 (defmethod com/handle-ws-inbound :g/threads.reply
   [{:keys [text thread-id user-id org-id]} ws-id sub-fn]
   (do (insert-message {:text text
