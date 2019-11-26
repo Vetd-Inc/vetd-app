@@ -5,19 +5,27 @@
             [com.vetd.app.db :as db]
             [com.vetd.app.feeds :as feeds]
             [clojure.core.async :as a]
-            [circleci.analytics-clj.core :as anlytx]))
+            [circleci.analytics-clj.core :as analytics]))
 
-(def analytics (env/build-ignore
-                (anlytx/initialize
-                 (env/all-env :segment-backend-write-key))))
+(def segment-client (env/build-ignore
+                     (analytics/initialize
+                      (env/all-env :segment-backend-write-key))))
+
+(defn jtype->segment-event
+  [jtype props]
+  (case jtype
+    :round-started {:event "Start"
+                    :props {:category "Round"
+                            :label (cond
+                                     (seq (:product-ids props)) "Product or Duplicate"
+                                     (seq (:category-names props)) "Category"
+                                     :else "None")}}
+    nil))
 
 (defn segment-track [{:keys [jtype] :as event-props}]
   (try
-    (when env/prod?
-      (anlytx/track analytics
-                    (str com/*user-id*)
-                    (name jtype)
-                    event-props))
+    (when-let [{:keys [event props]} (jtype->segment-event jtype event-props)]
+      (analytics/track segment-client (str com/*user-id*) event props))
     (catch Throwable e
       (com/log-error e))))
 
