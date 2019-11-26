@@ -286,6 +286,14 @@
   [string]
   (some-> string md/md->hiccup md/component))
 
+(defn text->hiccup
+  "Convert newlines to [:br]'s."
+  [text]
+  (->> (s/split text "\n")
+       (interpose [:br])
+       (map #(if (string? %)
+               %
+               (with-meta % {:key (gensym "br-")})))))
 
 ;;;; (legacy) Dispatch Debounce
 ;; you almost always should prefer to use the :dispatch-debounce fx (see debounce.cljs)

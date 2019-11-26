@@ -10,6 +10,11 @@
 
 (def init-db
   {:filter {:groups #{}}
+   :threads {:data []
+             :limit 4
+             :loading? true
+             ;; ids of threads that are expanded to show the contained messages
+             :expanded-ids #{}}
    :recent-rounds {:data []
                    :limit 4
                    :loading? true}})
@@ -25,7 +30,9 @@
 (rf/reg-event-fx
  :g/route-home
  (fn [{:keys [db]}]
-   {:db (assoc db :page :g/home)
+   {:db (assoc db
+               :page :g/home
+               :page-params {:fields-editing #{}})
     :dispatch [:g/home.filter.reset]}))
 
 (rf/reg-event-fx
@@ -84,6 +91,121 @@
            :title "Request Sent"
            :message "We'll be in touch via email with next steps shortly."}}))
 
+(rf/reg-event-fx
+ :g/threads.data.set
+ (fn [{:keys [db]} [_ threads]]
+   {:db (assoc-in db [:groups :threads :data] threads)}))
+
+(rf/reg-event-fx
+ :g/threads.limit.add
+ (fn [{:keys [db]} [_ num-items]]
+   {:db (update-in db [:groups :threads :limit] + num-items)}))
+
+(rf/reg-event-fx
+ :g/threads.loading?.set
+ (fn [{:keys [db]} [_ loading?]]
+   {:db (assoc-in db [:groups :threads :loading?] loading?)}))
+
+(rf/reg-event-fx
+ :g/home.threads.expand
+ (fn [{:keys [db]} [_ id]]
+   {:db (update-in db [:groups :threads :expanded-ids] conj id)}))
+
+(rf/reg-event-fx
+ :g/home.threads.collapse
+ (fn [{:keys [db]} [_ id]]
+   {:db (update-in db [:groups :threads :expanded-ids] disj id)}))
+
+(rf/reg-event-fx
+ :g/threads.create.submit
+ (fn [{:keys [db]} [_ {:keys [group-id title message] :as input}]]
+   (cfx/validated-dispatch-fx db
+                              [:g/threads.create input]
+                              #(cond
+                                 (s/blank? group-id) [:thread-title "Please select a community to post to."]
+                                 (s/blank? title) [:thread-title "Please enter a title for your thread."]
+                                 (s/blank? message) [:message "Please enter a message."]
+                                 :else nil))))
+
+(rf/reg-event-fx
+ :g/threads.create
+ (fn [{:keys [db]} [_ {:keys [group-id title message] :as input}]]
+   {:ws-send {:payload {:cmd :g/threads.create
+                        :return {:handler :g/threads.create.return}
+                        :group-id group-id
+                        :title title
+                        :message message
+                        :user-id (-> db :user :id)
+                        :org-id (-> db :org-id)}}
+    :analytics/track {:event "Create Thread"
+                      :props {:category "Discussions"}}}))
+
+(rf/reg-event-fx
+ :g/threads.create.return
+ (fn [{:keys [db]}]
+   {:toast {:type "success"
+            :title "Discussion thread posted!"}
+    :dispatch [:stop-edit-field "new-thread"]}))
+
+(rf/reg-event-fx
+ :g/threads.delete
+ (fn [{:keys [db]} [_ id]]
+   {:ws-send {:payload {:cmd :g/threads.delete
+                        :return {:handler :g/threads.delete.return}
+                        :id id}}
+    :analytics/track {:event "Delete Thread"
+                      :props {:category "Discussions"}}}))
+
+(rf/reg-event-fx
+ :g/threads.delete.return
+ (fn [{:keys [db]}]
+   {:toast {:type "success"
+            :title "Discussion thread deleted"}}))
+
+(rf/reg-event-fx
+ :g/threads.reply.submit
+ (fn [{:keys [db]} [_ {:keys [thread-id text after-valid-fn] :as input}]]
+   (cfx/validated-dispatch-fx db
+                              [:g/threads.reply input]
+                              #(cond
+                                 (s/blank? text) [:reply-text "Please enter a message."]
+                                 :else nil))))
+
+(rf/reg-event-fx
+ :g/threads.reply
+ (fn [{:keys [db]} [_ {:keys [thread-id text after-valid-fn] :as input}]]
+   (do (when after-valid-fn (after-valid-fn))
+       {:ws-send {:payload {:cmd :g/threads.reply
+                            :return {:handler :g/threads.reply.return}
+                            :text text
+                            :thread-id thread-id
+                            :user-id (-> db :user :id)
+                            :org-id (-> db :org-id)}}
+        :analytics/track {:event "Reply To Thread"
+                          :props {:category "Discussions"}}})))
+
+(rf/reg-event-fx
+ :g/threads.reply.return
+ (fn [{:keys [db]}]
+   {:toast {:type "success"
+            :title "Reply posted!"}}))
+
+;; NOTE "messages" are thread replies
+(rf/reg-event-fx
+ :g/messages.delete
+ (fn [{:keys [db]} [_ id]]
+   {:ws-send {:payload {:cmd :g/messages.delete
+                        :return {:handler :g/messages.delete.return}
+                        :id id}}
+    :analytics/track {:event "Delete Thread Reply"
+                      :props {:category "Discussions"}}}))
+
+(rf/reg-event-fx
+ :g/messages.delete.return
+ (fn [{:keys [db]}]
+   {:toast {:type "success"
+            :title "Reply deleted"}}))
+
 ;;;; Subscriptions
 (rf/reg-sub
  :g/home
@@ -93,6 +215,31 @@
  :g/home.filter
  :<- [:g/home]
  (fn [{:keys [filter]}] filter))
+
+(rf/reg-sub
+ :g/home.threads
+ :<- [:g/home]
+ (fn [{:keys [threads]}] threads))
+
+(rf/reg-sub
+ :g/home.threads.data
+ :<- [:g/home.threads]
+ (fn [{:keys [data]}] data))
+
+(rf/reg-sub
+ :g/home.threads.limit
+ :<- [:g/home.threads]
+ (fn [{:keys [limit]}] limit))
+
+(rf/reg-sub
+ :g/home.threads.loading?
+ :<- [:g/home.threads]
+ (fn [{:keys [loading?]}] loading?))
+
+(rf/reg-sub
+ :g/home.threads.expanded-ids
+ :<- [:g/home.threads]
+ (fn [{:keys [expanded-ids]}] expanded-ids))
 
 (rf/reg-sub
  :g/home.recent-rounds
@@ -248,14 +395,14 @@
                              "complete" "Complete")}]
        (util/relative-datetime (.getTime (js/Date. created))
                                {:trim-day-of-week? true})
-       " by " (:oname buyer)]
+       " for " (:oname buyer)]
       [:div.product-list (s/join ", " (map :pname products))]]]))
 
 (defn c-load-more
   [{:keys [event]}]
   [:> ui/Button {:on-click #(when event
                               (rf/dispatch event))
-                 :color "lightgrey"
+                 :color "cleargrey"
                  :fluid true}
    "View More"])
 
@@ -307,10 +454,9 @@
                 (for [round @data&]
                   ^{:key (:id round)}
                   [c-round round]))
-               (if (= :loading rounds-details)
-                 [c-load-more {:event nil}] ;; dummy to make layout less jarring
-                 (when (> (count recent-round-ids) @limit&)
-                   [c-load-more {:event [:g/recent-rounds.limit.add 4]}]))]
+               (when (or (> (count recent-round-ids) @limit&)
+                         (= :loading rounds-details))
+                 [c-load-more {:event [:g/recent-rounds.limit.add 4]}])]
               "No recent VetdRounds.")]])))))
 
 (def ftype->icon
@@ -402,7 +548,7 @@
                         [[:feed-events {:org-id org-ids
                                         :ftype supported-ftypes
                                         :_order_by {:journal-entry-created :desc}
-                                        :_limit 37
+                                        :_limit 15
                                         :deleted nil}
                           [:id :journal-entry-created :ftype :data]]]}])]
     (if (= :loading @feed-events&)
@@ -416,6 +562,214 @@
               [c-feed-event event (org-id->group-name (-> event :data :buyer-org-id))])]
            [:p {:style {:padding-bottom 15}}
             "No recent activity."])]))))
+
+(defn c-delete-button
+  "Component for a delete button for a certain entity.
+  etype - entity type (e.g., 'thread' or 'message')
+  id - the id of that entity"
+  [etype id]
+  (let [popup-open?& (r/atom false)]
+    (fn [etype id]
+      [:> ui/Popup
+       {:position "bottom right"
+        :on "click"
+        :open @popup-open?&
+        :on-close #(reset! popup-open?& false)
+        :content (r/as-element
+                  [:div
+                   [:h5 "Are you sure you want to delete this " (case etype
+                                                                  "message" "reply"
+                                                                  etype) "?"]
+                   [:> ui/ButtonGroup {:fluid true}
+                    [:> ui/Button {:on-click (fn [e]
+                                               (do (.stopPropagation e)
+                                                   (reset! popup-open?& false)))}
+                     "Cancel"]
+                    [:> ui/Button {:on-click (fn [e]
+                                               (do (.stopPropagation e)
+                                                   (reset! popup-open?& false)
+                                                   (rf/dispatch (case etype
+                                                                  "thread" [:g/threads.delete id]
+                                                                  "message" [:g/messages.delete id]))))
+                                   :color "red"}
+                     "Delete"]]])
+        :trigger (r/as-element
+                  [:small.delete-link {:on-click (fn [e]
+                                                   (do (.stopPropagation e)
+                                                       (swap! popup-open?& not)))}
+                   "Delete"])}])))
+
+(defn c-message
+  [message]
+  (let [user-id& (rf/subscribe [:user-id])]
+    (fn [{:keys [id text created user org] :as message}]
+      (let [{:keys [uname]} user
+            {:org-id id
+             :keys [oname]} org]
+        [:> ui/FeedEvent {:class "no-click"}
+         [:> ui/FeedLabel
+          [cc/c-avatar-initials uname]]
+         [:> ui/FeedContent
+          [:> ui/FeedSummary (util/text->hiccup text)]
+          [:> ui/FeedDate
+           (str (util/relative-datetime (.getTime (js/Date. created))
+                                        {:trim-day-of-week? true})
+                " by " uname " at " oname)]
+          (when (= @user-id& (:id user))
+            [c-delete-button "message" id])]]))))
+
+(defn c-thread
+  [thread expanded?]
+  (let [reply-text& (atom "")
+        reply-text-ref& (r/atom nil)
+        bad-input& (rf/subscribe [:bad-input])
+        user-id& (rf/subscribe [:user-id])]
+    (fn [{:keys [id title created messages] :as thread} expanded?]
+      (let [ ;; the root message of the thread is the message that the thread was started with
+            root-message (first messages)
+            root-uname (:uname (:user root-message))
+            root-oname (:oname (:org root-message))]
+        [:<>
+         [:> ui/FeedEvent {:on-click #(rf/dispatch [(if expanded?
+                                                      :g/home.threads.collapse
+                                                      :g/home.threads.expand) id])}
+          [:> ui/FeedLabel
+           [cc/c-avatar-initials root-uname]]
+          [:> ui/FeedContent
+           [:> ui/FeedSummary (when expanded? {:style {:font-weight "bold"}})
+            title]
+           (when expanded? (-> messages first :text util/text->hiccup))
+           [:> ui/FeedDate
+            (str (util/relative-datetime (.getTime (js/Date. created))) " by " root-uname " at " root-oname)]
+           (let [num-replies (dec (count messages))]
+             [:small.reply-count {:style {:margin-right 10}}
+              (if (zero? num-replies)
+                (if expanded? "Hide" "Post a Reply")
+                (if expanded? (str "Hide replies") (str "View " num-replies " replies")))])
+           (when (= @user-id& (:id (:user root-message)))
+             [c-delete-button "thread" id])]]
+         (when expanded?
+           [:> ui/Feed {:class "nested"}
+            (doall
+             (for [message (rest messages)]
+               ^{:key (:id message)}
+               [c-message message]))
+            [:> ui/Form {:as "div"
+                         :style {:padding-top 14
+                                 :padding-bottom 10}}
+             [:> ui/FormField {:error (= @bad-input& :reply-text)}
+              [:> ui/TextArea {:placeholder "Reply to this thread..."
+                               :spellCheck true
+                               :ref (fn [this] (reset! reply-text-ref& (r/dom-node this)))
+                               :onChange (fn [_ this]
+                                           (reset! reply-text& (.-value this))
+                                           (rf/dispatch [:bad-input.reset]))}]]
+             [:> ui/Button
+              {:color "teal"
+               :on-click (fn [] (rf/dispatch [:g/threads.reply.submit
+                                              {:thread-id id
+                                               :text @reply-text&
+                                               :after-valid-fn #(do (aset @reply-text-ref& "value" "")
+                                                                    (reset! reply-text& ""))}]))}
+              "Post Reply"]]])]))))
+
+(defn c-threads
+  [groups]
+  (let [data& (rf/subscribe [:g/home.threads.data])
+        limit& (rf/subscribe [:g/home.threads.limit])
+        loading?& (rf/subscribe [:g/home.threads.loading?])
+        expanded-ids& (rf/subscribe [:g/home.threads.expanded-ids])
+        fields-editing& (rf/subscribe [:fields-editing])
+        bad-input& (rf/subscribe [:bad-input])
+        target-group-id& (r/atom (:id (first groups)))
+        thread-title& (r/atom "")
+        message& (r/atom "")]
+    (fn [groups]
+      (let [threads @(rf/subscribe
+                      [:gql/sub
+                       {:queries
+                        [[:threads {:_where {:group_id {:_in (map (comp str :id) groups)}}
+                                    :deleted nil
+                                    :_limit @limit&
+                                    :_order_by {:created :desc}}
+                          [:id :created :title :user-id :org-id :group-id
+                           [:messages {:deleted nil}
+                            [:id :created :text
+                             [:user
+                              [:id :uname]]
+                             [:org
+                              [:id :oname]]]]]]]}])
+            _ (when-not (= :loading threads)
+                (do (rf/dispatch [:g/threads.data.set (:threads threads)])
+                    (rf/dispatch [:g/threads.loading?.set false])))]
+        (if @loading?&
+          [cc/c-loader]
+          [bc/c-profile-segment {:title [:<>
+                                         (if (@fields-editing& "new-thread")
+                                           [:> ui/Label {:on-click #(rf/dispatch [:stop-edit-field "new-thread"])
+                                                         :as "a"
+                                                         :style {:float "right"}}
+                                            "Cancel"]
+                                           [:> ui/Label {:on-click #(rf/dispatch [:edit-field "new-thread"])
+                                                         :as "a"
+                                                         :color "teal"
+                                                         :style {:float "right"}}
+                                            [:> ui/Icon {:name "add"}]
+                                            "New Thread"])
+                                         [:> ui/Icon {:name "discussions"}] "Discussions"]}
+           [:div {:style {:width "100%"}}
+            (when (@fields-editing& "new-thread")
+              [:> ui/Form {:as "div"
+                           :style {:padding-bottom 15}}
+               (if (> (count groups) 1)
+                 [:> ui/FormField {:error (= @bad-input& :target-group-id)}
+                  [:> ui/Dropdown {:options (for [{:keys [id gname]} groups]
+                                              {:key id
+                                               :text gname
+                                               :value id})
+                                   :default-value @target-group-id&
+                                   :placeholder "Post to which community..."
+                                   :search false
+                                   :selection true
+                                   :multiple false
+                                   :selectOnBlur false
+                                   :selectOnNavigation true
+                                   :closeOnChange true
+                                   :allowAdditions false
+                                   :onChange (fn [_ this] (reset! target-group-id& (.-value this)))}]]
+                 (do (reset! target-group-id& (:id (first groups)))
+                     nil))
+               [:> ui/FormField {:error (= @bad-input& :thread-title)}
+                [:> ui/Input
+                 {:placeholder "New thread title..."
+                  :spellCheck true
+                  :autoFocus (not (> (count groups) 1))
+                  :on-change (fn [_ this] (reset! thread-title& (.-value this)))}]]
+               [:> ui/FormField {:error (= @bad-input& :message)}
+                [:> ui/TextArea {:placeholder "Message..."
+                                 :spellCheck true
+                                 :onChange (fn [_ this] (reset! message& (.-value this)))}]]
+               
+               [:> ui/Button
+                {:color "teal"
+                 :on-click (fn [] (rf/dispatch [:g/threads.create.submit {:group-id @target-group-id&
+                                                                          :title @thread-title&
+                                                                          :message @message&}]))}
+                "Post Thread"]])
+            (if (seq @data&)
+              [:<>
+               [:> ui/Feed
+                (doall
+                 (for [{:keys [id] :as thread} @data&]
+                   ^{:key id}
+                   [c-thread thread (@expanded-ids& id)]))]
+               (when (or (>= (count @data&) @limit&)
+                         (= :loading threads))
+                 [:div {:style {:padding-bottom 14}}
+                  [c-load-more {:event [:g/threads.limit.add 5]}]])]
+              (when-not (@fields-editing& "new-thread")
+                [:p {:style {:padding-bottom 15}}
+                 "No discussion threads yet."]))]])))))
 
 (defn c-join-group-form
   [current-group-ids popup-open?&]
@@ -539,6 +893,7 @@
              [:> ui/GridRow
               [:> ui/GridColumn {:computer 9 :mobile 16
                                  :style {:padding-right 7}}
+               [c-threads selected-groups]
                [c-feed selected-groups]]
               [:> ui/GridColumn {:computer 7 :mobile 16}
                [c-recent-rounds (:groups @filter&)]

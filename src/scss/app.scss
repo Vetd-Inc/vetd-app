@@ -165,6 +165,16 @@ ul {
   -ms-user-select: none; /* Internet Explorer/Edge */
   user-select: none; /* Non-prefixed version, currently supported by Chrome and Opera */
 }
+.feed .avatar-initials {
+  width: 34px;
+  height: 34px;
+  margin-top: 9px;
+  margin-left: -4px;
+  padding-left: 4px;
+  font-size: 14px;
+  line-height: 34px;
+  letter-spacing: 2px;
+}
 .avatar-container {
   cursor: pointer;
   
@@ -285,6 +295,10 @@ ul {
 .detail-container {
   box-shadow: 0 2px 14px 0 rgba(50,50,50,0.1) !important;
   border: none !important;
+  /* HACK to prevent rendering bug on scroll.
+   * I think it trigger hardware accel. IDK why it helps.
+   */
+  transform: translate3d(0, 0, 0);
 }
 .detail-container > .product-logo {
   position: absolute;
@@ -1347,6 +1361,10 @@ $cell-height: 201px;
     &:hover:not(.no-click) {
       cursor: pointer;
       transform: scale(1.01);
+
+      .reply-count:hover {
+        color: #4183C4;
+      }
     }
 
     > .label {
@@ -1364,7 +1382,7 @@ $cell-height: 201px;
       }
 
       + .content {
-        margin-left: 10px;
+        margin-left: 14px;
 
         .summary {
           font-weight: normal;
@@ -1378,13 +1396,38 @@ $cell-height: 201px;
 
         .date {
           margin-top: 0px;
+          font-size: 13px;
         }
       }
     }
   }
+
+  &.nested {
+    margin-top: 0px;
+    padding-top: 0px;
+    margin-bottom: 5px;
+    margin-left: 40px;
+
+    > .event {
+      padding-top: 7px;
+      animation: expand-in 0.4s ease-out;
+      
+      &:first-child {
+        padding-top: 3px;
+      }
+    }    
+  }
 }
 
+.delete-link {
+  opacity: 0.6;
+  cursor: pointer;
 
+  &:hover {
+    color: #d01919;
+    opacity: 1;
+  }
+}
 
 
 // experiments with animated vetd-backgrounds

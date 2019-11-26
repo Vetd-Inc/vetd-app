@@ -1,0 +1,1 @@
+CREATE INDEX idx_messages_id ON vetd.messages (id)
