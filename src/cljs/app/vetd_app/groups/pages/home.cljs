@@ -11,7 +11,7 @@
 (def init-db
   {:filter {:groups #{}}
    :threads {:data []
-             :limit 5
+             :limit 4
              :loading? true
              ;; ids of threads that are expanded to show the contained messages
              :expanded-ids #{}}
