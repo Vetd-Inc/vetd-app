@@ -382,7 +382,7 @@
      [:> ui/ItemContent
       [:> ui/ItemHeader title]
       [:> ui/ItemExtra {:class "product-tags"
-                        :style {:margin-bottom 6}}
+                        :style {:margin-bottom 2}}
        [:> ui/Icon {:name (case status
                             "initiation" "wpforms" ;; this status is hidden anyways
                             "in-progress" "chart bar"
