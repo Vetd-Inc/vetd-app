@@ -59,7 +59,7 @@
       :dispatch-later [{:ms 100 :dispatch [:ws-get-session-user]}
                        {:ms 1000 :dispatch [:nav-home true]}
                        {:ms 1500 :dispatch [:do-fx {:analytics/track
-                                                    {:event "Signup Complete"
+                                                    {:event "FRONTEND Signup Complete"
                                                      :props {:category "Accounts"
                                                              :label "By Explicit Invite"}}}]}]}
      {:toast {:type "error"

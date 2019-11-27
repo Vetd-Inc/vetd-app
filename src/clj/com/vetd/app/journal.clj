@@ -44,7 +44,11 @@
   [{:keys [jtype] :as event-props}]
   (try
     (when-let [{:keys [event props]} (jtype->segment-event jtype event-props)]
-      (analytics/track segment-client (str com/*user-id*) event props))
+      (analytics/track segment-client
+                       (str (or com/*user-id*
+                                (:user-id event-props)))
+                       event
+                       props))
     (catch Throwable e
       (com/log-error e))))
 

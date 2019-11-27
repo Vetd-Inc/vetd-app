@@ -61,7 +61,7 @@
                                                 (when (:join-group-link-key local-store)
                                                   {:ms 1300 :dispatch [:read-link (:join-group-link-key local-store)]})
                                                 {:ms 1500 :dispatch [:do-fx {:analytics/track
-                                                                             {:event "Signup Complete"
+                                                                             {:event "FRONTEND Signup Complete"
                                                                               :props {:category "Accounts"
                                                                                       :label "Standard"}}}]}]}
      :password-reset {:toast {:type "success"
