@@ -65,7 +65,7 @@
                         :prompts prompts
                         :product-ids product-ids
                         :buyer-id (util/db->current-org-id db)}}
-    :analytics/track {:event "Start"
+    :analytics/track {:event "FRONTEND Start"
                       :props {:category "Round"
                               :label etype}}}))
 
