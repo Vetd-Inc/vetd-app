@@ -20,6 +20,8 @@
    :g/home "Groups Home"
    :g/settings "Groups Settings"})
 
+;; these analytics identify's and group's are also being done on the backend, so these should probably be removed
+
 (def trackers
   [{:subscription [:user]
     :id :user
