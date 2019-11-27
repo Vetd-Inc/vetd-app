@@ -79,7 +79,6 @@
                      :entry entry})
         first)))
 
-;; TODO wrap in a future?
 (defn push-entry
   [entry]
   (future
