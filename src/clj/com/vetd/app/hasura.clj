@@ -149,6 +149,8 @@
                    distinct
                    (map reverse-convert-kw))
               [:threads_aggregate ;; TODO auto-gen for all tables?
+               :recent_rounds_by_group_aggregate
+               :recent_rounds_aggregate ;; not being used
                :aggregate :count
                ;; :nodes
                ])
