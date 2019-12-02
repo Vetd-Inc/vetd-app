@@ -11,11 +11,15 @@
 (def init-db
   {:filter {:groups #{}}
    :threads {:data []
+             ;; total number of threads with current filter settings
+             :total nil ;; not yet known
              :limit 4
              :loading? true
              ;; ids of threads that are expanded to show the contained messages
              :expanded-ids #{}}
    :recent-rounds {:data []
+                   ;; total number of rounds with current filter settings
+                   :total nil ;; not yet known
                    :limit 4
                    :loading? true}})
 
@@ -65,6 +69,11 @@
    {:db (assoc-in db [:groups :recent-rounds :data] rounds)}))
 
 (rf/reg-event-fx
+ :g/recent-rounds.total.set
+ (fn [{:keys [db]} [_ total]]
+   {:db (assoc-in db [:groups :recent-rounds :total] total)}))
+
+(rf/reg-event-fx
  :g/recent-rounds.limit.add
  (fn [{:keys [db]} [_ num-items]]
    {:db (update-in db [:groups :recent-rounds :limit] + num-items)}))
@@ -95,6 +104,11 @@
  :g/threads.data.set
  (fn [{:keys [db]} [_ threads]]
    {:db (assoc-in db [:groups :threads :data] threads)}))
+
+(rf/reg-event-fx
+ :g/threads.total.set
+ (fn [{:keys [db]} [_ total]]
+   {:db (assoc-in db [:groups :threads :total] total)}))
 
 (rf/reg-event-fx
  :g/threads.limit.add
@@ -227,6 +241,11 @@
  (fn [{:keys [data]}] data))
 
 (rf/reg-sub
+ :g/home.threads.total
+ :<- [:g/home.threads]
+ (fn [{:keys [total]}] total))
+
+(rf/reg-sub
  :g/home.threads.limit
  :<- [:g/home.threads]
  (fn [{:keys [limit]}] limit))
@@ -250,6 +269,11 @@
  :g/home.recent-rounds.data
  :<- [:g/home.recent-rounds]
  (fn [{:keys [data]}] data))
+
+(rf/reg-sub
+ :g/home.recent-rounds.total
+ :<- [:g/home.recent-rounds]
+ (fn [{:keys [total]}] total))
 
 (rf/reg-sub
  :g/home.recent-rounds.limit
@@ -409,6 +433,7 @@
 (defn c-recent-rounds
   [selected-group-ids]
   (let [data& (rf/subscribe [:g/home.recent-rounds.data])
+        total& (rf/subscribe [:g/home.recent-rounds.total])
         limit& (rf/subscribe [:g/home.recent-rounds.limit])
         loading?& (rf/subscribe [:g/home.recent-rounds.loading?])]
     (fn [selected-group-ids]
@@ -437,10 +462,20 @@
                                    [:oname]]
                                   [:products {:ref-deleted nil}
                                    [:pname]]]]]}])
+            rounds-aggregate @(rf/subscribe
+                               [:gql/sub
+                                {:queries
+                                 [[:recent-rounds-by-group-aggregate {:group-id selected-group-ids
+                                                                      :_distinct_on [:round-id]}
+                                   [[:aggregate [:count]]]]]}])
             _ (when-not (or (= :loading groups->rounds)
-                            (= :loading rounds-details))
-                (do (rf/dispatch [:g/recent-rounds.data.set (:rounds rounds-details)])
-                    (rf/dispatch [:g/recent-rounds.loading?.set false])))]
+                            (= :loading rounds-details)
+                            (= :loading rounds-aggregate))
+                (let [rounds-data (:rounds rounds-details)
+                      rounds-total (-> rounds-aggregate :recent-rounds-by-group-aggregate :aggregate :count)]
+                  (rf/dispatch [:g/recent-rounds.data.set rounds-data])
+                  (rf/dispatch [:g/recent-rounds.total.set rounds-total])
+                  (rf/dispatch [:g/recent-rounds.loading?.set false])))]
         (if (or (and (= :loading groups->rounds)
                      (empty? @data&))
                 @loading?&)
@@ -454,7 +489,7 @@
                 (for [round @data&]
                   ^{:key (:id round)}
                   [c-round round]))
-               (when (or (> (count recent-round-ids) @limit&)
+               (when (or (< @limit& @total&)
                          (= :loading rounds-details))
                  [c-load-more {:event [:g/recent-rounds.limit.add 4]}])]
               "No recent VetdRounds.")]])))))
@@ -676,6 +711,7 @@
 (defn c-threads
   [groups]
   (let [data& (rf/subscribe [:g/home.threads.data])
+        total& (rf/subscribe [:g/home.threads.total])
         limit& (rf/subscribe [:g/home.threads.limit])
         loading?& (rf/subscribe [:g/home.threads.loading?])
         expanded-ids& (rf/subscribe [:g/home.threads.expanded-ids])
@@ -699,9 +735,20 @@
                               [:id :uname]]
                              [:org
                               [:id :oname]]]]]]]}])
-            _ (when-not (= :loading threads)
-                (do (rf/dispatch [:g/threads.data.set (:threads threads)])
-                    (rf/dispatch [:g/threads.loading?.set false])))]
+            threads-aggregate @(rf/subscribe
+                                [:gql/sub
+                                 {:queries
+                                  [[:threads-aggregate
+                                    {:_where {:group_id {:_in (map (comp str :id) groups)}}
+                                     :deleted nil}
+                                    [[:aggregate [:count]]]]]}])
+            _ (when-not (or (= :loading threads)
+                            (= :loading threads-aggregate))
+                (let [threads-data (:threads threads)
+                      threads-total (-> threads-aggregate :threads-aggregate :aggregate :count)]
+                  (rf/dispatch [:g/threads.data.set threads-data])
+                  (rf/dispatch [:g/threads.total.set threads-total])
+                  (rf/dispatch [:g/threads.loading?.set false])))]
         (if @loading?&
           [cc/c-loader]
           [bc/c-profile-segment {:title [:<>
@@ -763,7 +810,7 @@
                  (for [{:keys [id] :as thread} @data&]
                    ^{:key id}
                    [c-thread thread (@expanded-ids& id)]))]
-               (when (or (>= (count @data&) @limit&)
+               (when (or (< @limit& @total&)
                          (= :loading threads))
                  [:div {:style {:padding-bottom 14}}
                   [c-load-more {:event [:g/threads.limit.add 5]}]])]
