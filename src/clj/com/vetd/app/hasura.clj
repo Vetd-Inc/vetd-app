@@ -148,7 +148,9 @@
                    flatten
                    distinct
                    (map reverse-convert-kw))
-              [:threads_aggregate :aggregate ;; :count
+              [:threads_aggregate ;; TODO auto-gen for all tables?
+               :aggregate :count
+               ;; :nodes
                ])
       distinct))
 
@@ -301,8 +303,9 @@
        walk-gql
        dgql/graphql-query
        ;; debug: tap in with this to view final GraphQL query
-       (#(do (println %)
-             %))
+       ;; (#(do (when (re-matches #".*threads.*" %)
+       ;;         (println %))
+       ;;       %))
        ))
 
 (defn walk-result-sub-kw [field sub v]
@@ -336,8 +339,11 @@
   [(walk-result-sub-kw field sub v)
    (cond (and (map? v)
               ;; JSONB shouldn't be walked
-              (not (#{:data :initiation_form_prefill} sub))) (walk-result-sub-map field sub v)
+              (not (#{:data :initiation_form_prefill} sub)))
+         (walk-result-sub-map field sub v)
+         
          (sequential? v) (walk-result-sub-vec field sub v)
+         
          :else (walk-result-sub-val field sub v))])
 
 (defn walk-result-recs
@@ -349,7 +355,7 @@
 
 (defn walk-result->entity-kw
   "Return the entity keyword for a given field&records pair"
-  [field recs]
+  [field]
   (-> field
       name
       (st/replace #"^vetd_" "")
@@ -357,17 +363,18 @@
       sql-field->clj-kw))
 
 (defn walk-result->field
-  [field recs]
+  [field]
   field)
 
 (defn walk-result-field-recs-pair
   "Walk a pair (field name and associated records) for processing"
   [root? field recs]
   [(if root?
-     (walk-result->entity-kw field recs)
-     (walk-result->field field recs))
-   (mapv (partial walk-result-recs field)
-         recs)])
+     (walk-result->entity-kw field)
+     (walk-result->field field))
+   (if (= :aggregate (ffirst recs)) ;; HACK
+     recs
+     (mapv (partial walk-result-recs field) recs))])
 
 (defn walk-result
   "Walk a graphql result received from hasura to do all sorts of

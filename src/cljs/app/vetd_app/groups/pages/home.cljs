@@ -622,26 +622,19 @@
             _ (when-not (= :loading threads)
                 (do (rf/dispatch [:g/threads.data.set (:threads threads)])
                     (rf/dispatch [:g/threads.loading?.set false])))
-
-            threads2 @(rf/subscribe
-                       [:gql/sub
-                        {:queries
-                         [[:threads-aggregate
-                           ;; {:_where {:group_id {:_in (map (comp str :id) groups)}}
-                           ;;  :_limit @limit&
-                           ;;  :_order_by {:created :desc}
-                           ;;  }
-                           [[:aggregate [:count]]]
-                           ;; [:id :created :title :user-id :org-id :group-id
-                           ;;  [:messages {:deleted nil}
-                           ;;   [:id :created :text
-                           ;;    [:user
-                           ;;     [:id :uname]]
-                           ;;    [:org
-                           ;;     [:id :oname]]]]]
-                           ]]}])
-            ]
-        (println threads2)
+            threads-aggregate @(rf/subscribe
+                                [:gql/sub
+                                 {:queries
+                                  [[:threads-aggregate
+                                    {:_where {:group_id {:_in (map (comp str :id) groups)}}}
+                                    [[:aggregate [:count]]]]]}])
+            ;; TODO this should probably be stored in app-db
+            num-threads-total (or (some-> threads-aggregate
+                                          :threads-aggregate
+                                          :aggregate
+                                          :count)
+                                  999999)]
+        (println num-threads-total)
         (if @loading?&
           [cc/c-loader]
           [bc/c-profile-segment {:title [:<>
