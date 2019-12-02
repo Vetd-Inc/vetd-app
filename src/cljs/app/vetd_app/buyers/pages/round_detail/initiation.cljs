@@ -43,7 +43,7 @@
    (merge {:toast {:type "success"
                    :title "Initiation Form Submitted"
                    :message "Status updated to \"In Progress\""}
-           :analytics/track {:event "Initiation Form Saved"
+           :analytics/track {:event "FRONTEND Initiation Form Saved"
                              :props {:category "Round"
                                      :label round-id}}}
           (when (seq products)

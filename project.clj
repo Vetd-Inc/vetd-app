@@ -148,7 +148,7 @@
                         :plaid-public-key "9c83e7b98a9c97e81d417e4ee7f6ce"
                         :plaid-secret "0e1a33c5191d1b8a0426f563885db4"
                         :segment-frontend-write-key "Ieh9p65FemSOa2s1OngMCWTuVkjjt0Kz"
-                        :segment-backend-write-key "4JhxIKAxisnr33mzsgMaw24Mc9SozHq7"}
+                        :segment-backend-write-key "v3lBcm399PToCp1TSUSHtfZb0Ysn0q14"}
                   :jvm-opts ["-Dconf=dev-config.edn"]
                   :dependencies [[binaryage/devtools "0.9.10"]
                                  [nrepl "0.6.0"]

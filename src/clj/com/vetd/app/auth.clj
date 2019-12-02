@@ -310,17 +310,29 @@
 
 (defn login
   [{:keys [email pwd]}]
-  (or (when-let [{:keys [id] :as user} (valid-creds? email pwd)]
+  (or (when-let [{:keys [id uname email] :as user} (valid-creds? email pwd)]
         (let [memberships (-> id select-memb-org-by-user-id not-empty)
               admin? (is-admin? id)]
           (when (or (->> memberships (keep :org) not-empty)
                     admin?)
-            {:logged-in? true
-             :session-token (-> id insert-session :token)
-             :user (dissoc user :pwd)
-             :admin? admin?
-             :memberships memberships
-             :admin-of-groups (g/select-groups-by-admins (map :org-id memberships))})))
+            (let [{org-id :id
+                   :keys [oname buyer? groups]} (:org (first memberships))
+                  admin-of-groups (g/select-groups-by-admins (map :org-id memberships))]
+              (do (journal/segment-identify id {:name uname
+                                                :displayName uname                                      
+                                                :email email
+                                                :fullName uname ;; only for MailChimp integration
+                                                :userStatus (if buyer? "Buyer" "Vendor")
+                                                :oname oname
+                                                :gname (st/join ", " (map :gname groups))
+                                                :groupAdmin (st/join ", " (map :id admin-of-groups))})
+                  (journal/segment-group id org-id {:name oname})
+                  {:logged-in? true
+                   :session-token (-> id insert-session :token)
+                   :user (dissoc user :pwd)
+                   :admin? admin?
+                   :memberships memberships
+                   :admin-of-groups admin-of-groups})))))
       {:logged-in? false
        :login-failed? true}))
 
@@ -337,12 +349,25 @@
   [{:keys [session-token] :as req} ws-id sub-fn]
   (if-let [{:keys [user-id]} (select-active-session-by-token session-token)]
     (let [memberships (select-memb-org-by-user-id user-id)]
-      {:logged-in? true
-       :session-token session-token
-       :user (select-user-by-id user-id)
-       :admin? (is-admin? user-id)
-       :memberships memberships
-       :admin-of-groups (g/select-groups-by-admins (map :org-id memberships))})
+      (let [{:keys [uname email] :as user} (select-user-by-id user-id)
+            {org-id :id
+             :keys [oname buyer? groups]} (:org (first memberships))
+            admin-of-groups (g/select-groups-by-admins (map :org-id memberships))]
+        (do (journal/segment-identify user-id {:name uname
+                                               :displayName uname                                      
+                                               :email email
+                                               :fullName uname ;; only for MailChimp integration
+                                               :userStatus (if buyer? "Buyer" "Vendor")
+                                               :oname oname
+                                               :gname (st/join ", " (map :gname groups))
+                                               :groupAdmin (st/join ", " (map :id admin-of-groups))})
+            (journal/segment-group user-id org-id {:name oname})
+            {:logged-in? true
+             :session-token session-token
+             :user user
+             :admin? (is-admin? user-id) ;; meaning Vetd admin, not group admin
+             :memberships memberships
+             :admin-of-groups admin-of-groups})))
     {:logged-in? false}))
 
 (defmethod com/handle-ws-inbound :forgot-password.request-reset
@@ -476,6 +501,12 @@ Groups That Don't Exist: '%s'"
             [_ org] (create-or-find-org org-name org-url (= org-type "buyer") (= org-type "vendor"))
             _ (create-or-find-memb (:id user) (:id org))]
         (l/update-expires link "read" (+ (ut/now) (* 1000 60 5))) ; allow read for next 5 mins
+        (journal/push-entry {:jtype :user-created
+                             :origin :signup-form
+                             :user-id (:id user)
+                             :org-id (:id org)
+                             :user-name uname
+                             :org-name org-name})
         {:session-token (-> user :id insert-session :token)}))))
 
 (defmethod l/action :password-reset
@@ -518,6 +549,11 @@ Groups That Don't Exist: '%s'"
           ;; this link is now maxed out for actions
           ;; the (inc) is because the uses-actions will be incremented after this method evals
           (l/update-max-uses link "action" (inc uses-action))
+          (journal/push-entry {:jtype :user-created
+                               :origin :org-invite
+                               :user-id id
+                               :org-id org-id
+                               :user-name uname})
           ;; this 'output' will be read immediately from the ws results
           ;; i.e., it won't be read from a link read
           {:org-name org-name

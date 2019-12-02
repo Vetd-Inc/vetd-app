@@ -94,7 +94,7 @@
                                   {:handler :b/buy.return})
                         :product-id product-id
                         :buyer-id (util/db->current-org-id db)}}
-    :analytics/track {:event "Buy"
+    :analytics/track {:event "FRONTEND Buy"
                       :props {:category "Product"
                               :label product-name}}}))
 

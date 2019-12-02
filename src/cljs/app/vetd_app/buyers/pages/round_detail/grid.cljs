@@ -94,7 +94,7 @@
                         :reason reason
                         :buyer-id (util/db->current-org-id db)}}
     :confetti nil
-    :analytics/track {:event "Declare Winner"
+    :analytics/track {:event "FRONTEND Declare Winner"
                       :props {:category "Round"
                               :label round-id}}}))
 

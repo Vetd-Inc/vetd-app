@@ -10,7 +10,8 @@
             [migratus.core :as mig]
             com.vetd.app.migrations
             com.vetd.app.db
-            com.vetd.app.feeds)
+            com.vetd.app.feeds
+            com.vetd.app.threads)
   (:gen-class))
 
 (defonce nrepl-server& (atom nil))

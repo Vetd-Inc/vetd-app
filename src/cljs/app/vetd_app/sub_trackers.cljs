@@ -26,39 +26,19 @@
     :dispatch-first? false
     :event-fn
     (fn [{:keys [id uname email]}]
-      [:do-fx ;; this pattern (possible [:do-fx nil]) makes dispatch-first? more predictable
+      ;; This pattern... the sometimes: [:do-fx nil]
+      ;; makes dispatch-first? more predictable.
+      [:do-fx 
        (when id
-         {:analytics/identify {:user-id id
-                               :traits {:name uname
-                                        :displayName uname                                      
-                                        :email email
-                                        :fullName uname ;; only for MailChimp integration
-                                        }}})])}
+         {:analytics/identify {:user-id id}})])}
    {:subscription [:active-org]
     :id :active-org
     :dispatch-first? false
     :event-fn
-    (fn [{:keys [id oname buyer? groups]}]
+    (fn [{:keys [id]}]
       [:do-fx
        (when id
-         {:analytics/identify {:user-id @(rf/subscribe [:user-id]) ;; TODO messy
-                               :traits {:userStatus (if buyer? "Buyer" "Vendor")
-                                        :oname oname
-                                        :gname (s/join ", " (map :gname groups))}}
-          :analytics/group {:group-id id
-                            :traits {:name oname}}})])}
-   {:subscription [:admin-of-groups]
-    :id :admin-of-groups
-    :dispatch-first? false
-    :event-fn
-    (fn [admin-of-groups]
-      [:do-fx
-       (when (seq admin-of-groups)
-         (let [user-id @(rf/subscribe [:user-id]) ;; TODO messy
-               admin-of-groups-str (s/join ", " (map :id admin-of-groups))]
-           {:analytics/identify {:user-id user-id
-                                 :traits {:groupAdmin admin-of-groups-str}}}))])}
-
+         {:analytics/group {:group-id id}})])}
    {:subscription [:page]
     :id :page-change
     :dispatch-first? false

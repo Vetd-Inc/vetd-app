@@ -1307,10 +1307,15 @@ $cell-height: 201px;
 
       .extra {
         margin-top: 0px;
+        font-size: 13px;
         white-space: nowrap;
         text-overflow: ellipsis;
         overflow: hidden;
         max-width: 325px;
+
+        .icon {
+          margin-top: 5px;
+        }
 
         &.shorten {
           margin-top: 11px;
@@ -1361,6 +1366,10 @@ $cell-height: 201px;
     &:hover:not(.no-click) {
       cursor: pointer;
       transform: scale(1.01);
+
+      .reply-count:hover {
+        color: #4183C4;
+      }
     }
 
     > .label {
@@ -1392,6 +1401,7 @@ $cell-height: 201px;
 
         .date {
           margin-top: 0px;
+          font-size: 13px;
         }
       }
     }
@@ -1401,7 +1411,7 @@ $cell-height: 201px;
     margin-top: 0px;
     padding-top: 0px;
     margin-bottom: 5px;
-    margin-left: 20px;
+    margin-left: 40px;
 
     > .event {
       padding-top: 7px;
@@ -1414,7 +1424,15 @@ $cell-height: 201px;
   }
 }
 
+.delete-link {
+  opacity: 0.6;
+  cursor: pointer;
 
+  &:hover {
+    color: #d01919;
+    opacity: 1;
+  }
+}
 
 
 // experiments with animated vetd-backgrounds
