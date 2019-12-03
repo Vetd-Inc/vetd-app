@@ -278,7 +278,6 @@
        :count))
 
 (defn get-weekly-auto-email-data--communities-num-new-stacks [group-id days-back]
-  ;; celwell: I can't say I fully understand this, but it seems to work
   (-> {:select [[:%count.si.buyer_id :si-buyer-count]]
        :from [[:group_org_memberships :gom]]
        :join [[:stack_items :si]
@@ -297,6 +296,54 @@
       db/hs-query
       count))
 
+(defn get-weekly-auto-email-data--communities-recent-threads
+  "For group-id, in the past days-back, the new threads that were 
+  created OR existing threads that gained a reply."
+  [group-id days-back]
+  (let [days-back-tick (->> (tick/new-period days-back :days)
+                            (tick/- (now-)))
+        created-after-days-back? (comp (partial tick/< days-back-tick)
+                                       tick/instant
+                                       :created)]
+    (->> [[:threads {:group-id (str group-id)
+                     :deleted nil
+                     :_limit 100 ;; hopefully enough to get all the old ones w/ recent replies
+                     :_order_by {:created :desc}}
+           [:title :created
+            [:messages {:deleted nil}
+             [:created
+              [:user
+               [:uname]]
+              [:org
+               [:oname]]]]]]]
+         ha/sync-query
+         :threads
+         (map #(identity
+                {:title (-> % :title)
+                 :user-name (-> % :messages first :user :uname)
+                 :org-name (-> % :messages first :org :oname)
+                 :num-recent-replies (->> %
+                                          :messages
+                                          (drop 1) ;; the root message of the thread
+                                          (filter created-after-days-back?)
+                                          count)
+                 :created (-> % :created)}))
+         (filter (some-fn (comp pos? :num-recent-replies) ;; has recent replies?
+                          ;; or thread itself was created recently?
+                          created-after-days-back?))
+         (map #(assoc %
+                      :num-recent-replies-string
+                      (let [num-recent-replies (:num-recent-replies %)]
+                        (cond
+                          (= 1 num-recent-replies)
+                          (str "(1 new reply)")
+                          
+                          (pos? num-recent-replies)
+                          (str "(" num-recent-replies " new replies)")
+                          
+                          :else ""))))
+         (take 10))))
+
 (defn get-weekly-auto-email-data--communities
   [group-id]
   (let [{:keys [gname]} (->> [[:groups {:id group-id}
@@ -307,7 +354,8 @@
     {:group-name gname
      :num-new-discounts (get-weekly-auto-email-data--communities-num-new-discounts group-id 7)
      :num-new-orgs (get-weekly-auto-email-data--communities-num-new-orgs group-id 7)
-     :num-new-stacks (get-weekly-auto-email-data--communities-num-new-stacks group-id 7)}))
+     :num-new-stacks (get-weekly-auto-email-data--communities-num-new-stacks group-id 7)
+     :recent-threads (get-weekly-auto-email-data--communities-recent-threads group-id 7)}))
 
 (defn get-weekly-auto-email-data [user-id org-id oname uname]
   (let [group-ids (some->> [[:group-org-memberships {:org-id org-id}
