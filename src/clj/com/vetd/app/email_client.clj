@@ -320,8 +320,8 @@
          :threads
          (map #(identity
                 {:title (-> % :title)
-                 :user-name (-> % :messages first :user :uname)
-                 :org-name (-> % :messages first :org :oname)
+                 :user-name (some-> % :messages first :user :uname)
+                 :org-name (some-> % :messages first :org :oname)
                  :num-recent-replies (->> %
                                           :messages
                                           (drop 1) ;; the root message of the thread
