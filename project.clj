@@ -60,7 +60,8 @@
                  [net.mikera/imagez "0.12.0"]
                  [com.plaid/plaid-java "5.1.2"]
                  [clj-time "0.15.0"]
-                 [tick "0.4.20-alpha"]]
+                 [tick "0.4.20-alpha"]
+                 [meander/epsilon "0.0.314"]]
 
   :repl-options {:timeout 120000}
   
