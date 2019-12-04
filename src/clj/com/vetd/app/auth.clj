@@ -51,9 +51,11 @@
     [false org]
     [true (insert-org org-name org-url buyer? vendor?)]))
 
+(def normalize-email (comp st/trim st/lower-case))
+
 (defn select-user-by-email
   [email & fields]
-  (-> [[:users {:email (st/lower-case email)}
+  (-> [[:users {:email (normalize-email email)}
         (or (not-empty fields)
             [:id :uname :email])]]
       ha/sync-query
@@ -166,8 +168,6 @@
                                "User Added to Org"
                                (str uname " (user) was added to " oname " (org)"))))
         [true inserted]))))
-
-(def normalize-email (comp st/trim st/lower-case))
 
 (defn prepare-account-map
   "Normalizes and otherwise prepares an account map for insertion in DB."
