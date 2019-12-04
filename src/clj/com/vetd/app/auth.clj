@@ -148,11 +148,11 @@
   (if-let [memb (select-memb-by-ids user-id org-id)]
     [false memb]
     (when-let [inserted (insert-memb user-id org-id)]
-      (let [{:keys [uname]} (some-> [[:users {:id user-id}
-                                      [:uname]]]
-                                    ha/sync-query
-                                    vals
-                                    ffirst)
+      (let [{:keys [uname email]} (some-> [[:users {:id user-id}
+                                            [:uname :email]]]
+                                          ha/sync-query
+                                          vals
+                                          ffirst)
             {:keys [oname]} (some-> [[:orgs {:id org-id}
                                       [:oname]]]
                                     ha/sync-query
@@ -166,7 +166,8 @@
                                    :org-name oname})
               (com/sns-publish :ui-misc
                                "User Added to Org"
-                               (str uname " (user) was added to " oname " (org)"))))
+                               (str uname " (" email ") was added to "
+                                    oname " (org)"))))
         [true inserted]))))
 
 (defn prepare-account-map
