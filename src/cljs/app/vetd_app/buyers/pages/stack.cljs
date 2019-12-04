@@ -194,9 +194,11 @@
         options& (r/atom []) ; options from search results + current values
         search-query& (r/atom "")
         products->options (fn [products]
-                            (for [{:keys [id pname]} products]
+                            (for [{:keys [id pname vendor]} products]
                               {:key id
-                               :text pname
+                               :text (str pname
+                                          (when-not (= pname (:oname vendor))
+                                            (str " by " (:oname vendor))))
                                :value id}))]
     (fn [stack-items popup-open?&]
       (let [products& (rf/subscribe
@@ -208,7 +210,9 @@
                                         {:deleted {:_is_null true}}]}
                                       :_limit 100
                                       :_order_by {:pname :asc}}
-                           [:id :pname]]]}])
+                           [:id :pname
+                            [:vendor
+                             [:oname]]]]]}])
             product-ids-already-in-stack (set (map (comp :id :product) stack-items))
             _ (when-not (= :loading @products&)
                 (let [options (->> @products&

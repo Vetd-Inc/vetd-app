@@ -415,9 +415,11 @@
         options& (r/atom []) ; options from search results + current values
         search-query& (r/atom "")
         products->options (fn [products]
-                            (for [{:keys [id pname]} products]
+                            (for [{:keys [id pname vendor]} products]
                               {:key id
-                               :text pname
+                               :text (str pname
+                                          (when-not (= pname (:oname vendor))
+                                            (str " by " (:oname vendor))))
                                :value id}))]
     (fn [group]
       (let [products& (rf/subscribe
@@ -429,7 +431,9 @@
                                         {:deleted {:_is_null true}}]}
                                       :_limit 100
                                       :_order_by {:pname :asc}}
-                           [:id :pname]]]}])
+                           [:id :pname
+                            [:vendor
+                             [:oname]]]]]}])
             _ (when-not (= :loading @products&)
                 (let [options (->> @products&
                                    :products
