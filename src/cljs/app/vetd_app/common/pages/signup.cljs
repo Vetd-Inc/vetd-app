@@ -33,6 +33,7 @@
            (not (util/valid-email-address? email)) [:email "Please enter a valid email address."]
            (< (count pwd) 8) [:pwd "Password must be at least 8 characters."]
            (not= pwd cpwd) [:cpwd "Password and Confirm Password must match."]
+           (s/blank? org-name) [:org-name "Please enter the name of your organization."]
            (not terms-agree) [:terms-agree "You must agree to the Terms of Use in order to sign up."]
            :else nil)]
      (if bad-input
@@ -83,6 +84,10 @@
         uname (r/atom "")
         email (r/atom "")
         org-name (r/atom "")
+        ;; for orgs
+        options& (r/atom []) ; options from search results + current values
+        search-query& (r/atom "")
+        
         org-url (r/atom "")        
         pwd (r/atom "")
         cpwd (r/atom "")
@@ -135,9 +140,57 @@
                                       (reset! bad-cpwd false)))}]]
         [:> ui/FormField {:error (= @bad-input& :org-name)}
          [:label "Organization Name"
-          [:> ui/Input {:class "borderless"
-                        :spellCheck false
-                        :onChange (fn [_ this] (reset! org-name (.-value this)))}]]]
+          (case @signup-org-type&
+            :buyer [:> ui/Input {:class "borderless"
+                                 :spellCheck false
+                                 :onChange (fn [_ this] (reset! org-name (.-value this)))}]
+            :vendor (let [orgs->options (fn [orgs]
+                                          (for [{:keys [id oname]} orgs]
+                                            {:key id
+                                             :text oname
+                                             :value oname}))
+                          orgs& (rf/subscribe
+                                 [:gql/q
+                                  {:queries
+                                   [[:orgs {:_where
+                                            {:_and ;; while this trims search-query, the Dropdown's search filter doesn't...
+                                             [{:oname {:_ilike (str "%" (s/trim @search-query&) "%")}}
+                                              {:deleted {:_is_null true}}]}
+                                            :_limit 100
+                                            :_order_by {:oname :asc}}
+                                     [:id :oname]]]}])
+                          _ (when-not (= :loading @orgs&)
+                              (let [options (->> @orgs&
+                                                 :orgs
+                                                 orgs->options ; now we have options from gql sub
+                                                 ;; (this dumbly actually keeps everything, but that seems fine)
+                                                 (concat @options&) ; keep options for the current values
+                                                 distinct)]
+                                (when-not (= @options& options)
+                                  (reset! options& options))))]
+                      [:> ui/Dropdown {:class "borderless"
+                                       :value @org-name
+                                       :fluid true
+                                       :loading (= :loading @orgs&)
+                                       :options @options&
+                                       :placeholder "Search or add organization..."
+                                       :search true
+                                       :selection true
+                                       :multiple false
+                                       :selectOnBlur false
+                                       :selectOnNavigation true
+                                       :closeOnChange true
+                                       :allowAdditions true
+                                       :additionLabel "Hit 'Enter' to Add "
+                                       :onAddItem (fn [_ this]
+                                                    (swap! options& conj {:key (gensym)
+                                                                          :value (.-value this)
+                                                                          :text (.-value this)})
+                                                    (reset! org-name (.-value this)))
+                                       :onSearchChange (fn [_ this]
+                                                         (reset! search-query& (aget this "searchQuery")))
+                                       :onChange (fn [_ this]
+                                                   (reset! org-name (.-value this)))}]))]]
         [:> ui/FormField {:error (= @bad-input& :org-url)}
          [:label "Organization Website"
           [:> ui/Input {:class "borderless"

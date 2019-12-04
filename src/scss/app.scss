@@ -612,9 +612,20 @@ i.icon.quickbooks {
   background-repeat: no-repeat !important;
 }
 
-.borderless > input {
+.borderless,
+.ui.borderless.dropdown {
+  > input,
+  > input.search {
+    border: none !important;
+    box-shadow: 0 2px 10px 0 rgba(50, 50, 50, 0.08) !important;
+  }
+}
+.ui.selection.dropdown.borderless {
   border: none !important;
-  box-shadow: 0 2px 10px 0 rgba(50, 50, 50, 0.08) !important;
+
+  .menu {
+    border: none !important;
+  }
 }
 
 
@@ -675,7 +686,7 @@ textarea {
     text-align: left;
   }
 
-  .ui.input {
+  .ui.input, .ui.dropdown {
     margin-top: 4px;
     font-size: 14px;
   }
