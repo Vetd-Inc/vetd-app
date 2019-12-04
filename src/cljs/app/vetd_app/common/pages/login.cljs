@@ -142,4 +142,11 @@
              [:> ui/ButtonOr]
              [:> ui/Button {:color "blue"
                             :on-click #(rf/dispatch [:nav-signup :vendor])}
-              "As a Vendor"]]]]))})))
+              "As a Vendor"]]]
+           [:div {:style {:margin-top 45}}
+            [:h4 "What is Vetd?"]
+            "Vetd is a buying platform that removes all the manual, time-consuming steps from the buying process, pairing the best vendors with the right companies."
+            [:br]
+            [:br]
+            [:a {:href "https://vetd.com"}
+             "Learn more about Vetd."]]]))})))
