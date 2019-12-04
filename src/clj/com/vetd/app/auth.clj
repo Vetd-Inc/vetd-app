@@ -51,9 +51,11 @@
     [false org]
     [true (insert-org org-name org-url buyer? vendor?)]))
 
+(def normalize-email (comp st/trim st/lower-case))
+
 (defn select-user-by-email
   [email & fields]
-  (-> [[:users {:email (st/lower-case email)}
+  (-> [[:users {:email (normalize-email email)}
         (or (not-empty fields)
             [:id :uname :email])]]
       ha/sync-query
@@ -172,7 +174,7 @@
   [account]
   (-> account
       (select-keys [:uname :email :pwd :org-name :org-url :org-type])
-      (update :email st/lower-case)
+      (update :email normalize-email)
       (update :pwd bhsh/derive)))
 
 (defn send-verify-account-email
@@ -520,13 +522,14 @@ Groups That Don't Exist: '%s'"
 (defmethod l/action :invite-user-to-org
   [{:keys [input-data uses-action] :as link} account]
   (let [{:keys [email org-id override-from-org-name]} input-data
+        normalized-email (normalize-email email)
         org-name (or override-from-org-name
                      (:oname (select-org-by-id org-id)))
         signup-flow? (every? (partial contains? account) [:uname :pwd])]
     ;; this link action is 'overloaded'
     (if-not signup-flow?
       ;; standard usage of the link (i.e., the initial click from email)
-      (if-let [{:keys [id]} (select-user-by-email email)]
+      (if-let [{:keys [id]} (select-user-by-email normalized-email)]
         ;; the account already exists, just add them to org, and give a session token
         (do (create-or-find-memb id org-id)
             ;; this link is now maxed out for actions
@@ -543,7 +546,7 @@ Groups That Don't Exist: '%s'"
       ;; reusing link action to create account + add to org
       ;; used from ws, :do-link-action cmd
       (let [{:keys [uname pwd]} account
-            {:keys [id]} (insert-user uname email (bhsh/derive pwd))]
+            {:keys [id]} (insert-user uname normalized-email (bhsh/derive pwd))]
         (when id ; user was successfully created
           (create-or-find-memb id org-id)
           ;; this link is now maxed out for actions
