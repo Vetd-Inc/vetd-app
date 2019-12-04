@@ -489,22 +489,35 @@ Round URL: https://app.vetd.com/b/rounds/%s"
                                                        ffirst)]
     (doseq [requirement requirements]
       (add-requirement-to-round requirement {:form-template-id req-form-template-id}))
-    (journal/push-entry {:jtype :new-topics-added-to-round
-                         :buyer-org-name (:oname buyer)
-                         :buyer-org-id (:id buyer)
-                         :round-id round-id
-                         :topics requirements})
-    (com/sns-publish :customer-success
-                     "New Topics Added to Round"
-                     (format
-                      "New Topics Added to Round
+    (future
+      (journal/push-entry {:jtype :new-topics-added-to-round
+                           :buyer-org-name (:oname buyer)
+                           :buyer-org-id (:id buyer)
+                           :round-id round-id
+                           :topics requirements})
+      (com/sns-publish :customer-success
+                       "New Topics Added to Round"
+                       (format
+                        "New Topics Added to Round
 Buyer: '%s'
 Topics: '%s'
 Round Link: https://app.vetd.com/b/rounds/%s"
-                      (:oname buyer)
-                      (s/join ", " requirements)
-                      idstr)
-                     {:org-id (:id buyer)})
+                        (:oname buyer)
+                        (let [existing-prompt-terms (remove
+                                                     #(s/starts-with? (str %) "new-topic/")
+                                                     requirements)
+                              new-prompts (map #(s/replace (str %) #"new-topic/" "")
+                                               (remove (set existing-prompt-terms) requirements))]
+                          (->> [[:prompts {:term existing-prompt-terms}
+                                 [:prompt]]]
+                               ha/sync-query
+                               :prompts
+                               (map :prompt)
+                               (concat new-prompts)
+                               (map #(str "\"" % "\""))
+                               (s/join ", ")))
+                        idstr)
+                       {:org-id (:id buyer)}))
     {}))
 
 (defmethod com/handle-ws-inbound :b/round.set-topic-order
@@ -552,6 +565,7 @@ Round Link: https://app.vetd.com/b/rounds/%s"
                                    :dval nil
                                    :jval nil}))))
 
+;; this is called from within a (future)
 (defn notify-round-init-form-completed
   [doc-id]
   (let [round (-> [[:docs {:id doc-id}
@@ -592,7 +606,22 @@ Round Link: https://app.vetd.com/b/rounds/%s"
                    (apply str
                           (for [rp (-> round :init-doc :response-prompts)]
                             (str "\n" (:prompt-prompt rp) ": "
-                                 (->> rp :response-prompt-fields (map :sval) (s/join ", ")))))))
+                                 (let [svals (->> rp :response-prompt-fields (map :sval))]
+                                   (if (= (:prompt-term rp) "rounds/requirements")
+                                     (let [existing-prompt-ids (remove
+                                                                #(s/starts-with? (str %) "new-topic/")
+                                                                svals)
+                                           new-prompts (map #(s/replace (str %) #"new-topic/" "")
+                                                            (remove (set existing-prompt-ids) svals))]
+                                       (->> [[:prompts {:id existing-prompt-ids}
+                                              [:prompt]]]
+                                            ha/sync-query
+                                            :prompts
+                                            (map :prompt)
+                                            (concat new-prompts)
+                                            (map #(str "\"" % "\""))
+                                            (s/join ", ")))
+                                     (s/join ", " svals))))))))
          {:org-id (-> round :buyer :id)}))))
 
 (defn set-round-products-order [round-id product-ids]
@@ -620,30 +649,36 @@ Round Link: https://app.vetd.com/b/rounds/%s"
                       :rounds)
       (catch Throwable t
         (com/log-error t)))
-    (try
-      (rounds/sync-round-vendor-req-forms&docs round-id)
-      (catch Throwable t))
-    (try
-      (notify-round-init-form-completed id)
-      (catch Throwable t
-        (com/log-error t)))))
+    (future
+      (try
+        (rounds/sync-round-vendor-req-forms&docs round-id)
+        (catch Throwable t))
+      (try
+        (notify-round-init-form-completed id)
+        (catch Throwable t
+          (com/log-error t))))))
 
 (defmethod com/handle-ws-inbound :b/round.add-products
   [{:keys [round-id product-ids product-names buyer-id]} ws-id sub-fn]
-  (com/sns-publish
-   :customer-success
-   "Product(s) Added to Round"
-   (str "Product(s) Added to Round\n\n"
-        "Round ID: " round-id
-        "\nRound Link: https://app.vetd.com/b/rounds/" (ut/base31->str round-id)
-        "\nBuyer (Org): " (-> buyer-id auth/select-org-by-id :oname) ; buyer name
-        ;; adding existing products
-        (when-not (empty? product-ids)
-          "\nProduct(s) Added: ") (s/join ", " product-ids)
-        ;; adding products that don't exist in our system yet
-        (when-not (empty? product-names)
-          "\nNonexistent Product(s) Requested: ") (s/join ", " product-names))
-   {:org-id buyer-id})
+  (future
+    (com/sns-publish
+     :customer-success
+     "Product(s) Added to Round"
+     (str "Product(s) Added to Round\n\n"
+          "Round ID: " round-id
+          "\nRound Link: https://app.vetd.com/b/rounds/" (ut/base31->str round-id)
+          "\nBuyer (Org): " (-> buyer-id auth/select-org-by-id :oname) ; buyer name
+          ;; adding existing products
+          (when-not (empty? product-ids)
+            (let [products (-> [[:products {:id product-ids}
+                                 [:pname]]]
+                               ha/sync-query
+                               :products)]
+              (str "\nProduct(s) Added: " (s/join ", " (map :pname products)))))
+          ;; adding products that don't exist in our system yet
+          (when-not (empty? product-names)
+            "\nNonexistent Product(s) Requested: ") (s/join ", " product-names))
+     {:org-id buyer-id}))
   (when-not (empty? product-ids)
     (doseq [product-id product-ids]
       (rounds/invite-product-to-round product-id round-id))
