@@ -3,8 +3,7 @@
             [vetd-app.common.components :as cc]
             [vetd-app.docs :as docs]
             [reagent.core :as r]
-            [re-frame.core :as rf]
-            [re-com.core :as rc]))
+            [re-frame.core :as rf]))
 
 (rf/reg-event-fx
  :v/nav-profile
@@ -20,7 +19,8 @@
    {:db (assoc db :page :v/profile)}))
 
 (defn c-page []
-  (let [org-id& (rf/subscribe [:org-id])
+  (let [_ (println "its getting called")
+        org-id& (rf/subscribe [:org-id])
         existing-profile& (rf/subscribe [:gql/sub
                                          {:queries
                                           [[:form-docs {:ftype "vendor-profile"

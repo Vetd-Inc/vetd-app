@@ -200,15 +200,17 @@
      {:nav (if admin?
              {:path "/a/search"}
              ;; TODO support multiple orgs
-             (if-let [active-org (some->> memberships
-                                          (filter #(-> % :id (= active-memb-id)))
-                                          first
-                                          :org)]
-               (if first-session?
-                 {:path "/b/stack"}
-                 (if (seq (:groups active-org)) ;; in a community?
-                   {:path "/c/home"}
-                   {:path "/b/stack"}))
+             (if-let [{:keys [vendor? groups]} (some->> memberships
+                                                        (filter #(-> % :id (= active-memb-id)))
+                                                        first
+                                                        :org)]
+               (if vendor?
+                 {:path "/v/profile"}
+                 (if first-session?
+                   {:path "/b/stack"}
+                   (if (seq groups) ;; in a community?
+                     {:path "/c/home"}
+                     {:path "/b/stack"})))
                {:path "/login"}))})))
 
 (defn c-page []
@@ -296,29 +298,23 @@
 
 ;; Vendors
 (sec/defroute vendors-preposals "/v/preposals" [query-params]
-  (when @(rf/subscribe [:admin?])
-    (rf/dispatch [:v/route-preposals query-params])))
+  (rf/dispatch [:v/route-preposals query-params]))
 
 (sec/defroute vendors-products "/v/products" [query-params]
-  (when @(rf/subscribe [:admin?])
-    (rf/dispatch [:v/route-products query-params])))
+  (rf/dispatch [:v/route-products query-params]))
 
 (sec/defroute vendors-product-detail "/v/products/:idstr" [idstr]
-  (when @(rf/subscribe [:admin?])
-    (rf/dispatch [:v/route-product-detail idstr])))
+  (rf/dispatch [:v/route-product-detail idstr]))
 
 (sec/defroute vendors-profile "/v/profile" [query-params]
-  (when @(rf/subscribe [:admin?])
-    (rf/dispatch [:v/route-profile query-params])))
+  (rf/dispatch [:v/route-profile query-params]))
 
 (sec/defroute vendors-rounds-path "/v/rounds" [query-params]
-  (when @(rf/subscribe [:admin?])
-    (rf/dispatch [:v/route-rounds query-params])))
+  (rf/dispatch [:v/route-rounds query-params]))
 
 (sec/defroute vendors-round-product-detail "/v/rounds/:round-idstr/products/:product-idstr"
   [round-idstr product-idstr]
-  (when @(rf/subscribe [:admin?])
-    (rf/dispatch [:v/route-round-product-detail round-idstr product-idstr])))
+  (rf/dispatch [:v/route-round-product-detail round-idstr product-idstr]))
 
 ;; catch-all
 (sec/defroute catch-all-path "*" [*]

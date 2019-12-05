@@ -6,13 +6,13 @@
 
 (defn container [body]
   [:> ui/Container {:class "main-container"}
-   [cf/c-top-nav [{:text "PrePosals"
-                   :pages #{:v/preposals}
-                   :event [:v/nav-preposals]}
-                  {:text "Products"
+   [cf/c-top-nav [;; {:text "PrePosals"
+                  ;;  :pages #{:v/preposals}
+                  ;;  :event [:v/nav-preposals]}
+                  {:text "Your Products"
                    :pages #{:v/products}
                    :event [:v/nav-products]}
-                  {:text "Profile"
+                  {:text "Company Profile"
                    :pages #{:v/profile}
                    :event [:v/nav-profile]}
                   {:text "VetdRounds"
