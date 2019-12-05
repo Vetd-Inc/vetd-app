@@ -51,7 +51,8 @@
                    :signup #'p-signup/c-page
                    :join-org-signup #'p-join-org-signup/c-page
                    :forgot-password #'p-forgot-password/c-page
-                   :settings #'p-settings/c-page
+                   :b/settings #'p-settings/c-page
+                   :v/settings #'p-settings/c-page
                    :b/search #'p-bsearch/c-page
                    :b/product-detail #'p-bproduct-detail/c-page
                    :b/rounds #'p-brounds/c-page
@@ -73,22 +74,23 @@
                    :signup #'pub-fix/container
                    :join-org-signup #'pub-fix/container
                    :forgot-password #'pub-fix/container
-                   :settings #'b-fix/container ; TODO fragile, misuse of buyer fixtures
+                   :b/settings #'b-fix/container
+                   :v/settings #'v-fix/container
                    :b/search #'b-fix/container
                    :b/product-detail #'b-fix/container
                    :b/rounds #'b-fix/container
                    :b/round-detail #'b-fix/appendable-container
                    :b/stack #'b-fix/container
                    :b/stack-detail #'b-fix/container
+                   :g/home #'b-fix/container
+                   :g/settings #'b-fix/container
+                   :g/detail #'b-fix/container
                    :v/preposals #'v-fix/container
                    :v/products #'v-fix/container
                    :v/product-detail #'v-fix/container
                    :v/profile #'v-fix/container
                    :v/rounds #'v-fix/container
-                   :v/round-product-detail #'v-fix/container
-                   :g/home #'b-fix/container
-                   :g/settings #'b-fix/container
-                   :g/detail #'b-fix/container})
+                   :v/round-product-detail #'v-fix/container})
 
 (rf/reg-event-db
  :init-db
@@ -260,8 +262,10 @@
 (sec/defroute forgot-password-prefill-path "/forgot-password/:email-address" [email-address]
   (rf/dispatch [:route-forgot-password email-address]))
 
-(sec/defroute settings-root "/settings" []
-  (rf/dispatch [:route-settings]))
+(sec/defroute buyers-settings "/b/settings" []
+  (rf/dispatch [:route-settings false]))
+(sec/defroute vendors-settings "/v/settings" []
+  (rf/dispatch [:route-settings true]))
 
 (sec/defroute groups-path "/c/:path-or-idstr" [path-or-idstr]
   (rf/dispatch (case path-or-idstr

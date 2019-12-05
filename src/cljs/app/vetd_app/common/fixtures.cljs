@@ -15,6 +15,7 @@
 (defn c-account-actions
   [user-name]
   (let [admin-of-groups& (rf/subscribe [:admin-of-groups])
+        vendor?& (rf/subscribe [:vendor?])
         dark-mode?& (rf/subscribe [:dark-mode?])]
     (fn [user-name]
       (let [is-group-admin? (not-empty @admin-of-groups&)]
@@ -31,7 +32,7 @@
                        (if (.-checked this)
                          (rf/dispatch [:dark-mode.on])
                          (rf/dispatch [:dark-mode.off])))}]
-         [:> ui/Button {:on-click #(rf/dispatch [:nav-settings])
+         [:> ui/Button {:on-click #(rf/dispatch [:nav-settings @vendor?&])
                         :color "lightteal"
                         :fluid true
                         :icon true

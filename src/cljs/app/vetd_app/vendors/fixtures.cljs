@@ -9,12 +9,12 @@
    [cf/c-top-nav [;; {:text "PrePosals"
                   ;;  :pages #{:v/preposals}
                   ;;  :event [:v/nav-preposals]}
-                  {:text "Your Products"
-                   :pages #{:v/products}
-                   :event [:v/nav-products]}
                   {:text "Company Profile"
                    :pages #{:v/profile}
                    :event [:v/nav-profile]}
+                  {:text "Your Products"
+                   :pages #{:v/products}
+                   :event [:v/nav-products]}
                   {:text "VetdRounds"
                    :pages #{:v/rounds}
                    :event [:v/nav-rounds]}]]

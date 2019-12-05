@@ -19,8 +19,7 @@
    {:db (assoc db :page :v/profile)}))
 
 (defn c-page []
-  (let [_ (println "its getting called")
-        org-id& (rf/subscribe [:org-id])
+  (let [org-id& (rf/subscribe [:org-id])
         existing-profile& (rf/subscribe [:gql/sub
                                          {:queries
                                           [[:form-docs {:ftype "vendor-profile"
