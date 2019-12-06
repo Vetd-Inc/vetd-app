@@ -40,7 +40,7 @@
 
 (rf/reg-event-fx
  :read-link
- (fn [{:keys [db]} [_ link-key]]
+ (fn [_ [_ link-key]]
    {:ws-send {:payload {:cmd :read-link
                         :return {:handler :read-link-result
                                  :link-key link-key}
@@ -49,7 +49,7 @@
 (rf/reg-event-fx
  :read-link-result
  [(rf/inject-cofx :local-store [:join-group-link-key])]
- (fn [{:keys [db local-store]} [_ {:keys [cmd output-data] :as results} {{:keys [link-key]} :return}]]
+ (fn [{:keys [db local-store]} [_ {:keys [cmd output-data]} {{:keys [link-key]} :return}]]
    (case cmd ; make sure your case nav's the user somewhere (often :nav-home)
      :create-verified-account {:toast {:type "success"
                                        :title "Account Verified"
@@ -125,13 +125,13 @@
 
 (rf/reg-event-fx
  :modal
- (fn [{:keys [db]} [_ {:keys [header content buttons size] :as props}]]
-   (do (-> db :modal :showing?& (reset! true)) ;; nastiness
-       ;; not doing merge props because we want to nil out unused props
-       {:db (update db :modal merge {:header header
-                                     :content content
-                                     :buttons buttons
-                                     :size size})})))
+ (fn [{:keys [db]} [_ {:keys [header content buttons size]}]]
+   (-> db :modal :showing?& (reset! true)) ;; nastiness
+   ;; not doing merge props because we want to nil out unused props
+   {:db (update db :modal merge {:header header
+                                 :content content
+                                 :buttons buttons
+                                 :size size})}))
 
 (rf/reg-sub
  :modal

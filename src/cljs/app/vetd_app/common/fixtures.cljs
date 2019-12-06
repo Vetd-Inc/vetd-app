@@ -1,7 +1,6 @@
 (ns vetd-app.common.fixtures
   (:require [vetd-app.ui :as ui]
             [vetd-app.common.components :as cc]
-            [clojure.string :as s]
             [reagent.core :as r]
             [re-frame.core :as rf]))
 

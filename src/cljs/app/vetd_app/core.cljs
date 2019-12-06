@@ -4,14 +4,13 @@
             [vetd-app.local-store :as local-store]
             vetd-app.cookies
             vetd-app.url
+            vetd-app.analytics
             vetd-app.debounce
             vetd-app.sub-trackers
             vetd-app.common.fx
             vetd-app.orgs.fx
             vetd-app.groups.fx
-            [vetd-app.util :as util]
             [vetd-app.websockets :as ws]
-            [vetd-app.analytics :as analytics]
             [vetd-app.hooks :as hooks]
             [vetd-app.buyers.fixtures :as b-fix]
             [vetd-app.buyers.pages.search :as p-bsearch]
@@ -329,7 +328,7 @@
 
 (rf/reg-event-fx
  :ws-get-session-user
- (fn [{:keys [local-store]}]
+ (fn []
    {:ws-send {:payload {:cmd :auth-by-session
                         :return :ws/req-session}}}))
 
