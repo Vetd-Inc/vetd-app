@@ -1,11 +1,9 @@
 (ns vetd-app.buyers.pages.round-detail.initiation
-  (:require [vetd-app.buyers.components :as bc]
-            [vetd-app.common.components :as cc]
+  (:require [vetd-app.common.components :as cc]
             [vetd-app.buyers.pages.round-detail.subs :as round-subs]
             [vetd-app.ui :as ui]
             [vetd-app.util :as util]
             [reagent.core :as r]
-            [reagent.format :as format]
             [re-frame.core :as rf]
             [clojure.string :as s]))
 
