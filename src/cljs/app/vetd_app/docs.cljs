@@ -121,8 +121,14 @@
  (fn [_ [_ form-doc]]
    (let [fd (walk-prep-for-save-form-doc form-doc)]
      {:ws-send {:payload {:cmd :save-form-doc
-                          :return nil
+                          :return {:handler :save-form-doc-return}
                           :form-doc fd}}})))
+
+(rf/reg-event-fx
+ :save-form-doc-return
+ (fn []
+   {:toast {:type "success"
+            :title "Changes Saved"}}))
 
 (rf/reg-event-fx
  :remove-prompt&response
