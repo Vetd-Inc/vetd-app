@@ -13,7 +13,6 @@ profiles.clj
 .nrepl-port
 /log
 figwheel_server.log
-/.clj-kondo/.cache
 
 # OSX
 .DS_Store
