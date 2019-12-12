@@ -25,7 +25,8 @@
  :chrome-extension
  (fn [{:keys [cmd args]}]
    (when js/chrome
-     (js/chrome.runtime.sendMessage "lhnpimlngdmhglmgnkeallbalhbmkedi" ;; zach
+     (js/chrome.runtime.sendMessage "gpmepfmejmnhphphkcabhlhfpccaabkj" ;; Chrome Web Store
+                                    ;; "lhnpimlngdmhglmgnkeallbalhbmkedi" ;; zach
                                     ;; "ikflgpoecippcclhfahcpnifgccfhknc" ;; chris TODO not hardcoded
                                     (clj->js {:command cmd
                                               :args args})
