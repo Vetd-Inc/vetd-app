@@ -59,6 +59,8 @@
                    :admin? admin?)
         :local-store {:session-token session-token}
         :cookies {:admin-token (when admin? [session-token {:max-age 60 :path "/"}])}
+        :chrome-extension {:cmd "setVetdUser"
+                           :args {:vetdUser user}}
         :dispatch-later [{:ms 100 :dispatch (if (:join-group-link-key local-store)
                                               [:read-link (:join-group-link-key local-store)]
                                               [:nav-home])}
@@ -143,7 +145,17 @@
              [:> ui/Button {:color "blue"
                             :on-click #(rf/dispatch [:nav-signup :vendor])}
               "As a Vendor"]]]
-           [:div {:style {:margin-top 45}}
+           ;; [:div {:style {:margin-top 35}}
+           ;;  [:h4
+           ;;   [:a.teal {:href "https://vetd.com"}
+           ;;    "Vetd Chrome Extension"]]
+           ;;  "Install the new Vetd Chrome Extension for Gmail to make Vetd your"
+           ;;  [:br] [:strong "sales email gatekeeper."]
+           ;;  [:br]
+           ;;  [:br]
+           ;;  [:a {:href "https://vetd.com"}
+           ;;   "View on the Chrome Web Store."]]
+           [:div {:style {:margin-top 35}}
             [:h4 "What is Vetd?"]
             "Vetd is a buying platform that removes all the manual, time-consuming steps from the buying process, pairing the best vendors with the right companies."
             [:br]

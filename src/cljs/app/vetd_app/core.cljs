@@ -116,6 +116,7 @@
 ;; redirected to /login when they visit that path.
 (def public-routes #{""
                      "/"
+                     "/chrome-extension-installed"
                      "/login"
                      "/signup/:type"
                      "/signup-by-invite/:link-key"
@@ -195,21 +196,30 @@
 
 (rf/reg-event-fx
  :nav-home
- (fn [{:keys [db]} [_ first-session?]]
-   (let [{:keys [memberships active-memb-id admin?]} db]
-     {:nav (if admin?
-             {:path "/a/search"}
-             ;; TODO support multiple orgs
-             (if-let [active-org (some->> memberships
-                                          (filter #(-> % :id (= active-memb-id)))
-                                          first
-                                          :org)]
-               (if first-session?
-                 {:path "/b/stack"}
-                 (if (seq (:groups active-org)) ;; in a community?
-                   {:path "/c/home"}
-                   {:path "/b/stack"}))
-               {:path "/login"}))})))
+ (fn [{:keys [db]} [_ first-session? chrome-extension-installed?]]
+   (let [{:keys [memberships active-memb-id admin?]} db
+         active-org (some->> memberships
+                             (filter #(-> % :id (= active-memb-id)))
+                             first
+                             :org)]
+     (merge {:nav (if admin?
+                    {:path "/a/search"}
+                    ;; TODO support multiple orgs
+                    (if active-org
+                      (if first-session?
+                        {:path "/b/stack"}
+                        (if (seq (:groups active-org)) ;; in a community?
+                          {:path "/c/home"}
+                          {:path "/b/stack"}))
+                      {:path "/login"}))}
+            (when chrome-extension-installed?
+              (if active-org
+                {:toast {:type "success"
+                         :title "Connected to Chrome Extension"
+                         :message "Your account has been connected to the Vetd Chrome Extension."}}
+                {:toast {:type "info"
+                         :title "Chrome Extension Installed"
+                         :message "Please login to connect your account to the Vetd Chrome Extension."}}))))))
 
 (defn c-page []
   (let [page& (rf/subscribe [:page])
@@ -243,6 +253,9 @@
 
 (sec/defroute home-path "/" []
   (rf/dispatch [:nav-home]))
+
+(sec/defroute home-after-chrome-extension-installed "/chrome-extension-installed" []
+  (rf/dispatch [:nav-home false true]))
 
 (sec/defroute login-path "/login" []
   (rf/dispatch [:route-login]))
@@ -339,7 +352,7 @@
  (fn [{:keys [db local-store]} [_ {:keys [logged-in? user memberships
                                           admin-of-groups admin?]}]]
    (if logged-in?
-     (let [org-id (some-> memberships first :org-id)] ; TODO support users with multi-orgs
+     (let [org-id (some-> memberships first :org-id)]  ; TODO support users with multi-orgs]
        {:db (assoc db  
                    :logged-in? true
                    :user user
@@ -350,6 +363,8 @@
                    ;; a Vetd employee with admin access?
                    :admin? admin?)
         :cookies {:admin-token (when admin? [(:session-token local-store) {:max-age 3600 :path "/"}])}
+        :chrome-extension {:cmd "setVetdUser"
+                           :args {:vetdUser user}}
         :after-req-session nil})
      {:after-req-session nil})))
 
