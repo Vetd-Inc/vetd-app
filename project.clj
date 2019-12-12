@@ -110,7 +110,7 @@
                  :pretty-print false
                  :closure-warnings
                  {:externs-validation :off :non-standard-jsdoc :off}
-                 :externs ["src/js/externs.js"]}}
+                 :externs ["src/js/externs.js" "src/js/chrome_extensions.externs.js"]}}
                :min-full
                {:source-paths ["src/clj" "src/cljc" "src/cljs/admin" "src/cljs/app"]
                 :compiler
@@ -122,7 +122,7 @@
                  :pretty-print false
                  :closure-warnings
                  {:externs-validation :off :non-standard-jsdoc :off}
-                 :externs ["src/js/externs.js"]}}}}
+                 :externs ["src/js/externs.js" "src/js/chrome_extensions.externs.js"]}}}}
              :aot :all
              :uberjar-name "vetd-app.jar"
              :resource-paths ["env/prod/resources"]}
