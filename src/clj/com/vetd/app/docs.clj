@@ -456,59 +456,59 @@
            :subject prod-id})))
 
 (defn create-doc-from-form-doc
-[{:keys [id doc-title prompts from-org from-user to-org to-user
-         doc-descr doc-notes doc-dtype doc-dsubtype product] :as form-doc}]
-(with-doc-handling form-doc
-  (let [{doc-id :id} (insert-doc {:title doc-title
-                                  :dtype doc-dtype
-                                  :dsubtype doc-dsubtype
-                                  :subject (:id product)
-                                  :descr doc-descr
-                                  :notes doc-notes
-                                  :form-id id
-                                  ;; fields below are reveresed intentionally
-                                  :from-org-id (:id to-org)
-                                  :from-user-id (:id to-user)
-                                  :to-org-id (:id from-org)
-                                  :to-user-id (:id from-user)})]
-    (doseq [{prompt-id :id :keys [response fields]} prompts]
-      (create-attached-doc-response doc-id
-                                    {:org-id (:id to-org)
-                                     :user-id (:id to-user)
-                                     :prompt-id prompt-id
-                                     :fields fields})))))
+  [{:keys [id doc-title prompts from-org from-user to-org to-user
+           doc-descr doc-notes doc-dtype doc-dsubtype product] :as form-doc}]
+  (with-doc-handling form-doc
+    (let [{doc-id :id} (insert-doc {:title doc-title
+                                    :dtype doc-dtype
+                                    :dsubtype doc-dsubtype
+                                    :subject (:id product)
+                                    :descr doc-descr
+                                    :notes doc-notes
+                                    :form-id id
+                                    ;; fields below are reveresed intentionally
+                                    :from-org-id (:id to-org)
+                                    :from-user-id (:id to-user)
+                                    :to-org-id (:id from-org)
+                                    :to-user-id (:id from-user)})]
+      (doseq [{prompt-id :id :keys [response fields]} prompts]
+        (create-attached-doc-response doc-id
+                                      {:org-id (:id to-org)
+                                       :user-id (:id to-user)
+                                       :prompt-id prompt-id
+                                       :fields fields})))))
 
 (defn- get-child-responses
-[doc-id]
-(some->> [[:docs {:id doc-id}
-           [:id
-            [:responses
-             {:deleted nil
-              :ref-deleted nil}
-             [:id :deleted :ref-id :prompt-id
-              [:fields {:deleted nil
-                        :_order_by {:idx :asc}}
-               [:sval :nval :dval :jval
-                [:prompt-field [:fname]]]]]]]]]
-         ha/sync-query
-         :docs
-         first
-         :responses))
+  [doc-id]
+  (some->> [[:docs {:id doc-id}
+             [:id
+              [:responses
+               {:deleted nil
+                :ref-deleted nil}
+               [:id :deleted :ref-id :prompt-id
+                [:fields {:deleted nil
+                          :_order_by {:idx :asc}}
+                 [:sval :nval :dval :jval
+                  [:prompt-field [:fname]]]]]]]]]
+           ha/sync-query
+           :docs
+           first
+           :responses))
 
 (defn response-fields-eq?
-[old-field {:keys [response ftype]}]
-(let [state (mapv :state response)]
-  (case ftype
-    "s" (= (mapv :sval old-field)
-           state)
-    "n" (= (mapv :nval old-field)
-           (ut/->long state))
-    "d" (= (mapv (comp str :dval) old-field) ;; HACK
-           state)
-    "e" (= (mapv :sval old-field)
-           state)
-    ("i" "j") (= (mapv :jval old-field)
-                 state))))
+  [old-field {:keys [response ftype]}]
+  (let [state (mapv :state response)]
+    (case ftype
+      "s" (= (mapv :sval old-field)
+             state)
+      "n" (= (mapv :nval old-field)
+             (ut/->long state))
+      "d" (= (mapv (comp str :dval) old-field) ;; HACK
+             state)
+      "e" (= (mapv :sval old-field)
+             state)
+      ("i" "j") (= (mapv :jval old-field)
+                   state))))
 
 (defn update-response-from-form-doc
   [doc-id {old-fields :fields :keys [ref-id]} {prompt-id :id new-fields :fields :keys [response]}] 
