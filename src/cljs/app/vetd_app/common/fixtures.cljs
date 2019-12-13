@@ -1,7 +1,6 @@
 (ns vetd-app.common.fixtures
   (:require [vetd-app.ui :as ui]
             [vetd-app.common.components :as cc]
-            [clojure.string :as s]
             [reagent.core :as r]
             [re-frame.core :as rf]))
 
@@ -22,15 +21,6 @@
         [:div.account-actions (when is-group-admin?
                                 {:style {:width 195}})
          [:h5 user-name]
-         ;; stopgap: show vendors a buyer/vendor toggle
-         (when @vendor?&
-           [:> ui/Checkbox
-            {:toggle true
-             :label "Vendor Mode?"
-             :style {:margin-bottom 14}
-             :on-click (fn [_ this]
-                         (when (.-checked this)
-                           (rf/dispatch [:do-fx {:nav {:external-url "https://vetd.com/thank-you-vendor"}}])))}])
          [:> ui/Checkbox
           {:toggle true
            :checked @dark-mode?&
@@ -41,7 +31,7 @@
                        (if (.-checked this)
                          (rf/dispatch [:dark-mode.on])
                          (rf/dispatch [:dark-mode.off])))}]
-         [:> ui/Button {:on-click #(rf/dispatch [:nav-settings])
+         [:> ui/Button {:on-click #(rf/dispatch [:nav-settings @vendor?&])
                         :color "lightteal"
                         :fluid true
                         :icon true

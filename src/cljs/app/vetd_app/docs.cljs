@@ -1,11 +1,9 @@
 (ns vetd-app.docs
   (:require [vetd-app.util :as util]
-            [vetd-app.flexer :as flx]
             [vetd-app.ui :as ui]
             [vetd-app.hooks :as hooks]
             [reagent.core :as r]
-            [re-frame.core :as rf]
-            [re-com.core :as rc]))
+            [re-frame.core :as rf]))
 
 (rf/reg-sub
  :docs/enums
@@ -120,21 +118,27 @@
 
 (rf/reg-event-fx
  :save-form-doc
- (fn [{:keys [db]} [_ form-doc]]
+ (fn [_ [_ form-doc]]
    (let [fd (walk-prep-for-save-form-doc form-doc)]
      {:ws-send {:payload {:cmd :save-form-doc
-                          :return nil
+                          :return {:handler :save-form-doc-return}
                           :form-doc fd}}})))
 
 (rf/reg-event-fx
+ :save-form-doc-return
+ (fn []
+   {:toast {:type "success"
+            :title "Changes Saved"}}))
+
+(rf/reg-event-fx
  :remove-prompt&response
- (fn [{:keys [db]} [_ prompt-id response-id form-id doc-id]]
+ (fn [_ [_ prompt-id response-id form-id doc-id]]
    {:ws-send (remove nil?
                      [(when (and prompt-id form-id)
-                         {:payload {:cmd :v/remove-prompt-from-form
-                                    :return nil
-                                    :prompt-id prompt-id
-                                    :form-id form-id}})
+                        {:payload {:cmd :v/remove-prompt-from-form
+                                   :return nil
+                                   :prompt-id prompt-id
+                                   :form-id form-id}})
                       (when (and response-id doc-id)
                         {:payload {:cmd :v/remove-response-from-doc
                                    :return nil
@@ -143,7 +147,7 @@
 
 (rf/reg-event-fx
  :propagate-prompt
- (fn [{:keys [db]} [_ form-prompt-ref-id target-form-id]]
+ (fn [_ [_ form-prompt-ref-id target-form-id]]
    {:ws-send {:payload {:cmd :v/propagate-prompt
                         :return nil
                         :form-prompt-ref-id form-prompt-ref-id
@@ -152,13 +156,11 @@
 (defn mk-form-doc-prompt-field-state*
   [{:keys [sval nval dval jval] :as resp-field}]
   (merge resp-field
-         {:state (r/atom (or dval nval sval jval
-                             ""))}))
+         {:state (r/atom (or dval nval sval jval ""))}))
 
 (defn mk-form-doc-prompt-field-state
   [prompt-field response-fields]
-  (let [resp-fields (mapv mk-form-doc-prompt-field-state*
-                          response-fields)]
+  (let [resp-fields (mapv mk-form-doc-prompt-field-state* response-fields)]
     (assoc prompt-field
            :response
            ;; TODO sort resp-fields by idx??
@@ -212,9 +214,9 @@
   [{:keys [fname ftype fsubtype response] :as prompt-field}]
   (let [value& (some-> response first :state)
         {response-field-id :id prompt-field-id :pf-id} (first response)]
-    [:> ui/FormField
+    [:<>
      (when-not (= fname "value")
-       [:label fname])
+       [:div fname])
      [ui/input {:value @value&
                 :on-change (fn [this]
                              (reset! value& (-> this .-target .-value)))
@@ -227,7 +229,7 @@
   ;; TODO support multiple response fields (for where list? = true)
   (let [value& (some-> response first :state)
         {response-id :id prompt-field-id :pf-id} (first response)]
-    [:> ui/FormField
+    [:<>
      (when-not (= fname "value")
        [:label fname])
      [:textarea {:value @value&
@@ -242,7 +244,7 @@
   ;; TODO support multiple response fields (for where list? = true)
   (let [value& (some-> response first :state)
         {response-id :id prompt-field-id :pf-id} (first response)]
-    [:> ui/FormField
+    [:<>
      (when-not (= fname "value")
        [:label fname])
      [ui/input {:value @value&
@@ -260,7 +262,7 @@
         enum-vals (rf/subscribe [:docs/enums fsubtype])
         {response-id :id prompt-field-id :pf-id} (first response)]
     (fn [{:keys [fname ftype fsubtype list? response] :as prompt-field}]
-      [:> ui/FormField
+      [:<>
        (when-not (= fname "value")
          [:label fname])
        [:> ui/Dropdown {:value @value&
@@ -283,7 +285,7 @@
         opts& (rf/subscribe [:docs/entities fsubtype])
         {response-id :id prompt-field-id :pf-id} (first response)]
     (fn [{:keys [fname fsubtype response] :as prompt-field}]
-      [:> ui/FormField
+      [:<>
        [:span {:data-prompt-field (str prompt-field)
                :data-response-field-id response-id
                :data-prompt-field-id prompt-field-id}]
@@ -337,23 +339,22 @@
     (r/create-class
      {:reagent-render
       (fn [{:keys [id prompt descr fields response actions] :as p} form-id doc-id]
-        [:div {:style {:margin "10px 0 40px 0"}}
-         [:div {:style {:margin-bottom "5px"}}
-          [:span {:style {:padding-right "10px"}} prompt]
+        [:> ui/FormField
+         [:label prompt
           (when descr
             [:> ui/Popup {:trigger (r/as-element [:> ui/Icon {:name "info circle"
-                                                              :style {:padding-right "30px"}}])
+                                                              :style {:margin-left "5px"}}])
                           :wide true}
-             descr])
-          (for [[k f] actions]
-            (if (= k :-on-load)
-              (do
-                (swap! on-load-fns conj (partial f p))
-                nil)
-              (do
-                ^{:key (str "prompt-action" id)}
-                [:a {:on-click (partial f p)
-                     :style {:margin-left "10px"}} k])))]
+             descr])]
+         (for [[k f] actions]
+           (if (= k :-on-load)
+             (do
+               (swap! on-load-fns conj (partial f p))
+               nil)
+             (do
+               ^{:key (str "prompt-action" id)}
+               [:a {:on-click (partial f p)
+                    :style {:margin-left "10px"}} k])))
          (for [{:keys [idstr ftype fsubtype] :as f} fields]
            ^{:key (str "field" (:id f))}
            [c-prompt-field f])])
@@ -385,17 +386,18 @@
          :doc-dsubtype fsubtype))
 
 (defn c-form-maybe-doc
-  [{:keys [id title product from-org from-user doc-id doc-title prompts] :as form-doc} & [{:keys [show-submit return-save-fn& c-wrapper]}]]
-  (let [save-fn #(rf/dispatch [:save-form-doc
-                               (prep-form-doc form-doc)])]
+  [{:keys [id title product from-org from-user
+           doc-id doc-title prompts]
+    :as form-doc}
+   & [{:keys [show-submit return-save-fn& c-wrapper]}]]
+  (let [save-fn #(rf/dispatch [:save-form-doc (prep-form-doc form-doc)])]
     (when return-save-fn&
       (reset! return-save-fn& save-fn))
     (conj (or c-wrapper
               [:> ui/Form {:as "div"
-                           :style {:width 400
-                                   :margin-bottom 50}}])
-          [:div
-	         (or doc-title title)
+                           :style {:width "100%"
+                                   :padding-bottom 14}}])
+          [:<>
 	         (when product
 	           [:div.product-name (:pname product)])
 	         (when from-org
@@ -409,7 +411,7 @@
 	           [:> ui/Button {:color "blue"
 	                          :fluid true
 	                          :on-click save-fn}
-	            "Submit"])])))
+	            "Save Changes"])])))
 
 (hooks/reg-hooks! hooks/c-prompt
                   {:default #'c-prompt-default})
@@ -423,7 +425,11 @@
 
 
 (defn c-missing-prompts
-  [{prompts1 :prompts :as prod-prof-form} {prompts2 :prompts :keys [id] :as form-doc}]
+  [{prompts1 :prompts
+    :as _prod-prof-form}
+   {prompts2 :prompts
+    :keys [id]
+    :as _form-doc}]
   (let [missing-prompt-ids (clojure.set/difference (->> prompts1 (mapv :id) set)
                                                    (->> prompts2 (mapv :id) set))]
     (when-not (empty? missing-prompt-ids)

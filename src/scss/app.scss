@@ -113,15 +113,11 @@ ul {
     img {
       height: 60px !important;
       width: 140px !important;
+      animation: party 1s linear 0s 1;
 
       @media #{$mobile} {
         height: 42px !important;
         width: 98px !important;
-      }
-
-      &:hover {
-        animation-timing-function: linear;
-        animation: 1s infinite party;
       }
     }
   }

@@ -11,17 +11,17 @@
 ;;;; Events
 (rf/reg-event-fx
  :nav-settings
- (constantly
-  {:nav {:path "/settings"}
-   :analytics/track {:event "Navigate"
-                     :props {:category "Navigation"
-                             :label "Settings"}}}))
+ (fn [_ [_ vendor?]]
+   {:nav {:path (if vendor? "/v/settings" "/b/settings")}
+    :analytics/track {:event "Navigate"
+                      :props {:category "Navigation"
+                              :label "Settings"}}}))
 
 (rf/reg-event-fx
  :route-settings
- (fn [{:keys [db]}]
+ (fn [{:keys [db]} [_ vendor?]]
    {:db (assoc db
-               :page :settings
+               :page (if vendor? :v/settings :b/settings)
                :page-params {:fields-editing #{}})}))
 
 (rf/reg-event-fx
