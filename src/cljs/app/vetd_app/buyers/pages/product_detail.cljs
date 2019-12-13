@@ -209,7 +209,8 @@
      [bc/c-pricing c-display-field v-fn discounts
       (boolean (seq forms)) ;; has requested (and perhaps completed) a preposal
       (boolean (seq docs)) ;; has a completed preposal?
-      preposal-v-fn]
+      preposal-v-fn
+      (-> docs first :updated)]
      [bc/c-vendor-profile (-> vendor :docs-out first) (:id vendor) (:oname vendor)]
      [bc/c-onboarding c-display-field v-fn]
      [bc/c-client-service c-display-field v-fn]
@@ -261,7 +262,7 @@
                                              :_order_by {:created :desc}
                                              :_limit 1
                                              :deleted nil}
-                                      [:id :idstr :title :result :reason
+                                      [:id :idstr :title :result :reason :updated
                                        [:from-org [:id :oname]]
                                        [:from-user [:id :uname]]
                                        [:to-org [:id :oname]]

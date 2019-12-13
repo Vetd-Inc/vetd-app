@@ -565,7 +565,7 @@
   "Component to display pricing information of a product profile.
   c-display-field - component to display a field (key/value)
   v-fn - function to get value per some prompt term"
-  [c-display-field v-fn discounts preposal-requested? preposal-completed? preposal-v-fn]
+  [c-display-field v-fn discounts preposal-requested? preposal-completed? preposal-v-fn preposal-updated]
   [c-profile-segment {:title "Pricing"
                       :scroll-to-ref-key :product/pricing
                       :icon "dollar"
@@ -573,12 +573,14 @@
                                    :margin-left -5}}
    [:> ui/GridRow
     (if preposal-completed?
-      [c-display-field 16 "Pricing Estimate"
+      [c-display-field 16 [:<> "Pricing Estimate"]
        [:<>
         (c-pricing-estimate preposal-v-fn)
         [:br]
         [:br]
-        (util/parse-md (preposal-v-fn :preposal/pitch))]]
+        (util/parse-md (preposal-v-fn :preposal/pitch))
+        [:small "Last Updated: " (util/relative-datetime (.getTime (js/Date. preposal-updated))
+                                                         {:trim-day-of-week? true})]]]
       [c-display-field 16 "Range"
        (when (has-data? (v-fn :product/price-range))
          [:<>
