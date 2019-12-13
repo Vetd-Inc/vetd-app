@@ -1,5 +1,6 @@
 (ns vetd-app.vendors.pages.product-detail
   (:require [vetd-app.ui :as ui]
+            [vetd-app.common.components :as cc]
             [vetd-app.util :as util]
             [vetd-app.docs :as docs]
             [reagent.core :as r]
@@ -64,36 +65,32 @@
   (let [pname& (r/atom pname)
         save-doc-fn& (atom nil)]
     (fn [{:keys [id pname form-doc created updated]}]
-      [:div {:style {:width "800px"}}
-       [:> ui/Form {:as "div"
-                    :style {:margin "10px"
-                            :padding "10px"
-                            :border "solid 1px #666666"}}
-        [:> ui/FormField
-         "Product Name"
-         [ui/input {:value (or @pname& pname) ;; necessary for some reason??
-                    :placeholder "Product Name"
-                    :spellCheck false
-                    :on-change (fn [this]
-                                 (reset! pname& (-> this .-target .-value)))}]]
-        [:div "created: " (.toString (js/Date. created))]
-        [:div "updated: " (.toString (js/Date. updated))]       
-        [docs/c-form-maybe-doc
-         (docs/mk-form-doc-state form-doc
-                                 actions)
-         {:return-save-fn& save-doc-fn&
-          :c-wrapper [:div]}]
-        [:> ui/Button {:color "teal"
-                       :fluid true
-                       :on-click #(do
-                                    (rf/dispatch [:v/save-product {:id id
-                                                                   :pname @pname&}])
-                                    (@save-doc-fn&))}
-         "Save Product"]
-        [:> ui/Button {:color "red"
-                       :fluid true
-                       :on-click #(rf/dispatch [:v/delete-product id])}
-         "DELETE  Product"]]])))
+      [:> ui/Form {:as "div"}
+       [:> ui/FormField
+        "Product Name"
+        [ui/input {:value (or @pname& pname) ;; necessary for some reason??
+                   :placeholder "Product Name"
+                   :spellCheck false
+                   :on-change (fn [this]
+                                (reset! pname& (-> this .-target .-value)))}]]
+       [:div "created: " (.toString (js/Date. created))]
+       [:div "updated: " (.toString (js/Date. updated))]       
+       [docs/c-form-maybe-doc
+        (docs/mk-form-doc-state form-doc
+                                actions)
+        {:return-save-fn& save-doc-fn&
+         :c-wrapper [:div]}]
+       [:> ui/Button {:color "teal"
+                      :fluid true
+                      :on-click #(do
+                                   (rf/dispatch [:v/save-product {:id id
+                                                                  :pname @pname&}])
+                                   (@save-doc-fn&))}
+        "Save Product"]
+       [:> ui/Button {:color "red"
+                      :fluid true
+                      :on-click #(rf/dispatch [:v/delete-product id])}
+        "DELETE  Product"]])))
 
 (defn mk-actions
   [{prompts1 :prompts :as prod-prof-form} {prompts2 :prompts form-id :id :keys [doc-id] :as form-doc}]
@@ -159,22 +156,28 @@
                                               [:id :idstr :fname :ftype
                                                :fsubtype :list? :sort]]]]]]]}])]
     (fn []
-      (let [prod-prof-form (-> @prod-prof-form&
-                               :forms
-                               first )]
-        [:div
-         (let [{:keys [id form-docs] :as p} (-> @prods& :products first)
-               {:keys [doc-product] :as form-doc} (first form-docs)
-               form-doc' (when form-doc
-                           (assoc form-doc
-                                  :product
-                                  doc-product))]
-           (when id
-             [:div
-              [docs/c-missing-prompts prod-prof-form form-doc]
-              [c-product (assoc p
-                                :form-doc
-                                (or form-doc'
-                                    (assoc prod-prof-form
-                                           :product {:id id}))
-                                :actions (mk-actions prod-prof-form form-doc'))]]))]))))
+      (if (= :loading @prod-prof-form&)
+        [cc/c-loader]
+        [:> ui/Grid {:stackable true}
+         [:> ui/GridRow
+          [:> ui/GridColumn {:computer 4 :mobile 16}]
+          [:> ui/GridColumn {:computer 8 :mobile 16}
+           [:> ui/Segment {:class "detail-container"}
+            (let [prod-prof-form (-> @prod-prof-form& :forms first)
+                  {:keys [id pname form-docs] :as p} (-> @prods& :products first)
+                  {:keys [doc-product] :as form-doc} (first form-docs)
+                  form-doc' (when form-doc
+                              (assoc form-doc
+                                     :product
+                                     doc-product))]
+              (when id
+                [:<>
+                 [:h2 pname]
+                 [docs/c-missing-prompts prod-prof-form form-doc]
+                 [c-product (assoc p
+                                   :form-doc
+                                   (or form-doc'
+                                       (assoc prod-prof-form
+                                              :product {:id id}))
+                                   :actions (mk-actions prod-prof-form form-doc'))]]))]]
+          [:> ui/GridColumn {:computer 4 :mobile 16}]]]))))

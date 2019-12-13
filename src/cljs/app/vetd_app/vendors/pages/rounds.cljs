@@ -1,5 +1,6 @@
 (ns vetd-app.vendors.pages.rounds
-  (:require [vetd-app.ui :as ui]
+  (:require [vetd-app.util :as util]
+            [vetd-app.ui :as ui]
             [vetd-app.common.components :as cc]
             [vetd-app.docs :as docs]
             [reagent.core :as r]
@@ -40,7 +41,7 @@
         [:small
          "Product: " pname
          [:br]
-         (.toString (js/Date. created))]]]]]))
+         "Created: " (util/relative-datetime (.getTime (js/Date. created)) {:trim-day-of-week? true})]]]]]))
 
 (defn c-page []
   (let [org-id& (rf/subscribe [:org-id])
@@ -68,10 +69,15 @@
                                 (sort-by :created)
                                 reverse)]
         (if (seq product-rounds)
-          [:> ui/ItemGroup {:class "results"}
-           (for [round product-rounds]
-             ^{:key (:id round)}
-             [c-round round])]
+          [:> ui/Grid {:stackable true}
+           [:> ui/GridRow
+            [:> ui/GridColumn {:computer 4 :mobile 16}]
+            [:> ui/GridColumn {:computer 8 :mobile 16}
+             [:> ui/ItemGroup {:class "results"}
+              (for [round product-rounds]
+                ^{:key (:id round)}
+                [c-round round])]]
+            [:> ui/GridColumn {:computer 4 :mobile 16}]]]
           [:> ui/Grid
            [:> ui/GridRow
             [:> ui/GridColumn {:computer 2 :mobile 0}]

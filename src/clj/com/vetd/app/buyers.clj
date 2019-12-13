@@ -107,14 +107,6 @@
                         [:= :buyer-id b-id]
                         [:in :vendor-id v-ids]]}))
 
-(defn insert-preposal-req
-  [buyer-id vendor-id]
-  (db/insert! :preposal_reqs
-              {:id (ut/uuid-str)
-               :buyer-id buyer-id
-               :vendor-id vendor-id
-               :created (ut/now)}))
-
 #_(select-prep-reqs-by-ids 3 [1 2 3 4])
 
 (defn invert-vendor-data

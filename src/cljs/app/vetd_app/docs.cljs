@@ -398,12 +398,6 @@
                            :style {:width "100%"
                                    :padding-bottom 14}}])
           [:<>
-	         (when product
-	           [:div.product-name (:pname product)])
-	         (when from-org
-	           [:div.org-name (:oname from-org)])
-	         (when from-user
-	           [:div.user-name (:uname from-user)])
 	         (for [p (sort-by :sort prompts)]
 	           ^{:key (str "prompt" (:id p))}
 	           [(hooks/c-prompt :default) p id doc-id])

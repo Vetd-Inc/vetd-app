@@ -1,5 +1,8 @@
 (ns vetd-app.vendors.pages.products
-  (:require [vetd-app.ui :as ui]
+  (:require [vetd-app.util :as util]
+            [vetd-app.ui :as ui]
+            [vetd-app.common.components :as cc]
+            [vetd-app.buyers.components :as bc]
             [vetd-app.docs :as docs]
             [reagent.core :as r]
             [re-frame.core :as rf]
@@ -24,18 +27,27 @@
    {:ws-send {:payload {:cmd :v/new-product
                         :vendor-id vendor-id}}}))
 
-(defn c-product-row
-  [{:keys [id pname created updated]}]
-  (fn [{:keys [id pname created updated]}]
-    [:div {:on-click #(rf/dispatch [:v/nav-product-detail id])
-           :style {:cursor :pointer
-                   :width "800px"
-                   :margin "10px"
-                   :padding "10px"
-                   :border "solid 1px #666666"}}
-     [:div "Name: " pname]
-     [:div "Created: " (.toString (js/Date. created))]
-     [:div "Updated: " (.toString (js/Date. updated))]]))
+(defn c-product
+  [{:keys [id pname created]}]
+  (let [nav-click (fn [e]
+                    (.stopPropagation e)
+                    (rf/dispatch [:v/nav-product-detail id]))]
+    [:> ui/Item {:onClick nav-click}
+     [:> ui/ItemContent
+      [:> ui/ItemHeader
+       [:> ui/Button {:onClick nav-click
+                      :color "blue"
+                      :icon true
+                      :labelPosition "right"
+                      :floated "right"}
+        "Edit Product"
+        [:> ui/Icon {:name "right arrow"}]]
+       pname
+       [:div {:style {:margin-top 3
+                      :font-weight 400}}
+        [:small
+         "Created: " (util/relative-datetime (.getTime (js/Date. created))
+                                             {:trim-day-of-week? true})]]]]]))
 
 (defn c-page []
   (let [org-id& (rf/subscribe [:org-id])
@@ -49,11 +61,23 @@
                                   :created
                                   :updated]]]}])]
     (fn []
-      [:div
-       [:> ui/Button {:color "teal"
-                      :fluid true
-                      :on-click #(rf/dispatch [:v/new-product @org-id&])}
-        "New Product"]
-       (for [{:keys [id] :as p} (:products @prods&)]
-         ^{:key (str "product" id)}
-         [:div [c-product-row p]])])))
+      (if (= :loading @prods&)
+        [cc/c-loader]
+        [:> ui/Grid {:stackable true}
+         [:> ui/GridRow
+          [:> ui/GridColumn {:computer 4 :mobile 16}]
+          [:> ui/GridColumn {:computer 8 :mobile 16}
+           [:> ui/Segment {:class "detail-container"}
+            [:> ui/Button {:color "teal"
+                           :fluid true
+                           :on-click #(rf/dispatch [:v/new-product @org-id&])}
+             "New Product"]]]
+          [:> ui/GridColumn {:computer 4 :mobile 16}]]
+         [:> ui/GridRow
+          [:> ui/GridColumn {:computer 4 :mobile 16}]
+          [:> ui/GridColumn {:computer 8 :mobile 16}
+           [:> ui/ItemGroup {:class "results"}
+            (for [{:keys [id] :as p} (:products @prods&)]
+              ^{:key (str "product" id)}
+              [c-product p])]]
+          [:> ui/GridColumn {:computer 4 :mobile 16}]]]))))
