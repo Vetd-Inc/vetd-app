@@ -20,6 +20,18 @@
    (.startConfetti js/window)
    (js/setTimeout #(.stopConfetti js/window) 3000)))
 
+;; Tries to send a message to the Vetd Chrome Extension
+(rf/reg-fx
+ :chrome-extension
+ (fn [{:keys [cmd args]}]
+   (when js/chrome
+     (js/chrome.runtime.sendMessage "gpmepfmejmnhphphkcabhlhfpccaabkj" ;; Chrome Web Store
+                                    ;; "lhnpimlngdmhglmgnkeallbalhbmkedi" ;; zach
+                                    ;; "ikflgpoecippcclhfahcpnifgccfhknc" ;; chris TODO not hardcoded
+                                    (clj->js {:command cmd
+                                              :args args})
+                                    #(println "Chrome sendMessage response: " %)))))
+
 ;; given a React component ref, scroll to it on the page
 (rf/reg-fx
  :scroll-to

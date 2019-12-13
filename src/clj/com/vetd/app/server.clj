@@ -5,13 +5,15 @@
             [com.vetd.app.env :as env]
             [com.vetd.app.db :as db]
             [com.vetd.app.links :as l]
-            [com.vetd.app.hasura :as ha]            
+            [com.vetd.app.hasura :as ha]
+            [com.vetd.app.forward :as f]
             [clojure.core.async :as a]
             [compojure.core :as c]
             [compojure.handler :as ch]
             [compojure.route :as cr]
             [hiccup.page :as page]
             [aleph.http :as ah]
+            [aleph.http.client-middleware :as ahcm]
             [manifold.stream :as ms]
             [ring.middleware.cookies :as rm-cookies]
             [ring.middleware.params :as rm-params]            
@@ -324,6 +326,15 @@
               (fn [{:keys [cookies]}]
                 (l/do-action-by-key k)
                 (app-html cookies)))
+       (c/POST "/forward" resp
+               (->> (ahcm/coerce-json-body {:coerce :always} resp true false)
+                    :body
+                    :message
+                    f/forward)
+               ;; TODO send something back
+               {:status 200
+                :headers {"content-type" "application/json"}
+                :body (ahcm/json-encode {:success true})})
        (c/GET "/ws" [] #'ws-handler)
        (cr/resources "/assets" {:root "public/assets"})
        (c/GET "/assets*" [] cr/not-found)

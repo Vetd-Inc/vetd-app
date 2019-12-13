@@ -1,0 +1,1 @@
+{:lint-as {secretary.core/defroute clojure.core/defn}}
