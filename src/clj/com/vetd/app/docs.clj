@@ -435,12 +435,22 @@
       first
       :id))
 
+(defn product-id->vendor-id [product-id]
+  (-> {:select [:vendor_id]
+       :from [:products]
+       :where [:= :id product-id]
+       :order-by [[:created :desc]]
+       :limit 1}
+      db/hs-query
+      first
+      :vendor_id))
+
 (defn create-preposal-req-form
-  [{:keys [to-org-id to-user-id from-org-id from-user-id prod-id] :as prep-req}]
+  [{:keys [prod-id] :as prep-req}]
   (create-form-from-template
    (merge prep-req
-          {:form-template-id
-           (find-latest-form-template-id [:= :ftype "preposal"])
+          {:form-template-id (find-latest-form-template-id [:= :ftype "preposal"])
+           :to-org-id (product-id->vendor-id prod-id)
            :title (str "Preposal Request " (gensym ""))
            :status "init"
            :subject prod-id})))

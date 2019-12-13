@@ -311,7 +311,7 @@
   (rf/dispatch [:b/route-stack-detail idstr]))
 
 ;; Vendors
-(sec/defroute vendors-preposals "/v/preposals" [query-params]
+(sec/defroute vendors-preposals "/v/estimates" [query-params]
   (rf/dispatch [:v/route-preposals query-params]))
 
 (sec/defroute vendors-products "/v/products" [query-params]
