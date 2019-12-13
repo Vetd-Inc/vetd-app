@@ -84,11 +84,13 @@
         uname (r/atom "")
         email (r/atom "")
         org-name (r/atom "")
+
         ;; for orgs
         options& (r/atom []) ; options from search results + current values
         search-query& (r/atom "")
         
-        org-url (r/atom "")        
+        org-url (r/atom "")
+        org-url-input-ref (atom nil)
         pwd (r/atom "")
         cpwd (r/atom "")
         bad-cpwd (r/atom false)
@@ -199,6 +201,7 @@
            [:input {:value @org-url
                     :style {:width 0} ; idk why 0 width works, but it does
                     :spellCheck false
+                    :ref (fn [this] (reset! org-url-input-ref this))
                     :on-change #(reset! org-url (-> % .-target .-value))}]]]]
         [:> ui/FormField {:error (= @bad-input& :terms-agree)
                           :style {:margin "25px 0 20px 0"}}

@@ -4,14 +4,13 @@
             [vetd-app.local-store :as local-store]
             vetd-app.cookies
             vetd-app.url
+            vetd-app.analytics
             vetd-app.debounce
             vetd-app.sub-trackers
             vetd-app.common.fx
             vetd-app.orgs.fx
             vetd-app.groups.fx
-            [vetd-app.util :as util]
             [vetd-app.websockets :as ws]
-            [vetd-app.analytics :as analytics]
             [vetd-app.hooks :as hooks]
             [vetd-app.buyers.fixtures :as b-fix]
             [vetd-app.buyers.pages.search :as p-bsearch]
@@ -51,7 +50,8 @@
                    :signup #'p-signup/c-page
                    :join-org-signup #'p-join-org-signup/c-page
                    :forgot-password #'p-forgot-password/c-page
-                   :settings #'p-settings/c-page
+                   :b/settings #'p-settings/c-page
+                   :v/settings #'p-settings/c-page
                    :b/search #'p-bsearch/c-page
                    :b/product-detail #'p-bproduct-detail/c-page
                    :b/rounds #'p-brounds/c-page
@@ -73,22 +73,23 @@
                    :signup #'pub-fix/container
                    :join-org-signup #'pub-fix/container
                    :forgot-password #'pub-fix/container
-                   :settings #'b-fix/container ; TODO fragile, misuse of buyer fixtures
+                   :b/settings #'b-fix/container
+                   :v/settings #'v-fix/container
                    :b/search #'b-fix/container
                    :b/product-detail #'b-fix/container
                    :b/rounds #'b-fix/container
                    :b/round-detail #'b-fix/appendable-container
                    :b/stack #'b-fix/container
                    :b/stack-detail #'b-fix/container
+                   :g/home #'b-fix/container
+                   :g/settings #'b-fix/container
+                   :g/detail #'b-fix/container
                    :v/preposals #'v-fix/container
                    :v/products #'v-fix/container
                    :v/product-detail #'v-fix/container
                    :v/profile #'v-fix/container
                    :v/rounds #'v-fix/container
-                   :v/round-product-detail #'v-fix/container
-                   :g/home #'b-fix/container
-                   :g/settings #'b-fix/container
-                   :g/detail #'b-fix/container})
+                   :v/round-product-detail #'v-fix/container})
 
 (rf/reg-event-db
  :init-db
@@ -271,8 +272,10 @@
 (sec/defroute forgot-password-prefill-path "/forgot-password/:email-address" [email-address]
   (rf/dispatch [:route-forgot-password email-address]))
 
-(sec/defroute settings-root "/settings" []
-  (rf/dispatch [:route-settings]))
+(sec/defroute buyers-settings "/b/settings" []
+  (rf/dispatch [:route-settings false]))
+(sec/defroute vendors-settings "/v/settings" []
+  (rf/dispatch [:route-settings true]))
 
 (sec/defroute groups-path "/c/:path-or-idstr" [path-or-idstr]
   (rf/dispatch (case path-or-idstr
@@ -309,29 +312,23 @@
 
 ;; Vendors
 (sec/defroute vendors-preposals "/v/preposals" [query-params]
-  (when @(rf/subscribe [:admin?])
-    (rf/dispatch [:v/route-preposals query-params])))
+  (rf/dispatch [:v/route-preposals query-params]))
 
 (sec/defroute vendors-products "/v/products" [query-params]
-  (when @(rf/subscribe [:admin?])
-    (rf/dispatch [:v/route-products query-params])))
+  (rf/dispatch [:v/route-products query-params]))
 
 (sec/defroute vendors-product-detail "/v/products/:idstr" [idstr]
-  (when @(rf/subscribe [:admin?])
-    (rf/dispatch [:v/route-product-detail idstr])))
+  (rf/dispatch [:v/route-product-detail idstr]))
 
 (sec/defroute vendors-profile "/v/profile" [query-params]
-  (when @(rf/subscribe [:admin?])
-    (rf/dispatch [:v/route-profile query-params])))
+  (rf/dispatch [:v/route-profile query-params]))
 
 (sec/defroute vendors-rounds-path "/v/rounds" [query-params]
-  (when @(rf/subscribe [:admin?])
-    (rf/dispatch [:v/route-rounds query-params])))
+  (rf/dispatch [:v/route-rounds query-params]))
 
 (sec/defroute vendors-round-product-detail "/v/rounds/:round-idstr/products/:product-idstr"
   [round-idstr product-idstr]
-  (when @(rf/subscribe [:admin?])
-    (rf/dispatch [:v/route-round-product-detail round-idstr product-idstr])))
+  (rf/dispatch [:v/route-round-product-detail round-idstr product-idstr]))
 
 ;; catch-all
 (sec/defroute catch-all-path "*" [*]
@@ -342,7 +339,7 @@
 
 (rf/reg-event-fx
  :ws-get-session-user
- (fn [{:keys [local-store]}]
+ (fn []
    {:ws-send {:payload {:cmd :auth-by-session
                         :return :ws/req-session}}}))
 

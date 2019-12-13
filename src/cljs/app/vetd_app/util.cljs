@@ -58,7 +58,7 @@
                        (not keep-nil) (remove (comp nil? key))
                        true (into {}))
         ratings-sum (reduce (fn [acc [k v]] (+ acc (* k v))) 0 ratings-enum)
-        ratings-count (reduce (fn [acc [k v]] (+ acc v)) 0 ratings-enum)
+        ratings-count (reduce (fn [acc [_ v]] (+ acc v)) 0 ratings-enum)
         ratings-mean (when (pos? ratings-count)
                        (/ ratings-sum ratings-count))]
     (if ratings-mean
