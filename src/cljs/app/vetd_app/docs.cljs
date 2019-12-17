@@ -309,8 +309,6 @@
 
 (defn c-prompt-field-list
   [c-prompt-field-fn {:keys [fname ftype fsubtype response] :as prompt-field}]
-  (println c-prompt-field-fn)
-  (println prompt-field)
   [:<>
    (for [{:keys [id] :as response-field} @response]
      ^{:key (str "resp-field" (or id (hash response-field)))}
