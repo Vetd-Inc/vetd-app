@@ -76,8 +76,14 @@
          [:> ui/GridRow
           [:> ui/GridColumn {:computer 4 :mobile 16}]
           [:> ui/GridColumn {:computer 8 :mobile 16}
-           [:> ui/ItemGroup {:class "results"}
-            (for [{:keys [id] :as p} (:products @prods&)]
-              ^{:key (str "product" id)}
-              [c-product p])]]
+           (if (seq (:products @prods&))
+             [:> ui/ItemGroup {:class "results"}
+              (for [{:keys [id] :as p} (:products @prods&)]
+                ^{:key (str "product" id)}
+                [c-product p])]
+             [:> ui/Segment {:placeholder true
+                             :class "how-vetd-works"}
+              [:> ui/Header {:icon true}
+               [:> ui/Icon {:name "th list"}]
+               "You don't have any products."]])]
           [:> ui/GridColumn {:computer 4 :mobile 16}]]]))))

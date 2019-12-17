@@ -80,13 +80,13 @@
             [:> ui/GridColumn {:computer 4 :mobile 16}]]]
           [:> ui/Grid
            [:> ui/GridRow
-            [:> ui/GridColumn {:computer 2 :mobile 0}]
-            [:> ui/GridColumn {:computer 12 :mobile 16}
+            [:> ui/GridColumn {:computer 4 :mobile 16}]
+            [:> ui/GridColumn {:computer 8 :mobile 16}
              [:> ui/Segment {:placeholder true
                              :class "how-vetd-works"}
               [:> ui/Header {:icon true}
                [:> ui/Icon {:name "vetd"}]
                "None of your products are currently in a VetdRound."]
               [:p {:style {:text-align "center"}}
-               "When a buyer adds one your products to their VetdRound, you will be able to provide responses to their Topics here."]]]
-            [:> ui/GridColumn {:computer 2 :mobile 0}]]])))))
+               "When a buyer adds one your products to their VetdRound, " [:br] "you will be able to provide responses to their Topics here."]]]
+            [:> ui/GridColumn {:computer 4 :mobile 16}]]])))))
