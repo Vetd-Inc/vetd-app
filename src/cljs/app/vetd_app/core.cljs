@@ -207,11 +207,13 @@
                     {:path "/a/search"}
                     ;; TODO support multiple orgs
                     (if active-org
-                      (if first-session?
-                        {:path "/b/stack"}
-                        (if (seq (:groups active-org)) ;; in a community?
-                          {:path "/c/home"}
-                          {:path "/b/stack"}))
+                      (if (:buyer? active-org)
+                        (if first-session?
+                          {:path "/b/stack"}
+                          (if (seq (:groups active-org)) ;; in a community?
+                            {:path "/c/home"}
+                            {:path "/b/stack"}))
+                        {:path "/v/profile"})
                       {:path "/login"}))}
             (when chrome-extension-installed?
               (if active-org

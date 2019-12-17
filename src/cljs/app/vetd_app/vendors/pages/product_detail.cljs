@@ -34,37 +34,22 @@
  :v/delete-product
  (fn [{:keys [db]} [_ product-id]]
    {:ws-send {:payload {:cmd :v/delete-product
+                        :return {:handler :v/delete-product.return}
                         :product-id product-id}}}))
 
-(defn auto-populate-categories [prompt]
-  (let [product-idstr& (rf/subscribe [:product-idstr])
-        cats& (rf/subscribe
-               [:gql/q {:queries
-                        [[:products {:idstr @product-idstr&
-                                     :deleted nil
-                                     :_order_by {:created :desc}
-                                     :_limit 1}
-                          [[:categories  {:ref-deleted nil}
-                            [:id :cname]]]]]}])]
-    (r/track! #(reset! (-> prompt
-                           :fields
-                           first
-                           :response)
-                       (->> @cats&
-                            :products
-                            first
-                            :categories
-                            (mapv (fn [{:keys [id cname]}]
-                                    {:state
-                                     (r/atom
-                                      {:id id
-                                       :text cname})})))))))
+(rf/reg-event-fx
+ :v/delete-product.return
+ (constantly
+  {:toast {:type "success"
+           :title "Product Deleted"}
+   :dispatch [:v/nav-products]}))
 
 (defn c-product
   [{:keys [id pname form-doc created updated actions]}]
   (let [pname& (r/atom pname)
-        save-doc-fn& (atom nil)]
-    (fn [{:keys [id pname form-doc created updated]}]
+        save-doc-fn& (atom nil)
+        popup-open? (r/atom false)]
+    (fn [{:keys [id pname form-doc created updated actions]}]
       [:> ui/Form {:as "div"}
        [:> ui/FormField
         "Product Name"
@@ -73,60 +58,58 @@
                    :spellCheck false
                    :on-change (fn [this]
                                 (reset! pname& (-> this .-target .-value)))}]]
-       [:div "created: " (.toString (js/Date. created))]
-       [:div "updated: " (.toString (js/Date. updated))]       
        [docs/c-form-maybe-doc
-        (docs/mk-form-doc-state form-doc
-                                actions)
+        (docs/mk-form-doc-state form-doc actions)
         {:return-save-fn& save-doc-fn&
          :c-wrapper [:div]}]
-       [:> ui/Button {:color "teal"
-                      :fluid true
-                      :on-click #(do
-                                   (rf/dispatch [:v/save-product {:id id
-                                                                  :pname @pname&}])
-                                   (@save-doc-fn&))}
-        "Save Product"]
-       [:> ui/Button {:color "red"
-                      :fluid true
-                      :on-click #(rf/dispatch [:v/delete-product id])}
-        "DELETE  Product"]])))
-
-(defn mk-actions
-  [{prompts1 :prompts :as prod-prof-form} {prompts2 :prompts form-id :id :keys [doc-id] :as form-doc}]
-  (let [missing-prompt-ids (clojure.set/difference (some->> prompts2 (mapv :id) set)
-                                                   (->> prompts1 (mapv :id) set))
-        remove-fn (fn [{:keys [id response]}]
-                    (rf/dispatch [:remove-prompt&response id (:id response) form-id doc-id]))]
-    (->> (for [{:keys [id prompt ref-id response]} (filter #(-> % :id missing-prompt-ids)
-                                                           prompts2)]
-           [id {"remove" remove-fn}])
-         (into {"product/categories"
-                {:-on-load auto-populate-categories
-                 "auto-populate" auto-populate-categories}}))))
+       [:> ui/Grid {:style {:margin-top 7}}
+        [:> ui/GridRow
+         [:> ui/GridColumn {:width 12}
+          [:> ui/Button {:color "blue"
+                         :fluid true
+                         :on-click #(do (rf/dispatch [:v/save-product {:id id
+                                                                       :pname @pname&}])
+                                        (@save-doc-fn&))}
+           "Save Changes"]]
+         [:> ui/GridColumn {:width 4}
+          [:> ui/Popup
+           {:position "bottom right"
+            :on "click"
+            :open @popup-open?
+            :on-close #(reset! popup-open? false)
+            :content (r/as-element
+                      [:div
+                       [:h5 "Are you sure you want to delete this product (" pname ")?"]
+                       [:> ui/ButtonGroup {:fluid true}
+                        [:> ui/Button {:on-click #(reset! popup-open? false)}
+                         "Cancel"]
+                        [:> ui/Button {:on-click (fn []
+                                                   (reset! popup-open? false)
+                                                   (rf/dispatch [:v/delete-product id]))
+                                       :color "red"}
+                         "Delete"]]])
+            :trigger (r/as-element
+                      [:> ui/Button {:color "red"
+                                     :fluid true
+                                     :on-click #(swap! popup-open? not)}
+                       "Delete"])}]]]]])))
 
 (defn c-page []
-  (let [org-id& (rf/subscribe [:org-id])
-        product-idstr& (rf/subscribe [:product-idstr])
+  (let [product-idstr& (rf/subscribe [:product-idstr])
         prods& (rf/subscribe [:gql/sub
                               {:queries
                                [[:products {:idstr @product-idstr&
                                             :deleted nil
                                             :_order_by {:created :desc}
                                             :_limit 1}
-                                 [:id
-                                  :pname
-                                  :short-desc
-                                  :long-desc
-                                  :logo
-                                  :url
-                                  :created
-                                  :updated
-                                  [:categories {:ref-deleted nil} [:id]]
+                                 [:id :pname :short-desc :long-desc :logo :url :created :updated
+                                  [:categories {:ref-deleted nil}
+                                   [:id]]
                                   [:form-docs {:ftype "product-profile"}
                                    [:id :title :ftype :fsubtype
                                     :doc-id :doc-title
-                                    [:doc-product [:id]]
+                                    [:doc-product
+                                     [:id]]
                                     [:prompts {:ref-deleted nil
                                                :_order_by {:sort :asc}}
                                      [:id :idstr :prompt :descr :sort :term
@@ -173,11 +156,6 @@
               (when id
                 [:<>
                  [:h2 pname]
-                 [docs/c-missing-prompts prod-prof-form form-doc]
-                 [c-product (assoc p
-                                   :form-doc
-                                   (or form-doc'
-                                       (assoc prod-prof-form
-                                              :product {:id id}))
-                                   :actions (mk-actions prod-prof-form form-doc'))]]))]]
+                 [c-product (assoc p :form-doc (or form-doc'
+                                                   (assoc prod-prof-form :product {:id id})))]]))]]
           [:> ui/GridColumn {:computer 4 :mobile 16}]]]))))

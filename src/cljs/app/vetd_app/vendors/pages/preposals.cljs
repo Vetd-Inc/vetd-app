@@ -4,8 +4,7 @@
             [vetd-app.buyers.components :as bc]
             [vetd-app.docs :as docs]
             [reagent.core :as r]
-            [re-frame.core :as rf]
-            [re-com.core :as rc]))
+            [re-frame.core :as rf]))
 
 (rf/reg-event-fx
  :v/nav-preposals
@@ -49,17 +48,30 @@
     (fn []
       (if (= :loading @preps&)
         [cc/c-loader]
-        [:> ui/Grid {:stackable true}
-         (for [form-doc (:form-docs @preps&)]
-           ^{:key (str "form" (:id form-doc))}
+        (if (seq (:form-docs @preps&))
+          [:> ui/Grid {:stackable true}
+           (for [form-doc (:form-docs @preps&)]
+             ^{:key (str "form" (:id form-doc))}
+             [:> ui/GridRow
+              [:> ui/GridColumn {:computer 4 :mobile 16}]
+              [:> ui/GridColumn {:computer 8 :mobile 16}
+               [:> ui/Segment {:class "detail-container"}
+                [:h2 (str "Estimate for "(:oname (:from-org form-doc)))]
+                [:p "Product: " (:pname (:product form-doc))]
+                [:p "Status: " (if (:doc-id form-doc) "Submitted (you can still make changes)" "Never Submitted")]
+                [docs/c-form-maybe-doc
+                 (docs/mk-form-doc-state form-doc)
+                 {:show-submit true}]]]
+              [:> ui/GridColumn {:computer 4 :mobile 16}]])]
+          [:> ui/Grid
            [:> ui/GridRow
             [:> ui/GridColumn {:computer 4 :mobile 16}]
             [:> ui/GridColumn {:computer 8 :mobile 16}
-             [:> ui/Segment {:class "detail-container"}
-              [:h2 (str "Estimate for "(:oname (:from-org form-doc)))]
-              [:p "Product: " (:pname (:product form-doc))]
-              [:p "Status: " (if (:doc-id form-doc) "Submitted (you can still make changes)" "Never Submitted")]
-              [docs/c-form-maybe-doc
-               (docs/mk-form-doc-state form-doc)
-               {:show-submit true}]]]
-            [:> ui/GridColumn {:computer 4 :mobile 16}]])]))))
+             [:> ui/Segment {:placeholder true
+                             :class "how-vetd-works"}
+              [:> ui/Header {:icon true}
+               [:> ui/Icon {:name "clipboard outline"}]
+               "No one has requested an estimate for your products."]
+              [:p {:style {:text-align "center"}}
+               "When a buyer requests an estimate for one of your products, " [:br] "you will be able to provide a price estimate and personalized pitch here."]]]
+            [:> ui/GridColumn {:computer 4 :mobile 16}]]])))))

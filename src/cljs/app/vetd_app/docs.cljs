@@ -3,7 +3,8 @@
             [vetd-app.ui :as ui]
             [vetd-app.hooks :as hooks]
             [reagent.core :as r]
-            [re-frame.core :as rf]))
+            [re-frame.core :as rf]
+            [clojure.string :as s]))
 
 (rf/reg-sub
  :docs/enums
@@ -292,11 +293,10 @@
        (when-not (= fname "value")
          [:label fname])
        [:> ui/Dropdown {:value (:id @state&)
-                        :onChange
-                        #(reset! state& {:id (.-value %2)
-                                         :text
-                                         (ui/get-text-from-opt-by-value (.-options %2)
-                                                                        (.-value %2))})
+                        :onChange #(reset! state& {:id (.-value %2)
+                                                   :text
+                                                   (ui/get-text-from-opt-by-value (.-options %2)
+                                                                                  (.-value %2))})
                         :onSearchChange #(swap! state&
                                                 assoc :text (aget %2 "searchQuery"))
                         :selection true
@@ -304,28 +304,39 @@
                         :searchQuery (:text @state&)
                         :selectOnNavigation false
                         :text (:text @state&)
+                        :fluid true
                         :options @opts&}]])))
 
 (defn c-prompt-field-list
   [c-prompt-field-fn {:keys [fname ftype fsubtype response] :as prompt-field}]
-  [:div
+  (println c-prompt-field-fn)
+  (println prompt-field)
+  [:<>
    (for [{:keys [id] :as response-field} @response]
      ^{:key (str "resp-field" (or id (hash response-field)))}
-     [:> ui/FormGroup
-      [c-prompt-field-fn (assoc prompt-field
-                                :response [response-field])]
-      [:> ui/Button {:color "red"
-                     :on-click (fn [& _]
-                                 (swap! response
-                                        (partial remove #(-> % :id (= id)))))
-                     :icon true}
-       [:> ui/Icon {:name "remove"}]]])
-   [:> ui/Button {:color "green"
-                  :on-click (fn [& _]
-                              (swap! response conj {:id (gensym "new-resp-field")
-                                                    :state (r/atom "")}))
-                  :icon true}
-    [:> ui/Icon {:name "add"}]]])
+     [:> ui/Grid {:style {:margin-top 0
+                          :margin-bottom 3}}
+      [:> ui/GridRow {:style {:padding-top 0}}
+       [:> ui/GridColumn {:width 12}
+        [c-prompt-field-fn (assoc prompt-field :response [response-field])]]
+       [:> ui/GridColumn {:width 4}
+        [:> ui/Label {:as "a"
+                      :on-click (fn [& _]
+                                  (swap! response
+                                         (partial remove #(-> % :id (= id)))))
+                      ;; :color "red"
+                      :style {:float "right"
+                              :margin-top 5}}
+         [:> ui/Icon {:name "remove"}]
+         "Remove"]]]])
+   [:> ui/Label {:as "a"
+                 :on-click (fn [& _]
+                             (swap! response conj {:id (gensym "new-resp-field")
+                                                   :state (r/atom "")}))
+                 :color "teal"
+                 :style {:margin-bottom 5}}
+    [:> ui/Icon {:name "add"}]
+    "Add New"]])
 
 (defn c-prompt-field [{:keys [idstr ftype fsubtype list?] :as field}]
   (let [c-prompt-field-fn (hooks/c-prompt-field idstr [ftype fsubtype] ftype :default)]
@@ -341,7 +352,7 @@
       (fn [{:keys [id prompt descr fields response actions] :as p} form-id doc-id]
         [:> ui/FormField
          [:label prompt
-          (when descr
+          (when-not (s/blank? descr)
             [:> ui/Popup {:trigger (r/as-element [:> ui/Icon {:name "info circle"
                                                               :style {:margin-left "5px"}}])
                           :wide true}
