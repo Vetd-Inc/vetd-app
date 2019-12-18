@@ -220,10 +220,7 @@
        [:div fname])
      [ui/input {:value @value&
                 :on-change (fn [this]
-                             (reset! value& (-> this .-target .-value)))
-                :attrs {:data-prompt-field (str prompt-field)
-                        :data-response-field-id (str "[" response-field-id "]")
-                        :data-prompt-field-id (str "[" prompt-field-id "]")}}]]))
+                             (reset! value& (-> this .-target .-value)))}]]))
 
 (defn c-prompt-field-textarea
   [{:keys [fname ftype fsubtype list? response] :as prompt-field}]
@@ -235,10 +232,7 @@
        [:label fname])
      [:textarea {:value @value&
                  :on-change (fn [this]
-                              (reset! value& (-> this .-target .-value)))
-                 :data-prompt-field (str prompt-field)
-                 :data-response-field-id response-id
-                 :data-prompt-field-id prompt-field-id}]]))
+                              (reset! value& (-> this .-target .-value)))}]]))
 
 (defn c-prompt-field-int
   [{:keys [fname ftype fsubtype list? response] :as prompt-field}]
@@ -251,10 +245,35 @@
      [ui/input {:value @value&
                 :on-change (fn [this]
                              (reset! value& (-> this .-target .-value)))
-                :attrs {:type "number"
-                        :data-prompt-field (str prompt-field)
-                        :data-response-field-id response-id
-                        :data-prompt-field-id prompt-field-id}}]]))
+                :attrs {:type "number"}}]]))
+
+(defn c-prompt-field-upload-image
+  [prompt-field]
+  (let [new-image? #(.startsWith % "data:")]
+    (fn [{:keys [fname response]}]
+      (let [value& (some-> response first :state)]
+        [:<>
+         (when-not (= fname "value")
+           [:label fname])
+         ;; show either existing logo, or currently selected logo from form value
+         (when-not (s/blank? @value&)
+           [:> ui/Image {:class "product-logo"
+                         :style {:width 150
+                                 :margin-bottom 10}
+                         :src (if (new-image? @value&)
+                                @value&
+                                (str "https://s3.amazonaws.com/vetd-logos/" @value&))}])
+         [:input {:type "file"
+                  :on-change (fn [e]
+                               (let [file (aget e "target" "files" 0)]
+                                 (if (< (aget file "size") 1100000)
+                                   (let [onloadend #(reset! value& (aget % "target" "result"))
+                                         reader (doto (js/FileReader.)
+                                                  (aset "onloadend" onloadend))]
+                                     (.readAsDataURL reader file))
+                                   (do (rf/dispatch [:toast {:type "error"
+                                                             :title "Max file size allowed is 1MB."}])
+                                       (aset (aget e "target") "value" "")))))}]]))))
 
 (defn c-prompt-field-enum
   [{:keys [fname ftype fsubtype list? response] :as prompt-field}]
@@ -272,10 +291,7 @@
                         :options (cons {:key "nil"
                                         :text " - - - "
                                         :value nil}
-                                       @enum-vals)
-                        :data-prompt-field (str prompt-field)
-                        :data-response-field-id response-id
-                        :data-prompt-field-id prompt-field-id}]])))
+                                       @enum-vals)}]])))
 
 
 (defn c-prompt-field-entity
@@ -287,9 +303,6 @@
         {response-id :id prompt-field-id :pf-id} (first response)]
     (fn [{:keys [fname fsubtype response] :as prompt-field}]
       [:<>
-       [:span {:data-prompt-field (str prompt-field)
-               :data-response-field-id response-id
-               :data-prompt-field-id prompt-field-id}]
        (when-not (= fname "value")
          [:label fname])
        [:> ui/Dropdown {:value (:id @state&)
@@ -408,8 +421,14 @@
                                    :padding-bottom 14}}])
           [:<>
 	         (for [p (sort-by :sort prompts)]
-	           ^{:key (str "prompt" (:id p))}
-	           [(hooks/c-prompt :default) p id doc-id])
+             ;; This syntax will work after we upgrade reagent version
+             ;; (https://github.com/reagent-project/reagent/blob/master/CHANGELOG.md#090-rc1-2019-09-10)
+	           ;; ^{:key (str "prompt" (:id p))}
+             [:<> {:key (str "prompt" (:id p))} ;; <-- for now just use key in props map
+              (when (:term p)
+                [:span.scroll-anchor {:ref (fn [this]
+                                             (rf/dispatch [:reg-scroll-to-ref (keyword (:term p)) this]))}])
+	            [(hooks/c-prompt :default) p id doc-id]])
 	         (when show-submit
 	           [:> ui/Button {:color "blue"
 	                          :fluid true
@@ -424,7 +443,8 @@
                    ["s" "multi"] #'c-prompt-field-textarea
                    ["n" "int"] #'c-prompt-field-int
                    "e" #'c-prompt-field-enum
-                   "i" #'c-prompt-field-entity})
+                   "i" #'c-prompt-field-entity
+                   ["u" "image"] #'c-prompt-field-upload-image})
 
 
 (defn c-missing-prompts

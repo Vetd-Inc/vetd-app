@@ -56,6 +56,7 @@
                  [buddy/buddy-hashers "1.3.0"]
                  ;; Misc
                  [org.clojure/data.csv "0.1.4"]
+                 [org.clojure/data.codec "0.1.1"]
                  [image-resizer "0.1.10"]
                  [net.mikera/imagez "0.12.0"]
                  [com.plaid/plaid-java "5.1.2"]

@@ -7,8 +7,11 @@
             [com.vetd.app.hasura :as ha]
             [taoensso.timbre :as log]
             [honeysql.core :as hs]
+            [mikera.image.core :as mimg]
+            [image-resizer.resize :as rzimg]
             [clojure.string :as s]
             clojure.data
+            [clojure.data.codec.base64 :as b64-codec]
             clojure.set))
 
 #_ (def handle-doc-creation nil)
@@ -90,6 +93,27 @@
          :nval nil
          :dval nil
          :jval v}
+    "u" {:sval (if-let [data-url-parts (re-seq #"(data:image/.*;base64,)(.*)" v)]
+                 (let [baos (java.io.ByteArrayOutputStream.)
+                       _ (-> data-url-parts
+                             first
+                             (nth 2)
+                             .getBytes
+                             b64-codec/decode
+                             (java.io.ByteArrayInputStream.)
+                             mimg/load-image
+                             ((rzimg/resize-fn 150 150 image-resizer.scale-methods/automatic))
+                             (mimg/write baos "png"))
+                       ba (.toByteArray baos)
+                       new-file-name (format "%s.png"
+                                             (com/md5-hex ba))]
+                   (com/s3-put "vetd-logos" new-file-name ba)
+                   (log/info (format "Product logo processed: '%s'" new-file-name))
+                   new-file-name)
+                 v)
+         :nval nil
+         :dval nil
+         :jval nil}
     "d" (throw (Exception. "TODO convert-field-val does not support dates"))))
 
 (defn insert-form
@@ -508,7 +532,9 @@
       "e" (= (mapv :sval old-field)
              state)
       ("i" "j") (= (mapv :jval old-field)
-                   state))))
+                   state)
+      "u" (= (mapv :sval old-field)
+             state))))
 
 (defn update-response-from-form-doc
   [doc-id {old-fields :fields :keys [ref-id]} {prompt-id :id new-fields :fields :keys [response]}] 

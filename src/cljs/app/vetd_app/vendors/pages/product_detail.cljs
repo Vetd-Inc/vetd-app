@@ -1,6 +1,7 @@
 (ns vetd-app.vendors.pages.product-detail
   (:require [vetd-app.ui :as ui]
             [vetd-app.common.components :as cc]
+            [vetd-app.buyers.components :as bc]
             [vetd-app.util :as util]
             [vetd-app.docs :as docs]
             [reagent.core :as r]
@@ -44,55 +45,16 @@
            :title "Product Deleted"}
    :dispatch [:v/nav-products]}))
 
-(defn c-product
-  [{:keys [id pname form-doc created updated actions]}]
-  (let [pname& (r/atom pname)
-        save-doc-fn& (atom nil)
-        popup-open? (r/atom false)]
-    (fn [{:keys [id pname form-doc created updated actions]}]
-      [:> ui/Form {:as "div"}
-       [:> ui/FormField
-        "Product Name"
-        [ui/input {:value (or @pname& pname) ;; necessary for some reason??
-                   :placeholder "Product Name"
-                   :spellCheck false
-                   :on-change (fn [this]
-                                (reset! pname& (-> this .-target .-value)))}]]
-       [docs/c-form-maybe-doc
-        (docs/mk-form-doc-state form-doc actions)
-        {:return-save-fn& save-doc-fn&
-         :c-wrapper [:div]}]
-       [:> ui/Grid {:style {:margin-top 7}}
-        [:> ui/GridRow
-         [:> ui/GridColumn {:width 12}
-          [:> ui/Button {:color "blue"
-                         :fluid true
-                         :on-click #(do (rf/dispatch [:v/save-product {:id id
-                                                                       :pname @pname&}])
-                                        (@save-doc-fn&))}
-           "Save Changes"]]
-         [:> ui/GridColumn {:width 4}
-          [:> ui/Popup
-           {:position "bottom right"
-            :on "click"
-            :open @popup-open?
-            :on-close #(reset! popup-open? false)
-            :content (r/as-element
-                      [:div
-                       [:h5 "Are you sure you want to delete this product (" pname ")?"]
-                       [:> ui/ButtonGroup {:fluid true}
-                        [:> ui/Button {:on-click #(reset! popup-open? false)}
-                         "Cancel"]
-                        [:> ui/Button {:on-click (fn []
-                                                   (reset! popup-open? false)
-                                                   (rf/dispatch [:v/delete-product id]))
-                                       :color "red"}
-                         "Delete"]]])
-            :trigger (r/as-element
-                      [:> ui/Button {:color "red"
-                                     :fluid true
-                                     :on-click #(swap! popup-open? not)}
-                       "Delete"])}]]]]])))
+(defn c-product-name-field
+  [default-pname pname&]
+  (when (nil? @pname&)
+    (reset! pname& default-pname))
+  [:> ui/FormField
+   "Product Name"
+   [ui/input {:value @pname&
+              :placeholder "Product Name"
+              :spellCheck false
+              :on-change (fn [this] (reset! pname& (-> this .-target .-value)))}]])
 
 (defn c-page []
   (let [product-idstr& (rf/subscribe [:product-idstr])
@@ -133,29 +95,96 @@
                                            [:prompts {:_order_by {:sort :asc}
                                                       :deleted nil
                                                       :ref-deleted nil}
-                                            [:id :idstr :prompt :descr :sort :ref-id
+                                            [:id :idstr :prompt :term :descr :sort :ref-id
                                              [:fields {:_order_by {:sort :asc}
                                                        :deleted nil}
                                               [:id :idstr :fname :ftype
-                                               :fsubtype :list? :sort]]]]]]]}])]
+                                               :fsubtype :list? :sort]]]]]]]}])
+        pname& (r/atom nil)
+        save-doc-fn& (atom nil)
+        popup-open? (r/atom false)]
     (fn []
       (if (= :loading @prod-prof-form&)
         [cc/c-loader]
-        [:> ui/Grid {:stackable true}
-         [:> ui/GridRow
-          [:> ui/GridColumn {:computer 4 :mobile 16}]
-          [:> ui/GridColumn {:computer 8 :mobile 16}
-           [:> ui/Segment {:class "detail-container"}
-            (let [prod-prof-form (-> @prod-prof-form& :forms first)
-                  {:keys [id pname form-docs] :as p} (-> @prods& :products first)
-                  {:keys [doc-product] :as form-doc} (first form-docs)
-                  form-doc' (when form-doc
-                              (assoc form-doc
-                                     :product
-                                     doc-product))]
-              (when id
-                [:<>
-                 [:h2 pname]
-                 [c-product (assoc p :form-doc (or form-doc'
-                                                   (assoc prod-prof-form :product {:id id})))]]))]]
-          [:> ui/GridColumn {:computer 4 :mobile 16}]]]))))
+        (let [prod-prof-form (-> @prod-prof-form& :forms first)
+              {:keys [id pname form-docs] :as p} (-> @prods& :products first)
+              {:keys [doc-product] :as form-doc} (first form-docs)
+              form-doc' (when form-doc
+                          (assoc form-doc
+                                 :product
+                                 doc-product))]
+          [:div.container-with-sidebar
+           [:div.sidebar
+            [:div {:style {:padding "0 15px"}}
+             [bc/c-back-button "Back"]]
+            [:> ui/Segment
+             [:> ui/Button {:on-click #(do (rf/dispatch [:v/save-product {:id id
+                                                                          :pname @pname&}])
+                                           (@save-doc-fn&))
+                            :color "blue"
+                            :fluid true
+                            :icon true
+                            :labelPosition "left"
+                            :style {:margin-right 15}}
+              "Save Changes"
+              [:> ui/Icon {:name "checkmark"}]]
+             [:> ui/Button {:on-click #(rf/dispatch [:b/nav-product-detail @product-idstr&])
+                            :color "lightblue"
+                            :fluid true
+                            :icon true
+                            :labelPosition "left"
+                            :style {:margin-right 15}}
+              "View As Buyer"
+              [:> ui/Icon {:name "list layout"}]]
+             [:> ui/Popup
+              {:position "bottom right"
+               :on "click"
+               :open @popup-open?
+               :on-close #(reset! popup-open? false)
+               :content (r/as-element
+                         [:div
+                          [:h5 "Are you sure you want to delete this product (" pname ")?"]
+                          [:> ui/ButtonGroup {:fluid true}
+                           [:> ui/Button {:on-click #(reset! popup-open? false)}
+                            "Cancel"]
+                           [:> ui/Button {:on-click (fn []
+                                                      (reset! popup-open? false)
+                                                      (rf/dispatch [:v/delete-product id]))
+                                          :color "red"}
+                            "Delete"]]])
+               :trigger (r/as-element
+                         [:> ui/Button {:on-click #(swap! popup-open? not)
+                                        :color "white"
+                                        :fluid true
+                                        :icon true
+                                        :labelPosition "left"
+                                        :style {:margin-right 15}}
+                          "Delete"
+                          [:> ui/Icon {:name "delete"}]])}]]
+            [:> ui/Segment {:class "top-categories"}
+             [:h4 "Jump To"]
+             (util/augment-with-keys
+              (for [[label k] (remove nil?
+                                      [["General" :top]
+                                       ["Pricing" :product/price-range]
+                                       ["Onboarding" :product/onboarding-estimated-time]
+                                       ["Reporting" :product/reporting]
+                                       ["Ideal Client & Case Studies" :product/ideal-client]
+                                       ["Roadmap" :product/roadmap]])]
+                [:div
+                 [:a.blue {:on-click #(rf/dispatch [:scroll-to k])}
+                  label]]))]]
+           [:div.inner-container
+            [:> ui/Segment {:class "detail-container"}
+             (when id
+               [:<>
+                [:h2 "Edit Product - " pname]
+                [:> ui/Form {:as "div"}
+                 [c-product-name-field pname pname&]
+                 [docs/c-form-maybe-doc
+                  (docs/mk-form-doc-state
+                   (or form-doc'
+                       (assoc prod-prof-form :product {:id id}))
+                   nil)
+                  {:return-save-fn& save-doc-fn&
+                   :c-wrapper [:div]}]]])]]])))))
