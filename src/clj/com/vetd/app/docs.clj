@@ -93,22 +93,24 @@
          :nval nil
          :dval nil
          :jval v}
-    "u" {:sval (let [baos (java.io.ByteArrayOutputStream.)
-                     _ (-> (re-seq #"(data:image/.*;base64,)(.*)" v)
-                           first
-                           (nth 2)
-                           .getBytes
-                           b64-codec/decode
-                           (java.io.ByteArrayInputStream.)
-                           mimg/load-image
-                           ((rzimg/resize-fn 150 150 image-resizer.scale-methods/automatic))
-                           (mimg/write baos "png"))
-                     ba (.toByteArray baos)
-                     new-file-name (format "%s.png"
-                                           (com/md5-hex ba))]
-                 (com/s3-put "vetd-logos" new-file-name ba)
-                 (log/info (format "Product logo processed: '%s'" new-file-name))
-                 new-file-name)
+    "u" {:sval (if-let [data-url-parts (re-seq #"(data:image/.*;base64,)(.*)" v)]
+                 (let [baos (java.io.ByteArrayOutputStream.)
+                       _ (-> data-url-parts
+                             first
+                             (nth 2)
+                             .getBytes
+                             b64-codec/decode
+                             (java.io.ByteArrayInputStream.)
+                             mimg/load-image
+                             ((rzimg/resize-fn 150 150 image-resizer.scale-methods/automatic))
+                             (mimg/write baos "png"))
+                       ba (.toByteArray baos)
+                       new-file-name (format "%s.png"
+                                             (com/md5-hex ba))]
+                   (com/s3-put "vetd-logos" new-file-name ba)
+                   (log/info (format "Product logo processed: '%s'" new-file-name))
+                   new-file-name)
+                 v)
          :nval nil
          :dval nil
          :jval nil}

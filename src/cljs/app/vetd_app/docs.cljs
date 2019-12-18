@@ -220,10 +220,7 @@
        [:div fname])
      [ui/input {:value @value&
                 :on-change (fn [this]
-                             (reset! value& (-> this .-target .-value)))
-                :attrs {:data-prompt-field (str prompt-field)
-                        :data-response-field-id (str "[" response-field-id "]")
-                        :data-prompt-field-id (str "[" prompt-field-id "]")}}]]))
+                             (reset! value& (-> this .-target .-value)))}]]))
 
 (defn c-prompt-field-textarea
   [{:keys [fname ftype fsubtype list? response] :as prompt-field}]
@@ -235,10 +232,7 @@
        [:label fname])
      [:textarea {:value @value&
                  :on-change (fn [this]
-                              (reset! value& (-> this .-target .-value)))
-                 :data-prompt-field (str prompt-field)
-                 :data-response-field-id response-id
-                 :data-prompt-field-id prompt-field-id}]]))
+                              (reset! value& (-> this .-target .-value)))}]]))
 
 (defn c-prompt-field-int
   [{:keys [fname ftype fsubtype list? response] :as prompt-field}]
@@ -251,21 +245,18 @@
      [ui/input {:value @value&
                 :on-change (fn [this]
                              (reset! value& (-> this .-target .-value)))
-                :attrs {:type "number"
-                        :data-prompt-field (str prompt-field)
-                        :data-response-field-id response-id
-                        :data-prompt-field-id prompt-field-id}}]]))
+                :attrs {:type "number"}}]]))
 
 (defn c-prompt-field-upload-image
-  [{:keys [fname response] :as prompt-field}]
+  [{:keys [response] :as prompt-field}]
   (let [value& (some-> response first :state)
-        {response-id :id prompt-field-id :pf-id} (first response)
         new-image? #(.startsWith % "data:")]
-    (fn [{:keys [fname response] :as prompt-field}]
+    (fn [{:keys [fname] :as prompt-field}]
       [:<>
        (when-not (= fname "value")
          [:label fname])
-       (when @value&
+       ;; show either existing logo, or currently selected logo from form value
+       (when-not (s/blank? @value&)
          [:> ui/Image {:class "product-logo"
                        :style {:width 150}
                        :src (if (new-image? @value&)
@@ -273,18 +264,11 @@
                               (str "https://s3.amazonaws.com/vetd-logos/" @value&))}])
        [:input {:type "file"
                 :on-change (fn [e]
-                             (let [file (aget e "target" "files" 0)]
-                               (let [onloadend #(reset! value& (aget % "target" "result"))
-                                     reader (doto (js/FileReader.)
-                                              (aset "onloadend" onloadend))]
-                                 (.readAsDataURL reader file))))}]
-       ;; [:textarea {:value @value&
-       ;;             :on-change (fn [this]
-       ;;                          (reset! value& (-> this .-target .-value)))
-       ;;             :data-prompt-field (str prompt-field)
-       ;;             :data-response-field-id response-id
-       ;;             :data-prompt-field-id prompt-field-id}]
-       ])))
+                             (let [file (aget e "target" "files" 0)
+                                   onloadend #(reset! value& (aget % "target" "result"))
+                                   reader (doto (js/FileReader.)
+                                            (aset "onloadend" onloadend))]
+                               (.readAsDataURL reader file)))}]])))
 
 (defn c-prompt-field-enum
   [{:keys [fname ftype fsubtype list? response] :as prompt-field}]
@@ -302,10 +286,7 @@
                         :options (cons {:key "nil"
                                         :text " - - - "
                                         :value nil}
-                                       @enum-vals)
-                        :data-prompt-field (str prompt-field)
-                        :data-response-field-id response-id
-                        :data-prompt-field-id prompt-field-id}]])))
+                                       @enum-vals)}]])))
 
 
 (defn c-prompt-field-entity
@@ -317,9 +298,6 @@
         {response-id :id prompt-field-id :pf-id} (first response)]
     (fn [{:keys [fname fsubtype response] :as prompt-field}]
       [:<>
-       [:span {:data-prompt-field (str prompt-field)
-               :data-response-field-id response-id
-               :data-prompt-field-id prompt-field-id}]
        (when-not (= fname "value")
          [:label fname])
        [:> ui/Dropdown {:value (:id @state&)

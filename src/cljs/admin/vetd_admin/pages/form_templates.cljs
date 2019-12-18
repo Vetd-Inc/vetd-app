@@ -92,7 +92,7 @@
 
 (defn c-ftype-dropdown [state&]
   [:> ui/Dropdown {:defaultValue @state&
-                   :fluid true
+                   :fluid "true"
                    :selection true
                    :onChange (fn [_ this] (reset! state& (.-value this)))
                    :options fsubtypes}])
@@ -156,7 +156,7 @@
           [:> ui/Label {:style {:width "200px"}} "Field Name"]
           [:> ui/Input {:defaultValue @fname&
                         :style {:width "300px"}
-                        :fluid true
+                        :fluid "true"
                         :spellCheck false
                         :onChange (mk-on-change-fn fname&)}]]
          [:> ui/FormField {:inline true}
@@ -166,20 +166,20 @@
           [:> ui/Label {:style {:width "200px"}} "Sort Order"]
           [:> ui/Input {:defaultValue @sort-order&
                         :spellCheck false
-                        :fluid true
+                        :fluid "true"
                         :onChange (mk-on-change-fn sort-order&)}]]
          [:> ui/FormField {:inline true}
           [:> ui/Label {:style {:width "200px"}} "List?"]
           [:> ui/Checkbox {:defaultChecked @list?&
                            :spellCheck false
-                           :fluid true                            
+                           :fluid "true"                            
                            :onChange (mk-on-change-fn list?&)}]]]
         [:> ui/FormField {:inline true}
          [:> ui/Label {:style {:width "200px"}} "Description"]
          [:> ui/TextArea {:defaultValue @descr&
                           :style {:width "500px"}
                           :spellCheck false
-                          :fluid true                           
+                          :fluid "true"                           
                           :onChange (mk-on-change-fn descr&)}]]
         [:> ui/Button {:color "red"
                        :icon true
@@ -254,26 +254,26 @@
           [:> ui/FormField {:inline true}
            [:> ui/Label {:style {:width "200px"}} "Prompt"]
            [:> ui/Input {:defaultValue @prompt&
-                         :fluid true
+                         :fluid "true"
                          :spellCheck false
                          :onChange (mk-on-change-fn prompt&)}]]
           [:> ui/FormField {:inline true}
            [:> ui/Label {:style {:width "200px"}} "Term"]
            [:> ui/Input {:defaultValue @term&
-                         :fluid true
+                         :fluid "true"
                          :spellCheck false
                          :onChange (mk-on-change-fn term&)}]]
           [:> ui/FormField {:inline true}
            [:> ui/Label {:style {:width "200px"}} "Sort Order"]
            [:> ui/Input {:defaultValue @sort-order&
                          :spellCheck false
-                         :fluid true                         
+                         :fluid "true"                         
                          :onChange (mk-on-change-fn sort-order&)}]]]
          [:> ui/FormField {:inline true}
           [:> ui/Label {:style {:width "200px"}} "Description"]
           [:> ui/TextArea {:defaultValue @descr&
                            :spellCheck false
-                           :fluid true                            
+                           :fluid "true"                            
                            :onChange (mk-on-change-fn descr&)}]]         
          [ui/nx-sub-accordion
           (for [pf fields]
