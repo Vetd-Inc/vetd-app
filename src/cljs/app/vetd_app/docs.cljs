@@ -265,11 +265,15 @@
                                 (str "https://s3.amazonaws.com/vetd-logos/" @value&))}])
          [:input {:type "file"
                   :on-change (fn [e]
-                               (let [file (aget e "target" "files" 0)
-                                     onloadend #(reset! value& (aget % "target" "result"))
-                                     reader (doto (js/FileReader.)
-                                              (aset "onloadend" onloadend))]
-                                 (.readAsDataURL reader file)))}]]))))
+                               (let [file (aget e "target" "files" 0)]
+                                 (if (< (aget file "size") 1100000)
+                                   (let [onloadend #(reset! value& (aget % "target" "result"))
+                                         reader (doto (js/FileReader.)
+                                                  (aset "onloadend" onloadend))]
+                                     (.readAsDataURL reader file))
+                                   (do (rf/dispatch [:toast {:type "error"
+                                                             :title "Max file size allowed is 1MB."}])
+                                       (aset (aget e "target") "value" "")))))}]]))))
 
 (defn c-prompt-field-enum
   [{:keys [fname ftype fsubtype list? response] :as prompt-field}]
@@ -417,8 +421,10 @@
                                    :padding-bottom 14}}])
           [:<>
 	         (for [p (sort-by :sort prompts)]
-	           ^{:key (str "prompt" (:id p))}
-             [:<>
+             ;; This syntax will work after we upgrade reagent version
+             ;; (https://github.com/reagent-project/reagent/blob/master/CHANGELOG.md#090-rc1-2019-09-10)
+	           ;; ^{:key (str "prompt" (:id p))}
+             [:<> {:key (str "prompt" (:id p))} ;; <-- for now just use key in props map
               (when (:term p)
                 [:span.scroll-anchor {:ref (fn [this]
                                              (rf/dispatch [:reg-scroll-to-ref (keyword (:term p)) this]))}])

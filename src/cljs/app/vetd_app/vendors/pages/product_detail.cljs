@@ -45,6 +45,17 @@
            :title "Product Deleted"}
    :dispatch [:v/nav-products]}))
 
+(defn c-product-name-field
+  [default-pname pname&]
+  (when (nil? @pname&)
+    (reset! pname& default-pname))
+  [:> ui/FormField
+   "Product Name"
+   [ui/input {:value @pname&
+              :placeholder "Product Name"
+              :spellCheck false
+              :on-change (fn [this] (reset! pname& (-> this .-target .-value)))}]])
+
 (defn c-page []
   (let [product-idstr& (rf/subscribe [:product-idstr])
         prods& (rf/subscribe [:gql/sub
@@ -97,8 +108,6 @@
         [cc/c-loader]
         (let [prod-prof-form (-> @prod-prof-form& :forms first)
               {:keys [id pname form-docs] :as p} (-> @prods& :products first)
-              _ (when (nil? @pname&)
-                  (reset! pname& pname))
               {:keys [doc-product] :as form-doc} (first form-docs)
               form-doc' (when form-doc
                           (assoc form-doc
@@ -159,9 +168,9 @@
                                       [["General" :top]
                                        ["Pricing" :product/price-range]
                                        ["Onboarding" :product/onboarding-estimated-time]
-                                       ["Client Service" :product/meeting-frequency]
                                        ["Reporting" :product/reporting]
-                                       ["Industry Niche" :product/ideal-client]])]
+                                       ["Ideal Client & Case Studies" :product/ideal-client]
+                                       ["Roadmap" :product/roadmap]])]
                 [:div
                  [:a.blue {:on-click #(rf/dispatch [:scroll-to k])}
                   label]]))]]
@@ -171,13 +180,7 @@
                [:<>
                 [:h2 "Edit Product - " pname]
                 [:> ui/Form {:as "div"}
-                 [:> ui/FormField
-                  "Product Name"
-                  [ui/input {:value @pname&
-                             :placeholder "Product Name"
-                             :spellCheck false
-                             :on-change (fn [this]
-                                          (reset! pname& (-> this .-target .-value)))}]]
+                 [c-product-name-field pname pname&]
                  [docs/c-form-maybe-doc
                   (docs/mk-form-doc-state
                    (or form-doc'
