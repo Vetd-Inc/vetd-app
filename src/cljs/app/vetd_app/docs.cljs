@@ -248,27 +248,28 @@
                 :attrs {:type "number"}}]]))
 
 (defn c-prompt-field-upload-image
-  [{:keys [response] :as prompt-field}]
-  (let [value& (some-> response first :state)
-        new-image? #(.startsWith % "data:")]
-    (fn [{:keys [fname] :as prompt-field}]
-      [:<>
-       (when-not (= fname "value")
-         [:label fname])
-       ;; show either existing logo, or currently selected logo from form value
-       (when-not (s/blank? @value&)
-         [:> ui/Image {:class "product-logo"
-                       :style {:width 150}
-                       :src (if (new-image? @value&)
-                              @value&
-                              (str "https://s3.amazonaws.com/vetd-logos/" @value&))}])
-       [:input {:type "file"
-                :on-change (fn [e]
-                             (let [file (aget e "target" "files" 0)
-                                   onloadend #(reset! value& (aget % "target" "result"))
-                                   reader (doto (js/FileReader.)
-                                            (aset "onloadend" onloadend))]
-                               (.readAsDataURL reader file)))}]])))
+  [prompt-field]
+  (let [new-image? #(.startsWith % "data:")]
+    (fn [{:keys [fname response]}]
+      (let [value& (some-> response first :state)]
+        [:<>
+         (when-not (= fname "value")
+           [:label fname])
+         ;; show either existing logo, or currently selected logo from form value
+         (when-not (s/blank? @value&)
+           [:> ui/Image {:class "product-logo"
+                         :style {:width 150
+                                 :margin-bottom 10}
+                         :src (if (new-image? @value&)
+                                @value&
+                                (str "https://s3.amazonaws.com/vetd-logos/" @value&))}])
+         [:input {:type "file"
+                  :on-change (fn [e]
+                               (let [file (aget e "target" "files" 0)
+                                     onloadend #(reset! value& (aget % "target" "result"))
+                                     reader (doto (js/FileReader.)
+                                              (aset "onloadend" onloadend))]
+                                 (.readAsDataURL reader file)))}]]))))
 
 (defn c-prompt-field-enum
   [{:keys [fname ftype fsubtype list? response] :as prompt-field}]
@@ -417,7 +418,11 @@
           [:<>
 	         (for [p (sort-by :sort prompts)]
 	           ^{:key (str "prompt" (:id p))}
-	           [(hooks/c-prompt :default) p id doc-id])
+             [:<>
+              (when (:term p)
+                [:span.scroll-anchor {:ref (fn [this]
+                                             (rf/dispatch [:reg-scroll-to-ref (keyword (:term p)) this]))}])
+	            [(hooks/c-prompt :default) p id doc-id]])
 	         (when show-submit
 	           [:> ui/Button {:color "blue"
 	                          :fluid true
