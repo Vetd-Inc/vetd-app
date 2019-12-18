@@ -85,7 +85,10 @@
     :text "Enum - Yes/No"}
    {:key :i-category
     :value [:i :i-category]
-    :text "Entity - Category"}])
+    :text "Entity - Category"}
+   {:key :u-image
+    :value [:u :image]
+    :text "Upload - Image"}])
 
 (defn c-ftype-dropdown [state&]
   [:> ui/Dropdown {:defaultValue @state&

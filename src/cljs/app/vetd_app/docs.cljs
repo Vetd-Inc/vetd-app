@@ -256,6 +256,36 @@
                         :data-response-field-id response-id
                         :data-prompt-field-id prompt-field-id}}]]))
 
+(defn c-prompt-field-upload-image
+  [{:keys [fname response] :as prompt-field}]
+  (let [value& (some-> response first :state)
+        {response-id :id prompt-field-id :pf-id} (first response)
+        new-image? #(.startsWith % "data:")]
+    (fn [{:keys [fname response] :as prompt-field}]
+      [:<>
+       (when-not (= fname "value")
+         [:label fname])
+       (when @value&
+         [:> ui/Image {:class "product-logo"
+                       :style {:width 150}
+                       :src (if (new-image? @value&)
+                              @value&
+                              (str "https://s3.amazonaws.com/vetd-logos/" @value&))}])
+       [:input {:type "file"
+                :on-change (fn [e]
+                             (let [file (aget e "target" "files" 0)]
+                               (let [onloadend #(reset! value& (aget % "target" "result"))
+                                     reader (doto (js/FileReader.)
+                                              (aset "onloadend" onloadend))]
+                                 (.readAsDataURL reader file))))}]
+       ;; [:textarea {:value @value&
+       ;;             :on-change (fn [this]
+       ;;                          (reset! value& (-> this .-target .-value)))
+       ;;             :data-prompt-field (str prompt-field)
+       ;;             :data-response-field-id response-id
+       ;;             :data-prompt-field-id prompt-field-id}]
+       ])))
+
 (defn c-prompt-field-enum
   [{:keys [fname ftype fsubtype list? response] :as prompt-field}]
   ;; TODO support multiple response fields (for where list? = true)
@@ -424,7 +454,8 @@
                    ["s" "multi"] #'c-prompt-field-textarea
                    ["n" "int"] #'c-prompt-field-int
                    "e" #'c-prompt-field-enum
-                   "i" #'c-prompt-field-entity})
+                   "i" #'c-prompt-field-entity
+                   ["u" "image"] #'c-prompt-field-upload-image})
 
 
 (defn c-missing-prompts
