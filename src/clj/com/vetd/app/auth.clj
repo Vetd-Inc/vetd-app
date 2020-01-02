@@ -63,112 +63,112 @@
       ffirst))
 
 (defn select-user-by-id
-  [id & fields]
-  (-> [[:users {:id id}
-        (or (not-empty fields)
-            [:id :uname :email])]]
-      ha/sync-query
-      vals
-      ffirst))
+[id & fields]
+(-> [[:users {:id id}
+      (or (not-empty fields)
+          [:id :uname :email])]]
+    ha/sync-query
+    vals
+    ffirst))
 
 
 
 (defn insert-user
-  [uname email pwd-hash]
-  (let [[id idstr] (ut/mk-id&str)]  
-    (-> (db/insert! :users
-                    {:id id
-                     :idstr idstr
-                     :created (ut/now-ts)
-                     :updated (ut/now-ts)
-                     :uname uname
-                     :email email
-                     :pwd pwd-hash})
-        first)))
+[uname email pwd-hash]
+(let [[id idstr] (ut/mk-id&str)]  
+  (-> (db/insert! :users
+                  {:id id
+                   :idstr idstr
+                   :created (ut/now-ts)
+                   :updated (ut/now-ts)
+                   :uname uname
+                   :email email
+                   :pwd pwd-hash})
+      first)))
 
 (defn valid-creds?
-  "If valid email / password combination, return that user map."
-  [email pwd]
-  (when-let [{pwd-hsh :pwd :as user} (select-user-by-email email :id :uname :email :pwd)]
-    (when (bhsh/check pwd pwd-hsh)
-      user)))
+"If valid email / password combination, return that user map."
+[email pwd]
+(when-let [{pwd-hsh :pwd :as user} (select-user-by-email email :id :uname :email :pwd)]
+  (when (bhsh/check pwd pwd-hsh)
+    user)))
 
 (defn valid-creds-by-id?
-  "If valid email / password combination, return that user map."
-  [user-id pwd]
-  (when-let [{pwd-hsh :pwd :as user} (select-user-by-id user-id :id :uname :email :pwd)]
-    (when (bhsh/check pwd pwd-hsh)
-      user)))
+"If valid email / password combination, return that user map."
+[user-id pwd]
+(when-let [{pwd-hsh :pwd :as user} (select-user-by-id user-id :id :uname :email :pwd)]
+  (when (bhsh/check pwd pwd-hsh)
+    user)))
 
 (defn select-memb-by-ids
-  [user-id org-id]
-  (-> [[:memberships {:user-id user-id
-                      :org-id org-id}
-        [:id :user-id :org-id :created]]]
-      ha/sync-query
-      vals
-      ffirst))
+[user-id org-id]
+(-> [[:memberships {:user-id user-id
+                    :org-id org-id}
+      [:id :user-id :org-id :created]]]
+    ha/sync-query
+    vals
+    ffirst))
 
 (defn select-memb-org-by-user-id
-  [user-id]
-  (-> [[:memberships {:user-id user-id}
-        [:id :user-id :org-id
-         [:org [:id :oname :id :created :buyer? :vendor?
-                [:groups [:id :idstr :gname :admin_org_id]]]]]]]
-      ha/sync-query
-      :memberships))
+[user-id]
+(-> [[:memberships {:user-id user-id}
+      [:id :user-id :org-id
+       [:org [:id :oname :id :created :buyer? :vendor?
+              [:groups [:id :idstr :gname :admin_org_id]]]]]]]
+    ha/sync-query
+    :memberships))
 
 (defn select-memb-by-id
-  [id]
-  (-> [[:memberships
-        {:id id}
-        [:id :user-id :org-id :created]]]
-      ha/sync-query
-      :memberships))
+[id]
+(-> [[:memberships
+      {:id id}
+      [:id :user-id :org-id :created]]]
+    ha/sync-query
+    :memberships))
 
 (defn insert-memb
-  [user-id org-id]
-  (let [[id idstr] (ut/mk-id&str)]
-    (-> (db/insert! :memberships
-                    {:id id
-                     :idstr idstr
-                     :created (ut/now-ts)
-                     :updated (ut/now-ts)
-                     :user_id user-id
-                     :org_id org-id})
-        first)))
+[user-id org-id]
+(let [[id idstr] (ut/mk-id&str)]
+  (-> (db/insert! :memberships
+                  {:id id
+                   :idstr idstr
+                   :created (ut/now-ts)
+                   :updated (ut/now-ts)
+                   :user_id user-id
+                   :org_id org-id})
+      first)))
 
 (defn delete-memb
-  [memb-id]
-  (db/hs-exe! {:delete-from :memberships
-               :where [:= :id memb-id]}))
+[memb-id]
+(db/hs-exe! {:delete-from :memberships
+             :where [:= :id memb-id]}))
 
 (defn create-or-find-memb
-  [user-id org-id & [{:keys [suppress-notification?]}]]
-  (if-let [memb (select-memb-by-ids user-id org-id)]
-    [false memb]
-    (when-let [inserted (insert-memb user-id org-id)]
-      (let [{:keys [uname email]} (some-> [[:users {:id user-id}
-                                            [:uname :email]]]
-                                          ha/sync-query
-                                          vals
-                                          ffirst)
-            {:keys [oname]} (some-> [[:orgs {:id org-id}
-                                      [:oname]]]
-                                    ha/sync-query
-                                    vals
-                                    ffirst)]
-        (when-not suppress-notification?
-          (do (journal/push-entry {:jtype :user-added-to-org
-                                   :user-id user-id
-                                   :org-id org-id
-                                   :user-name uname
-                                   :org-name oname})
-              (com/sns-publish :ui-misc
-                               "User Added to Org"
-                               (str uname " (" email ") was added to "
-                                    oname " (org)"))))
-        [true inserted]))))
+[user-id org-id & [{:keys [suppress-notification?]}]]
+(if-let [memb (select-memb-by-ids user-id org-id)]
+  [false memb]
+  (when-let [inserted (insert-memb user-id org-id)]
+    (let [{:keys [uname email]} (some-> [[:users {:id user-id}
+                                          [:uname :email]]]
+                                        ha/sync-query
+                                        vals
+                                        ffirst)
+          {:keys [oname]} (some-> [[:orgs {:id org-id}
+                                    [:oname]]]
+                                  ha/sync-query
+                                  vals
+                                  ffirst)]
+      (when-not suppress-notification?
+        (do (journal/push-entry {:jtype :user-added-to-org
+                                 :user-id user-id
+                                 :org-id org-id
+                                 :user-name uname
+                                 :org-name oname})
+            (com/sns-publish :ui-misc
+                             "User Added to Org"
+                             (str uname " (" email ") was added to "
+                                  oname " (org)"))))
+      [true inserted]))))
 
 (defn prepare-account-map
   "Normalizes and otherwise prepares an account map for insertion in DB."
@@ -522,28 +522,36 @@ Groups That Don't Exist: '%s'"
 
 (defmethod l/action :invite-user-to-org
   [{:keys [input-data uses-action] :as link} account]
-  (let [{:keys [email org-id override-from-org-name]} input-data
-        normalized-email (normalize-email email)
+  (let [{:keys [email org-id override-from-org-name from-reusable-link]} input-data
+        signup-flow? (every? (partial contains? account)
+                             (if from-reusable-link
+                               [:email :uname :pwd]
+                               [:uname :pwd]))
+        normalized-email (if from-reusable-link
+                           (when signup-flow? (:email account))
+                           (normalize-email email))
         org-name (or override-from-org-name
-                     (:oname (select-org-by-id org-id)))
-        signup-flow? (every? (partial contains? account) [:uname :pwd])]
+                     (:oname (select-org-by-id org-id)))]
     ;; this link action is 'overloaded'
     (if-not signup-flow?
       ;; standard usage of the link (i.e., the initial click from email)
-      (if-let [{:keys [id]} (select-user-by-email normalized-email)]
-        ;; the account already exists, just add them to org, and give a session token
-        (do (create-or-find-memb id org-id)
-            ;; this link is now maxed out for actions
-            ;; the (inc) is because the uses-actions will be incremented after this method evals
-            (l/update-max-uses link "action" (inc uses-action))
-            (l/update-expires link "read" (+ (ut/now) (* 1000 60 5))) ; allow read for next 5 mins
-            {:user-exists? true
-             :org-name org-name
-             :session-token (-> id insert-session :token)})
-        ;; they will need to "signup by invite"
-        (do (l/update-expires link "read" (+ (ut/now) (* 1000 60 5))) ; allow read for next 5 mins
-            {:user-exists? false
-             :org-name org-name}))
+      (let [{:keys [id]} (when normalized-email
+                           (select-user-by-email normalized-email))]
+        (if (and (not from-reusable-link) id)
+          ;; the account already exists, just add them to org, and give a session token
+          (do (create-or-find-memb id org-id)
+              ;; this link is now maxed out for actions
+              ;; the (inc) is because the uses-actions will be incremented after this method evals
+              (l/update-max-uses link "action" (inc uses-action))
+              (l/update-expires link "read" (+ (ut/now) (* 1000 60 5))) ; allow read for next 5 mins
+              {:user-exists? true
+               :org-name org-name
+               :session-token (-> id insert-session :token)})
+          ;; they will need to "signup by invite"
+          (do (l/update-expires link "read" (+ (ut/now) (* 1000 60 5))) ; allow read for next 5 mins
+              {:user-exists? false
+               :org-name org-name
+               :need-email? (boolean from-reusable-link)})))
       ;; reusing link action to create account + add to org
       ;; used from ws, :do-link-action cmd
       (let [{:keys [uname pwd]} account
@@ -560,8 +568,12 @@ Groups That Don't Exist: '%s'"
                                :user-name uname})
           ;; this 'output' will be read immediately from the ws results
           ;; i.e., it won't be read from a link read
+
+          ;; TODO when from-reusable-link they still need to verify their email address
+          
           {:org-name org-name
-           :session-token (-> id insert-session :token)})))))
+           :session-token (-> id insert-session :token)
+           :hide-from-link-output true})))))
 
 (defmethod l/action :g/join
   [{:keys [input-data] :as link} args]
@@ -583,3 +595,16 @@ Groups That Don't Exist: '%s'"
       ;; Step 2 (final step) 
       (do (g/create-or-find-group-org-memb org-id group-id)
           {}))))
+
+(defmethod com/handle-ws-inbound :create-org-invite-link
+  [{:keys [org-id] :as req} ws-id sub-fn]
+  (let [link-key (l/create {:cmd :invite-user-to-org
+                            :input-data {:org-id org-id
+                                         :from-reusable-link true}
+                            ;; 45 days from now
+                            :expires-action (+ (ut/now) (* 1000 60 60 24 45))
+                            :max-uses-action 9999999
+                            :max-uses-read 9999999
+                            :expires-read (+ (ut/now) (* 1000 60 60 24 45))
+                            :short-key? true})]
+    {:url (str l/base-url link-key)}))

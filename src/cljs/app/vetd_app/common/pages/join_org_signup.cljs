@@ -1,5 +1,6 @@
 (ns vetd-app.common.pages.join-org-signup
   (:require [vetd-app.ui :as ui]
+            [vetd-app.util :as util]
             [reagent.core :as r]
             [re-frame.core :as rf]
             [clojure.string :as s]))
@@ -22,10 +23,11 @@
 
 (rf/reg-event-fx
  :join-org-signup.submit
- (fn [{:keys [db]} [_ {:keys [uname pwd cpwd terms-agree] :as account} link-key]]
+ (fn [{:keys [db]} [_ {:keys [need-email? email uname pwd cpwd terms-agree] :as account} link-key]]
    (let [[bad-input message] ; TODO use validated-dispatch-fx
          (cond
            (not (re-matches #".+\s.+" uname)) [:uname "Please enter your full name (first & last)."]
+           (and need-email? (not (util/valid-email-address? email))) [:email "Please enter a valid email address."]
            (< (count pwd) 8) [:pwd "Password must be at least 8 characters."]
            (not= pwd cpwd) [:cpwd "Password and Confirm Password must match."]
            (not terms-agree) [:terms-agree "You must agree to the Terms of Use in order to sign up."]
@@ -77,15 +79,21 @@
  :signup-by-link-org-name
  (fn [{:keys [signup-by-link-org-name]}] signup-by-link-org-name))
 
+(rf/reg-sub
+ :signup-by-link-need-email?
+ (fn [{:keys [signup-by-link-need-email?]}] signup-by-link-need-email?))
+
 ;; Components
 (defn c-page []
-  (let [uname (r/atom "")
+  (let [email (r/atom "") ;; email is only requested if it's from a org invite reusable link (as opposed to email)
+        uname (r/atom "")
         pwd (r/atom "")
         cpwd (r/atom "")
         bad-cpwd (r/atom false)
         terms-agree (r/atom false)
         bad-input& (rf/subscribe [:bad-input])
         org-name& (rf/subscribe [:signup-by-link-org-name])
+        need-email?& (rf/subscribe [:signup-by-link-need-email?])
         link-key& (rf/subscribe [:link-key])]
     (fn []
       [:div.centerpiece
@@ -103,11 +111,20 @@
         ;; "Join COMMUNITY on Vetd"
         ]
        [:> ui/Form {:style {:margin-top 25}}
+        (when @need-email?&
+          [:> ui/FormField {:error (= @bad-input& :email)}
+           [:label "Work Email Address"
+            [:> ui/Input {:class "borderless"
+                          :type "email"
+                          :spellCheck false
+                          :auto-focus true
+                          :on-invalid #(.preventDefault %) ; no type=email error message (we'll show our own)
+                          :on-change (fn [_ this] (reset! email (.-value this)))}]]])
         [:> ui/FormField {:error (= @bad-input& :uname)}
          [:label "Full Name"
           [:> ui/Input {:class "borderless"
                         :spellCheck false
-                        :auto-focus true
+                        :auto-focus (not @need-email?&)
                         :onChange (fn [_ this] (reset! uname (.-value this)))}]]]
         [:> ui/FormField {:error (= @bad-input& :pwd)}
          [:label "Password"
@@ -135,7 +152,9 @@
         [:> ui/Button {:color "blue"
                        :fluid true
                        :on-click #(rf/dispatch [:join-org-signup.submit
-                                                {:uname @uname
+                                                {:need-email? @need-email?&
+                                                 :email @email
+                                                 :uname @uname
                                                  :pwd @pwd
                                                  :cpwd @cpwd
                                                  :terms-agree @terms-agree}
