@@ -41,29 +41,40 @@
 
 (rf/reg-event-fx
  :join-org-signup
- (fn [{:keys [db]} [_ {:keys [uname pwd] :as account} link-key]]
+ (fn [{:keys [db]} [_ {:keys [email uname pwd] :as account} link-key]]
    {:ws-send {:ws (:ws db)
               :payload {:cmd :do-link-action
                         :return {:handler :join-org-signup-return}
                         :link-key link-key
+                        :email email
                         :uname uname
                         :pwd pwd}}}))
 (rf/reg-event-fx
  :join-org-signup-return
  (fn [{:keys [db]} [_ {:keys [cmd output-data] :as results}]]
    (if (= cmd :invite-user-to-org)
-     {:toast {:type "success"
-              ;; this is a vague "Joined!" because it could
-              ;; be an org or a community
-              :title "Joined!"
-              :message (str "You accepted an invitation to join " (:org-name output-data))}
-      :local-store {:session-token (:session-token output-data)}
-      :dispatch-later [{:ms 100 :dispatch [:ws-get-session-user]}
-                       {:ms 1000 :dispatch [:nav-home true]}
-                       {:ms 1500 :dispatch [:do-fx {:analytics/track
-                                                    {:event "FRONTEND Signup Complete"
-                                                     :props {:category "Accounts"
-                                                             :label "By Explicit Invite"}}}]}]}
+     (if (:user-creation-initiated-from-reusable-link? output-data)
+       (if-not (:email-used? output-data)
+         {:dispatch [:nav-login]
+          :toast {:type "success"
+                  :title "Please check your email"
+                  :message (str "We've sent an email to " (:email output-data) " with a link to activate your account.")}}
+         {:db (assoc-in db [:page-params :bad-input] :email)
+          :toast {:type "error" 
+                  :title "Error"
+                  :message "There is already an account with that email address."}})
+       {:toast {:type "success"
+                ;; this is a vague "Joined!" because it could
+                ;; be an org or a community
+                :title "Joined!"
+                :message (str "You accepted an invitation to join " (:org-name output-data))}
+        :local-store {:session-token (:session-token output-data)}
+        :dispatch-later [{:ms 100 :dispatch [:ws-get-session-user]}
+                         {:ms 1000 :dispatch [:nav-home true]}
+                         {:ms 1500 :dispatch [:do-fx {:analytics/track
+                                                      {:event "FRONTEND Signup Complete"
+                                                       :props {:category "Accounts"
+                                                               :label "By Explicit Invite"}}}]}]})
      {:toast {:type "error"
               :title "Sorry, that invitation is invalid or has expired."}
       :dispatch [:nav-home]})))

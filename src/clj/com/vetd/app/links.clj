@@ -136,7 +136,7 @@
   [link & [args]]
   (let [result (action link args)]
     (when (and (not (nil? result))
-               (not (:hide-from-link-output result)))
+               (not (:hide-from-link-output? result)))
       (update-output link result))
     (inc-uses link "action")
     result))
