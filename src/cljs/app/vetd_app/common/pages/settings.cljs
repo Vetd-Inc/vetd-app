@@ -113,6 +113,41 @@
                                  
                                  :else nil))))
 
+(rf/reg-event-fx
+ :create-org-invite-link
+ (fn [_ [_ org-id]]
+   {:ws-send {:payload {:cmd :create-org-invite-link
+                        :return {:handler :create-org-invite-link.return}
+                        :org-id org-id}}}))
+
+(rf/reg-event-fx
+ :create-org-invite-link.return
+ (fn [_ [_ {:keys [url]}]]
+   {:dispatch [:modal {:header "Shareable Invite Link"
+                       :size "tiny"
+                       :content [:<>
+                                 [:p
+                                  "Share this link with anyone you want to join your organization."
+                                  [:br]
+                                  [:em "It can be used an unlimited number of times, but will expire in 45 days."]]
+                                 [:> ui/Input
+                                  {:id "group-invite-url"
+                                   :action (r/as-element
+                                            [:> ui/Button
+                                             {:on-click (fn []
+                                                          (doto (util/node-by-id "group-invite-url")
+                                                            .focus
+                                                            .select)
+                                                          (.execCommand js/document "copy")
+                                                          (rf/dispatch [:toast {:type "success"
+                                                                                :title "Link copied"}]))
+                                              :color "teal"
+                                              :labelPosition "right"
+                                              :icon "copy"
+                                              :content "Copy"}])
+                                   :default-value url
+                                   :fluid true}]]}]}))
+
 ;; use this to remove a user from an org
 (rf/reg-event-fx
  :delete-membership
@@ -319,12 +354,24 @@
                        :as "a"
                        :style {:float "right"}}
           "Cancel"]
-         [:> ui/Label {:on-click #(rf/dispatch [:edit-field "invite-email-address"])
-                       :as "a"
-                       :color "teal"
-                       :style {:float "right"}}
-          [:> ui/Icon {:name "add user"}]
-          "Invite New Member"])
+         [:div
+          [:> ui/Label {:on-click #(rf/dispatch [:edit-field "invite-email-address"])
+                        :as "a"
+                        :color "teal"
+                        :style {:float "right"}}
+           [:> ui/Icon {:name "add user"}]
+           "Invite New Member"]
+          [:> ui/Popup
+           {:position "bottom center"
+            :content "Create a shareable invite link that lasts for 45 days."
+            :trigger (r/as-element 
+                      [:> ui/Label {:on-click #(rf/dispatch [:create-org-invite-link org-id])
+                                    :as "a"
+                                    :color "teal"
+                                    :style {:float "right"
+                                            :margin-right 10}}
+                       [:> ui/Icon {:name "linkify"}]
+                       "Invite Link"])}]])
        [:h3.display-field-key "Members"]
        [c-invite-member-form org-id]
        ;; this TransitionGroup doesn't seem to be transitioning...

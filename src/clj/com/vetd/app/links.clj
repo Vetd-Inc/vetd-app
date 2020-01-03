@@ -135,9 +135,10 @@
 (defn do-action
   [link & [args]]
   (let [result (action link args)]
-    (when-not (nil? result)
-      (update-output link result)
-      (inc-uses link "action"))
+    (when (and (not (nil? result))
+               (not (:hide-from-link-output? result)))
+      (update-output link result))
+    (inc-uses link "action")
     result))
 
 (defn do-action-by-key

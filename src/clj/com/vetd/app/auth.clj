@@ -522,46 +522,67 @@ Groups That Don't Exist: '%s'"
 
 (defmethod l/action :invite-user-to-org
   [{:keys [input-data uses-action] :as link} account]
-  (let [{:keys [email org-id override-from-org-name]} input-data
-        normalized-email (normalize-email email)
+  (let [{:keys [email org-id override-from-org-name from-reusable-link?]} input-data
+        signup-flow? (every? (partial contains? account)
+                             (if from-reusable-link?
+                               [:email :uname :pwd]
+                               [:uname :pwd]))
+        normalized-email (if from-reusable-link?
+                           (when signup-flow? (:email account))
+                           (normalize-email email))
         org-name (or override-from-org-name
-                     (:oname (select-org-by-id org-id)))
-        signup-flow? (every? (partial contains? account) [:uname :pwd])]
+                     (:oname (select-org-by-id org-id)))]
     ;; this link action is 'overloaded'
     (if-not signup-flow?
       ;; standard usage of the link (i.e., the initial click from email)
-      (if-let [{:keys [id]} (select-user-by-email normalized-email)]
-        ;; the account already exists, just add them to org, and give a session token
-        (do (create-or-find-memb id org-id)
-            ;; this link is now maxed out for actions
-            ;; the (inc) is because the uses-actions will be incremented after this method evals
-            (l/update-max-uses link "action" (inc uses-action))
-            (l/update-expires link "read" (+ (ut/now) (* 1000 60 5))) ; allow read for next 5 mins
-            {:user-exists? true
-             :org-name org-name
-             :session-token (-> id insert-session :token)})
-        ;; they will need to "signup by invite"
-        (do (l/update-expires link "read" (+ (ut/now) (* 1000 60 5))) ; allow read for next 5 mins
-            {:user-exists? false
-             :org-name org-name}))
+      (let [{:keys [id]} (when normalized-email
+                           (select-user-by-email normalized-email))]
+        (if (and (not from-reusable-link?) id)
+          ;; the account already exists, just add them to org, and give a session token
+          (do (create-or-find-memb id org-id)
+              ;; this link is now maxed out for actions
+              ;; the (inc) is because the uses-actions will be incremented after this method evals
+              (l/update-max-uses link "action" (inc uses-action))
+              (l/update-expires link "read" (+ (ut/now) (* 1000 60 5))) ; allow read for next 5 mins
+              {:user-exists? true
+               :org-name org-name
+               :session-token (-> id insert-session :token)})
+          ;; they will need to "signup by invite"
+          (do (when-not from-reusable-link?
+                ;; allow read for next 5 mins
+                (l/update-expires link "read" (+ (ut/now) (* 1000 60 5)))) 
+              {:user-exists? false
+               :org-name org-name
+               :need-email? (boolean from-reusable-link?)})))
       ;; reusing link action to create account + add to org
       ;; used from ws, :do-link-action cmd
-      (let [{:keys [uname pwd]} account
-            {:keys [id]} (insert-user uname normalized-email (bhsh/derive pwd))]
-        (when id ; user was successfully created
-          (create-or-find-memb id org-id)
-          ;; this link is now maxed out for actions
-          ;; the (inc) is because the uses-actions will be incremented after this method evals
-          (l/update-max-uses link "action" (inc uses-action))
-          (journal/push-entry {:jtype :user-created
-                               :origin :org-invite
-                               :user-id id
-                               :org-id org-id
-                               :user-name uname})
-          ;; this 'output' will be read immediately from the ws results
-          ;; i.e., it won't be read from a link read
-          {:org-name org-name
-           :session-token (-> id insert-session :token)})))))
+      (let [{:keys [uname pwd]} account]
+        (if from-reusable-link?
+          ;; still need them to verify email address
+          (merge (create-account {:uname uname
+                                  :org-name org-name
+                                  :email normalized-email
+                                  :pwd pwd})
+                 {:user-creation-initiated-from-reusable-link? true
+                  :email normalized-email
+                  :hide-from-link-output? true})
+          ;; we already know that they have access to that email address
+          ;; because this link we sent to the email address
+          (let [{:keys [id]} (insert-user uname normalized-email (bhsh/derive pwd))]
+            (when id                   ; user was successfully created
+              (create-or-find-memb id org-id)
+              ;; this link is now maxed out for actions
+              ;; the (inc) is because the uses-actions will be incremented after this method evals
+              (l/update-max-uses link "action" (inc uses-action))
+              (journal/push-entry {:jtype :user-created
+                                   :origin :org-invite
+                                   :user-id id
+                                   :org-id org-id
+                                   :user-name uname})
+              ;; this 'output' will be read immediately from the ws results
+              ;; i.e., it won't be read from a link read
+              {:org-name org-name
+               :session-token (-> id insert-session :token)})))))))
 
 (defmethod l/action :g/join
   [{:keys [input-data] :as link} args]
@@ -583,3 +604,16 @@ Groups That Don't Exist: '%s'"
       ;; Step 2 (final step) 
       (do (g/create-or-find-group-org-memb org-id group-id)
           {}))))
+
+(defmethod com/handle-ws-inbound :create-org-invite-link
+  [{:keys [org-id] :as req} ws-id sub-fn]
+  (let [link-key (l/create {:cmd :invite-user-to-org
+                            :input-data {:org-id org-id
+                                         :from-reusable-link? true}
+                            ;; 45 days from now
+                            :expires-action (+ (ut/now) (* 1000 60 60 24 45))
+                            :max-uses-action 9999999
+                            :max-uses-read 9999999
+                            :expires-read (+ (ut/now) (* 1000 60 60 24 45))
+                            :short-key? true})]
+    {:url (str l/base-url link-key)}))

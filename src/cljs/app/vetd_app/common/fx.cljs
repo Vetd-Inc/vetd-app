@@ -80,6 +80,7 @@
                       :local-store {:session-token (:session-token output-data)}
                       :dispatch-later [{:ms 100 :dispatch [:ws-get-session-user]}
                                        {:ms 200 :dispatch [:nav-home]}]}
+     ;; this comes from an org invite email or org invite link
      :invite-user-to-org (if (:user-exists? output-data)
                            {:toast {:type "success"
                                     ;; this is a vague "Joined!" because it could
@@ -90,8 +91,11 @@
                             :local-store {:session-token (:session-token output-data)}
                             :dispatch-later [{:ms 100 :dispatch [:ws-get-session-user]}
                                              {:ms 200 :dispatch [:nav-home]}]}
-                           {:db (assoc db :signup-by-link-org-name (:org-name output-data))
+                           {:db (assoc db
+                                       :signup-by-link-org-name (:org-name output-data)
+                                       :signup-by-link-need-email? (:need-email? output-data))
                             :dispatch [:nav-join-org-signup link-key]})
+     ;; this comes from the group invite link
      :g/join (if (:logged-in? db)
                {:dispatch-later [(when-not (= (:page db) :b/stack)
                                    {:ms 100 :dispatch [:nav-home]})
