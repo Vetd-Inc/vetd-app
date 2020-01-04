@@ -6,7 +6,10 @@
 
 (defn container [body {:keys [no-spacer?]}]
   [:> ui/Container {:class "main-container"}
-   [cf/c-top-nav [{:text "Your Stack"
+   [cf/c-top-nav [{:text "Your Estimates"
+                   :pages #{:b/preposals}
+                   :event [:b/nav-preposals]}
+                  {:text "Your Stack"
                    :pages #{:b/stack}
                    :event [:b/nav-stack]}
                   {:text "Browse Products"
