@@ -9,12 +9,13 @@
             [clojure.string :as s]))
 
 (defn c-external-link
-  [url text]
+  [url text & [{:keys [position]}]]
   [:a {:href (str (when-not (.startsWith url "http") "http://") url)
        :target "_blank"}
+   (when (= position "right") (str (or text url) " "))
    [:> ui/Icon {:name "external square"
                 :color "blue"}]
-   (or text url)])
+   (when-not (= position "right") (or text url))])
 
 (defn c-back-button
   ([] (c-back-button {} "Back"))
@@ -177,6 +178,107 @@
     [:> ui/StepContent
      [:> ui/StepTitle "Complete"]
      [:> ui/StepDescription "Final decision"]]]])
+
+(defn c-reject-preposal-button
+  [id rejected? & [{:keys [icon?]}]]
+  (let [popup-open?& (r/atom false)
+        popup-position (if icon? "bottom right" "bottom left")
+        context-ref& (r/atom nil)
+        reason& (atom "")
+        options& (r/atom (ui/as-dropdown-options ["Outside our budget"
+                                                  "Not relevant to our business"
+                                                  "We already use a similar tool"]))
+        submit #(do (reset! popup-open?& false)
+                    (rf/dispatch [:b/preposals.reject id @reason&]))]
+    (fn [id rejected? & [{:keys [icon?]}]]
+      (if-not rejected?
+        [:<>
+         [:> ui/Popup
+          {:position popup-position
+           :on "click"
+           :open @popup-open?&
+           :on-close #(reset! popup-open?& false)
+           :on-click #(.stopPropagation %)
+           :context @context-ref&
+           :header "Reject Estimate"
+           :content (r/as-element
+                     [:div
+                      [:p {:style {:margin-top 7}}
+                       "Vendor will be notified, but will not be permitted to reach out."]
+                      [:> ui/Form {:as "div"
+                                   :class "popup-dropdown-form"
+                                   :style {:width 450}}
+                       [:> ui/Dropdown {:options @options&
+                                        :placeholder "Enter reason..."
+                                        :search true
+                                        :selection true
+                                        :multiple false
+                                        :selectOnBlur false
+                                        :selectOnNavigation true
+                                        :closeOnChange true
+                                        :header "Enter a custom reason..."
+                                        :allowAdditions true
+                                        :additionLabel "Hit 'Enter' to Reject as "
+                                        :onAddItem (fn [_ this]
+                                                     (->> this
+                                                          .-value
+                                                          vector
+                                                          ui/as-dropdown-options
+                                                          (swap! options& concat))
+                                                     (submit))
+                                        :onChange (fn [_ this] (reset! reason& (.-value this)))}]
+                       [:> ui/Button
+                        {:color "red"
+                         :on-click submit}
+                        "Reject"]]])}]
+         [:> ui/Popup
+          {:header "Reject Estimate"
+           :content "Reject if you aren't interested"
+           :position popup-position
+           :context @context-ref&
+           :trigger (r/as-element
+                     (if icon?
+                       [:> ui/Icon {:on-click (fn [e]
+                                                (.stopPropagation e)
+                                                (swap! popup-open?& not))
+                                    :color "black"
+                                    :link true
+                                    :name "close"
+                                    :size "large"
+                                    :style {:position "absolute"
+                                            :right 7}
+                                    :ref (fn [this] (reset! context-ref& (r/dom-node this)))}]
+                       [:> ui/Button {:on-click #(swap! popup-open?& not)
+                                      :color "white"
+                                      :size "small"
+                                      :style {:margin-top 7}
+                                      :icon true
+                                      :labelPosition "left"
+                                      :ref (fn [this] (reset! context-ref& (r/dom-node this)))}
+                        "Reject Estimate"
+                        [:> ui/Icon {:name "close"}]]))}]]
+        [:> ui/Popup
+         {:content "Undo Estimate Rejection"
+          :position popup-position
+          :trigger (r/as-element
+                    (if icon?
+                      [:> ui/Icon {:on-click (fn [e]
+                                               (.stopPropagation e)
+                                               (rf/dispatch [:b/preposals.undo-reject id]))
+                                   :link true
+                                   :color "red"
+                                   :name "undo"
+                                   :size "large"
+                                   :style {:position "absolute"
+                                           :right 7}}]
+                      [:> ui/Button {:on-click #(rf/dispatch [:b/preposals.undo-reject id])
+                                     :color "white"
+                                     :size "small"
+                                     :style {:margin-top 7}
+                                     :icon true
+                                     :labelPosition "left"}
+                       "Undo Reject"
+                       [:> ui/Icon {:name "undo"}]]))}]))))
 
 ;; unused
 (defn c-setup-call-button
@@ -565,7 +667,7 @@
   "Component to display pricing information of a product profile.
   c-display-field - component to display a field (key/value)
   v-fn - function to get value per some prompt term"
-  [c-display-field v-fn discounts preposal-requested? preposal-completed? preposal-v-fn preposal-updated]
+  [c-display-field v-fn discounts preposal-requested? preposal-completed? preposal-v-fn preposal-updated preposal-result preposal-id]
   [c-profile-segment {:title "Pricing"
                       :scroll-to-ref-key :product/pricing
                       :icon "dollar"
@@ -573,14 +675,16 @@
                                    :margin-left -5}}
    [:> ui/GridRow
     (if preposal-completed?
-      [c-display-field 16 [:<> "Pricing Estimate"]
+      [c-display-field 16 [:<> "Your Pricing Estimate"]
        [:<>
         (c-pricing-estimate preposal-v-fn)
         [:br]
         [:br]
         (util/parse-md (preposal-v-fn :preposal/pitch))
         [:small "Last Updated: " (util/relative-datetime (.getTime (js/Date. preposal-updated))
-                                                         {:trim-day-of-week? true})]]]
+                                                         {:trim-day-of-week? true})]
+        [:br]
+        [c-reject-preposal-button preposal-id (zero? preposal-result) {:icon? false}]]]
       [c-display-field 16 "Range"
        (when (has-data? (v-fn :product/price-range))
          [:<>

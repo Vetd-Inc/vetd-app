@@ -1,6 +1,7 @@
 (ns vetd-app.common.pages.login
   (:require [vetd-app.ui :as ui]
             [vetd-app.common.components :as cc]
+            [vetd-app.buyers.components :as bc]
             [vetd-app.analytics :as analytics]
             [reagent.core :as r]
             [re-frame.core :as rf]
@@ -145,20 +146,25 @@
              [:> ui/Button {:color "blue"
                             :on-click #(rf/dispatch [:nav-signup :vendor])}
               "As a Vendor"]]]
-           ;; [:div {:style {:margin-top 35}}
-           ;;  [:h4
-           ;;   [:a.teal {:href "https://vetd.com"}
-           ;;    "Vetd Chrome Extension"]]
-           ;;  "Install the new Vetd Chrome Extension for Gmail to make Vetd your"
-           ;;  [:br] [:strong "sales email gatekeeper."]
-           ;;  [:br]
-           ;;  [:br]
-           ;;  [:a {:href "https://vetd.com"}
-           ;;   "View on the Chrome Web Store."]]
+           [:div {:style {:margin-top 35}}
+            [:h4
+             [:a.teal {:href "https://chrome.google.com/webstore/detail/vetd-sales-email-gatekeep/gpmepfmejmnhphphkcabhlhfpccaabkj"
+                       :target "_blank"}
+              "NEW! - Vetd Chrome Extension"]]
+            "Get the Vetd Chrome Extension for Gmail to make Vetd your"
+            [:br] "sales email gatekeeper."
+            [:br]
+            [:br]
+            [bc/c-external-link
+             "https://chrome.google.com/webstore/detail/vetd-sales-email-gatekeep/gpmepfmejmnhphphkcabhlhfpccaabkj"
+             "View on Chrome Web Store"
+             {:position "right"}]]
            [:div {:style {:margin-top 35}}
             [:h4 "What is Vetd?"]
             "Vetd is a buying platform that removes all the manual, time-consuming steps from the buying process, pairing the best vendors with the right companies."
             [:br]
             [:br]
-            [:a {:href "https://vetd.com"}
-             "Learn more about Vetd."]]]))})))
+            [bc/c-external-link
+             "https://vetd.com"
+             "Learn more about Vetd"
+             {:position "right"}]]]))})))

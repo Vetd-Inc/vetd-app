@@ -210,7 +210,9 @@
       (boolean (seq forms)) ;; has requested (and perhaps completed) a preposal
       (boolean (seq docs)) ;; has a completed preposal?
       preposal-v-fn
-      (-> docs first :updated)]
+      (some-> docs first :updated)
+      (some-> docs first :result)
+      (some-> docs first :id)]
      [bc/c-vendor-profile (-> vendor :docs-out first) (:id vendor) (:oname vendor)]
      [bc/c-onboarding c-display-field v-fn]
      [bc/c-client-service c-display-field v-fn]
