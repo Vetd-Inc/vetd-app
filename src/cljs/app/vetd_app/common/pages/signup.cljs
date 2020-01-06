@@ -191,7 +191,7 @@
                                           :closeOnChange true
                                           :allowAdditions true
                                           :additionLabel "Hit 'Enter' to Add "
-                                          :onAddItem (fn [_ this]
+                                          :onAddItem (fn [e this]
                                                        (swap! options& conj {:key (gensym)
                                                                              :value (.-value this)
                                                                              :text (.-value this)})
@@ -199,7 +199,8 @@
                                           :onSearchChange (fn [_ this]
                                                             (reset! search-query& (aget this "searchQuery")))
                                           :onChange (fn [_ this]
-                                                      (reset! org-name (.-value this)))}]))]]
+                                                      (reset! org-name (.-value this))
+                                                      (js/setTimeout #(.focus @org-url-input-ref) 100))}]))]]
            [:> ui/FormField {:error (= @bad-input& :org-url)}
             [:label "Organization Website"
              [:> ui/Input {:class "borderless"
