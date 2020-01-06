@@ -58,10 +58,14 @@
    [:> ui/ModalContent content]
    (when buttons
      [:> ui/ModalActions
-      (for [{:keys [text event color]} buttons]
+      (for [{:keys [text event no-hide? color icon icon-on-right?]} buttons]
         ^{:key text}
         [:> ui/Button {:on-click (fn []
-                                   (do (when event (rf/dispatch event))
-                                       (reset! showing?& false)))
+                                   (when event (rf/dispatch event))
+                                   (when-not no-hide? (reset! showing?& false)))
                        :color color}
-         text])])])
+         (when (and icon (not icon-on-right?))
+           [:> ui/Icon {:name icon}])
+         text
+         (when (and icon icon-on-right?)
+           [:> ui/Icon {:name icon}])])])])

@@ -191,7 +191,7 @@
                                           :closeOnChange true
                                           :allowAdditions true
                                           :additionLabel "Hit 'Enter' to Add "
-                                          :onAddItem (fn [e this]
+                                          :onAddItem (fn [_ this]
                                                        (swap! options& conj {:key (gensym)
                                                                              :value (.-value this)
                                                                              :text (.-value this)})
