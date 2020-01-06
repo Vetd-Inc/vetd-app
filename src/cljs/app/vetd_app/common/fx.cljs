@@ -20,6 +20,58 @@
    (.startConfetti js/window)
    (js/setTimeout #(.stopConfetti js/window) 3000)))
 
+(rf/reg-event-fx
+ :maybe-show-extension-modal
+ [(rf/inject-cofx :local-store [:has-shown-extension-modal?])]
+ (fn [{:keys [local-store]}]
+   (when-not (:has-shown-extension-modal? local-store)
+     {:local-store {:has-shown-extension-modal? true} ;; only show this once
+      :dispatch [:modal
+                 {:header "Connected to Vetd \"Sales Email Gatekeeper\" Extension!"
+                  :content [:<>
+                            [:div#extension-intro-1
+                             [:h3 "How To Forward Sales Outreach"]
+                             [:p "Simply click on the Vetd logo in the Gmail toolbar when you receive a sales email. The email will be forwarded to Vetd and archived. We will then make sure that vendor doesn't email you again."]
+                             [:img {:src "https://vetd-app-assets.s3.amazonaws.com/extension-intro-1.png"
+                                    :style {:width "100%"}}]]]
+                  :buttons [{:text "Skip"}
+                            {:text "Next Page"
+                             :event [:do-fx {:dispatch [:modal
+                                                        {:header "Connected to Vetd \"Sales Email Gatekeeper\" Extension!"
+                                                         :content [:<>
+                                                                   [:div#extension-intro-2
+                                                                    [:h3 "Review Weekly"]
+                                                                    [:p "Each week we'll send you a recap of how many vendors reached out, and whether or not any of them are worth checking out."]
+                                                                    [:img {:src "https://vetd-app-assets.s3.amazonaws.com/extension-intro-2.png"
+                                                                           :style {:width "100%"}}]]]
+                                                         :buttons [{:text "Skip"}
+                                                                   {:text "Next Page"
+                                                                    :event [:do-fx {:dispatch [:modal
+                                                                                               {:header "Connected to Vetd \"Sales Email Gatekeeper\" Extension!"
+                                                                                                :content [:<>
+                                                                                                          [:div#extension-intro-2
+                                                                                                           [:h3 "Learn More"]
+                                                                                                           [:p "If any of the vendors look interesting, review them further on Vetd with a personalized pricing estimate, pitch, and additional details about the product or service."]
+                                                                                                           [:img {:src "https://vetd-app-assets.s3.amazonaws.com/extension-intro-3.png"
+                                                                                                                  :style {:width "100%"}}]]]
+                                                                                                :buttons [{:text "Close"}
+                                                                                                          {:text "Go to Gmail"
+                                                                                                           :event [:do-fx {:nav {:external-url "https://gmail.com"
+                                                                                                                                 :new-tab? true}}]
+                                                                                                           :icon "external"
+                                                                                                           :color "blue"}]
+                                                                                                :size "small"}]}]
+                                                                    :no-hide? true
+                                                                    :icon "arrow right"
+                                                                    :icon-on-right? true 
+                                                                    :color "blue"}]
+                                                         :size "small"}]}]
+                             :no-hide? true
+                             :icon "arrow right"
+                             :icon-on-right? true 
+                             :color "blue"}]
+                  :size "small"}]})))
+
 ;; Tries to send a message to the Vetd Chrome Extension
 (rf/reg-fx
  :chrome-extension
@@ -28,7 +80,9 @@
      (js/chrome.runtime.sendMessage "gpmepfmejmnhphphkcabhlhfpccaabkj" ;; Chrome Web Store
                                     (clj->js {:command cmd
                                               :args args})
-                                    #(println "Chrome sendMessage response: " %)))))
+                                    (fn [success?]
+                                      (when (or true success?)
+                                        (rf/dispatch [:maybe-show-extension-modal])))))))
 
 ;; given a React component ref, scroll to it on the page
 (rf/reg-fx
@@ -153,9 +207,12 @@
 
 (rf/reg-fx
  :nav
- (fn nav-fx [{:keys [path external-url]}]
+ (fn nav-fx [{:keys [path external-url new-tab?]}]
    (cond external-url
-         (js/setTimeout #(.assign (aget js/window "location") external-url) 1000)
+         (js/setTimeout #(if new-tab?
+                           (.open js/window external-url)
+                           (.assign (aget js/window "location") external-url))
+                        1000)
 
          @util/force-refresh?&
          (.assign (aget js/window "location") path)

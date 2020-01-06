@@ -219,14 +219,12 @@
                             {:path "/b/stack"}))
                         {:path "/v/profile"})
                       {:path "/login"}))}
-            (when chrome-extension-installed?
-              (if active-org
-                {:toast {:type "success"
-                         :title "Connected to Chrome Extension"
-                         :message "Your account has been connected to the Vetd Chrome Extension."}}
-                {:toast {:type "info"
-                         :title "Chrome Extension Installed"
-                         :message "Please login to connect your account to the Vetd Chrome Extension."}}))))))
+            (when chrome-extension-installed? ;; was just now installed
+              (when-not active-org
+                {:db (assoc db
+                            :info-message
+                            {:header "Chrome Extension Installed"
+                             :content "Please login or signup to connect your account."})}))))))
 
 (defn c-page []
   (let [page& (rf/subscribe [:page])
