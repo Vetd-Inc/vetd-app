@@ -461,14 +461,18 @@
 
 (defn c-pricing-estimate
   [v-fn & [{:keys [label-as-estimate?]}]]
-  (let [value (v-fn :preposal/pricing-estimate "value" :nval)
-        unit (v-fn :preposal/pricing-estimate "unit")
-        details (v-fn :preposal/pricing-estimate "details")]
-    (if value
-      [:span "$" (util/decimal-format value) " / " unit
-       (when label-as-estimate?
-         [:<> " " [:small "(estimate) " details]])]
-      details)))
+  (let [value (v-fn :preposal/pricing-estimate "value" :sval)
+        ;; continued support for old version of this field
+        old-value (v-fn :preposal/pricing-estimate "value" :nval)
+        old-unit (v-fn :preposal/pricing-estimate "unit")
+        old-details (v-fn :preposal/pricing-estimate "details")]
+    (if-not (s/blank? value)
+      value
+      (if old-value
+        [:span "$" (util/decimal-format old-value) " / " old-unit
+         (when label-as-estimate?
+           [:<> " " [:small "(estimate) " old-details]])]
+        old-details))))
 
 (defn product-description
   [v-fn]
