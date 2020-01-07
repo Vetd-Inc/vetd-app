@@ -83,10 +83,6 @@
 
 ;;;; Subscriptions
 (rf/reg-sub
- :info-message
- (fn [{:keys [info-message]} _] info-message))
-
-(rf/reg-sub
  :login-failed?
  (fn [{:keys [login-failed?]} _] login-failed?))
 
@@ -97,10 +93,10 @@
 (defn c-page []
   (let [email (r/atom "")
         pwd (r/atom "")
-        info-message (rf/subscribe [:info-message])
         login-failed? (rf/subscribe [:login-failed?])
         login-loading? (rf/subscribe [:login-loading?])
-        join-group-name& (rf/subscribe [:join-group-name])]
+        join-group-name& (rf/subscribe [:join-group-name])
+        info-message (rf/subscribe [:info-message])]
     (r/create-class
      {:component-will-unmount #(rf/dispatch [:clear-login-form])
       :reagent-render
@@ -109,15 +105,15 @@
           [cc/c-loader {:props {:style {:margin-top 175}}}]
           [:div.centerpiece
            [:img.logo {:src "https://s3.amazonaws.com/vetd-logos/vetd.svg"}]
+           (when-let [{:keys [header content]} @info-message]
+             [:> ui/Message {:info true
+                             :header header
+                             :content content}])
            (when @join-group-name&
              [:> ui/Header {:as "h2"
                             :class "teal"}
               (str "Join the " @join-group-name& " community on Vetd")])
            [:> ui/Form {:error @login-failed?}
-            (when-let [{:keys [header content]} @info-message]
-              [:> ui/Message {:info true
-                              :header header
-                              :content content}])
             (when @login-failed?
               [:> ui/Message {:error true
                               :header "Incorrect password or unverified email address."}])
