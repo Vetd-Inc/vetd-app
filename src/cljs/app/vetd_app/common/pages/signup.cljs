@@ -58,7 +58,8 @@
  (fn [{:keys [db]} [_ results {{:keys [email]} :return}]]
    (if-not (:email-used? results)
      {:db (-> db
-              (assoc-in [:page-params :terminal-success-email] email))}
+              (assoc-in [:page-params :terminal-success-email] email)
+              (assoc :info-message nil))}
      {:db (assoc-in db [:page-params :bad-input] :email)
       :toast {:type "error" 
               :title "Error"
@@ -81,11 +82,16 @@
  :<- [:page-params]
  (fn [{:keys [terminal-success-email]}] terminal-success-email))
 
+(rf/reg-sub
+ :info-message
+ (fn [{:keys [info-message]} _] info-message))
+
 ;; Components
 (defn c-page []
   (let [signup-org-type& (rf/subscribe [:signup-org-type])
         join-group-name& (rf/subscribe [:join-group-name])
         terminal-success-email& (rf/subscribe [:terminal-success-email])
+        info-message (rf/subscribe [:info-message])
         uname (r/atom "")
         email (r/atom "")
         org-name (r/atom "")
@@ -107,6 +113,10 @@
         [:img.logo {:src "https://s3.amazonaws.com/vetd-logos/vetd.svg"}]]
        (if (nil? @terminal-success-email&)
          [:<>
+          (when-let [{:keys [header content]} @info-message]
+            [:> ui/Message {:info true
+                            :header header
+                            :content content}])
           [:> ui/Header {:as "h2"
                          :class (case @signup-org-type& :buyer "teal" :vendor "blue")}
            (if @join-group-name&

@@ -221,10 +221,15 @@
                       {:path "/login"}))}
             (when chrome-extension-installed? ;; was just now installed
               (when-not active-org
-                {:db (assoc db
+                {:nav {:path "/signup/buyer"}
+                 :db (assoc db
                             :info-message
                             {:header "Chrome Extension Installed"
-                             :content "Please login or signup to connect your account."})}))))))
+                             :content (r/as-element
+                                       [:<>
+                                        "Please sign up for a Vetd account, or "
+                                        [:a {:on-click #(rf/dispatch [:nav-login])} "log in"]
+                                        " to connect an existing account."])})}))))))
 
 (defn c-page []
   (let [page& (rf/subscribe [:page])
