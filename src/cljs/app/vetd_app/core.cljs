@@ -217,7 +217,7 @@
                           (if (seq (:groups active-org)) ;; in a community?
                             {:path "/c/home"}
                             {:path "/b/stack"}))
-                        {:path "/v/profile"})
+                        {:path "/v/estimates"})
                       {:path "/login"}))}
             (when chrome-extension-installed? ;; was just now installed
               (when-not active-org
