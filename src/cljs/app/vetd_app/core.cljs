@@ -22,6 +22,7 @@
             [vetd-app.buyers.pages.stack-detail :as p-bstack-detail]
             [vetd-app.vendors.fixtures :as v-fix]
             [vetd-app.vendors.pages.preposals :as p-vpreposals]
+            [vetd-app.vendors.pages.preposal-detail :as p-vpreposal-detail]
             [vetd-app.vendors.pages.products :as p-vprods]
             [vetd-app.vendors.pages.product-detail :as p-vprod-detail]
             [vetd-app.vendors.pages.profile :as p-vprofile]
@@ -61,6 +62,7 @@
                    :b/stack #'p-bstack/c-page
                    :b/stack-detail #'p-bstack-detail/c-page
                    :v/preposals #'p-vpreposals/c-page
+                   :v/preposal-detail #'p-vpreposal-detail/c-page
                    :v/products #'p-vprods/c-page
                    :v/product-detail #'p-vprod-detail/c-page
                    :v/profile #'p-vprofile/c-page
@@ -88,6 +90,7 @@
                    :g/settings #'b-fix/container
                    :g/detail #'b-fix/container
                    :v/preposals #'v-fix/container
+                   :v/preposal-detail #'v-fix/container
                    :v/products #'v-fix/container
                    :v/product-detail #'v-fix/container
                    :v/profile #'v-fix/container
@@ -325,6 +328,9 @@
 ;; Vendors
 (sec/defroute vendors-preposals "/v/estimates" [query-params]
   (rf/dispatch [:v/route-preposals query-params]))
+
+(sec/defroute vendors-preposal-detail "/v/estimates/:idstr" [idstr]
+  (rf/dispatch [:v/route-preposal-detail idstr]))
 
 (sec/defroute vendors-products "/v/products" [query-params]
   (rf/dispatch [:v/route-products query-params]))

@@ -1,5 +1,6 @@
 (ns vetd-app.vendors.pages.preposals
   (:require [vetd-app.ui :as ui]
+            [vetd-app.util :as util]
             [vetd-app.common.components :as cc]
             [vetd-app.buyers.components :as bc]
             [vetd-app.docs :as docs]
@@ -77,6 +78,36 @@
                                    ])}]]
        [:> ui/GridColumn {:computer 4 :mobile 16}]])))
 
+(defn c-preposal
+  [{:keys [idstr doc-id from-user from-org product created]}]
+  (let [nav-click (fn [e]
+                    (.stopPropagation e)
+                    (rf/dispatch [:v/nav-preposal-detail idstr]))]
+    [:> ui/Item {:on-click nav-click}
+     [:> ui/ItemContent
+      [:> ui/ItemHeader
+       [:> ui/Button {:on-click nav-click
+                      :color (if doc-id "white" "blue")
+                      :icon true
+                      :labelPosition "right"
+                      :floated "right"
+                      :style {:position "absolute"
+                              :bottom 14
+                              :right 14}}
+        (if doc-id "Edit Estimate" "Create Estimate")
+        [:> ui/Icon {:name "right arrow"}]]
+       (if doc-id "Estimate" "Estimate Request") " - " (:oname from-org)
+       [:div {:style {:margin-top 3
+                      :font-weight 400}} 
+        [:small
+         "Requested By: " (:uname from-user) " at " (:oname from-org)
+         [:br]
+         "Product: " (:pname product)
+         [:br]
+         "Status: " [(if doc-id :span :strong) (if doc-id "Submitted (you can still make changes)" "Never Submitted")]
+         [:br]
+         "Requested: " (util/relative-datetime (.getTime (js/Date. created)) {:trim-day-of-week? true})]]]]]))
+
 (defn c-page []
   (let [org-id& (rf/subscribe [:org-id])
         preps& (rf/subscribe [:gql/sub
@@ -84,8 +115,8 @@
                                [[:form-docs {:ftype "preposal"
                                              :to-org-id @org-id&
                                              :_order_by {:created :desc}}
-                                 [:id :title :ftype :fsubtype
-                                  :doc-id :doc-title
+                                 [:id :idstr :title :ftype :fsubtype
+                                  :doc-id :doc-title :created :updated
                                   [:product [:id :pname]]
                                   [:from-org [:id :oname]]
                                   [:from-user [:id :uname]]
@@ -150,20 +181,14 @@
                                          [:p "You currently have " num-pending-estimate-requests " pricing estimate request(s) pending your response. When you submit an estimate, the buyer will have a chance to review your personalized pricing info and pitch, and Vetd will let you know if they would like to move forward."])}]]
               [:> ui/GridColumn {:computer 4 :mobile 16}]])
            [c-profile-completion-cta @vendor-profile& @products&]
-           (for [form-doc (:form-docs @preps&)]
-             ^{:key (str "form" (:id form-doc))}
-             [:> ui/GridRow
-              [:> ui/GridColumn {:computer 4 :mobile 16}]
-              [:> ui/GridColumn {:computer 8 :mobile 16}
-               [:> ui/Segment {:class "detail-container"}
-                [:h3 "Estimate Request - " (:oname (:from-org form-doc))]
-                [:p "Requested By: " (:uname (:from-user form-doc)) " at " (:oname (:from-org form-doc))]
-                [:p "Product: " (:pname (:product form-doc))]
-                [:p "Status: " (if (:doc-id form-doc) "Submitted (you can still make changes)" "Never Submitted")]
-                [docs/c-form-maybe-doc
-                 (docs/mk-form-doc-state form-doc)
-                 {:show-submit true}]]]
-              [:> ui/GridColumn {:computer 4 :mobile 16}]])]
+           [:> ui/GridRow
+            [:> ui/GridColumn {:computer 4 :mobile 16}]
+            [:> ui/GridColumn {:computer 8 :mobile 16}
+             [:> ui/ItemGroup {:class "results"}
+              (for [form-doc (:form-docs @preps&)]
+                ^{:key (str "form" (:id form-doc))}
+                [c-preposal form-doc])]]
+            [:> ui/GridColumn {:computer 4 :mobile 16}]]]
           [:> ui/Grid
            [:> ui/GridRow
             [:> ui/GridColumn {:computer 4 :mobile 16}]
