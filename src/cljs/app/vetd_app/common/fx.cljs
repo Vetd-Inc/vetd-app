@@ -81,7 +81,7 @@
                                     (clj->js {:command cmd
                                               :args args})
                                     (fn [success?]
-                                      (when (or true success?)
+                                      (when success?
                                         (rf/dispatch [:maybe-show-extension-modal])))))))
 
 ;; given a React component ref, scroll to it on the page
