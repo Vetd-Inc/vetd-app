@@ -247,6 +247,49 @@
        (map (fn [{:keys [products] :as round}]
               (assoc round :num-products (count products))))))
 
+(defn get-weekly-auto-email-data--recent-preposals [org-id]
+  (->> [[:form-docs {:ftype "preposal"
+                     :from-org-id org-id
+                     :_where {:_or [;; when Vetd requested the estimate on behalf of user (forwarded email)
+                                    {:_and [{:created {:_gt (->> (tick/new-period 7 :days)
+                                                                 (tick/- (now-))
+                                                                 tick->ts
+                                                                 java.sql.Timestamp.
+                                                                 str)}}
+                                            {:title {:_like "ADMIN %"}}]}
+                                    ;; when the vendor created the estimate (preposal)
+                                    {:doc-created {:_gt (->> (tick/new-period 7 :days)
+                                                             (tick/- (now-))
+                                                             tick->ts
+                                                             java.sql.Timestamp.
+                                                             str)}}]}
+                     :_order_by {:created :desc}}
+         [:id :created :updated :doc-id :doc-created
+          [:product [:pname]]
+          [:from-org [:oname]]
+          [:from-user [:id :uname]]
+          [:to-org [:id :oname]]]]]
+       ha/sync-query
+       :form-docs
+       (#(assoc {}
+                :preposals (filter :doc-id %)
+                :preposals-count (count (filter :doc-id %))
+                ;; Since we create preposals on behalf of the user
+                ;; number of preposal requests with title beginning with "ADMIN "
+                ;; is a proxy for the number of emails they forwarded to us.
+                :num-emails-forwarded (count
+                                       (filter (fn [form-doc]
+                                                 (> (->> form-doc
+                                                         :created
+                                                         .getTime)
+                                                    (->> (tick/new-period 7 :days)
+                                                         (tick/- (now-))
+                                                         tick->ts
+                                                         java.sql.Timestamp.
+                                                         .getTime)))
+                                               %))))))
+
+
 (defn get-weekly-auto-email-data--communities-num-new-discounts [group-id days-back]
   (->> {:select [[:%count.gd.id :count]]
         :from [[:group_discounts :gd]]
@@ -364,6 +407,7 @@
                            vals
                            first
                            (map :group-id))
+        recent-preposals (get-weekly-auto-email-data--recent-preposals org-id)
         product-annual-renewals-soon (get-weekly-auto-email-data--product-renewals-soon org-id "annual" 30 15)
         product-monthly-renewals-soon (get-weekly-auto-email-data--product-renewals-soon org-id "monthly" 7 15)
         active-rounds (get-weekly-auto-email-data--active-rounds org-id)]
@@ -379,6 +423,7 @@
                           first
                           s/capitalize))
      :org-name oname
+     :recent-preposals recent-preposals
      :product-annual-renewals-soon product-annual-renewals-soon
      :product-annual-renewals-soon-count (count product-annual-renewals-soon)
      :product-monthly-renewals-soon product-monthly-renewals-soon
