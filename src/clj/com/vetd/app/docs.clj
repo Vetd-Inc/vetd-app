@@ -472,12 +472,12 @@
 (defn create-preposal-req-form
   [{:keys [prod-id] :as prep-req}]
   (create-form-from-template
-   (merge prep-req
-          {:form-template-id (find-latest-form-template-id [:= :ftype "preposal"])
+   (merge {:form-template-id (find-latest-form-template-id [:= :ftype "preposal"])
            :to-org-id (product-id->vendor-id prod-id)
            :title (str "Preposal Request " (gensym ""))
            :status "init"
-           :subject prod-id})))
+           :subject prod-id}
+          prep-req)))
 
 (defn create-doc-from-form-doc
   [{:keys [id doc-title prompts from-org from-user to-org to-user

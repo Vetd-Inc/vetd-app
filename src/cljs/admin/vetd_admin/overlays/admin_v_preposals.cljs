@@ -9,7 +9,8 @@
  (fn [{:keys [db]} [_ {:keys [to-org-id to-user-id from-org-id from-user-id prod-id] :as prep-req}]]
    {:ws-send {:payload {:cmd :a/create-preposal-req
                         :return nil
-                        :prep-req prep-req}}}))
+                        :prep-req (assoc prep-req
+                                         :title (str "ADMIN Preposal Request " (gensym "")))}}}))
 
 (defn search-results
   [orgs q]
