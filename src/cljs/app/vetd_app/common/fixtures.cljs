@@ -4,12 +4,14 @@
             [reagent.core :as r]
             [re-frame.core :as rf]))
 
-(defn c-top-nav-page-link [{:keys [text event active]}]
+(defn c-top-nav-page-link [{:keys [text event badge active]}]
   ^{:key text}
   [:> ui/MenuItem {:class "page-link"
                    :active active
                    :on-click #(rf/dispatch event)}
-   text])
+   text
+   (when badge
+     [:> ui/Label {:color (:color badge)} (:content badge)])])
 
 (defn c-account-actions
   [user-name]
