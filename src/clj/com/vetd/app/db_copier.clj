@@ -113,23 +113,3 @@
        parse-pg-dump-str
        (st/join "\n")
        (spit out)))
-
-#_(prep-pg-dump-file "/home/bill/categories.sql" "/home/bill/repos/vetd-app/resources/migrations/data/categories.sql")
-
-#_(prep-pg-dump-file "/home/bill/orgs.sql" "/home/bill/repos/vetd-app/resources/migrations/data/orgs.sql")
-
-#_(prep-pg-dump-file "/home/bill/products.sql" "/home/bill/repos/vetd-app/resources/migrations/data/productes.sql")
-
-#_(prep-pg-dump-file "/home/bill/Downloads/product-categories.sql" "/home/bill/repos/vetd-app/resources/migrations/data/product-categories.sql")
-
-#_(prep-pg-dump-file "/home/bill/dump-users.sql" "/home/bill/repos/vetd-app/resources/migrations/data/2019-02-10-users.sql")
-
-#_(prep-pg-dump-file "/home/bill/dump-admins.sql" "/home/bill/repos/vetd-app/resources/migrations/data/2019-02-10-admins.sql")
-
-#_(prep-pg-dump-file "/home/bill/dump-req-templates.sql" "/home/bill/repos/vetd-app/resources/migrations/data/mig-2019-02-12-req-templates.sql")
-
-#_(prep-pg-dump-file "/home/bill/dump-prompts.sql" "/home/bill/repos/vetd-app/resources/migrations/data/mig-2019-02-12-prompts.sql")
-
-#_(prep-pg-dump-file "/home/bill/dump-req-template-prompt.sql" "/home/bill/repos/vetd-app/resources/migrations/data/mig-2019-02-12-req-template-prompt.sql")
-
-#_(prep-pg-dump-file "/home/bill/dump-prompt-fields.sql" "/home/bill/repos/vetd-app/resources/migrations/data/mig-2019-02-12-prompt-fields.sql")

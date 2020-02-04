@@ -128,7 +128,6 @@ WHERE table_schema = 'vetd' AND table_catalog = 'vetd1';")
     (loop [[head & tail] (select-all-table-names-MZ "vetd")]
       (if head
         (let [r (try
-                  ;; I don't love this, but it junks up the logs otherwise -- Bill
                   (binding [*suppress-error-logging* true] 
                     (hs-query {:select [:id]
                                :from [(keyword head)]

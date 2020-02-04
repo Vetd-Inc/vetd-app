@@ -89,7 +89,7 @@
                 (Thread/sleep 5000))
               (log/info "Stopped sub-count-monitor")))))
 
-(start-sub-count-monitor-thread) ;; TODO calling this here is gross -- Bill
+(start-sub-count-monitor-thread)
 
 ;; https://github.com/apollographql/subscriptions-transport-ws/blob/faa219cff7b6f9873cae59b490da46684d7bea19/src/message-types.ts
 

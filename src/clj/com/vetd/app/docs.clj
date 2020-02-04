@@ -550,7 +550,7 @@
             (update-deleted :doc_resp ref-id)
             (create-attached-doc-response doc-id
                                           {:prompt-id (or (:prompt-id response)
-                                                          prompt-id) ;; TODO I don't know -- Bill
+                                                          prompt-id) ;; TODO
                                            :fields new-fields})))
 
         (not-empty new-fields)
@@ -832,7 +832,7 @@
   [{:keys [data dtype dsubtype update-doc-id] :as d}]
   (if-let [{:keys [id ftype fsubtype prompts]} (doc->appliable--find-form d)]
     {:handler-args d
-     :item (merge (select-keys d ;; TODO hard-coded fields, sucks -- Bill
+     :item (merge (select-keys d ;; TODO remove hard-coded fields
                                [:title :dtype :descr :notes :from-org-id
                                 :from-user-id :to-org-id :to-user-id
                                 :dtype :dsubtype :form-id :subject])
@@ -1001,7 +1001,6 @@
       ha/sync-query
       :prompts))
 
-;; TODO the prompt-id for existing prompts should be present in field jval -- Bill
 (defn group-by-prompt-exists
   [prompts]
   (ut/$- ->> prompts

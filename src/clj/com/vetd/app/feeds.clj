@@ -103,6 +103,4 @@
                 (#'do-feed-event-puller))
               (log/info "Stopped feed-event-puller")))))
 
-
-
-(start-feed-event-puller-thread) ;; TODO calling this here is gross -- Bill
+(start-feed-event-puller-thread)

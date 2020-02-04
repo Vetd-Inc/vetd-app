@@ -376,7 +376,7 @@
     (stop-keep-alive-thread)
     (com/force-all-ws-on-close-fns)
     (reset! msg-ids-by-ws-id& {})
-    (ha/send-terminate) ;; Not sure why this is necessary. Hasura connection dies and don't recover without this. -- Bill
+    (ha/send-terminate)
     (if-let [svr @server]
       (do
         (.close svr)

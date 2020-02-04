@@ -146,11 +146,6 @@
     (try
       (try-start-nrepl-server)
       (catch Throwable t
-        (com/log-error t))))
-  ;; TODO remove this when we're sure we don't need it -- Bill
-  #_  (try
-        (vendors/update-all-missing-product-profile-scores)
-        (catch Throwable t
-          (com/log-error t))))
+        (com/log-error t)))))
 
 #_ (-main)

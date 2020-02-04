@@ -9,10 +9,9 @@
             [manifold.deferred :as md]
             [cheshire.core :as json]))
 
-;; this sucks. ws and alb not friends because no cookies -- Bill
 ;; Note: you can get the latest IP from:
 ;; AWS Console -> ECS -> vetd-app -> Tasks -> (choose any) -> Network -> Public IP
-(def prod-ip "52.91.157.43")
+(def prod-ip "55.55.55.55")
 
 (defn ws-on-closed []
   (println "ws-on-closed"))
