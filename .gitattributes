@@ -1,1 +1,1 @@
-*.css linguist-detectable=false
+resources/public/assets/lib/toastr/* linguist-vendored=true
