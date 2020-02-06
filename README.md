@@ -4,3 +4,5 @@ Vetd is a Clojure(Script) web app that helps users discover and compare SaaS pro
 
 Special Re-frame subscriptions ([graphql.cljs#L84-L122](https://github.com/Vetd-Inc/vetd-app/blob/5b4d8ffd1eceb294105068d71a02596fa28a3a1f/src/cljs/app/vetd_app/graphql.cljs#L84-L122)) allow you to subscribe to GraphQL with EDN either as a one-time data retrieval, or as a GraphQL Subscription with continued real-time updates over WebSockets. ([Example usage](https://github.com/Vetd-Inc/vetd-app/blob/cdac4d55f771b1928eeffb151372f643ea88f937/src/cljs/app/vetd_app/buyers/pages/product_detail.cljs#L226))
 
+[Screen recording demo of the frontend](https://www.youtube.com/watch?v=b8uP0ud5zfk)
+
