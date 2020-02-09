@@ -1,0 +1,6 @@
+COPY orgs (id, idstr, vendor_profile_doc_id, oname, url,vendor_qm, buyer_qm, created, updated, deleted, short_desc, long_desc) FROM stdin;
+272814405099	drl4xshp	\N	Org One	exampleorgone.com	t	f	2019-02-01 14:18:34.191+00	2019-02-01 14:18:34.191+00	\N	Here is an example short description.	Here is an example long description for org one, it is longer.
+272814380726	drl4w9oo	\N	Org Two	exampleorgtwo.com	t	f	2019-02-01 14:18:34.191+00	2019-02-01 14:18:34.191+00	\N	Here is an example short description.	Here is an example long description for org two, it is longer.
+272814380727	drl4w9op	\N	Org Three	exampleorgthree.com	t	f	2019-02-01 14:18:34.191+00	2019-02-01 14:18:34.191+00	\N	Here is an example short description.	Here is an example long description for org three, it is longer.
+272814404816	drl4xr9u	\N	Org Four	exampleorgfour.com	t	f	2019-02-01 14:18:34.191+00	2019-02-01 14:18:34.191+00	\N	Here is an example short description.	Here is an example long description for org four, it is longer.
+272814404817	drl4xr9v	\N	Org Five	exampleorgfive.com	t	f	2019-02-01 14:18:34.191+00	2019-02-01 14:18:34.191+00	\N	Here is an example short description.	Here is an example long description for org five, it is longer.
