@@ -1,1 +1,2 @@
-resources/public/assets/lib/toastr/* linguist-vendored
+resources/public/assets/lib/toastr/* linguist-vendored=true
+src/scss/semantic-ui/* linguist-vendored=true
